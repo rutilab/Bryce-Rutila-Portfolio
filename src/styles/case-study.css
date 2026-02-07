@@ -1,0 +1,195 @@
+/* Case Study Design System */
+
+/* Colors */
+:root {
+  --cs-background: rgb(38, 38, 38);
+  --cs-tile: rgb(48, 48, 48);
+  --cs-border: rgb(77, 77, 77);
+  --cs-text: rgba(255, 255, 255, 0.8);
+  --cs-text-secondary: rgba(255, 255, 255, 0.5);
+  --cs-primary: rgb(65, 56, 120);
+  --cs-primary-text: rgb(148, 133, 242);
+  --cs-accent-blue: rgb(39, 180, 255);
+  --cs-green: rgb(13, 186, 79);
+  --cs-red: rgb(255, 61, 61);
+  --cs-white: rgb(255, 255, 255);
+}
+
+/* Case Study Container */
+.case-study {
+  background-color: var(--cs-background);
+  color: var(--cs-text);
+  font-family: 'Inter', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Typography */
+.cs-h1 {
+  font-family: 'Inter', sans-serif;
+  font-weight: 700;
+  font-size: 56px;
+  line-height: 64px;
+  letter-spacing: -1px;
+  color: var(--cs-white);
+}
+
+.cs-h2 {
+  font-family: 'Inter', sans-serif;
+  font-weight: 700;
+  font-size: 32px;
+  line-height: 38px;
+  letter-spacing: -0.8px;
+  color: var(--cs-white);
+}
+
+.cs-h3 {
+  font-family: 'Inter', sans-serif;
+  font-weight: 600;
+  font-size: 24px;
+  line-height: 32px;
+  letter-spacing: -0.5px;
+  color: var(--cs-white);
+}
+
+.cs-h4 {
+  font-family: 'Inter', sans-serif;
+  font-weight: 600;
+  font-size: 20px;
+  line-height: 26px;
+  letter-spacing: -0.3px;
+  color: var(--cs-white);
+}
+
+.cs-special-header {
+  font-family: 'Inter', sans-serif;
+  font-weight: 400;
+  font-size: 20px;
+  line-height: 1.2em;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--cs-text-secondary);
+}
+
+.cs-body1 {
+  font-family: 'Inter', sans-serif;
+  font-weight: 400;
+  font-size: 16px;
+  line-height: 24px;
+  color: var(--cs-text);
+}
+
+.cs-body1-bold {
+  font-family: 'Inter', sans-serif;
+  font-weight: 600;
+  font-size: 16px;
+  line-height: 24px;
+  color: var(--cs-text);
+}
+
+.cs-body2 {
+  font-family: 'Inter', sans-serif;
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 20px;
+  color: var(--cs-text-secondary);
+}
+
+.cs-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 400;
+  font-size: 10px;
+  line-height: 14px;
+  color: var(--cs-text-secondary);
+}
+
+/* Spacing */
+.cs-section {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 80px;
+}
+
+.cs-section-header {
+  padding: 120px 80px;
+}
+
+/* Cards */
+.cs-card {
+  background-color: var(--cs-tile);
+  border-radius: 24px;
+  padding: 40px;
+}
+
+.cs-card-lg {
+  border-radius: 32px;
+}
+
+/* Pros/Cons */
+.cs-pros-card {
+  background-color: rgba(13, 186, 79, 0.1);
+  border-radius: 24px;
+  padding: 24px;
+}
+
+.cs-cons-card {
+  background-color: rgba(186, 13, 13, 0.1);
+  border-radius: 24px;
+  padding: 24px;
+}
+
+/* Pills */
+.cs-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 12px;
+  border-radius: 100px;
+  background-color: rgba(255, 255, 255, 0.1);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  line-height: 14px;
+  color: var(--cs-text-secondary);
+}
+
+/* Divider */
+.cs-divider {
+  height: 4px;
+  background-color: var(--cs-tile);
+  margin: 40px 0;
+}
+
+/* Responsive */
+@media (max-width: 1200px) {
+  .cs-section {
+    padding: 40px;
+  }
+
+  .cs-section-header {
+    padding: 80px 40px;
+  }
+
+  .cs-h1 {
+    font-size: 40px;
+    line-height: 48px;
+  }
+}
+
+@media (max-width: 670px) {
+  .cs-section {
+    padding: 24px;
+  }
+
+  .cs-section-header {
+    padding: 60px 24px;
+  }
+
+  .cs-h1 {
+    font-size: 32px;
+    line-height: 40px;
+  }
+
+  .cs-h2 {
+    font-size: 24px;
+    line-height: 30px;
+  }
+}
