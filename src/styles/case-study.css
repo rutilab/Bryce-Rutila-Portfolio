@@ -1,4 +1,4 @@
-/* Case Study Design System */
+/* Case Study Design System - Perry Wang Inspired */
 
 /* Colors */
 :root {
@@ -24,83 +24,105 @@
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* Typography */
-.cs-h1 {
+/* Typography - Perry Wang System */
+.cs-hero {
   font-family: 'Inter', sans-serif;
-  font-weight: 700;
-  font-size: 56px;
-  line-height: 64px;
-  letter-spacing: -1px;
+  font-weight: 500;
+  font-size: 80px;
+  line-height: 90%;
+  letter-spacing: -2px;
   color: var(--cs-white);
 }
 
-.cs-h2 {
+.cs-heading {
   font-family: 'Inter', sans-serif;
-  font-weight: 700;
-  font-size: 32px;
-  line-height: 38px;
-  letter-spacing: -0.8px;
+  font-weight: 500;
+  font-size: 40px;
+  line-height: 125%;
+  letter-spacing: -0.1px;
   color: var(--cs-white);
 }
 
-.cs-h3 {
+.cs-subheading {
   font-family: 'Inter', sans-serif;
-  font-weight: 600;
+  font-weight: 500;
   font-size: 24px;
-  line-height: 32px;
-  letter-spacing: -0.5px;
+  line-height: 125%;
+  letter-spacing: 0.1px;
   color: var(--cs-white);
 }
 
-.cs-h4 {
+.cs-body {
   font-family: 'Inter', sans-serif;
-  font-weight: 600;
-  font-size: 20px;
-  line-height: 26px;
-  letter-spacing: -0.3px;
-  color: var(--cs-white);
+  font-weight: 300;
+  font-size: 16px;
+  line-height: 150%;
+  letter-spacing: 0.4px;
+  color: var(--cs-text);
 }
 
-.cs-special-header {
+.cs-body-bold {
   font-family: 'Inter', sans-serif;
-  font-weight: 400;
-  font-size: 20px;
-  line-height: 1.2em;
-  letter-spacing: 0.1em;
+  font-weight: 500;
+  font-size: 16px;
+  line-height: 150%;
+  letter-spacing: 0.4px;
+  color: var(--cs-text);
+}
+
+.cs-overline {
+  font-family: 'Inter', sans-serif;
+  font-weight: 500;
+  font-size: 11px;
+  line-height: 130%;
+  letter-spacing: 1.5px;
   text-transform: uppercase;
   color: var(--cs-text-secondary);
 }
 
-.cs-body1 {
+.cs-caption {
   font-family: 'Inter', sans-serif;
-  font-weight: 400;
-  font-size: 16px;
-  line-height: 24px;
-  color: var(--cs-text);
-}
-
-.cs-body1-bold {
-  font-family: 'Inter', sans-serif;
-  font-weight: 600;
-  font-size: 16px;
-  line-height: 24px;
-  color: var(--cs-text);
-}
-
-.cs-body2 {
-  font-family: 'Inter', sans-serif;
-  font-weight: 400;
-  font-size: 14px;
-  line-height: 20px;
+  font-weight: 300;
+  font-size: 10px;
+  line-height: 140%;
+  letter-spacing: 0.2px;
   color: var(--cs-text-secondary);
 }
 
-.cs-label {
+.cs-callout {
+  font-family: 'Inter', sans-serif;
+  font-weight: 500;
+  font-size: 18px;
+  line-height: 140%;
+  letter-spacing: 0.2px;
+  color: var(--cs-white);
+}
+
+.cs-meta {
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 400;
+  font-size: 12px;
+  line-height: 140%;
+  letter-spacing: 0.3px;
+  color: var(--cs-text-secondary);
+}
+
+.cs-pill-text {
   font-family: 'JetBrains Mono', monospace;
   font-weight: 400;
   font-size: 10px;
   line-height: 14px;
+  letter-spacing: 0.2px;
   color: var(--cs-text-secondary);
+}
+
+.cs-figure-number {
+  font-family: 'Inter', sans-serif;
+  font-weight: 700;
+  font-size: 14px;
+  line-height: 100%;
+  letter-spacing: 0;
+  color: var(--cs-white);
 }
 
 /* Spacing */
