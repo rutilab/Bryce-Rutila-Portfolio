@@ -34,7 +34,7 @@ function SectionIndicator({ label }: { label: string }) {
   return (
     <div className="flex items-center gap-2">
       <div className="w-3 h-3 rounded-full bg-white shadow-[0px_1px_8px_1px_rgba(255,255,255,0.5)]" />
-      <span className="cs-overline">{label}</span>
+      <span className="text-sm text-white/50 tracking-wide">{label}</span>
     </div>
   );
 }
@@ -458,7 +458,7 @@ export default function NodeAIAssistantCaseStudy() {
                 </div>
 
                 {/* Label */}
-                <span className="cs-overline mt-4">HIGHLIGHTS</span>
+                <span className="text-[20px] tracking-[2px] text-white/50 leading-[24px] mt-4">HIGHLIGHTS</span>
 
                 {/* Heading */}
                 <h2 className="cs-callout max-w-[850px] mt-6">
@@ -495,7 +495,7 @@ export default function NodeAIAssistantCaseStudy() {
         <div className="flex flex-col justify-center items-start gap-16 p-20">
           <SectionIndicator label="CONTEXT" />
 
-          <h1 className="cs-heading text-white">
+          <h1 className="text-[56px] font-bold leading-[64px] tracking-[-1px] text-white">
             Turning a grant requirement into an opportunity to provide personalized support.
           </h1>
 
@@ -524,7 +524,7 @@ export default function NodeAIAssistantCaseStudy() {
         <div className="flex flex-col justify-center items-start gap-16 p-20">
           <SectionIndicator label="THE PROBLEM" />
 
-          <h1 className="cs-heading text-white">
+          <h1 className="text-[56px] font-bold leading-[64px] tracking-[-1px] text-white">
             Not all Chatbots are created equally.
           </h1>
 
@@ -631,7 +631,7 @@ export default function NodeAIAssistantCaseStudy() {
             </div>
 
             {/* Label */}
-            <span className="relative cs-overline mb-6">THE CHALLENGE</span>
+            <span className="relative text-xl tracking-[2px] text-white/50 mb-6">THE CHALLENGE</span>
 
             {/* Heading */}
             <h2 className="relative cs-callout max-w-[870px]">
@@ -691,7 +691,7 @@ export default function NodeAIAssistantCaseStudy() {
         <div className="flex flex-col justify-center items-start gap-16 p-20">
           <SectionIndicator label="RESEARCH PHASE" />
 
-          <h1 className="cs-heading text-white">
+          <h1 className="text-[56px] font-bold leading-[64px] tracking-[-1px] text-white">
             Understanding the landscape.
           </h1>
 
@@ -900,7 +900,7 @@ export default function NodeAIAssistantCaseStudy() {
               </div>
 
               {/* Label */}
-              <span className="relative cs-overline mb-6">THE WINNING CHOICE</span>
+              <span className="relative text-xl tracking-[2px] text-white/50 mb-6">THE WINNING CHOICE</span>
 
               {/* Heading */}
               <h2 className="relative cs-callout max-w-[870px] mb-6">

@@ -1,0 +1,860 @@
+'use client';
+
+import Image from 'next/image';
+
+// Figma asset URLs - these will be replaced with local assets later
+const assets = {
+  highlightsIcon: 'https://www.figma.com/api/mcp/asset/4a6819a6-55cb-4f20-8080-62c45b0ac4f4',
+  accessingNodeAi: 'https://www.figma.com/api/mcp/asset/491f8fa2-46ed-4ba6-9035-ea563f1a8744',
+  uiComponents: 'https://www.figma.com/api/mcp/asset/24c8b266-285c-4022-984d-ce4db8ba32b3',
+  typicalChatInterface: 'https://www.figma.com/api/mcp/asset/41d67080-10ad-414d-9299-e247de2065f8',
+  challengeIcon: 'https://www.figma.com/api/mcp/asset/d8f67891-ef4b-4c73-ae43-17cbc80a2823',
+  chatgptTextOutput: 'https://www.figma.com/api/mcp/asset/05ebd9a9-19cd-4782-909d-d1af0e31108d',
+  geminiTextOutput: 'https://www.figma.com/api/mcp/asset/67e59d82-a4bf-4915-9488-727f61af0418',
+  geminiLayout: 'https://www.figma.com/api/mcp/asset/b6a9f267-b9c1-45f0-b87c-7042e17d7446',
+  metaAiLayout: 'https://www.figma.com/api/mcp/asset/5c63f9f8-7202-4e8a-8ebf-41151417fc30',
+  claudePageBehavior: 'https://www.figma.com/api/mcp/asset/23376af7-1141-492f-9736-26c8f4df00ba',
+  geminiPageBehavior: 'https://www.figma.com/api/mcp/asset/2d4387b2-8f2f-4464-b14d-0ce1d76e77e0',
+  // Problem section icons
+  barrierBlockIcon: 'https://www.figma.com/api/mcp/asset/1c983c93-9cb3-4208-8947-d548a4396fc2',
+  messageQuestionIcon: 'https://www.figma.com/api/mcp/asset/c3f99a18-5d21-45c8-a654-85ac48af191c',
+  clockExclamationIcon: 'https://www.figma.com/api/mcp/asset/5152f8ef-af5e-41a7-bcd8-38350424112b',
+  // Objective icons
+  sparklesIcon: 'https://www.figma.com/api/mcp/asset/b01ab629-2fe9-4d73-81ed-d6161f682229',
+  targetArrowIcon: 'https://www.figma.com/api/mcp/asset/fa8dac6b-b00c-44a1-afc5-2af1749b9082',
+  moodSmileIcon: 'https://www.figma.com/api/mcp/asset/6f20a287-ed92-45fb-817e-95327217fe82',
+};
+
+// Section Indicator Component
+function SectionIndicator({ label }: { label: string }) {
+  return (
+    <div className="flex items-center gap-2">
+      <div className="w-3 h-3 rounded-full bg-white shadow-[0px_1px_8px_1px_rgba(255,255,255,0.5)]" />
+      <span className="text-sm text-white/50 tracking-wide">{label}</span>
+    </div>
+  );
+}
+
+// Image Card Component
+function ImageCard({
+  src,
+  alt,
+  caption,
+  pillText,
+}: {
+  src: string;
+  alt: string;
+  caption: string;
+  pillText: string;
+}) {
+  return (
+    <div>
+      {/* Gradient Card */}
+      <div className="rounded-[32px] bg-gradient-to-b from-[rgba(38,179,255,0.35)] to-[#181d1f] overflow-hidden">
+        <div className="p-[85px_80px]">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={src}
+            alt={alt}
+            className="w-full h-auto rounded-[12px]"
+          />
+        </div>
+      </div>
+      {/* Caption */}
+      <div className="flex items-center justify-end gap-4 mt-4">
+        <span className="text-[14px] text-white/50 leading-[20px]">{caption}</span>
+        <span className="px-2 py-1 rounded-[100px] bg-[rgba(242,242,242,0.1)] text-[10px] font-mono text-[#f2f2f2]/80">
+          {pillText}
+        </span>
+      </div>
+    </div>
+  );
+}
+
+// Problem Card Component
+function ProblemCard({
+  icon,
+  title,
+  description,
+  position,
+}: {
+  icon: React.ReactNode;
+  title: string;
+  description: string;
+  position: 'top' | 'middle' | 'bottom';
+}) {
+  const roundedClass = position === 'top'
+    ? 'rounded-t-3xl'
+    : position === 'bottom'
+    ? 'rounded-b-3xl'
+    : '';
+
+  return (
+    <div className={`bg-[#303030] p-6 ${roundedClass}`}>
+      <div className="flex gap-4">
+        <div className="w-6 h-6 flex-shrink-0">{icon}</div>
+        <div>
+          <h4 className="text-base font-semibold text-[#ff3d3d] mb-2">{title}</h4>
+          <p className="text-base text-white/80 leading-6">{description}</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Objective Card Component - Matches Figma design with border, icon at top
+function ObjectiveCard({
+  iconSrc,
+  title,
+  description,
+}: {
+  iconSrc: string;
+  title: string;
+  description: string;
+}) {
+  return (
+    <div className="bg-[#262626] rounded-3xl border-2 border-[#4d4d4d] p-6">
+      <div className="flex flex-col">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={iconSrc} alt="" className="w-10 h-10 mb-4" />
+        <h4 className="text-xl font-semibold text-white mb-2 tracking-[-0.3px]">{title}</h4>
+        <p className="text-base text-white/80 leading-6">{description}</p>
+      </div>
+    </div>
+  );
+}
+
+// Pros/Cons Tag Component
+function Tag({ children, type }: { children: React.ReactNode; type: 'pro' | 'con' }) {
+  return (
+    <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm ${
+      type === 'pro' ? 'bg-[#27b4ff]/20 text-[#27b4ff]' : 'bg-[#ff3d3d]/20 text-[#ff3d3d]'
+    }`}>
+      {type === 'pro' ? (
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3" />
+        </svg>
+      ) : (
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3zm7-13h2.67A2.31 2.31 0 0 1 22 4v7a2.31 2.31 0 0 1-2.33 2H17" />
+        </svg>
+      )}
+      {children}
+    </span>
+  );
+}
+
+// API Card Component
+function ApiCard({
+  title,
+  subtitle,
+  pros,
+  cons,
+  prosSummary,
+  consSummary,
+}: {
+  title: string;
+  subtitle: string;
+  pros: string[];
+  cons: string[];
+  prosSummary: string;
+  consSummary: string;
+}) {
+  return (
+    <div className="bg-[#303030] rounded-3xl p-8">
+      <div className="flex items-center gap-4 mb-6">
+        <div className="w-12 h-12 rounded-xl bg-[#27b4ff]/20 flex items-center justify-center">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#27b4ff" strokeWidth="2">
+            <rect x="3" y="3" width="7" height="7" />
+            <rect x="14" y="3" width="7" height="7" />
+            <rect x="14" y="14" width="7" height="7" />
+            <rect x="3" y="14" width="7" height="7" />
+          </svg>
+        </div>
+        <div>
+          <h4 className="text-xl font-semibold text-white">{title}</h4>
+          <p className="text-sm text-white/50">{subtitle}</p>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="space-y-4">
+          <h5 className="text-lg font-semibold text-white">Pros</h5>
+          <div className="flex flex-wrap gap-2">
+            {pros.map((pro, i) => (
+              <Tag key={i} type="pro">{pro}</Tag>
+            ))}
+          </div>
+          <p className="text-sm text-white/80">{prosSummary}</p>
+        </div>
+        <div className="space-y-4">
+          <h5 className="text-lg font-semibold text-white">Cons</h5>
+          <div className="flex flex-wrap gap-2">
+            {cons.map((con, i) => (
+              <Tag key={i} type="con">{con}</Tag>
+            ))}
+          </div>
+          <p className="text-sm text-white/80">{consSummary}</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Competitive Analysis Card Component
+function CompetitiveAnalysisCard({
+  title,
+  description,
+  whyItMatters,
+  leftImage,
+  leftCaption,
+  rightImage,
+  rightCaption,
+  isGif = false,
+}: {
+  title: string;
+  description: string;
+  whyItMatters: string;
+  leftImage: string;
+  leftCaption: string;
+  rightImage: string;
+  rightCaption: string;
+  isGif?: boolean;
+}) {
+  return (
+    <div className="bg-[#303030] rounded-3xl p-8">
+      <div className="flex items-center gap-4 mb-4">
+        <div className="w-10 h-10 rounded-xl bg-[#27b4ff]/20 flex items-center justify-center">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#27b4ff" strokeWidth="2">
+            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+          </svg>
+        </div>
+        <div>
+          <h4 className="text-xl font-semibold text-white">{title}</h4>
+          <p className="text-sm text-white/50">{description}</p>
+        </div>
+      </div>
+      <p className="text-base text-white/80 mb-6">
+        <strong className="text-white">Why it matters:</strong> {whyItMatters}
+      </p>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="rounded-2xl overflow-hidden bg-[#262626]">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={leftImage} alt={leftCaption} className="w-full aspect-[4/3] object-cover" />
+          <div className="p-4 flex justify-between items-center">
+            <span className="text-sm text-white/50">{leftCaption}</span>
+            <span className="px-2 py-1 rounded-full bg-white/10 text-[10px] font-mono text-white/80">
+              {isGif ? 'GIF' : 'IMAGE'}
+            </span>
+          </div>
+        </div>
+        <div className="rounded-2xl overflow-hidden bg-[#262626]">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={rightImage} alt={rightCaption} className="w-full aspect-[4/3] object-cover" />
+          <div className="p-4 flex justify-between items-center">
+            <span className="text-sm text-white/50">{rightCaption}</span>
+            <span className="px-2 py-1 rounded-full bg-white/10 text-[10px] font-mono text-white/80">
+              {isGif ? 'GIF' : 'IMAGE'}
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Design Insight Card Component
+function DesignInsightCard({
+  icon,
+  title,
+  description,
+  requirement,
+}: {
+  icon: React.ReactNode;
+  title: string;
+  description: string;
+  requirement: string;
+}) {
+  return (
+    <div className="bg-[#303030] rounded-2xl p-6">
+      <div className="flex items-start gap-4">
+        <div className="w-10 h-10 rounded-xl bg-[#27b4ff]/20 flex items-center justify-center flex-shrink-0">
+          {icon}
+        </div>
+        <div>
+          <h4 className="text-lg font-semibold text-white mb-2">{title}</h4>
+          <p className="text-base text-white/80 mb-2">{description}</p>
+          <p className="text-sm text-white/50">Design Requirement: {requirement}</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Key Decision Card Component
+function KeyDecisionCard({
+  title,
+  description,
+}: {
+  title: string;
+  description: string;
+}) {
+  return (
+    <div className="bg-[#303030] rounded-2xl p-6">
+      <h4 className="text-lg font-semibold text-white mb-2">{title}</h4>
+      <p className="text-base text-white/80">{description}</p>
+    </div>
+  );
+}
+
+export default function NodeAIAssistantCaseStudy() {
+  return (
+    <div className="min-h-screen bg-[#262626] text-white/80">
+      {/* Header Section */}
+      <header className="relative bg-gradient-to-b from-[rgba(38,179,255,0.5)] to-[#262626] to-[87%]">
+        <div className="max-w-[1200px] mx-auto px-6 pt-[120px] pb-[120px]">
+          {/* Text */}
+          <div className="text-center text-white mb-14">
+            <h1 className="text-[56px] font-bold leading-[64px] tracking-[-1px]">
+              Node AI Assistant
+            </h1>
+            <p className="text-[20px] font-semibold leading-[26px] tracking-[-0.3px] mt-4">
+              Finding Focus — Aug 2024
+            </p>
+          </div>
+
+          {/* Hero Image Placeholder */}
+          <div className="w-full max-w-[1200px] h-[850px] flex-shrink-0 aspect-[24/17] bg-[#38f] rounded-3xl" />
+        </div>
+      </header>
+
+      {/* Role and Overview Section */}
+      <section className="bg-[#262626]">
+        <div className="max-w-[1200px] mx-auto flex flex-col lg:flex-row justify-center items-start gap-16 p-20 flex-shrink-0">
+          {/* Left Column - Roles */}
+          <div className="flex-1 flex flex-col gap-8">
+            {/* My Role */}
+            <div>
+              <h4 className="text-[20px] font-semibold text-white leading-[26px] tracking-[-0.3px] mb-4">My Role</h4>
+              <p className="text-[16px] leading-[24px]">
+                <span className="font-bold text-white">UX Lead</span>
+                <span className="text-white/80"> — </span>
+                <span className="text-white/80">Interaction Design, Visual Design, Information Architecture, User Flows, Prompt Engineering, Knowledge Base Management</span>
+              </p>
+            </div>
+            {/* Team */}
+            <div>
+              <h4 className="text-[20px] font-semibold text-white leading-[26px] tracking-[-0.3px] mb-4">Team</h4>
+              <p className="text-[16px] text-white/80 leading-[24px]">
+                Mike Mrazek, PM<br />
+                Thomas Kennedy, SWE
+              </p>
+            </div>
+            {/* Timeline & Status */}
+            <div>
+              <h4 className="text-[20px] font-semibold text-white leading-[26px] tracking-[-0.3px] mb-4">Timeline &amp; Status</h4>
+              <p className="text-[16px] text-white/80 leading-[24px]">
+                <span className="font-semibold">2 Months,</span> <span className="text-white">Launched November 2024</span>
+              </p>
+            </div>
+          </div>
+
+          {/* Right Column - Overview */}
+          <div className="flex-1 flex flex-col">
+            <h4 className="text-[20px] font-semibold text-white leading-[26px] tracking-[-0.3px] mb-4">Overview</h4>
+            <div className="flex flex-col gap-6 text-[16px] text-white/80 leading-[24px]">
+              <p>
+                With educational grants increasingly emphasizing AI integration, Finding Focus - an academic spin-off from UT Austin - needed to thoughtfully incorporate AI technology into their educational platform.
+              </p>
+              <p>
+                Our experience showed that teachers who received direct support from our team had significantly higher implementation success rates. This insight led to the development of the Finding Focus AI Assistant, an LLM-powered support agent that provides on-demand support for educators.
+              </p>
+              <p>
+                Early feedback from our teacher community has been overwhelmingly positive, with users highlighting the assistant&apos;s ability to provide immediate, personalized support - effectively scaling our team&apos;s hands-on approach to implementation guidance.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Highlights Section */}
+      <section className="bg-[#262626] pt-[120px]">
+        <div className="max-w-[1200px] mx-auto px-20">
+          <div className="relative bg-[#303030] rounded-[32px] overflow-hidden">
+            {/* Radial gradient background at top */}
+            <div
+              className="absolute top-0 left-0 right-0 h-[200px] pointer-events-none"
+              style={{
+                background: 'radial-gradient(100% 100% at 50% 0%, rgba(38, 179, 255, 0.25) 0%, transparent 70%)',
+              }}
+            />
+
+            {/* Content Container */}
+            <div className="relative flex flex-col justify-center items-start gap-10 p-6">
+              {/* Header */}
+              <div className="flex flex-col items-center text-center w-full pt-4 px-14">
+                {/* Icon */}
+                <div className="w-16 h-16 rounded-[100px] overflow-hidden">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src="/images/case-studies/highlights-icon.png"
+                    alt=""
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+
+                {/* Label */}
+                <span className="text-[20px] tracking-[2px] text-white/50 leading-[24px] mt-4">HIGHLIGHTS</span>
+
+                {/* Heading */}
+                <h2 className="text-[32px] font-bold leading-[38px] tracking-[-0.8px] text-white max-w-[850px] mt-6">
+                  A quick, accessible way for teachers to ask questions, troubleshoot, or just have a conversation about anything related to Finding Focus.
+                </h2>
+              </div>
+
+              {/* Image Cards - gap-10 = 40px */}
+              <ImageCard
+                src={assets.accessingNodeAi}
+                alt="Accessing Node AI"
+                caption="0.1 Accessing Node AI"
+                pillText="VIDEO LOOP"
+              />
+              <ImageCard
+                src={assets.uiComponents}
+                alt="UI Components"
+                caption="0.2 UI Components"
+                pillText="IMAGE"
+              />
+              <ImageCard
+                src={assets.uiComponents}
+                alt="Mobile Designs"
+                caption="0.3 Mobile Designs"
+                pillText="IMAGE"
+              />
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Context Section */}
+      <section className="max-w-[1200px] mx-auto">
+        <div className="flex flex-col justify-center items-start gap-16 p-20">
+          <SectionIndicator label="CONTEXT" />
+
+          <h1 className="text-[56px] font-bold leading-[64px] tracking-[-1px] text-white">
+            Turning a grant requirement into an opportunity to provide personalized support.
+          </h1>
+
+          <div className="flex flex-col lg:flex-row gap-16 w-full">
+            <div className="lg:w-[540px] lg:flex-shrink-0">
+              <h3 className="text-[24px] font-semibold leading-[32px] tracking-[-0.5px] text-white">
+                Helping our teachers was the main priority
+              </h3>
+            </div>
+            <div className="flex-1">
+              <p className="text-base text-white/80 leading-6">
+                Our most successful teachers shared one common thread - direct support from our team during implementation. With grant requirements pushing us toward AI integration, we recognized that an LLM powered assistant could be a great way to provide hands-on support for every teacher.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Divider */}
+      <div className="max-w-[1200px] mx-auto px-20">
+        <div className="h-1 bg-[#303030]" />
+      </div>
+
+      {/* Problem Section - Intro */}
+      <section className="max-w-[1200px] mx-auto">
+        <div className="flex flex-col justify-center items-start gap-16 p-20">
+          <SectionIndicator label="THE PROBLEM" />
+
+          <h1 className="text-[56px] font-bold leading-[64px] tracking-[-1px] text-white">
+            Not all Chatbots are created equally.
+          </h1>
+
+          {/* Two column layout with problem cards in right column */}
+          <div className="flex flex-col lg:flex-row w-full">
+            {/* Left column - Title */}
+            <div className="lg:w-[540px] lg:flex-shrink-0">
+              <h3 className="text-[24px] font-semibold leading-[32px] tracking-[-0.5px] text-white">
+                Most users have a negative connotation of &ldquo;chatbots&rdquo;
+              </h3>
+            </div>
+
+            {/* Right column - Content + Problem Cards */}
+            <div className="flex-1 flex flex-col">
+              <p className="text-base text-white/80 leading-6 mb-6">
+                We wanted to create a virtual support agent that was actually helpful and answered user&apos;s novel questions, something that traditional chatbots don&apos;t typically succeed at.
+              </p>
+              <p className="text-base text-white/80 leading-6 mb-6">
+                Traditional chatbots, as seen in figure 2.0, often fail at providing adequate support to users because they have rudimentary NLP (natural language processing) and rely heavily upon decision trees, and when users send a message that is not a part of the chatbot&apos;s repertoire, the conversation stalls. Traditional chatbots lack the ability to &ldquo;understand&rdquo; user&apos;s requests, and are very restricted in their ability to respond.
+              </p>
+              <p className="text-base text-white/80 leading-6 mb-6">
+                The limitations of traditional chatbots have created a negative connotation regarding chatbots that we wanted to avoid:
+              </p>
+
+              {/* Problem Cards - separate containers with 24px gap */}
+              <div className="flex flex-col gap-6 w-[500px]">
+                {/* Limited Responses */}
+                <div className="flex justify-center items-center bg-[#303030] rounded-[24px] p-6 h-[176px]">
+                  <div className="flex gap-4">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src="/images/case-studies/image.svg" alt="" className="w-6 h-6 flex-shrink-0" />
+                    <div>
+                      <h4 className="text-base font-semibold text-[#ff3d3d] mb-2">Limited Responses</h4>
+                      <p className="text-base text-white/80 leading-6">
+                        Reliance on decision trees creates a rigid conversational flow. If a user&apos;s input doesn&apos;t fit the pre-defined options, the chatbot often gets stuck or provides unhelpful responses.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Lack of Contextual Understanding */}
+                <div className="flex justify-center items-center bg-[#303030] rounded-[24px] p-6 h-[152px]">
+                  <div className="flex gap-4">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src="/images/case-studies/svg11884258658.svg" alt="" className="w-6 h-6 flex-shrink-0" />
+                    <div>
+                      <h4 className="text-base font-semibold text-[#ff3d3d] mb-2">Lack of Contextual Understanding</h4>
+                      <p className="text-base text-white/80 leading-6">
+                        They struggle to grasp the overall meaning or intent behind a user&apos;s message, especially when the language is more complex or not straightforward.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Inefficient */}
+                <div className="flex justify-center items-center bg-[#303030] rounded-[24px] p-6 h-[176px]">
+                  <div className="flex gap-4">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src="/images/case-studies/svg11845331731.svg" alt="" className="w-6 h-6 flex-shrink-0" />
+                    <div>
+                      <h4 className="text-base font-semibold text-[#ff3d3d] mb-2">Inefficient</h4>
+                      <p className="text-base text-white/80 leading-6">
+                        Users may end up resorting to other options, like messaging the support team directly to resolve their issues, which can be time-consuming for users and companies alike.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Image 2.0 - Typical Chat Interface */}
+        <div className="py-6">
+          <div className="rounded-[32px] overflow-hidden bg-[#eaf3f8]">
+            <div className="aspect-[1040/774] flex items-center justify-center p-20">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={assets.typicalChatInterface}
+                alt="Typical Chat Interface"
+                className="max-w-[50%] h-auto object-contain"
+              />
+            </div>
+          </div>
+          <div className="flex items-center justify-end gap-4 mt-2">
+            <span className="text-sm text-white/50">2.0 Typical Chat Interface</span>
+            <span className="px-2 py-1 rounded-full bg-white/10 text-[10px] font-mono text-white/80">
+              Image
+            </span>
+          </div>
+        </div>
+
+        {/* The Challenge Card */}
+        <div className="py-20">
+          <div className="bg-[#303030] rounded-[32px] py-20 px-20 flex flex-col items-center text-center">
+            {/* Icon in rounded pill */}
+            <div className="w-16 h-16 rounded-full overflow-hidden mb-4">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={assets.challengeIcon} alt="" className="w-full h-full object-cover" />
+            </div>
+
+            {/* Label */}
+            <span className="text-xl tracking-[2px] text-white/50 mb-6">THE CHALLENGE</span>
+
+            {/* Heading */}
+            <h2 className="text-[32px] font-bold leading-[38px] tracking-[-0.8px] text-white max-w-[870px]">
+              Create a genuinely helpful assistant that provides relevant answers to teachers&apos; questions.
+            </h2>
+          </div>
+        </div>
+
+        {/* Objectives Section */}
+        <div className="py-10">
+          <div className="flex flex-col lg:flex-row">
+            {/* Left column - Title */}
+            <div className="lg:w-[45%] lg:pr-16 mb-8 lg:mb-0">
+              <h3 className="text-2xl font-semibold leading-8 tracking-[-0.5px] text-white">
+                Project Objectives:
+              </h3>
+            </div>
+
+            {/* Right column - Objective Cards */}
+            <div className="lg:w-[55%] flex flex-col gap-6">
+              <ObjectiveCard
+                iconSrc={assets.sparklesIcon}
+                title="Truly Understand Queries"
+                description="Create a virtual support agent that is able to understand what users are asking."
+              />
+              <ObjectiveCard
+                iconSrc={assets.targetArrowIcon}
+                title="Provide Relevant Responses"
+                description="Provide teachers with answers to any question they might have - without limiting the responses."
+              />
+              <ObjectiveCard
+                iconSrc={assets.moodSmileIcon}
+                title="Exceed Teacher Expectations"
+                description="Create an experience that sets the standard for Edtech virtual support agents."
+              />
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Divider */}
+      <div className="max-w-[1200px] mx-auto px-20">
+        <div className="h-1 bg-[#303030]" />
+      </div>
+
+      {/* Research Phase Section */}
+      <section className="max-w-[1200px] mx-auto">
+        <div className="flex flex-col justify-center items-start gap-16 p-20">
+          <SectionIndicator label="RESEARCH PHASE" />
+
+          <h1 className="text-[56px] font-bold leading-[64px] tracking-[-1px] text-white">
+            Understanding the landscape.
+          </h1>
+
+          <div className="flex flex-col lg:flex-row gap-16 mb-12">
+            <div className="lg:w-[45%]">
+              <h3 className="text-2xl font-semibold leading-8 tracking-[-0.5px] text-white">
+                Doing a deep dive into our API options
+              </h3>
+            </div>
+            <div className="lg:w-[55%] flex flex-col gap-4">
+              <p className="text-base text-white/80 leading-6">
+                Before anything else, Finding Focus had to decide on the &lsquo;brain&rsquo; of our chat interface – the core technology that would enable it to understand and respond to user requests.
+              </p>
+              <p className="text-base text-white/80 leading-6">
+                After researching the topic, I found that there were two main approaches we could take to implement the chatbot:
+              </p>
+            </div>
+          </div>
+
+          {/* API Cards */}
+          <div className="flex flex-col gap-6">
+            <ApiCard
+              title="Rule Based NLU APIs"
+              subtitle="Popular Options: Dialogflow, Amazon Lex, Rasa"
+              pros={['Fast', 'Accurate', 'Predictable', 'Cost Effective']}
+              cons={['Robotic', 'Less Flexible', 'Knowledge Gaps', 'Context Blindness']}
+              prosSummary="Excel in situations with well-defined interactions and predictable user inputs, offering a fast, accurate, and cost-effective solution."
+              consSummary="Struggles with understanding nuanced language, adapting to unexpected situations, and handling complex or open-ended interactions."
+            />
+            <ApiCard
+              title="LLM APIs"
+              subtitle="Popular Options: OpenAI (GPT), Anthropic (Claude), Gemini"
+              pros={['Versatile', 'Generative', 'Contextually Aware', 'Natural Conversation']}
+              cons={['Cost', 'Less Control', 'Hallucinations', 'High Maintenance']}
+              prosSummary="Provides dynamic, human-like interactions by generating contextually aware responses that can adapt to a wide range of user queries."
+              consSummary="Require investment in both cost and maintenance, while offering less direct control over responses and potentially generating inaccurate information."
+            />
+          </div>
+
+          {/* The Winning Choice */}
+          <div className="mt-16 flex flex-col lg:flex-row gap-16">
+            <div className="lg:w-[45%]">
+              <h3 className="text-2xl font-semibold leading-8 tracking-[-0.5px] text-white">
+                The winning choice…
+              </h3>
+            </div>
+            <div className="lg:w-[55%] flex flex-col gap-6">
+              <div className="bg-[#303030] rounded-2xl p-6 flex items-center gap-4">
+                <div className="w-12 h-12 rounded-xl bg-[#27b4ff]/20 flex items-center justify-center">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#27b4ff" strokeWidth="2">
+                    <path d="M12 3l1.912 5.813h6.088l-4.938 3.574 1.912 5.813-4.974-3.6-4.974 3.6 1.912-5.813-4.938-3.574h6.088z" />
+                  </svg>
+                </div>
+                <div>
+                  <p className="text-sm text-white/50">LLM Powered APIs</p>
+                  <h4 className="text-lg font-semibold text-white">Assistants API (OpenAI)</h4>
+                </div>
+              </div>
+              <p className="text-base text-white/80 leading-6">
+                For our team, an LLM powered API was exactly what we were looking for due to its ability to truly understand users queries and respond naturally with relevant information.
+              </p>
+              <p className="text-base text-white/80 leading-6">
+                <strong className="text-white">Assistants API</strong> was the right choice for us given its ability to draw from an external knowledge base - we wanted to train our Assistant on our Zendesk articles so that it can help answer any setup or troubleshooting questions our users might have.
+              </p>
+            </div>
+          </div>
+
+          {/* Learning from Existing Experiences */}
+          <div className="mt-16">
+            <h3 className="text-2xl font-semibold leading-8 tracking-[-0.5px] text-white mb-4">
+              Learning from existing experiences
+            </h3>
+            <p className="text-base text-white/80 leading-6 mb-12">
+              In order to inform our design direction, I conducted a comprehensive comparative analysis of leading LLM chat interfaces: Gemini, Claude, Meta AI, and ChatGPT. I focused on three key areas to inform our design:
+            </p>
+
+            <div className="flex flex-col gap-6">
+              <CompetitiveAnalysisCard
+                title="Text Output Behavior"
+                description="How text is displayed in messages (e.g., letter-by-letter, word-by-word, or all at once)."
+                whyItMatters="Pacing and visual feedback impacts the perceived responsiveness and speed of the AI."
+                leftImage={assets.chatgptTextOutput}
+                leftCaption="ChatGPT: Streams text letter-by-letter"
+                rightImage={assets.geminiTextOutput}
+                rightCaption="Gemini: Displays entire message instantly"
+                isGif={true}
+              />
+              <CompetitiveAnalysisCard
+                title="Message Structure and Layout"
+                description="The organization and visual differentiation of user and AI messages."
+                whyItMatters="Clear visual hierarchy and structure helps ensure users can easily follow the conversation and distinguish between their messages and the AI's responses."
+                leftImage={assets.geminiLayout}
+                leftCaption="Gemini: Clean, minimal layout"
+                rightImage={assets.metaAiLayout}
+                rightCaption="Meta AI: Conversational bubbles"
+              />
+              <CompetitiveAnalysisCard
+                title="Dynamic Page Behavior"
+                description="How the interface adapts to new messages, including scrolling and focus management."
+                whyItMatters="Smooth and intuitive page behavior ensures users can follow the conversation without losing their place or having to manually scroll."
+                leftImage={assets.claudePageBehavior}
+                leftCaption="Claude: Fixed container approach"
+                rightImage={assets.geminiPageBehavior}
+                rightCaption="Gemini: Auto-scroll approach"
+                isGif={true}
+              />
+            </div>
+          </div>
+
+          {/* Design Insights */}
+          <div className="mt-16">
+            <h3 className="text-2xl font-semibold leading-8 tracking-[-0.5px] text-white mb-4">
+              How do these insights translate into design decisions?
+            </h3>
+            <p className="text-base text-white/80 leading-6 mb-8">
+              Based on the comparative analyses above, three critical insights emerged that would directly inform our design approach:
+            </p>
+
+            <div className="flex flex-col gap-4">
+              <DesignInsightCard
+                icon={
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#27b4ff" strokeWidth="2">
+                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                  </svg>
+                }
+                title="Text Streaming Enables Faster Response Times"
+                description="Our analysis revealed that streaming text as it generates (ChatGPT's approach) provides quicker feedback to users rather than waiting for complete message generation (Gemini's approach), especially when using APIs."
+                requirement="Implement letter-by-letter streaming"
+              />
+              <DesignInsightCard
+                icon={
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#27b4ff" strokeWidth="2">
+                    <rect x="3" y="3" width="7" height="7" />
+                    <rect x="14" y="3" width="7" height="7" />
+                    <rect x="14" y="14" width="7" height="7" />
+                    <rect x="3" y="14" width="7" height="7" />
+                  </svg>
+                }
+                title="Familiar Message Structure Reduces Cognitive Load"
+                description="Left/right message structure with text &ldquo;bubbles&rdquo; encasing the user's messages and an icon next to the Assistant's responses follows familiar conventions, allowing teachers to instantly distinguish between their messages and the Assistant's responses without learning new interface patterns."
+                requirement="Use distinctive styling for user vs. AI messages"
+              />
+              <DesignInsightCard
+                icon={
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#27b4ff" strokeWidth="2">
+                    <polyline points="5 9 2 12 5 15" />
+                    <polyline points="9 5 12 2 15 5" />
+                    <polyline points="15 19 12 22 9 19" />
+                    <polyline points="19 9 22 12 19 15" />
+                    <line x1="2" y1="12" x2="22" y2="12" />
+                    <line x1="12" y1="2" x2="12" y2="22" />
+                  </svg>
+                }
+                title="Dedicated Message Sections Prevent Reading Disruption"
+                description="Creating a fresh section for each new exchange (Gemini's approach) keeps the conversation stable and readable, unlike Claude's upward-pushing layout that disrupts users mid-reading."
+                requirement="Anchor each message in fixed containers without auto-scrolling during generation"
+              />
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Divider */}
+      <div className="max-w-[1200px] mx-auto px-20">
+        <div className="h-1 bg-[#303030]" />
+      </div>
+
+      {/* Design Phase Section */}
+      <section className="max-w-[1200px] mx-auto">
+        <div className="flex flex-col justify-center items-start gap-16 p-20">
+          <SectionIndicator label="DESIGN PHASE" />
+
+          <h1 className="text-[56px] font-bold leading-[64px] tracking-[-1px] text-white">
+            Crafting the user experience.
+          </h1>
+
+          <div className="flex flex-col lg:flex-row gap-16 mb-12">
+            <div className="lg:w-[45%]">
+              <h3 className="text-2xl font-semibold leading-8 tracking-[-0.5px] text-white">
+                Translating insights into interface decisions
+              </h3>
+            </div>
+            <div className="lg:w-[55%]">
+              <p className="text-base text-white/80 leading-6">
+                Armed with clear design principles from our competitive analysis, I began designing our AI assistant. My approach focused on systematic exploration of key interface decisions — from how users would access the assistant to how conversations would flow — all while ensuring the experience felt native to the Finding Focus platform that teachers already knew and trusted.
+              </p>
+            </div>
+          </div>
+
+          {/* Key Design Decisions */}
+          <div className="mt-12">
+            <h3 className="text-2xl font-semibold leading-8 tracking-[-0.5px] text-white mb-8">
+              Key Design Decisions:
+            </h3>
+
+            <div className="flex flex-col gap-4">
+              <KeyDecisionCard
+                title="Assistant Access Point"
+                description="Where in our interface should users access the assistant from?"
+              />
+              <KeyDecisionCard
+                title="Modal vs. Inline Experience"
+                description="How should the assistant appear in the interface — as an overlay (modal) or embedded within the page layout (inline)?"
+              />
+              <KeyDecisionCard
+                title="Empty State Design"
+                description="How should the assistant's empty state design clue users in to its functionality — without adding friction?"
+              />
+            </div>
+          </div>
+
+          {/* Assistant Access Point Detail */}
+          <div className="mt-16 flex flex-col lg:flex-row gap-16">
+            <div className="lg:w-[45%]">
+              <h3 className="text-2xl font-semibold leading-8 tracking-[-0.5px] text-white">
+                Assistant Access Point
+              </h3>
+            </div>
+            <div className="lg:w-[55%]">
+              <h4 className="text-lg font-semibold text-white mb-2">Why it matters</h4>
+              <p className="text-base text-white/80 leading-6">
+                The assistant needed to feel ever-present and accessible from anywhere in the platform, while remaining unobtrusive enough that teachers could choose when to engage with it.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Footer Padding */}
+      <div className="h-20" />
+    </div>
+  );
+}
