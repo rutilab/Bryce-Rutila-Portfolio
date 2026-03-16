@@ -1425,9 +1425,12 @@ function CyclingGif({ items }: { items: GifItem[] }) {
   const [current, setCurrent] = useState(0);
   const [prev, setPrev] = useState<number | null>(null);
   const [stopped, setStopped] = useState(false);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => { setMounted(true); }, []);
   const imgRefs = useRef<(HTMLImageElement | null)[]>([]);
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const prevTimerRef = useRef<ReturnType<typeof setTimeout>>();
+  const prevTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   // Auto-advance timer — use GIF duration minus 300ms to prevent frame-0 flash before fade
   useEffect(() => {
@@ -1483,7 +1486,11 @@ function CyclingGif({ items }: { items: GifItem[] }) {
   }
 
   return (
-    <div style={{ position: 'relative', borderRadius: 16, overflow: 'hidden', background: 'rgba(220,232,248,0.45)', minHeight: 660 }}>
+    <>
+    <div
+      onClick={() => setLightboxOpen(true)}
+      style={{ position: 'relative', borderRadius: 16, overflow: 'hidden', background: 'rgba(220,232,248,0.45)', minHeight: 660, cursor: 'zoom-in' }}
+    >
       {items.map((item, i) => (
         <div key={i} style={{
           position: 'absolute', inset: 0,
@@ -1524,8 +1531,33 @@ function CyclingGif({ items }: { items: GifItem[] }) {
         padding: '2px 8px', borderRadius: 6, pointerEvents: 'none',
       }}>GIF</div>
 
-      <StopPlayButton stopped={stopped} onClick={stopped ? handlePlay : handleStop} />
+      <div onClick={e => e.stopPropagation()}>
+        <StopPlayButton stopped={stopped} onClick={stopped ? handlePlay : handleStop} />
+      </div>
     </div>
+    {lightboxOpen && mounted && createPortal(
+      <div
+        onClick={() => setLightboxOpen(false)}
+        style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(8,8,8,0.92)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '40px 32px', cursor: 'zoom-out' }}
+      >
+        <button
+          onClick={() => setLightboxOpen(false)}
+          style={{ position: 'absolute', top: 20, right: 20, width: 36, height: 36, borderRadius: '50%', background: 'rgba(255,255,255,0.1)', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', cursor: 'pointer' }}
+          className="hover:bg-white/20"
+        >
+          <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><path d="M11.5 3.5l-8 8M3.5 3.5l8 8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
+        </button>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={items[current].src}
+          alt={items[current].alt}
+          onClick={e => e.stopPropagation()}
+          style={{ maxWidth: 'min(88vw, 1280px)', maxHeight: '82vh', objectFit: 'contain', borderRadius: 14, cursor: 'default', display: 'block' }}
+        />
+      </div>,
+      document.body
+    )}
+    </>
   );
 }
 
@@ -1849,27 +1881,6 @@ export default function NodeAIAssistantCaseStudy() {
 
       <Divider label="Design" id="section-design" />
 
-      {/* ── DESIGN PHASE ── */}
-      <section className="max-w-[1200px] mx-auto px-5 sm:px-10 md:px-20 pb-14 md:pb-28">
-        <div className="flex flex-col gap-12">
-
-          <Section
-            eyebrow="UX Considerations"
-            heading="Designing for a teacher's first 30 seconds."
-            body="With research and key insights in hand, I focused on the decisions that would define a teacher's first impression — where the assistant lives, how it opens, and what they see before asking a question."
-          />
-
-          {/* Design iterate image container */}
-          <div>
-            <div className="rounded-[24px] overflow-hidden relative h-[500px] md:h-[380px] flex items-center justify-center p-8" style={{ background: 'rgba(220,232,248,0.45)' }}>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/case-studies/node-ai/design-iterate.png" alt="Design iteration" style={{ maxWidth: '100%', maxHeight: '100%', width: 'auto', height: 'auto', display: 'block' }} />
-            </div>
-          </div>
-
-        </div>
-      </section>
-
       {/* ── IDEATION: sections 1 & 2 share a sticky eyebrow; eyebrow releases at section 3 ── */}
       <div ref={ideationWrapperRef} style={{ position: 'relative' }}>
 
@@ -1884,7 +1895,7 @@ export default function NodeAIAssistantCaseStudy() {
           background: 'white',
         }}>
           <div className="max-w-[1200px] mx-auto px-5 sm:px-10 md:px-20" style={{ paddingTop: 0, paddingBottom: 16 }}>
-            <Eyebrow label="Ideation" />
+            <Eyebrow label="UX Considerations" />
           </div>
         </div>
 
@@ -2038,6 +2049,7 @@ export default function NodeAIAssistantCaseStudy() {
 
           <Section
             eyebrow="Key Takeaways"
+            heading=""
           />
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
