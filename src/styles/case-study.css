@@ -1,18 +1,39 @@
-/* Case Study Design System - Perry Wang Inspired */
+/* Case Study Design System */
 
-/* Colors */
+/*
+  Case Study Type System
+  — cs-hero: Hero title, single line (e.g. project name at top).
+  — cs-section-heading: Main section title (e.g. "Context & Problem").
+  — cs-heading: Large heading (e.g. 40px tier).
+  — cs-subheading: Card/section subhead (e.g. "My Role", "Overview").
+  — cs-body: Body paragraph.
+  — cs-body-bold: Emphasized body (e.g. role name, dates).
+  — cs-body-red: Body-sized red variant (e.g. problem card titles).
+  — cs-callout-header: Callout header (pullquote / challenge or highlight statement).
+  — cs-callout-label: Callout label (e.g. "HIGHLIGHTS", "THE CHALLENGE").
+  — cs-section-label: Section label (e.g. "CONTEXT", "THE PROBLEM", "RESEARCH PHASE").
+  — cs-overline: Uppercase overline/label (11px tier).
+  — cs-caption: Image/small caption.
+  — cs-pill-text: Pill/chip label (JetBrains Mono).
+  — cs-meta: Metadata, code, or secondary info (JetBrains Mono).
+  — cs-figure-number: Figure number label.
+  — cs-card-title: Card header title.
+*/
+
+/* Colors — Light Mode */
 :root {
-  --cs-background: rgb(38, 38, 38);
-  --cs-tile: rgb(48, 48, 48);
-  --cs-border: rgb(77, 77, 77);
-  --cs-text: rgba(255, 255, 255, 0.8);
-  --cs-text-secondary: rgba(255, 255, 255, 0.5);
+  --cs-background: rgb(255, 255, 255);
+  --cs-tile: rgb(245, 245, 245);
+  --cs-tile-hover: rgb(240, 240, 240);
+  --cs-border: rgb(220, 220, 220);
+  --cs-text: rgba(0, 0, 0, 0.72);
+  --cs-text-secondary: rgba(0, 0, 0, 0.42);
   --cs-primary: rgb(65, 56, 120);
-  --cs-primary-text: rgb(148, 133, 242);
+  --cs-primary-text: rgb(80, 60, 220);
   --cs-accent-blue: rgb(39, 180, 255);
   --cs-green: rgb(13, 186, 79);
   --cs-red: rgb(255, 61, 61);
-  --cs-white: rgb(255, 255, 255);
+  --cs-heading: rgb(17, 17, 17);
 }
 
 /* Case Study Container */
@@ -24,14 +45,14 @@
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* Typography - Perry Wang System */
+/* Typography */
 .cs-hero {
   font-family: 'Inter', sans-serif;
   font-weight: 500;
   font-size: 80px;
   line-height: 90%;
   letter-spacing: -2px;
-  color: var(--cs-white);
+  color: var(--cs-heading);
 }
 
 .cs-heading {
@@ -40,7 +61,7 @@
   font-size: 40px;
   line-height: 125%;
   letter-spacing: -0.1px;
-  color: var(--cs-white);
+  color: var(--cs-heading);
 }
 
 .cs-subheading {
@@ -49,7 +70,7 @@
   font-size: 24px;
   line-height: 125%;
   letter-spacing: 0.1px;
-  color: var(--cs-white);
+  color: var(--cs-heading);
 }
 
 .cs-body {
@@ -83,19 +104,48 @@
 .cs-caption {
   font-family: 'Inter', sans-serif;
   font-weight: 300;
-  font-size: 10px;
+  font-size: 14px;
   line-height: 140%;
   letter-spacing: 0.2px;
   color: var(--cs-text-secondary);
 }
 
-.cs-callout {
+.cs-callout-header {
+  font-family: 'Inter', sans-serif;
+  font-weight: 700;
+  font-size: 32px;
+  font-style: normal;
+  line-height: 38px;
+  letter-spacing: -0.8px;
+  color: var(--cs-heading);
+  text-align: center;
+}
+
+.cs-callout-label {
   font-family: 'Inter', sans-serif;
   font-weight: 500;
-  font-size: 18px;
-  line-height: 140%;
-  letter-spacing: 0.2px;
-  color: var(--cs-white);
+  font-size: 20px;
+  line-height: 24px;
+  letter-spacing: 2px;
+  color: var(--cs-text-secondary);
+}
+
+.cs-section-label {
+  font-family: 'Inter', sans-serif;
+  font-weight: 400;
+  font-size: 14px;
+  font-style: normal;
+  line-height: 20px;
+  color: var(--cs-text-secondary);
+}
+
+.cs-body-red {
+  font-family: 'Inter', sans-serif;
+  font-weight: 600;
+  font-size: 16px;
+  font-style: normal;
+  line-height: 24px;
+  color: #E03030;
 }
 
 .cs-meta {
@@ -122,7 +172,25 @@
   font-size: 14px;
   line-height: 100%;
   letter-spacing: 0;
-  color: var(--cs-white);
+  color: var(--cs-heading);
+}
+
+.cs-section-heading {
+  font-family: 'Inter', sans-serif;
+  font-weight: 700;
+  font-size: 56px;
+  line-height: 64px;
+  letter-spacing: -1px;
+  color: var(--cs-heading);
+}
+
+.cs-card-title {
+  font-family: 'Inter', sans-serif;
+  font-weight: 600;
+  font-size: 20px;
+  line-height: 26px;
+  letter-spacing: -0.3px;
+  color: var(--cs-heading);
 }
 
 /* Spacing */
@@ -149,13 +217,13 @@
 
 /* Pros/Cons */
 .cs-pros-card {
-  background-color: rgba(13, 186, 79, 0.1);
+  background-color: rgba(13, 186, 79, 0.07);
   border-radius: 24px;
   padding: 24px;
 }
 
 .cs-cons-card {
-  background-color: rgba(186, 13, 13, 0.1);
+  background-color: rgba(186, 13, 13, 0.07);
   border-radius: 24px;
   padding: 24px;
 }
@@ -166,7 +234,7 @@
   align-items: center;
   padding: 4px 12px;
   border-radius: 100px;
-  background-color: rgba(255, 255, 255, 0.1);
+  background-color: rgba(0, 0, 0, 0.06);
   font-family: 'JetBrains Mono', monospace;
   font-size: 10px;
   line-height: 14px;
@@ -175,8 +243,8 @@
 
 /* Divider */
 .cs-divider {
-  height: 4px;
-  background-color: var(--cs-tile);
+  height: 1px;
+  background-color: var(--cs-border);
   margin: 40px 0;
 }
 
@@ -193,6 +261,15 @@
   .cs-h1 {
     font-size: 40px;
     line-height: 48px;
+  }
+
+  .cs-section-heading {
+    font-size: 40px;
+    line-height: 48px;
+  }
+
+  .cs-hero {
+    font-size: 56px;
   }
 }
 
@@ -213,5 +290,15 @@
   .cs-h2 {
     font-size: 24px;
     line-height: 30px;
+  }
+
+  .cs-section-heading {
+    font-size: 32px;
+    line-height: 40px;
+  }
+
+  .cs-hero {
+    font-size: 40px;
+    line-height: 90%;
   }
 }

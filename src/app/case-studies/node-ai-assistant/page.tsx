@@ -1,321 +1,794 @@
 'use client';
 
-import { useState } from 'react';
-import Image from 'next/image';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
+import { AI_ASSISTANT_CSS, AI_ASSISTANT_HTML } from './ai-assistant-modal';
 import SmsIcon from '@mui/icons-material/Sms';
 import ForumIcon from '@mui/icons-material/Forum';
 import VerticalAlignTopIcon from '@mui/icons-material/VerticalAlignTop';
-import StreamIcon from '@mui/icons-material/Stream';
-import PsychologyIcon from '@mui/icons-material/Psychology';
-import ArticleIcon from '@mui/icons-material/Article';
 import PlaceIcon from '@mui/icons-material/Place';
 import ViewModuleIcon from '@mui/icons-material/ViewModule';
 import InboxIcon from '@mui/icons-material/Inbox';
 
-// Local asset paths
+// ── Asset paths ──────────────────────────────────────────────────────────────
 const assets = {
-  highlightsIcon: '/case-studies/node-ai/highlights-icon.png',
   accessingNodeAi: '/case-studies/node-ai/accessing-node-ai.gif',
-  uiComponents: '/case-studies/node-ai/ui-components.png',
   typicalChatInterface: '/case-studies/node-ai/typical-chat-interface.png',
-  challengeIcon: '/case-studies/node-ai/challenge-icon.png',
   chatgptTextOutput: '/case-studies/node-ai/chatgpt-text-output.gif',
   geminiTextOutput: '/case-studies/node-ai/gemini-text-output.gif',
   geminiLayout: '/case-studies/node-ai/gemini-layout.png',
   metaAiLayout: '/case-studies/node-ai/meta-ai-layout.png',
   claudePageBehavior: '/case-studies/node-ai/claude-page-behavior.gif',
   geminiPageBehavior: '/case-studies/node-ai/gemini-page-behavior.gif',
-  winningChoiceIcon: '/case-studies/node-ai/The-Winning-Choice.png',
+  openingChatInterface: '/case-studies/node-ai/GIFs/Opening%20Chat%20Interface.gif',
+  emptyStateExample: '/case-studies/node-ai/GIFs/Empty%20State%20Example%20Question.gif',
+  alwaysVisible: '/case-studies/node-ai/GIFs/Always%20Visible.gif',
+  ideationNavDrawerWireframe: '/case-studies/node-ai/ideation-nav-drawer-wireframe.png',
+  ideationNavDrawerComparison: '/case-studies/node-ai/ideation-nav-drawer-comparison.png',
+  ideationFabWireframe: '/case-studies/node-ai/ideation-fab-wireframe.png',
+  ideationFabComparison: '/case-studies/node-ai/ideation-fab-comparison.png',
+  ideationDisplayFullscreenWireframe: '/case-studies/node-ai/ideation-display-fullscreen-wireframe.png',
+  ideationDisplayFullscreenComparison: '/case-studies/node-ai/ideation-display-fullscreen-comparison.png',
+  ideationDisplayAnchoredWireframe: '/case-studies/node-ai/ideation-display-anchored-wireframe.png',
+  ideationDisplayAnchoredComparison: '/case-studies/node-ai/ideation-display-anchored-comparison.png',
+  ideationDisplaySplitWireframe: '/case-studies/node-ai/ideation-display-split-wireframe.png',
+  ideationDisplaySplitComparison: '/case-studies/node-ai/ideation-display-split-comparison.png',
+  ideationEmptyBlankWireframe: '/case-studies/node-ai/ideation-empty-blank-wireframe.png',
+  ideationEmptyBlankComparison: '/case-studies/node-ai/ideation-empty-blank-comparison.png',
+  ideationEmptyTilesWireframe: '/case-studies/node-ai/ideation-empty-tiles-wireframe.png',
+  ideationEmptyTilesComparison: '/case-studies/node-ai/ideation-empty-tiles-comparison.png',
+  ideationEmptyProactiveWireframe: '/case-studies/node-ai/ideation-empty-proactive-wireframe.png',
+  ideationEmptyProactiveComparison: '/case-studies/node-ai/ideation-empty-proactive-comparison.png',
+  finalDesignsHero: '/case-studies/node-ai/GIFs/final-designs-hero.gif',
+  emptyStateDesign: '/case-studies/node-ai/empty-state-design.png',
+  iPhoneMockup: '/case-studies/node-ai/iphone-mockup.png',
+  iMacMockup: '/case-studies/node-ai/imac-mockup.png',
 };
 
-// Section Indicator Component
-function SectionIndicator({ label }: { label: string }) {
+// ── Text scale (explicit, not relying on cs-* classes) ───────────────────────
+// Section heading:    30px semibold
+// Section body:       18px normal 180%
+// Card title:         17px semibold
+// Card body:          16px normal 175%
+// Caption:            13px normal #888
+// Eyebrow:            11px medium tracking-wide blue
+
+// ── Utility components ───────────────────────────────────────────────────────
+
+function StopPlayButton({ stopped, onClick }: { stopped: boolean; onClick: () => void }) {
+  const [hovered, setHovered] = useState(false);
   return (
-    <div className="flex items-center gap-2">
-      <div className="w-3 h-3 rounded-full bg-white shadow-[0px_1px_8px_1px_rgba(255,255,255,0.5)]" />
-      <span className="text-sm text-white/50 tracking-wide">{label}</span>
+    <div style={{ position: 'absolute', bottom: 10, right: 10, zIndex: 2 }}>
+      {/* Tooltip */}
+      <div style={{
+        position: 'absolute', bottom: 'calc(100% + 6px)', left: '50%', transform: 'translateX(-50%)',
+        background: 'rgba(0,0,0,0.75)', color: 'white',
+        fontSize: 11, fontWeight: 500, padding: '3px 8px', borderRadius: 5,
+        whiteSpace: 'nowrap', pointerEvents: 'none',
+        opacity: hovered ? 1 : 0, transition: 'opacity 0.15s ease',
+      }}>
+        {stopped ? 'Play' : 'Stop'}
+      </div>
+      <button
+        onClick={e => { e.stopPropagation(); onClick(); }}
+        onMouseEnter={() => setHovered(true)}
+        onMouseLeave={() => setHovered(false)}
+        style={{
+          width: 32, height: 32, borderRadius: '50%', flexShrink: 0,
+          background: hovered ? '#f0f0f0' : 'white',
+          border: '1px solid rgba(0,0,0,0.08)',
+          boxShadow: '0 1px 4px rgba(0,0,0,0.1)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          color: '#555', cursor: 'pointer',
+          transition: 'background 0.15s',
+        }}
+      >
+        {stopped
+          ? /* Play */ <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M3 2.2l6.5 3.8L3 9.8V2.2z" fill="currentColor"/></svg>
+          : /* Stop */ <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><rect x="2" y="2" width="8" height="8" rx="1.5" fill="currentColor"/></svg>
+        }
+      </button>
     </div>
   );
 }
 
-// Image Card Component
-function ImageCard({
-  src,
-  alt,
-  caption,
-  pillText,
+function Eyebrow({ label }: { label: string }) {
+  return (
+    <p className="text-[11px] font-medium tracking-[1.5px] uppercase text-[#27b4ff]">
+      {label}
+    </p>
+  );
+}
+
+function Section({
+  eyebrow,
+  heading,
+  body,
+  children,
 }: {
-  src: string;
-  alt: string;
-  caption: string;
-  pillText: string;
+  eyebrow?: string;
+  heading: string;
+  body?: string;
+  children?: React.ReactNode;
+}) {
+  return (
+    <div className="flex flex-col gap-10">
+      <div className="flex flex-col gap-4">
+        <div className="max-w-[720px]">
+          {eyebrow && <Eyebrow label={eyebrow} />}
+          <h2 className="text-[30px] font-semibold leading-[125%] tracking-[-0.5px] text-[#1a1a1a] mt-4">
+            {heading}
+          </h2>
+        </div>
+        {body && (
+          <p className="text-[18px] font-normal leading-[180%] text-[#555] max-w-[920px]">{body}</p>
+        )}
+      </div>
+      {children}
+    </div>
+  );
+}
+
+function Callout({
+  accentColor,
+  label,
+  heading,
+  body,
+  compactBody,
+}: {
+  accentColor: string;
+  label: string;
+  heading: string;
+  body?: string;
+  compactBody?: boolean;
+}) {
+  return (
+    <div
+      className="pl-6 flex flex-col gap-3 max-w-[760px] bg-white rounded-[16px] py-6 pr-6"
+      style={{ boxShadow: '0 2px 16px rgba(0,0,0,0.07)', borderLeft: `2px solid ${accentColor}` }}
+    >
+      <div className="flex flex-col gap-3 flex-1">
+        <p className="text-[11px] font-medium tracking-[1.5px] uppercase" style={{ color: accentColor }}>
+          {label}
+        </p>
+        <p className="text-[20px] font-semibold leading-[135%] text-[#1a1a1a]">{heading}</p>
+        {body && (
+          <p className={compactBody ? 'text-[14px] font-normal leading-[170%] text-[#666]' : 'text-[17px] font-normal leading-[175%] text-[#666]'}>{body}</p>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function DecisionPill({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="inline-flex self-start items-center gap-2 bg-[rgba(39,180,255,0.08)] border border-[rgba(39,180,255,0.2)] rounded-full px-4 py-2">
+      <div className="w-1.5 h-1.5 rounded-full bg-[#27b4ff] flex-shrink-0" />
+      <span className="text-[13px] font-medium text-[#27b4ff]">{children}</span>
+    </div>
+  );
+}
+
+// Visual container — light grey card with optional caption
+function VisualCard({
+  children,
+  caption,
+  pill,
+}: {
+  children: React.ReactNode;
+  caption?: string;
+  pill?: string;
 }) {
   return (
     <div>
-      {/* Gradient Card */}
-      <div className="rounded-[32px] bg-gradient-to-b from-[rgba(38,179,255,0.35)] to-[#181d1f] overflow-hidden">
-        <div className="p-[85px_80px]">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={src}
-            alt={alt}
-            className="w-full h-auto rounded-[12px]"
-          />
+      <div className="rounded-[24px] overflow-hidden" style={{ background: 'rgba(220,232,248,0.45)' }}>
+        {children}
+      </div>
+      {caption && (
+        <div className="flex items-center justify-center gap-4 mt-3">
+          <span className="text-[13px] text-[#999] text-center">{caption}</span>
+          {pill && (
+            <span className="cs-pill"><span className="cs-pill-text">{pill}</span></span>
+          )}
         </div>
-      </div>
-      {/* Caption */}
-      <div className="flex items-center justify-end gap-4 mt-2">
-        <span className="cs-caption">{caption}</span>
-        <span className="cs-pill">
-          <span className="cs-pill-text">{pillText}</span>
-        </span>
-      </div>
-    </div>
-  );
-}
-
-// Problem Card Component
-function ProblemCard({
-  icon,
-  title,
-  description,
-  position,
-}: {
-  icon: React.ReactNode;
-  title: string;
-  description: string;
-  position: 'top' | 'middle' | 'bottom';
-}) {
-  const roundedClass = position === 'top'
-    ? 'rounded-t-3xl'
-    : position === 'bottom'
-    ? 'rounded-b-3xl'
-    : '';
-
-  return (
-    <div className={`bg-[#303030] p-6 ${roundedClass}`}>
-      <div className="flex gap-4">
-        <div className="w-6 h-6 flex-shrink-0">{icon}</div>
-        <div>
-          <h4 className="text-base font-semibold text-[#ff3d3d] mb-2">{title}</h4>
-          <p className="cs-body">{description}</p>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// Objective Card Component - Matches Figma design with border, icon at top
-function ObjectiveCard({
-  iconSrc,
-  title,
-  description,
-}: {
-  iconSrc: string;
-  title: string;
-  description: string;
-}) {
-  return (
-    <div className="bg-[#262626] rounded-[24px] border-2 border-[#4d4d4d] p-6">
-      <div className="flex flex-col">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={iconSrc} alt="" className="w-10 h-10 mb-4" />
-        <h4 className="cs-subheading mb-2">{title}</h4>
-        <p className="cs-body">{description}</p>
-      </div>
-    </div>
-  );
-}
-
-// Pros/Cons Tag Component
-function Tag({ children, type }: { children: React.ReactNode; type: 'pro' | 'con' }) {
-  return (
-    <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm ${
-      type === 'pro' ? 'bg-[#27b4ff]/20 text-[#27b4ff]' : 'bg-[#ff3d3d]/20 text-[#ff3d3d]'
-    }`}>
-      {type === 'pro' ? (
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3" />
-        </svg>
-      ) : (
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3zm7-13h2.67A2.31 2.31 0 0 1 22 4v7a2.31 2.31 0 0 1-2.33 2H17" />
-        </svg>
       )}
-      {children}
-    </span>
+    </div>
   );
 }
 
-// API Card Component
-function ApiCard({
-  title,
-  subtitle,
-  pros,
-  cons,
-  prosSummary,
-  consSummary,
-}: {
-  title: string;
-  subtitle: string;
-  pros: string[];
-  cons: string[];
-  prosSummary: string;
-  consSummary: string;
+// ── IdeationViewer: image carousel with auto-advance dots (no lightbox) ───────
+function IdeationViewer({ items }: {
+  items: { src: string; alt: string; secondSrc?: string; secondAlt?: string; label: string; caption: string }[];
 }) {
+  const [current, setCurrent] = useState(0);
+  const [dotProgress, setDotProgress] = useState(0);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [inViewport, setInViewport] = useState(false);
+  const itemsRef = useRef(items);
+  itemsRef.current = items;
+  const DURATION = 20000;
+
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => setInViewport(entry.isIntersecting),
+      { threshold: 0.4 }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
+    if (!inViewport) { setDotProgress(0); return; }
+    const startTime = Date.now();
+    setDotProgress(0);
+    let rafId: number;
+    function tick() {
+      const p = Math.min(100, ((Date.now() - startTime) / DURATION) * 100);
+      setDotProgress(p);
+      if (p < 100) { rafId = requestAnimationFrame(tick); }
+      else { setCurrent(c => (c + 1) % itemsRef.current.length); }
+    }
+    rafId = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(rafId);
+  }, [current, inViewport]);
+
+  const item = items[current];
+
   return (
-    <div className="bg-[#303030] rounded-3xl p-8">
-      <div className="flex items-center gap-4 mb-6">
-        <div className="w-12 h-12 rounded-xl bg-[#27b4ff]/20 flex items-center justify-center">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#27b4ff" strokeWidth="2">
-            <rect x="3" y="3" width="7" height="7" />
-            <rect x="14" y="3" width="7" height="7" />
-            <rect x="14" y="14" width="7" height="7" />
-            <rect x="3" y="14" width="7" height="7" />
-          </svg>
-        </div>
-        <div>
-          <h4 className="text-xl font-semibold text-white">{title}</h4>
-          <p className="text-sm text-white/50">{subtitle}</p>
-        </div>
+    <div ref={containerRef}>
+      {/* Full-width container — taller on mobile for stacked layout, shorter on desktop for side-by-side */}
+      <div className="rounded-[24px] overflow-hidden relative h-[500px] md:h-[380px]" style={{ background: 'rgba(220,232,248,0.45)' }}>
+        {items.map((it, i) => (
+          <div
+            key={i}
+            className={`absolute inset-0 flex items-center justify-center p-8 gap-6 ${it.secondSrc ? 'flex-col md:flex-row' : ''}`}
+            style={{ opacity: i === current ? 1 : 0, transition: 'opacity 0.4s ease' }}
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={it.src} alt={it.alt}
+              className={it.secondSrc
+                ? 'max-h-[44%] md:max-h-full md:max-w-[52%] max-w-full w-auto h-auto block flex-shrink-0'
+                : 'max-h-full max-w-full w-auto h-auto block'
+              }
+            />
+            {it.secondSrc && (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={it.secondSrc} alt={it.secondAlt ?? ''}
+                className="max-h-[44%] md:max-h-full md:max-w-[44%] max-w-full w-auto h-auto block flex-shrink-0"
+              />
+            )}
+          </div>
+        ))}
+        {/* Arrows inside the container */}
+        <button
+          onClick={() => setCurrent(c => (c - 1 + items.length) % items.length)}
+          style={{ visibility: current > 0 ? 'visible' : 'hidden', position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)', width: 32, height: 32, borderRadius: '50%', background: 'white', border: '1px solid rgba(0,0,0,0.08)', boxShadow: '0 1px 4px rgba(0,0,0,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#555', cursor: 'pointer', zIndex: 2 }}
+        >
+          <svg width="13" height="13" viewBox="0 0 14 14" fill="none"><path d="M9 11L4 7l5-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+        </button>
+        <button
+          onClick={() => setCurrent(c => (c + 1) % items.length)}
+          style={{ visibility: current < items.length - 1 ? 'visible' : 'hidden', position: 'absolute', right: 16, top: '50%', transform: 'translateY(-50%)', width: 32, height: 32, borderRadius: '50%', background: 'white', border: '1px solid rgba(0,0,0,0.08)', boxShadow: '0 1px 4px rgba(0,0,0,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#555', cursor: 'pointer', zIndex: 2 }}
+        >
+          <svg width="13" height="13" viewBox="0 0 14 14" fill="none"><path d="M5 3l5 4-5 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+        </button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="space-y-4">
-          <h5 className="text-lg font-semibold text-white">Pros</h5>
-          <div className="flex flex-wrap gap-2">
-            {pros.map((pro, i) => (
-              <Tag key={i} type="pro">{pro}</Tag>
-            ))}
-          </div>
-          <p className="text-sm text-white/80">{prosSummary}</p>
-        </div>
-        <div className="space-y-4">
-          <h5 className="text-lg font-semibold text-white">Cons</h5>
-          <div className="flex flex-wrap gap-2">
-            {cons.map((con, i) => (
-              <Tag key={i} type="con">{con}</Tag>
-            ))}
-          </div>
-          <p className="text-sm text-white/80">{consSummary}</p>
+      {/* Label + progress dots */}
+      <div className="mt-3 flex flex-col items-center gap-2">
+        <p className="text-[13px] text-[#999]">{item.label}</p>
+        <div className="flex items-center gap-1.5">
+          {items.map((_, i) => (
+            <button key={i} onClick={() => setCurrent(i)} style={{ height: 5, borderRadius: 3, width: i === current ? 48 : 5, transition: 'width 0.25s', background: 'rgba(0,0,0,0.12)', border: 'none', cursor: 'pointer', padding: 0, position: 'relative', overflow: 'hidden', flexShrink: 0 }}>
+              {i === current && <div style={{ position: 'absolute', left: 0, top: 0, height: '100%', width: `${dotProgress}%`, background: '#27b4ff' }} />}
+            </button>
+          ))}
         </div>
       </div>
     </div>
   );
 }
 
-// Competitive Analysis Card Component
-function CompetitiveAnalysisCard({
-  title,
-  description,
-  whyItMatters,
-  leftImage,
-  leftCaption,
-  rightImage,
-  rightCaption,
-  isGif = false,
+// Side-by-side image comparison inside a VisualCard
+function ComparisonGrid({
+  left,
+  right,
 }: {
-  title: string;
-  description: string;
-  whyItMatters: string;
-  leftImage: string;
-  leftCaption: string;
-  rightImage: string;
-  rightCaption: string;
-  isGif?: boolean;
+  left: { src: string; alt: string; label: string; caption: string };
+  right: { src: string; alt: string; label: string; caption: string };
 }) {
   return (
-    <div className="bg-[#303030] rounded-3xl p-8">
-      <div className="flex items-center gap-4 mb-4">
-        <div className="w-10 h-10 rounded-xl bg-[#27b4ff]/20 flex items-center justify-center">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#27b4ff" strokeWidth="2">
-            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-          </svg>
-        </div>
-        <div>
-          <h4 className="text-xl font-semibold text-white">{title}</h4>
-          <p className="text-sm text-white/50">{description}</p>
-        </div>
-      </div>
-      <p className="text-base text-white/80 mb-6">
-        <strong className="text-white">Why it matters:</strong> {whyItMatters}
-      </p>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="rounded-2xl overflow-hidden bg-[#262626]">
+    <div>
+      <div className="grid grid-cols-2 gap-3 p-6">
+        <div className="rounded-xl overflow-hidden bg-white">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={leftImage} alt={leftCaption} className="w-full aspect-[4/3] object-cover" />
-          <div className="p-4 flex justify-between items-center">
-            <span className="text-sm text-white/50">{leftCaption}</span>
-            <span className="px-2 py-1 rounded-full bg-white/10 text-[10px] font-mono text-white/80">
-              {isGif ? 'GIF' : 'IMAGE'}
-            </span>
-          </div>
+          <img src={left.src} alt={left.alt} className="w-full h-auto block" />
         </div>
-        <div className="rounded-2xl overflow-hidden bg-[#262626]">
+        <div className="rounded-xl overflow-hidden bg-white">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={rightImage} alt={rightCaption} className="w-full aspect-[4/3] object-cover" />
-          <div className="p-4 flex justify-between items-center">
-            <span className="text-sm text-white/50">{rightCaption}</span>
-            <span className="px-2 py-1 rounded-full bg-white/10 text-[10px] font-mono text-white/80">
-              {isGif ? 'GIF' : 'IMAGE'}
-            </span>
-          </div>
+          <img src={right.src} alt={right.alt} className="w-full h-auto block" />
         </div>
       </div>
-    </div>
-  );
-}
-
-// Design Insight Card Component
-function DesignInsightCard({
-  icon,
-  title,
-  description,
-  requirement,
-}: {
-  icon: React.ReactNode;
-  title: string;
-  description: string;
-  requirement: string;
-}) {
-  return (
-    <div className="bg-[#303030] rounded-2xl p-6">
-      <div className="flex items-start gap-4">
-        <div className="w-10 h-10 rounded-xl bg-[#27b4ff]/20 flex items-center justify-center flex-shrink-0">
-          {icon}
+      <div className="grid grid-cols-2 gap-3 px-6 pb-6">
+        <div>
+          <p className="text-[14px] font-semibold text-[#1a1a1a]">{left.label}</p>
+          <p className="text-[14px] font-normal leading-[165%] text-[#777] mt-0.5">{left.caption}</p>
         </div>
         <div>
-          <h4 className="text-lg font-semibold text-white mb-2">{title}</h4>
-          <p className="text-base text-white/80 mb-2">{description}</p>
-          <p className="text-sm text-white/50">Design Requirement: {requirement}</p>
+          <p className="text-[14px] font-semibold text-[#1a1a1a]">{right.label}</p>
+          <p className="text-[14px] font-normal leading-[165%] text-[#777] mt-0.5">{right.caption}</p>
         </div>
       </div>
     </div>
   );
 }
 
-// Number Sticker SVG - each number has its own pill shape and path from the reference SVGs
+// ── MediaViewer: full-width media viewer with auto-advance, lightbox, progress dots ──
+const MEDIA_ADVANCE_MS: Record<'GIF' | 'Image', number> = { GIF: 20000, Image: 20000 };
+
+function MediaViewer({
+  items,
+  constrained = true,
+  active = true,
+}: {
+  items: { src: string; alt: string; label: string; caption: string; type: 'GIF' | 'Image' }[];
+  constrained?: boolean;
+  /** When false (e.g. card is behind in deck), timer pauses and resets. */
+  active?: boolean;
+}) {
+  const [current, setCurrent] = useState(0);
+  const [dotProgress, setDotProgress] = useState(0);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [gifStopped, setGifStopped] = useState(false);
+  const [mounted, setMounted] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [inViewport, setInViewport] = useState(false);
+  const itemsRef = useRef(items);
+  itemsRef.current = items;
+  const gifImgRef = useRef<HTMLImageElement | null>(null);
+  const frame0CanvasRef = useRef<HTMLCanvasElement | null>(null);
+  const savedProgressRef = useRef(0);
+
+  // Capture frame 0 when a GIF loads (before animation starts).
+  // Draw scaled+centered into the canvas so it matches objectFit:contain.
+  function handleGifLoad(img: HTMLImageElement) {
+    const canvas = frame0CanvasRef.current;
+    if (!canvas || img.naturalWidth === 0) return;
+    const parent = canvas.parentElement;
+    const cw = parent?.clientWidth || img.naturalWidth;
+    const ch = parent?.clientHeight || img.naturalHeight;
+    canvas.width = cw;
+    canvas.height = ch;
+    const ctx = canvas.getContext('2d');
+    if (ctx) {
+      const scale = Math.min(cw / img.naturalWidth, ch / img.naturalHeight);
+      const w = img.naturalWidth * scale;
+      const h = img.naturalHeight * scale;
+      ctx.drawImage(img, (cw - w) / 2, (ch - h) / 2, w, h);
+    }
+  }
+
+  function closeLightbox() { setLightboxOpen(false); }
+
+  // Mark as client-mounted so createPortal can safely target document.body
+  useEffect(() => { setMounted(true); }, []);
+
+  // Track viewport visibility
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => setInViewport(entry.isIntersecting),
+      { threshold: 0.4 }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
+  // Reset GIF stopped state when switching slides; restore src in case it was cleared
+  useEffect(() => {
+    setGifStopped(false);
+    savedProgressRef.current = 0;
+    const item = itemsRef.current[current];
+    if (item?.type === 'GIF' && gifImgRef.current) {
+      gifImgRef.current.src = item.src;
+    }
+  }, [current]);
+
+  // ── Auto-advance timer ────────────────────────────────────────────────────
+  const shouldAdvance = inViewport && active && !lightboxOpen && !gifStopped;
+
+  useEffect(() => {
+    if (!shouldAdvance) return; // stop RAF but keep savedProgressRef as-is
+    const duration = MEDIA_ADVANCE_MS[itemsRef.current[current].type];
+    const startP = savedProgressRef.current;
+    const remaining = duration * (1 - startP / 100);
+    const startTime = Date.now();
+    let rafId: number;
+    function tick() {
+      const p = Math.min(100, startP + ((Date.now() - startTime) / remaining) * (100 - startP));
+      savedProgressRef.current = p;
+      setDotProgress(p);
+      if (p < 100) { rafId = requestAnimationFrame(tick); }
+      else { savedProgressRef.current = 0; setCurrent(c => (c + 1) % itemsRef.current.length); }
+    }
+    rafId = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(rafId);
+  }, [current, shouldAdvance]);
+
+  const item = items[current];
+  const maxH = constrained ? 'min(460px, calc(100vh - 500px))' : '460px';
+
+  return (
+    <div ref={containerRef}>
+      {/* Row: left-arrow | image (clickable → lightbox) | right-arrow */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+
+        {/* Left arrow */}
+        <button
+          onClick={() => setCurrent(c => (c - 1 + items.length) % items.length)}
+          style={{
+            visibility: current > 0 ? 'visible' : 'hidden',
+            width: 32, height: 32, borderRadius: '50%', flexShrink: 0,
+            border: '1px solid rgba(0,0,0,0.08)',
+            boxShadow: '0 1px 4px rgba(0,0,0,0.1)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            color: '#555', cursor: 'pointer', transition: 'background 0.15s',
+          }}
+          className="bg-white hover:bg-[#f0f0f0]"
+        >
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+            <path d="M9 11L4 7l5-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+        </button>
+
+        {/* Image container — entire area is click-to-expand with zoom-in cursor */}
+        <div
+          role="button"
+          tabIndex={0}
+          onClick={() => setLightboxOpen(true)}
+          onKeyDown={e => e.key === 'Enter' && setLightboxOpen(true)}
+          style={{
+            flex: 1, position: 'relative', aspectRatio: '16/9',
+            maxHeight: maxH, minHeight: constrained ? 160 : 0,
+            borderRadius: 16, overflow: 'hidden',
+            background: 'rgba(220,232,248,0.45)',
+            cursor: 'zoom-in',
+          }}
+        >
+          {items.map((it, i) => (
+            <div key={i} style={{
+              position: 'absolute', inset: 0,
+              opacity: i === current ? 1 : 0, transition: 'opacity 0.3s ease',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                ref={i === current && it.type === 'GIF' ? gifImgRef : undefined}
+                src={it.src} alt={it.alt}
+                onLoad={it.type === 'GIF' && i === current ? e => handleGifLoad(e.currentTarget) : undefined}
+                style={{
+                  width: '100%', height: '100%', objectFit: 'contain', pointerEvents: 'none', userSelect: 'none',
+                  display: gifStopped && i === current && it.type === 'GIF' ? 'none' : undefined,
+                }}
+              />
+            </div>
+          ))}
+
+          {/* Frame 0 canvas — shown when stopped, hidden when playing */}
+          {item.type === 'GIF' && (
+            <canvas
+              ref={frame0CanvasRef}
+              style={{
+                position: 'absolute', inset: 0, width: '100%', height: '100%',
+                pointerEvents: 'none',
+                display: gifStopped ? 'block' : 'none',
+              }}
+            />
+          )}
+
+          {/* Media type badge */}
+          <div className="absolute top-2.5 left-2.5 px-2 py-0.5 rounded-md text-[11px] font-medium tracking-wide pointer-events-none" style={{ background: 'rgba(0,0,0,0.5)', color: 'white' }}>
+            {item.type}
+          </div>
+
+          {/* GIF stop/play button */}
+          {item.type === 'GIF' && (
+            <StopPlayButton
+              stopped={gifStopped}
+              onClick={() => {
+                if (!gifStopped) {
+                  if (gifImgRef.current) gifImgRef.current.src = '';
+                  savedProgressRef.current = 0;
+                  setDotProgress(0);
+                  setGifStopped(true);
+                } else {
+                  if (gifImgRef.current) gifImgRef.current.src = item.src;
+                  setGifStopped(false);
+                }
+              }}
+            />
+          )}
+        </div>
+
+        {/* Right arrow */}
+        <button
+          onClick={() => setCurrent(c => (c + 1) % items.length)}
+          style={{
+            visibility: current < items.length - 1 ? 'visible' : 'hidden',
+            width: 32, height: 32, borderRadius: '50%', flexShrink: 0,
+            border: '1px solid rgba(0,0,0,0.08)',
+            boxShadow: '0 1px 4px rgba(0,0,0,0.1)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            color: '#555', cursor: 'pointer', transition: 'background 0.15s',
+          }}
+          className="bg-white hover:bg-[#f0f0f0]"
+        >
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+            <path d="M5 3l5 4-5 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+        </button>
+      </div>
+
+      {/* Caption */}
+      <div className="mt-3 flex flex-col gap-0.5 text-center">
+        <p className="text-[13px] font-semibold text-[#1a1a1a]">{item.label}</p>
+        <p className="text-[13px] text-[#888] leading-[160%]">{item.caption}</p>
+      </div>
+
+      {/* Progress-bar dots */}
+      {items.length > 1 && (
+        <div className="flex justify-center items-center gap-1.5 mt-3">
+          {items.map((_, i) => (
+            <button
+              key={i}
+              onClick={() => setCurrent(i)}
+              style={{
+                height: 5, borderRadius: 3, flexShrink: 0,
+                width: i === current ? 52 : 5,
+                transition: 'width 0.25s',
+                background: 'rgba(0,0,0,0.12)',
+                border: 'none', cursor: 'pointer', padding: 0,
+                position: 'relative', overflow: 'hidden',
+              }}
+            >
+              {i === current && (
+                <div style={{ position: 'absolute', left: 0, top: 0, height: '100%', width: `${dotProgress}%`, background: '#27b4ff' }} />
+              )}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* ── Lightbox ──────────────────────────────────────────────────────────── */}
+      {lightboxOpen && mounted && createPortal(
+        /* Outer overlay: zoom-out cursor + click-outside-to-close */
+        <div
+          onClick={() => closeLightbox()}
+          style={{
+            position: 'fixed', inset: 0, zIndex: 9999,
+            background: 'rgba(8,8,8,0.92)',
+            display: 'flex', flexDirection: 'column',
+            alignItems: 'center', justifyContent: 'center',
+            padding: '40px 32px',
+            cursor: 'zoom-out',
+          }}
+        >
+          {/* Close button */}
+          <button
+            onClick={() => closeLightbox()}
+            style={{
+              position: 'absolute', top: 20, right: 20,
+              width: 36, height: 36, borderRadius: '50%',
+              background: 'rgba(255,255,255,0.1)', border: 'none',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              color: 'white', cursor: 'pointer', transition: 'background 0.15s',
+            }}
+            className="hover:bg-white/20"
+          >
+            <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
+              <path d="M11.5 3.5l-8 8M3.5 3.5l8 8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+            </svg>
+          </button>
+
+          {/* Content panel — click inside does NOT close */}
+          <div
+            onClick={e => e.stopPropagation()}
+            style={{ maxWidth: 'min(88vw, 1280px)', width: '100%', cursor: 'default' }}
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={item.src} alt={item.alt}
+              style={{ width: '100%', maxHeight: '74vh', objectFit: 'contain', borderRadius: 14, display: 'block' }}
+            />
+
+            {/* Caption + navigation row */}
+            <div style={{ marginTop: 22, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 24 }}>
+              {items.length > 1 && (
+                <button
+                  onClick={() => setCurrent(c => (c - 1 + items.length) % items.length)}
+                  style={{
+                    visibility: current > 0 ? 'visible' : 'hidden',
+                    width: 34, height: 34, borderRadius: '50%', flexShrink: 0,
+                    background: 'rgba(255,255,255,0.1)', border: 'none',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    color: 'white', cursor: 'pointer', transition: 'background 0.15s',
+                  }}
+                  className="hover:bg-white/20"
+                >
+                  <svg width="13" height="13" viewBox="0 0 14 14" fill="none">
+                    <path d="M9 11L4 7l5-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                </button>
+              )}
+
+              <div style={{ textAlign: 'center' }}>
+                <p style={{ color: 'white', fontWeight: 600, fontSize: 15, margin: 0 }}>{item.label}</p>
+                <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: 13, marginTop: 5, lineHeight: 1.6 }}>{item.caption}</p>
+                {items.length > 1 && (
+                  <p style={{ color: 'rgba(255,255,255,0.25)', fontSize: 12, marginTop: 8 }}>{current + 1} / {items.length}</p>
+                )}
+              </div>
+
+              {items.length > 1 && (
+                <button
+                  onClick={() => setCurrent(c => (c + 1) % items.length)}
+                  style={{
+                    visibility: current < items.length - 1 ? 'visible' : 'hidden',
+                    width: 34, height: 34, borderRadius: '50%', flexShrink: 0,
+                    background: 'rgba(255,255,255,0.1)', border: 'none',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    color: 'white', cursor: 'pointer', transition: 'background 0.15s',
+                  }}
+                  className="hover:bg-white/20"
+                >
+                  <svg width="13" height="13" viewBox="0 0 14 14" fill="none">
+                    <path d="M5 3l5 4-5 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                </button>
+              )}
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+    </div>
+  );
+}
+
+// ── Hero Illustration — AI assistant modal inside a light container ───────────
+function HeroIllustration() {
+  return (
+    // Outer container — frosted tint so page background bleeds through
+    <div className="w-full rounded-[24px] flex items-center justify-center py-11 px-8" style={{ background: 'rgba(220,232,248,0.45)', backdropFilter: 'blur(2px)', pointerEvents: 'none', userSelect: 'none', cursor: 'default' }}>
+      {/* Modal — max 725px, white bg + shadow applied via CSS override */}
+      <div className="w-full max-w-[725px]">
+        {/* eslint-disable-next-line react/no-danger */}
+        <style dangerouslySetInnerHTML={{ __html: AI_ASSISTANT_CSS }} />
+        {/* eslint-disable-next-line react/no-danger */}
+        <div dangerouslySetInnerHTML={{ __html: AI_ASSISTANT_HTML }} />
+      </div>
+    </div>
+  );
+}
+
+// ── ChatbotFlowDiagram ───────────────────────────────────────────────────────
+function ChatbotFlowDiagram() {
+  return (
+    <svg viewBox="0 0 620 230" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full max-w-[620px]">
+      {/* Node 1: User question */}
+      <rect x="10" y="80" width="116" height="50" rx="12" fill="#F0F0F0" stroke="#DEDEDE" strokeWidth="1.5"/>
+      <text x="68" y="101" textAnchor="middle" fontSize="11" fill="#555" fontFamily="Inter, sans-serif" fontWeight="400">User question</text>
+      <text x="68" y="117" textAnchor="middle" fontSize="10" fill="#888" fontFamily="Inter, sans-serif">&quot;How do I log in?&quot;</text>
+      {/* Arrow 1 */}
+      <line x1="126" y1="105" x2="170" y2="105" stroke="#CACACA" strokeWidth="1.5" strokeDasharray="4 2"/>
+      <polygon points="170,100 180,105 170,110" fill="#CACACA"/>
+      {/* Node 2: Decision */}
+      <rect x="180" y="77" width="118" height="56" rx="12" fill="#EEF6FF" stroke="#B8D8F8" strokeWidth="1.5"/>
+      <text x="239" y="101" textAnchor="middle" fontSize="11" fill="#3A7EC0" fontFamily="Inter, sans-serif" fontWeight="500">Is it in the</text>
+      <text x="239" y="117" textAnchor="middle" fontSize="11" fill="#3A7EC0" fontFamily="Inter, sans-serif" fontWeight="500">decision tree?</text>
+      {/* Down arrow: YES */}
+      <line x1="239" y1="133" x2="239" y2="170" stroke="#CACACA" strokeWidth="1.5" strokeDasharray="4 2"/>
+      <polygon points="234,170 239,180 244,170" fill="#CACACA"/>
+      <text x="239" y="158" textAnchor="middle" fontSize="9.5" fill="#27B4FF" fontFamily="Inter, sans-serif" fontWeight="500">YES</text>
+      {/* Scripted reply — pushed down */}
+      <rect x="189" y="180" width="100" height="36" rx="10" fill="#EAFAF1" stroke="#A8DFBC" strokeWidth="1.5"/>
+      <text x="239" y="203" textAnchor="middle" fontSize="10.5" fill="#2A8A50" fontFamily="Inter, sans-serif" fontWeight="400">Scripted reply ✓</text>
+      {/* Arrow NO */}
+      <line x1="298" y1="105" x2="348" y2="105" stroke="#CACACA" strokeWidth="1.5" strokeDasharray="4 2"/>
+      <polygon points="348,100 358,105 348,110" fill="#CACACA"/>
+      <text x="323" y="96" textAnchor="middle" fontSize="9.5" fill="#E03030" fontFamily="Inter, sans-serif" fontWeight="500">NO</text>
+      {/* Node 3: Input not recognized */}
+      <rect x="358" y="77" width="118" height="56" rx="12" fill="#FFF3F3" stroke="#F5C0C0" strokeWidth="1.5"/>
+      <text x="417" y="101" textAnchor="middle" fontSize="11" fill="#C03030" fontFamily="Inter, sans-serif" fontWeight="500">Input not</text>
+      <text x="417" y="117" textAnchor="middle" fontSize="11" fill="#C03030" fontFamily="Inter, sans-serif" fontWeight="500">recognized</text>
+      {/* Arrow 3 */}
+      <line x1="476" y1="105" x2="520" y2="105" stroke="#CACACA" strokeWidth="1.5" strokeDasharray="4 2"/>
+      <polygon points="520,100 530,105 520,110" fill="#CACACA"/>
+      {/* Node 4: Stuck */}
+      <rect x="530" y="80" width="72" height="50" rx="12" fill="#F5F5F5" stroke="#DEDEDE" strokeWidth="1.5"/>
+      <text x="566" y="103" textAnchor="middle" fontSize="18" fill="#AAAAAA" fontFamily="Inter, sans-serif">?</text>
+      <text x="566" y="119" textAnchor="middle" fontSize="9" fill="#AAAAAA" fontFamily="Inter, sans-serif">stuck</text>
+    </svg>
+  );
+}
+
+// ── APIComparisonDiagram ─────────────────────────────────────────────────────
+function APIComparisonDiagram() {
+  return (
+    <svg viewBox="0 0 560 220" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full max-w-[560px]">
+      <text x="110" y="18" textAnchor="middle" fontSize="11" fill="#888" fontFamily="Inter, sans-serif" fontWeight="500" letterSpacing="1">RULE-BASED</text>
+      <rect x="62" y="26" width="96" height="36" rx="9" fill="#F3F4F6" stroke="#D1D5DB" strokeWidth="1.5"/>
+      <text x="110" y="49" textAnchor="middle" fontSize="10" fill="#555" fontFamily="Inter, sans-serif">Input</text>
+      <line x1="110" y1="62" x2="110" y2="78" stroke="#C8C8C8" strokeWidth="1.5"/>
+      <line x1="110" y1="78" x2="44" y2="78" stroke="#C8C8C8" strokeWidth="1.5"/>
+      <line x1="110" y1="78" x2="176" y2="78" stroke="#C8C8C8" strokeWidth="1.5"/>
+      <line x1="44" y1="78" x2="44" y2="92" stroke="#C8C8C8" strokeWidth="1.5"/>
+      <line x1="110" y1="78" x2="110" y2="92" stroke="#C8C8C8" strokeWidth="1.5"/>
+      <line x1="176" y1="78" x2="176" y2="92" stroke="#C8C8C8" strokeWidth="1.5"/>
+      {[14, 80, 146].map((x, i) => (
+        <g key={i}>
+          <rect x={x} y="92" width="60" height="28" rx="7" fill={i === 1 ? '#EAFAF1' : '#F9FAFB'} stroke={i === 1 ? '#A8DFBC' : '#D1D5DB'} strokeWidth="1.4"/>
+          <text x={x + 30} y="111" textAnchor="middle" fontSize="9.5" fill={i === 1 ? '#2A8A50' : '#9CA3AF'} fontFamily="Inter, sans-serif">
+            {i === 1 ? 'Match ✓' : '???'}
+          </text>
+        </g>
+      ))}
+      <line x1="110" y1="120" x2="110" y2="134" stroke="#C8C8C8" strokeWidth="1.3"/>
+      <line x1="110" y1="134" x2="80" y2="134" stroke="#C8C8C8" strokeWidth="1.3"/>
+      <line x1="110" y1="134" x2="140" y2="134" stroke="#C8C8C8" strokeWidth="1.3"/>
+      <line x1="80" y1="134" x2="80" y2="144" stroke="#C8C8C8" strokeWidth="1.3"/>
+      <line x1="140" y1="134" x2="140" y2="144" stroke="#C8C8C8" strokeWidth="1.3"/>
+      {[55, 115].map((x, i) => (
+        <rect key={i} x={x} y="144" width="50" height="24" rx="6" fill="#F9FAFB" stroke="#D1D5DB" strokeWidth="1.3"/>
+      ))}
+      <text x="110" y="186" textAnchor="middle" fontSize="10" fill="#9CA3AF" fontFamily="Inter, sans-serif">Rigid decision paths</text>
+      <text x="110" y="200" textAnchor="middle" fontSize="10" fill="#9CA3AF" fontFamily="Inter, sans-serif">Limited to known inputs</text>
+      <line x1="270" y1="10" x2="270" y2="210" stroke="#E5E7EB" strokeWidth="1.5" strokeDasharray="4 3"/>
+      <text x="270" y="214" textAnchor="middle" fontSize="9" fill="#C0C0C0" fontFamily="Inter, sans-serif">VS</text>
+      <text x="415" y="18" textAnchor="middle" fontSize="11" fill="#27B4FF" fontFamily="Inter, sans-serif" fontWeight="500" letterSpacing="1">LLM API</text>
+      <circle cx="415" cy="110" r="32" fill="#EEF9FF" stroke="#B0E0FF" strokeWidth="1.8"/>
+      <text x="415" y="106" textAnchor="middle" fontSize="10" fill="#27B4FF" fontFamily="Inter, sans-serif" fontWeight="600">LLM</text>
+      <text x="415" y="120" textAnchor="middle" fontSize="9" fill="#60BFEF" fontFamily="Inter, sans-serif">model</text>
+      {[
+        { cx: 310, cy: 60, label: 'Query A', color: '#6366F1', bg: '#EEF2FF', border: '#C7D2FE' },
+        { cx: 310, cy: 110, label: 'Query B', color: '#8B5CF6', bg: '#F5F3FF', border: '#DDD6FE' },
+        { cx: 310, cy: 160, label: 'Query C', color: '#3B82F6', bg: '#EFF6FF', border: '#BFDBFE' },
+        { cx: 520, cy: 60, label: 'Reply A', color: '#10B981', bg: '#ECFDF5', border: '#A7F3D0' },
+        { cx: 520, cy: 110, label: 'Reply B', color: '#059669', bg: '#ECFDF5', border: '#A7F3D0' },
+        { cx: 520, cy: 160, label: 'Reply C', color: '#34D399', bg: '#ECFDF5', border: '#A7F3D0' },
+      ].map(({ cx, cy, label, color, bg, border }, i) => (
+        <g key={i}>
+          <line x1={cx < 415 ? cx + 36 : cx - 36} y1={cy} x2={cx < 415 ? 383 : 447} y2={110 + (cy - 110) * 0.6} stroke={border} strokeWidth="1.4"/>
+          <rect x={cx - 28} y={cy - 14} width="56" height="28" rx="8" fill={bg} stroke={border} strokeWidth="1.4"/>
+          <text x={cx} y={cy + 4} textAnchor="middle" fontSize="9.5" fill={color} fontFamily="Inter, sans-serif" fontWeight="500">{label}</text>
+        </g>
+      ))}
+      <text x="415" y="186" textAnchor="middle" fontSize="10" fill="#60BFEF" fontFamily="Inter, sans-serif">Understands any input</text>
+      <text x="415" y="200" textAnchor="middle" fontSize="10" fill="#60BFEF" fontFamily="Inter, sans-serif">Generates contextual responses</text>
+    </svg>
+  );
+}
+
+// ── NumberSticker ────────────────────────────────────────────────────────────
 const numberStickers = {
   1: {
-    pillPath:
-      'M35.3331 11.4413C38.8347 9.25994 43.4324 8.65749 47.548 10.6639C51.946 12.8083 54.4212 17.2945 54.1984 22.1073L54.1974 22.1141C54.0885 24.4247 54.0489 27.2687 54.0489 30.2205V46.9569C59.9347 49.4602 61.9595 55.4914 61.006 60.2713C59.9678 65.475 55.4484 69.9625 49.0607 70.0028L49.0616 70.0038C47.3378 70.0173 37.2553 70.0306 32.1193 70.0174H32.1085C25.4422 69.9922 21.1276 65.0658 20.1612 60.1336C19.2048 55.2509 21.3367 49.2412 27.2423 46.7918V39.9539C23.9269 38.7918 21.2912 36.199 20.0558 32.9461C17.9574 27.4206 20.1913 21.5256 25.0216 18.2498C29.6521 15.1101 32.2783 13.3525 35.3194 11.45L35.3263 11.4461L35.3331 11.4413ZM51.673 56.1346C51.7238 56.2025 51.7716 56.2721 51.8155 56.3436C51.7276 56.2004 51.6257 56.0639 51.5099 55.9364L51.673 56.1346ZM47.6193 53.9891C47.7084 54.0367 47.8004 54.0842 47.8956 54.1317L47.8946 54.1307C47.7995 54.0833 47.7074 54.0357 47.6183 53.9881L47.6193 53.9891ZM36.2384 32.5789C36.2352 32.4658 36.2295 32.3588 36.2228 32.2577C36.2362 32.4599 36.2423 32.6857 36.2423 32.9364L36.2384 32.5789ZM30.0724 25.6981C29.8573 25.8439 29.6639 25.9974 29.4903 26.1561C29.23 26.3942 29.0146 26.6444 28.8419 26.9022C28.7268 27.074 28.6306 27.2491 28.5519 27.4256C28.8275 26.8079 29.3198 26.2085 30.0724 25.6981ZM39.0226 19.7538C38.6686 19.9786 38.3158 20.2044 37.9591 20.4344L39.0226 19.7538C39.3764 19.529 39.731 19.3057 40.0919 19.0799L39.0226 19.7538ZM42.5919 18.4637C42.6543 18.4708 42.7162 18.4796 42.7775 18.4901C42.6456 18.4675 42.511 18.4527 42.3741 18.4461L42.5919 18.4637Z',
-    numberPath:
-      'M32.1426 61.0171C28.6489 61.0039 27.6074 56.0732 31.0352 54.979C35.5571 53.542 36.2427 52.8828 36.2427 48.4663V32.936C36.2427 30.9321 35.8604 30.5234 34.3443 30.9189C33.7114 31.0903 33.2237 31.2617 31.8789 31.5386C28.6358 32.2241 26.6319 28.0317 30.0728 25.6982C34.7002 22.5605 37.2051 20.8862 40.0923 19.0801C42.5049 17.5771 45.3394 18.8428 45.2075 21.6904C45.0889 24.2085 45.0493 27.2144 45.0493 30.2202V48.4399C45.0493 52.6982 45.814 53.4365 50.3755 55.1768C53.3682 56.3105 52.6563 60.9907 48.9912 61.0039C47.3169 61.0171 37.271 61.0303 32.1426 61.0171Z',
+    pillPath: 'M35.3331 11.4413C38.8347 9.25994 43.4324 8.65749 47.548 10.6639C51.946 12.8083 54.4212 17.2945 54.1984 22.1073L54.1974 22.1141C54.0885 24.4247 54.0489 27.2687 54.0489 30.2205V46.9569C59.9347 49.4602 61.9595 55.4914 61.006 60.2713C59.9678 65.475 55.4484 69.9625 49.0607 70.0028L49.0616 70.0038C47.3378 70.0173 37.2553 70.0306 32.1193 70.0174H32.1085C25.4422 69.9922 21.1276 65.0658 20.1612 60.1336C19.2048 55.2509 21.3367 49.2412 27.2423 46.7918V39.9539C23.9269 38.7918 21.2912 36.199 20.0558 32.9461C17.9574 27.4206 20.1913 21.5256 25.0216 18.2498C29.6521 15.1101 32.2783 13.3525 35.3194 11.45L35.3263 11.4461L35.3331 11.4413Z',
+    numberPath: 'M32.1426 61.0171C28.6489 61.0039 27.6074 56.0732 31.0352 54.979C35.5571 53.542 36.2427 52.8828 36.2427 48.4663V32.936C36.2427 30.9321 35.8604 30.5234 34.3443 30.9189C33.7114 31.0903 33.2237 31.2617 31.8789 31.5386C28.6358 32.2241 26.6319 28.0317 30.0728 25.6982C34.7002 22.5605 37.2051 20.8862 40.0923 19.0801C42.5049 17.5771 45.3394 18.8428 45.2075 21.6904C45.0889 24.2085 45.0493 27.2144 45.0493 30.2202V48.4399C45.0493 52.6982 45.814 53.4365 50.3755 55.1768C53.3682 56.3105 52.6563 60.9907 48.9912 61.0039C47.3169 61.0171 37.271 61.0303 32.1426 61.0171Z',
     filter: { x: '14.7668', y: '4.94012', width: '50.9646', height: '69.5827' },
   },
   2: {
-    pillPath:
-      'M39.3682 9.35449C51.6451 9.35449 60.0098 18.9846 60.0098 30.1152C60.0097 33.8905 59.0387 37.5539 57.1465 41.3438C61.3461 44.1098 63.4085 49.2314 62.3086 54.4688L62.3067 54.4775C61.8995 56.4068 61.2456 58.5684 60.6387 60.2803L60.6377 60.2822C59.9499 62.2207 58.6743 64.9915 55.9473 67.1338C53.102 69.3688 49.8837 69.9931 47.1465 70.0293C43.0703 70.0828 34.8354 70.1231 28.3223 70.0293C23.3407 69.9579 18.7356 66.9175 17.0196 61.9639C15.2609 56.8868 17.1453 51.9113 20.3516 48.5996L20.3545 48.5967C23.0561 45.8093 25.2095 43.4702 26.9268 41.501C26.6207 41.4262 26.3162 41.3418 26.0157 41.2422C20.2874 39.3444 16.5918 33.3449 18.2041 26.7207L18.2071 26.7109L18.209 26.7012C20.9173 15.6819 29.8143 9.35452 39.3682 9.35449ZM47.0274 61.0303C46.0222 61.0435 44.7592 61.0557 43.3301 61.0654L47.0274 61.0303C47.1208 61.029 47.2136 61.0271 47.3037 61.0234L47.0274 61.0303ZM38.5918 52.0361C38.657 52.2224 38.7873 52.3746 38.9678 52.4805C38.8777 52.4275 38.8005 52.3627 38.7373 52.2881C38.6742 52.2135 38.6244 52.1292 38.5918 52.0361ZM39.0908 50.6152C39.3788 50.3042 39.6612 49.9972 39.9366 49.6943L39.0908 50.6152ZM47.3535 40.3555C46.4999 41.6804 45.4721 43.107 44.2442 44.6562L44.8418 43.8916C45.81 42.6346 46.6423 41.4594 47.3535 40.3555ZM48.835 37.835C48.7297 38.0348 48.621 38.2376 48.5069 38.4424C48.7353 38.0327 48.9453 37.6327 49.1387 37.2422L48.835 37.835ZM50.6992 32.9453C50.6275 33.2753 50.5428 33.6114 50.4434 33.9541L50.5821 33.4453C50.6247 33.2775 50.6634 33.1101 50.6992 32.9453ZM50.8096 27.833C50.8381 27.9941 50.8653 28.156 50.8877 28.3193C50.968 28.9045 51.0088 29.5045 51.0088 30.1152C51.0088 29.5047 50.969 28.9053 50.8887 28.3203C50.8662 28.1566 50.8381 27.9944 50.8096 27.833ZM32.5528 30.8135C32.5891 30.7219 32.6263 30.6321 32.6641 30.5439C32.7395 30.3679 32.8175 30.1987 32.8985 30.0361C32.9794 29.8737 33.0623 29.7176 33.1485 29.5684C32.9329 29.9418 32.7341 30.3561 32.5528 30.8135ZM33.8399 28.5684C33.6931 28.7446 33.5517 28.9352 33.4151 29.1396L33.5537 28.9404C33.694 28.7452 33.8391 28.5638 33.9893 28.3965L33.8399 28.5684ZM40.9209 28.2119C40.9501 28.2468 40.9776 28.2832 41.0059 28.3193C40.9286 28.2206 40.8494 28.1251 40.7657 28.0352L40.9209 28.2119ZM36.8907 26.7822C36.0244 26.9133 35.1941 27.2809 34.4532 27.9355C35.0884 27.3742 35.7895 27.0237 36.5225 26.8525C36.6447 26.824 36.7669 26.8009 36.8907 26.7822ZM50.1699 25.5303C50.3752 26.058 50.5442 26.6057 50.6758 27.1699L50.5323 26.6113C50.4278 26.2428 50.3068 25.8821 50.1699 25.5303ZM47.4463 21.4434C48.2343 22.193 48.9074 23.0561 49.4483 24.0098C49.1732 23.5249 48.8643 23.0632 48.5235 22.6279C48.4098 22.4827 48.2926 22.3404 48.1719 22.2012C47.9427 21.9369 47.7001 21.6847 47.4463 21.4434Z',
-    numberPath:
-      'M28.4521 61.0303C25.6308 60.9907 24.0092 57.7607 26.8173 54.8604C40.1064 41.1494 42.2026 36.3242 42.2026 32.3955C42.2026 28.7964 40.3042 26.7266 37.6411 26.7266C35.624 26.7266 33.7124 27.8867 32.5522 30.8135C31.1152 34.4521 25.9736 32.8569 26.9492 28.8491C28.6762 21.8223 33.9892 18.355 39.3681 18.355C46.3291 18.355 51.0092 23.6021 51.0092 30.1147C51.0092 34.9399 48.3066 40.6616 39.0913 50.6152C38.0893 51.6963 38.5771 52.6455 39.645 52.6455H44.5361C45.9204 52.6323 46.5136 52.1313 47.2783 50.9712L48.0825 49.7451C49.9414 46.9106 54.3315 48.6641 53.5009 52.6191C53.1977 54.0562 52.6704 55.8228 52.1562 57.2729C51.2861 59.7251 50.0205 60.9907 47.0278 61.0303C43.0068 61.083 34.8593 61.1226 28.4521 61.0303Z',
+    pillPath: 'M39.3682 9.35449C51.6451 9.35449 60.0098 18.9846 60.0098 30.1152C60.0097 33.8905 59.0387 37.5539 57.1465 41.3438C61.3461 44.1098 63.4085 49.2314 62.3086 54.4688L62.3067 54.4775C61.8995 56.4068 61.2456 58.5684 60.6387 60.2803L60.6377 60.2822C59.9499 62.2207 58.6743 64.9915 55.9473 67.1338C53.102 69.3688 49.8837 69.9931 47.1465 70.0293C43.0703 70.0828 34.8354 70.1231 28.3223 70.0293C23.3407 69.9579 18.7356 66.9175 17.0196 61.9639C15.2609 56.8868 17.1453 51.9113 20.3516 48.5996L20.3545 48.5967C23.0561 45.8093 25.2095 43.4702 26.9268 41.501C26.6207 41.4262 26.3162 41.3418 26.0157 41.2422C20.2874 39.3444 16.5918 33.3449 18.2041 26.7207L18.2071 26.7109L18.209 26.7012C20.9173 15.6819 29.8143 9.35452 39.3682 9.35449Z',
+    numberPath: 'M28.4521 61.0303C25.6308 60.9907 24.0092 57.7607 26.8173 54.8604C40.1064 41.1494 42.2026 36.3242 42.2026 32.3955C42.2026 28.7964 40.3042 26.7266 37.6411 26.7266C35.624 26.7266 33.7124 27.8867 32.5522 30.8135C31.1152 34.4521 25.9736 32.8569 26.9492 28.8491C28.6762 21.8223 33.9892 18.355 39.3681 18.355C46.3291 18.355 51.0092 23.6021 51.0092 30.1147C51.0092 34.9399 48.3066 40.6616 39.0913 50.6152C38.0893 51.6963 38.5771 52.6455 39.645 52.6455H44.5361C45.9204 52.6323 46.5136 52.1313 47.2783 50.9712L48.0825 49.7451C49.9414 46.9106 54.3315 48.6641 53.5009 52.6191C53.1977 54.0562 52.6704 55.8228 52.1562 57.2729C51.2861 59.7251 50.0205 60.9907 47.0278 61.0303C43.0068 61.083 34.8593 61.1226 28.4521 61.0303Z',
     filter: { x: '11.8457', y: '4.85449', width: '55.2555', height: '69.731' },
   },
   3: {
-    pillPath:
-      'M40.2113 9.35449C49.8242 9.35464 59.8773 15.9284 59.8773 27.3594C59.8773 30.2148 59.2189 32.7648 58.1839 35.0488C60.7584 38.6186 61.6703 42.6695 61.6703 46.3047C61.6701 55.6566 56.0556 62.525 50.0296 66.3594C44.2071 70.0642 36.3239 72.0432 29.2747 70.0059C25.0099 68.7764 21.1694 66.158 19.1488 61.9209C17.1773 57.7866 17.5836 53.422 19.1576 50.0527C20.3648 47.4687 22.4426 45.0675 25.2581 43.5576C25.156 43.2154 25.0661 42.8676 24.9945 42.5137C24.8655 41.8768 24.7923 41.2413 24.7669 40.6123C22.8846 39.6894 21.1588 38.2383 19.9173 36.2461C18.1833 33.4631 17.7542 30.2077 18.4447 27.1377L18.4466 27.1279L18.4496 27.1182C20.6462 17.4534 28.9294 9.35449 40.2113 9.35449ZM32.3294 61.5029C32.2691 61.4889 32.2086 61.4759 32.1488 61.4609L32.1429 61.46C32.2047 61.4754 32.2671 61.4885 32.3294 61.5029ZM31.3294 61.2227C30.8979 61.0795 30.5012 60.9187 30.138 60.7422C30.3802 60.8599 30.6372 60.9709 30.9095 61.0742C31.0457 61.1258 31.1856 61.1749 31.3294 61.2227ZM26.8206 55.917C26.8163 56.0955 26.8214 56.2748 26.8372 56.4541L26.8216 56.1855C26.8188 56.0959 26.8185 56.0064 26.8206 55.917ZM43.4984 49.5068C43.5059 49.4275 43.516 49.3476 43.5208 49.2666V49.2539C43.5159 49.3393 43.5063 49.4234 43.4984 49.5068ZM52.6693 46.3047C52.6693 46.644 52.6569 46.979 52.6322 47.3096C52.6445 47.1443 52.6542 46.978 52.6605 46.8105L52.6693 46.3047C52.6693 46.1151 52.6657 45.9256 52.6576 45.7363L52.6693 46.3047ZM38.1712 43.3633C37.928 43.315 37.6771 43.2736 37.4193 43.2363C37.8057 43.2922 38.1761 43.3597 38.5296 43.4404L38.1712 43.3633ZM34.4056 41.9844C34.5541 42.1694 34.7265 42.339 34.9212 42.4883C34.9862 42.5381 35.0535 42.5858 35.1234 42.6309L35.1224 42.6299C34.8437 42.4497 34.6034 42.2307 34.4056 41.9844ZM51.5208 41.3408C51.5982 41.4857 51.671 41.632 51.7396 41.7793C51.6301 41.5442 51.5103 41.3118 51.3783 41.083L51.5208 41.3408ZM32.8646 30.9639C32.8369 31.0253 32.8066 31.0843 32.7767 31.1426C32.8069 31.0837 32.8376 31.0241 32.8656 30.9619L32.8646 30.9639ZM50.8763 27.3594C50.8763 27.6675 50.8606 27.9723 50.8304 28.2744C50.8453 28.1257 50.857 27.9763 50.8646 27.8262L50.8763 27.3594ZM43.9632 18.8857C44.1285 18.935 44.2916 18.9874 44.4525 19.043L43.9632 18.8857C43.798 18.8365 43.6316 18.7907 43.4622 18.748L43.9632 18.8857Z',
-    numberPath:
-      'M31.7734 61.3599C22.0571 58.5649 28.5698 47.2007 34.832 52.2368C39.1299 55.6909 43.5332 53.5156 43.5332 48.8354C43.5332 45.3682 40.9756 43.562 36.625 43.1401C33.54 42.8369 32.5381 38.9478 35.6626 37.3262C40.4614 34.8345 41.9775 32.6724 41.9775 30.4575C41.9775 28.1899 40.4087 26.7134 38.0488 26.7529C35.8208 26.7925 33.9619 28.2163 32.9336 30.8003C31.5098 34.373 26.3682 32.9229 27.2251 29.1128C28.6094 23.022 33.6455 18.355 40.2109 18.355C46.3149 18.355 50.8765 22.2441 50.8765 27.3594C50.8765 29.8643 49.8745 32.145 47.9365 34.6104C46.8159 36.0342 47.0005 36.9307 48.5562 38.0381C51.6675 40.2529 52.6694 43.272 52.6694 46.3042C52.6694 57.1675 39.71 63.6538 31.7734 61.3599Z',
+    pillPath: 'M40.2113 9.35449C49.8242 9.35464 59.8773 15.9284 59.8773 27.3594C59.8773 30.2148 59.2189 32.7648 58.1839 35.0488C60.7584 38.6186 61.6703 42.6695 61.6703 46.3047C61.6701 55.6566 56.0556 62.525 50.0296 66.3594C44.2071 70.0642 36.3239 72.0432 29.2747 70.0059C25.0099 68.7764 21.1694 66.158 19.1488 61.9209C17.1773 57.7866 17.5836 53.422 19.1576 50.0527C20.3648 47.4687 22.4426 45.0675 25.2581 43.5576C25.156 43.2154 25.0661 42.8676 24.9945 42.5137C24.8655 41.8768 24.7923 41.2413 24.7669 40.6123C22.8846 39.6894 21.1588 38.2383 19.9173 36.2461C18.1833 33.4631 17.7542 30.2077 18.4447 27.1377L18.4466 27.1279L18.4496 27.1182C20.6462 17.4534 28.9294 9.35449 40.2113 9.35449Z',
+    numberPath: 'M31.7734 61.3599C22.0571 58.5649 28.5698 47.2007 34.832 52.2368C39.1299 55.6909 43.5332 53.5156 43.5332 48.8354C43.5332 45.3682 40.9756 43.562 36.625 43.1401C33.54 42.8369 32.5381 38.9478 35.6626 37.3262C40.4614 34.8345 41.9775 32.6724 41.9775 30.4575C41.9775 28.1899 40.4087 26.7134 38.0488 26.7529C35.8208 26.7925 33.9619 28.2163 32.9336 30.8003C31.5098 34.373 26.3682 32.9229 27.2251 29.1128C28.6094 23.022 33.6455 18.355 40.2109 18.355C46.3149 18.355 50.8765 22.2441 50.8765 27.3594C50.8765 29.8643 49.8745 32.145 47.9365 34.6104C46.8159 36.0342 47.0005 36.9307 48.5562 38.0381C51.6675 40.2529 52.6694 43.272 52.6694 46.3042C52.6694 57.1675 39.71 63.6538 31.7734 61.3599Z',
     filter: { x: '13.3191', y: '4.85449', width: '52.8511', height: '70.4686' },
   },
 } as const;
@@ -323,13 +796,12 @@ const numberStickers = {
 function NumberSticker({ number }: { number: 1 | 2 | 3 }) {
   const data = numberStickers[number];
   const filterId = `filter0_d_380_34375_${number}`;
-
   return (
     <svg className="h-[67px] w-auto" width="80" height="80" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
       <g filter={`url(#${filterId})`}>
-        <path fillRule="evenodd" clipRule="evenodd" d={data.pillPath} fill="#F8F8F8" />
+        <path fillRule="evenodd" clipRule="evenodd" d={data.pillPath} fill="#111111" />
       </g>
-      <path d={data.numberPath} fill="#111111" />
+      <path d={data.numberPath} fill="#FFFFFF" />
       <defs>
         <filter id={filterId} x={data.filter.x} y={data.filter.y} width={data.filter.width} height={data.filter.height} filterUnits="userSpaceOnUse" colorInterpolationFilters="sRGB">
           <feFlood floodOpacity="0" result="BackgroundImageFix" />
@@ -346,1087 +818,1207 @@ function NumberSticker({ number }: { number: 1 | 2 | 3 }) {
   );
 }
 
+// ── ResearchCard: same white card + NumberSticker used in competitive analysis ─
+function ResearchCard({
+  number,
+  icon,
+  title,
+  body,
+  children,
+}: {
+  number: 1 | 2 | 3;
+  icon: React.ReactNode;
+  title: string;
+  body: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="pt-5 relative">
+      <div className="absolute left-1/2 -translate-x-1/2 -top-1 z-10">
+        <NumberSticker number={number} />
+      </div>
+      <div className="bg-white rounded-[24px] border border-[#e8e8e8] overflow-hidden shadow-sm">
+        {/* Header */}
+        <div className="px-8 pt-12 pb-6">
+          <div className="flex items-center gap-4 mb-4">
+            {icon}
+            <h3 className="text-[19px] font-semibold text-[#1a1a1a]">{title}</h3>
+          </div>
+          <p className="text-[16px] font-normal leading-[175%] text-[#555]">{body}</p>
+        </div>
+        <div className="mx-8 h-px bg-[#eeeeee]" />
+        {/* Visual content */}
+        <div className="p-8">
+          {children}
+        </div>
+      </div>
+    </div>
+  );
+}
 
-export default function NodeAIAssistantCaseStudy() {
-  const [carouselIndex, setCarouselIndex] = useState(0);
-  const totalSlides = 3;
+// ── Scroll-driven deck animation ─────────────────────────────────────────────
+const SCROLL_PER_CARD = 600;
 
-  const goToSlide = (index: number) => {
-    setCarouselIndex(Math.max(0, Math.min(index, totalSlides - 1)));
+function getCardStyle(i: number, progress: number): {
+  transform: string; opacity: number; zIndex: number; pointerEvents: 'auto' | 'none';
+} {
+  if (progress >= i + 1) {
+    return { transform: 'translateY(-130%) scale(0.92)', opacity: 0, zIndex: 0, pointerEvents: 'none' };
+  }
+  if (progress > i) {
+    const t = progress - i;
+    const eased = t * t; // ease-in: starts slow, accelerates away
+    return {
+      transform: `translateY(${eased * -130}%) scale(${1 - eased * 0.08})`,
+      // Stays fully visible for first 40%, then fades over remaining 60%
+      opacity: Math.max(0, 1 - Math.max(0, (t - 0.4) / 0.6)),
+      zIndex: 30, pointerEvents: 'none',
+    };
+  }
+  // At rest in the deck — peek from below with 36px per depth step
+  const depth = i - progress;
+  return {
+    transform: `translateY(${depth * 36}px) scale(${1 - depth * 0.04})`,
+    opacity: depth > 2 ? 0 : 1,
+    zIndex: Math.max(0, 20 - i * 10),
+    pointerEvents: depth < 0.05 ? 'auto' : 'none',
   };
+}
 
-  const [designCarouselIndex, setDesignCarouselIndex] = useState(0);
-  const totalDesignSlides = 3;
+// Below this viewport height the cards won't fit, so fall back to a simple stack.
+const MIN_DECK_HEIGHT = 680;
+// Dead zone at the start: this many px of scroll do nothing, acting as a "bumper"
+// so users who arrive while mid-scroll don't blast right past card 1.
+const FIRST_CARD_DEAD_ZONE = 300;
 
-  const goToDesignSlide = (index: number) => {
-    setDesignCarouselIndex(Math.max(0, Math.min(index, totalDesignSlides - 1)));
-  };
+function ResearchDeck() {
+  const outerRef = useRef<HTMLDivElement>(null);
+  const [displayProgress, setDisplayProgress] = useState(0);
+  const [deckDisabled, setDeckDisabled] = useState(false);
+  const [deckInView, setDeckInView] = useState(false);
+  const aniState = useRef({ scrollP: 0, displayP: 0, animating: false, animTarget: 0, animStartP: 0, animStartTime: 0, animId: 0 });
+
+  // Track whether the deck section is visible at all (gates MediaViewer auto-advance)
+  useEffect(() => {
+    const el = outerRef.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => setDeckInView(entry.isIntersecting),
+      { threshold: 0.05 }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
+  // Enable/disable deck based on viewport height
+  useEffect(() => {
+    function checkSize() {
+      setDeckDisabled(window.innerHeight < MIN_DECK_HEIGHT);
+    }
+    checkSize();
+    window.addEventListener('resize', checkSize);
+    return () => window.removeEventListener('resize', checkSize);
+  }, []);
+
+  useEffect(() => {
+    if (deckDisabled) return;
+    const state = aniState.current;
+
+    function animateTo(target: number) {
+      if (state.animating && state.animTarget === target) return;
+      state.animating = true;
+      state.animTarget = target;
+      state.animStartP = state.displayP;
+      state.animStartTime = Date.now();
+    }
+
+    // Persistent tick loop — only does work when animating
+    function tick() {
+      if (state.animating) {
+        const t = Math.min(1, (Date.now() - state.animStartTime) / 700);
+        const eased = t * t * (3 - 2 * t); // smoothstep
+        const newP = state.animStartP + (state.animTarget - state.animStartP) * eased;
+        state.displayP = newP;
+        setDisplayProgress(newP);
+        if (t >= 1) {
+          state.animating = false;
+          state.displayP = state.animTarget;
+          setDisplayProgress(state.animTarget);
+        }
+      }
+      state.animId = requestAnimationFrame(tick);
+    }
+
+    // snappedTo: which card is currently committed (0, 1, or 2).
+    // Transitions are fully automatic — any scroll past a boundary triggers the full snap.
+    let snappedTo = 0;
+    let prevRawP = -1;
+
+    function onScroll() {
+      if (!outerRef.current) return;
+      const rect = outerRef.current.getBoundingClientRect();
+      // FIRST_CARD_DEAD_ZONE: first 300px of scroll does nothing — bumper so users
+      // can arrive at the deck without momentum-scrolling past card 1.
+      const rawP = Math.max(0, Math.min(2, (-rect.top - FIRST_CARD_DEAD_ZONE) / SCROLL_PER_CARD));
+      const scrollingForward = prevRawP < 0 || rawP >= prevRawP;
+      prevRawP = rawP;
+      state.scrollP = rawP;
+
+      if (state.animating) {
+        // Cancel snap and reverse if user scrolls significantly backward
+        if (!scrollingForward && rawP < state.animTarget - 0.5) {
+          state.animating = false;
+          snappedTo = state.animTarget - 1;
+          animateTo(snappedTo);
+        }
+        return;
+      }
+
+      // Forward: snap immediately on any scroll past the current card boundary
+      if (scrollingForward && rawP > snappedTo && snappedTo < 2) {
+        snappedTo++;
+        animateTo(snappedTo);
+      }
+      // Backward: snap back when user scrolls 50%+ past the previous card boundary
+      else if (!scrollingForward && rawP < snappedTo - 0.5 && snappedTo > 0) {
+        snappedTo--;
+        animateTo(snappedTo);
+      }
+    }
+
+    state.animId = requestAnimationFrame(tick);
+    window.addEventListener('scroll', onScroll, { passive: true });
+    onScroll();
+    return () => {
+      window.removeEventListener('scroll', onScroll);
+      cancelAnimationFrame(state.animId);
+    };
+  }, [deckDisabled]);
+
+  const layoutIndex = Math.min(Math.round(displayProgress), 2);
+
+  const cards = [
+    {
+      number: 1 as const,
+      icon: <SmsIcon sx={{ fontSize: 32, color: '#27b4ff' }} />,
+      title: 'Text Output Behavior',
+      body: 'How text is displayed in responses — letter-by-letter, word-by-word, or all at once. Pacing and visual feedback directly impact how responsive and fast the AI feels.',
+      media: [
+        { src: assets.chatgptTextOutput, alt: 'ChatGPT text output', label: 'ChatGPT', caption: 'Streams text letter-by-letter, with a cursor dot as a visual reference', type: 'GIF' as const },
+        { src: assets.geminiTextOutput, alt: 'Gemini text output', label: 'Gemini', caption: 'Displays the entire message almost instantaneously with a skeleton loading state', type: 'GIF' as const },
+      ],
+    },
+    {
+      number: 2 as const,
+      icon: <ForumIcon sx={{ fontSize: 32, color: '#27b4ff' }} />,
+      title: 'Message Structure and Layout',
+      body: "The visual organization and differentiation of user and AI messages. Clear hierarchy helps users easily follow the conversation and distinguish between their messages and the AI's responses.",
+      media: [
+        { src: assets.geminiLayout, alt: 'Gemini layout', label: 'Gemini', caption: 'User messages and LLM responses both appear on the left, differentiated by icons', type: 'Image' as const },
+        { src: assets.metaAiLayout, alt: 'Meta AI layout', label: 'Meta AI', caption: 'User messages appear on the right in bubbles; LLM responses on the left', type: 'Image' as const },
+      ],
+    },
+    {
+      number: 3 as const,
+      icon: <VerticalAlignTopIcon sx={{ fontSize: 32, color: '#27b4ff' }} />,
+      title: 'Dynamic Page Behavior',
+      body: 'How the interface adapts to new messages — scrolling, anchoring, and focus management. Smooth, stable behavior ensures users can follow the conversation without losing their place.',
+      media: [
+        { src: assets.claudePageBehavior, alt: 'Claude page behavior', label: 'Claude', caption: 'Responses push content upward as text streams in, disrupting mid-read', type: 'GIF' as const },
+        { src: assets.geminiPageBehavior, alt: 'Gemini page behavior', label: 'Gemini', caption: 'Each new message appears in a fixed section, keeping the page stable', type: 'GIF' as const },
+      ],
+    },
+  ];
+
+  // Fallback for short viewports: regular stacked cards, no animation, no viewport-relative image sizing
+  if (deckDisabled) {
+    return (
+      <div className="flex flex-col gap-16">
+        {cards.map((card, i) => (
+          <ResearchCard key={i} number={card.number} icon={card.icon} title={card.title} body={card.body}>
+            <MediaViewer items={card.media} constrained={false} />
+          </ResearchCard>
+        ))}
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-[#262626] text-white/80">
-      {/* Header Section */}
-      <header className="relative bg-gradient-to-b from-[rgba(38,179,255,0.5)] to-[#262626] to-[87%]">
-        <div className="max-w-[1200px] mx-auto px-6 pt-[120px] pb-[120px]">
-          {/* Text */}
-          <div className="text-center text-white mb-14">
-            <h1 className="cs-hero">
-              Node AI Assistant
-            </h1>
-            <p className="cs-subheading mt-4">
-              Finding Focus — Aug 2024
-            </p>
+    // Outer height: 100vh + 2 card exits + dead zone bumper at start
+    <div ref={outerRef} style={{ height: `calc(100vh + ${SCROLL_PER_CARD * 2 + FIRST_CARD_DEAD_ZONE}px)` }}>
+      {/* Sticky viewport — fills 100vh, overflow hidden clips peeking cards at viewport bottom */}
+      <div style={{
+        position: 'sticky',
+        top: 0,
+        height: '100vh',
+        paddingTop: 80,
+        paddingBottom: 48,
+        overflow: 'hidden',
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'flex-start',
+      }}>
+        {/* Card stack — relative so absolute cards are positioned against it */}
+        <div style={{ position: 'relative', flex: 1 }}>
+          {cards.map((card, i) => {
+            const s = getCardStyle(i, displayProgress);
+            return (
+              <div key={i} style={{
+                position: i === 0 ? 'relative' : 'absolute',
+                top: 0, left: 0, right: 0,
+                willChange: 'transform, opacity',
+                transform: s.transform,
+                opacity: s.opacity,
+                zIndex: s.zIndex,
+                pointerEvents: s.pointerEvents,
+              }}>
+                <ResearchCard number={card.number} icon={card.icon} title={card.title} body={card.body}>
+                  <MediaViewer items={card.media} active={deckInView && layoutIndex === i} />
+                </ResearchCard>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── DesignDeck: same scroll-driven stack animation as ResearchDeck ────────────
+function DesignDeck() {
+  const outerRef = useRef<HTMLDivElement>(null);
+  const [displayProgress, setDisplayProgress] = useState(0);
+  const [deckDisabled, setDeckDisabled] = useState(false);
+  const aniState = useRef({ scrollP: 0, displayP: 0, animating: false, animTarget: 0, animStartP: 0, animStartTime: 0, animId: 0 });
+
+  useEffect(() => {
+    function checkSize() { setDeckDisabled(window.innerHeight < MIN_DECK_HEIGHT); }
+    checkSize();
+    window.addEventListener('resize', checkSize);
+    return () => window.removeEventListener('resize', checkSize);
+  }, []);
+
+  useEffect(() => {
+    if (deckDisabled) return;
+    const state = aniState.current;
+
+    function animateTo(target: number) {
+      if (state.animating && state.animTarget === target) return;
+      state.animating = true; state.animTarget = target;
+      state.animStartP = state.displayP; state.animStartTime = Date.now();
+    }
+
+    function tick() {
+      if (state.animating) {
+        const t = Math.min(1, (Date.now() - state.animStartTime) / 700);
+        const eased = t * t * (3 - 2 * t);
+        const newP = state.animStartP + (state.animTarget - state.animStartP) * eased;
+        state.displayP = newP; setDisplayProgress(newP);
+        if (t >= 1) { state.animating = false; state.displayP = state.animTarget; setDisplayProgress(state.animTarget); }
+      }
+      state.animId = requestAnimationFrame(tick);
+    }
+
+    let snappedTo = 0, prevRawP = -1;
+    function onScroll() {
+      if (!outerRef.current) return;
+      const rect = outerRef.current.getBoundingClientRect();
+      const rawP = Math.max(0, Math.min(2, (-rect.top - FIRST_CARD_DEAD_ZONE) / SCROLL_PER_CARD));
+      const scrollingForward = prevRawP < 0 || rawP >= prevRawP;
+      prevRawP = rawP; state.scrollP = rawP;
+      if (state.animating) {
+        if (!scrollingForward && rawP < state.animTarget - 0.5) {
+          state.animating = false; snappedTo = state.animTarget - 1; animateTo(snappedTo);
+        }
+        return;
+      }
+      if (scrollingForward && rawP > snappedTo && snappedTo < 2) { snappedTo++; animateTo(snappedTo); }
+      else if (!scrollingForward && rawP < snappedTo - 0.5 && snappedTo > 0) { snappedTo--; animateTo(snappedTo); }
+    }
+
+    state.animId = requestAnimationFrame(tick);
+    window.addEventListener('scroll', onScroll, { passive: true });
+    onScroll();
+    return () => { window.removeEventListener('scroll', onScroll); cancelAnimationFrame(state.animId); };
+  }, [deckDisabled]);
+
+  const cards = [
+    {
+      number: 1 as const,
+      icon: <PlaceIcon sx={{ fontSize: 32, color: '#27b4ff' }} />,
+      title: 'Where should teachers access the assistant?',
+      body: "If the assistant requires multiple steps to reach, it stays undiscovered. Placement determines whether the feature becomes a daily habit or a buried tool teachers forget exists.",
+      decision: 'Persistent entry point in the main nav',
+      decisionBody: 'Placing the assistant in the primary navigation means teachers can reach it from anywhere in the platform with a single click — no hunting, no interruption to their workflow.',
+      gifSrc: assets.alwaysVisible,
+      gifAlt: 'Assistant always visible in the navigation',
+    },
+    {
+      number: 2 as const,
+      icon: <ViewModuleIcon sx={{ fontSize: 32, color: '#27b4ff' }} />,
+      title: 'Modal overlay or dedicated page experience?',
+      body: "A modal risks feeling temporary and constrained — ill-suited to the back-and-forth of a real conversation. The container shape needs to match the nature of the interaction.",
+      decision: 'Dedicated full page, accessible from the primary nav',
+      decisionBody: 'A full-page experience signals that the AI assistant is a first-class feature, and gives teachers the uninterrupted space they need for longer, multi-turn conversations.',
+      gifSrc: assets.openingChatInterface,
+      gifAlt: 'Opening the chat interface',
+    },
+    {
+      number: 3 as const,
+      icon: <InboxIcon sx={{ fontSize: 32, color: '#27b4ff' }} />,
+      title: 'What should teachers see when they first open it?',
+      body: "A blank text field with no context is intimidating. If teachers don't immediately understand what to ask, they'll close it without engaging — the empty state is a critical conversion moment.",
+      decision: 'Personalized greeting with contextual example questions',
+      decisionBody: "Greeting teachers by name and surfacing relevant starter questions makes the first interaction feel personal and immediately useful, lowering the barrier to that first message.",
+      gifSrc: assets.emptyStateExample,
+      gifAlt: 'Empty state with example questions',
+    },
+  ];
+
+  const maxGifH = 'min(320px, calc(100vh - 560px))';
+
+  function CardChildren({ gifSrc, gifAlt, decision, decisionBody }: { gifSrc: string; gifAlt: string; decision: string; decisionBody: string }) {
+    return (
+      <div>
+        <div style={{ borderRadius: 16, overflow: 'hidden', background: 'rgba(220,232,248,0.45)', maxHeight: deckDisabled ? '380px' : maxGifH }}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={gifSrc} alt={gifAlt} style={{ width: '100%', height: 'auto', display: 'block' }} />
+        </div>
+        <div style={{ marginTop: 20, paddingTop: 16, borderTop: '1px solid #eeeeee' }}>
+          <p style={{ fontSize: 11, fontWeight: 500, color: '#aaa', textTransform: 'uppercase', letterSpacing: '1.4px', marginBottom: 8 }}>Decision</p>
+          <p style={{ fontSize: 16, fontWeight: 600, color: '#1a1a1a', marginBottom: 6 }}>{decision}</p>
+          <p style={{ fontSize: 14, fontWeight: 400, lineHeight: '170%', color: '#777' }}>{decisionBody}</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (deckDisabled) {
+    return (
+      <div className="flex flex-col gap-16">
+        {cards.map((card, i) => (
+          <ResearchCard key={i} number={card.number} icon={card.icon} title={card.title} body={card.body}>
+            <CardChildren gifSrc={card.gifSrc} gifAlt={card.gifAlt} decision={card.decision} decisionBody={card.decisionBody} />
+          </ResearchCard>
+        ))}
+      </div>
+    );
+  }
+
+  return (
+    <div ref={outerRef} style={{ height: `calc(100vh + ${SCROLL_PER_CARD * 2 + FIRST_CARD_DEAD_ZONE}px)` }}>
+      <div style={{ position: 'sticky', top: 0, height: '100vh', paddingTop: 80, paddingBottom: 48, overflow: 'hidden', display: 'flex', flexDirection: 'column', justifyContent: 'flex-start' }}>
+        <div style={{ position: 'relative', flex: 1 }}>
+          {cards.map((card, i) => {
+            const s = getCardStyle(i, displayProgress);
+            return (
+              <div key={i} style={{ position: i === 0 ? 'relative' : 'absolute', top: 0, left: 0, right: 0, willChange: 'transform, opacity', transform: s.transform, opacity: s.opacity, zIndex: s.zIndex, pointerEvents: s.pointerEvents }}>
+                <ResearchCard number={card.number} icon={card.icon} title={card.title} body={card.body}>
+                  <CardChildren gifSrc={card.gifSrc} gifAlt={card.gifAlt} decision={card.decision} decisionBody={card.decisionBody} />
+                </ResearchCard>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── SectionNav ───────────────────────────────────────────────────────────────
+const NAV_SECTIONS = [
+  { id: 'section-intro',      label: 'Intro' },
+  { id: 'section-overview',   label: 'Overview' },
+  { id: 'section-research',   label: 'Research' },
+  { id: 'section-design',     label: 'Design' },
+  { id: 'section-reflection', label: 'Reflection' },
+];
+
+function smoothScrollTo(targetY: number) {
+  const startY = window.scrollY;
+  const diff = targetY - startY;
+  const duration = 550;
+  const startTime = performance.now();
+  function ease(t: number) { return t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t; }
+  function step(now: number) {
+    const p = Math.min((now - startTime) / duration, 1);
+    window.scrollTo(0, startY + diff * ease(p));
+    if (p < 1) requestAnimationFrame(step);
+  }
+  requestAnimationFrame(step);
+}
+
+function SectionNav() {
+  const [visible, setVisible] = useState(false);
+  const [active, setActive] = useState('section-intro');
+
+  // Show once hero scrolls out of view
+  useEffect(() => {
+    const hero = document.getElementById('section-intro');
+    if (!hero) return;
+    const obs = new IntersectionObserver(
+      ([entry]) => setVisible(!entry.isIntersecting),
+      { threshold: 0 }
+    );
+    obs.observe(hero);
+    return () => obs.disconnect();
+  }, []);
+
+  // Track active section by scroll position
+  useEffect(() => {
+    function onScroll() {
+      const y = window.scrollY + 80;
+      let current = 'section-intro';
+      NAV_SECTIONS.forEach(({ id }) => {
+        const el = document.getElementById(id);
+        if (el && el.offsetTop <= y) current = id;
+      });
+      setActive(current);
+    }
+    window.addEventListener('scroll', onScroll, { passive: true });
+    onScroll();
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+
+  function goTo(id: string) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    smoothScrollTo(el.getBoundingClientRect().top + window.scrollY - 40);
+  }
+
+  return (
+    <nav className="hidden min-[600px]:flex flex-col" style={{
+      position: 'fixed', right: 0, top: '50%', transform: 'translateY(-50%)',
+      width: 100, alignItems: 'flex-end', paddingRight: 16,
+      gap: 4, zIndex: 100, pointerEvents: visible ? 'auto' : 'none',
+    }}>
+      {NAV_SECTIONS.map(({ id, label }, i) => (
+        <button
+          key={id}
+          onClick={() => goTo(id)}
+          style={{
+            background: 'none', border: 'none', padding: '5px 0',
+            textAlign: 'right', cursor: 'pointer',
+            fontSize: 13,
+            fontWeight: active === id ? 600 : 400,
+            color: active === id ? '#1a1a1a' : '#aaa',
+            opacity: visible ? 1 : 0,
+            transform: visible ? 'translateX(0)' : 'translateX(12px)',
+            transition: 'opacity 0.35s ease, transform 0.35s ease, color 0.2s ease, font-weight 0.2s ease',
+            transitionDelay: visible ? `${i * 55}ms` : '0ms',
+          }}
+        >
+          {label}
+        </button>
+      ))}
+    </nav>
+  );
+}
+
+// ── MacBezel ─────────────────────────────────────────────────────────────────
+function MacBezel({ src, alt }: { src: string; alt: string }) {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+      {/* Monitor body */}
+      <div style={{
+        background: 'linear-gradient(160deg, #2a2a2c 0%, #1a1a1c 100%)',
+        borderRadius: 14,
+        padding: '10px 10px 20px',
+        boxShadow: '0 2px 0 rgba(255,255,255,0.06) inset, 0 30px 80px rgba(0,0,0,0.35), 0 8px 20px rgba(0,0,0,0.2)',
+        position: 'relative',
+      }}>
+        {/* Camera dot */}
+        <div style={{
+          width: 5, height: 5, borderRadius: '50%',
+          background: '#3a3a3c',
+          margin: '0 auto 8px',
+          boxShadow: '0 0 0 1px rgba(255,255,255,0.06)',
+        }} />
+        {/* Screen */}
+        <div style={{
+          borderRadius: 4,
+          overflow: 'hidden',
+          lineHeight: 0,
+          boxShadow: '0 0 0 1px rgba(0,0,0,0.5) inset',
+        }}>
+          <img
+            src={src}
+            alt={alt}
+            style={{ display: 'block', width: '100%', maxWidth: 760 }}
+          />
+        </div>
+      </div>
+      {/* Stand neck */}
+      <div style={{
+        width: 56,
+        height: 38,
+        background: 'linear-gradient(to bottom, #c8c8ca, #a8a8aa)',
+        clipPath: 'polygon(28% 0%, 72% 0%, 82% 100%, 18% 100%)',
+      }} />
+      {/* Stand base */}
+      <div style={{
+        width: 200,
+        height: 10,
+        background: 'linear-gradient(to bottom, #b8b8ba, #a0a0a2)',
+        borderRadius: '0 0 10px 10px',
+        boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+      }} />
+    </div>
+  );
+}
+
+// ── CyclingGif ───────────────────────────────────────────────────────────────
+type GifItem = { src: string; alt: string; duration: number };
+
+function CyclingGif({ items }: { items: GifItem[] }) {
+  const [current, setCurrent] = useState(0);
+  const [prev, setPrev] = useState<number | null>(null);
+  const [stopped, setStopped] = useState(false);
+  const imgRefs = useRef<(HTMLImageElement | null)[]>([]);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const prevTimerRef = useRef<ReturnType<typeof setTimeout>>();
+
+  // Auto-advance timer — use GIF duration minus 300ms to prevent frame-0 flash before fade
+  useEffect(() => {
+    if (stopped) return;
+    const t = setTimeout(() => {
+      const next = (current + 1) % items.length;
+      setPrev(current);
+      setCurrent(next);
+      // Clear prev after transition completes
+      clearTimeout(prevTimerRef.current);
+      prevTimerRef.current = setTimeout(() => setPrev(null), 800);
+    }, items[current].duration - 300);
+    return () => clearTimeout(t);
+  }, [current, stopped, items]);
+
+  // Restart current GIF on advance; clear hidden ones
+  useEffect(() => {
+    items.forEach((item, i) => {
+      const img = imgRefs.current[i];
+      if (!img) return;
+      if (i === current) { img.src = ''; img.src = item.src; }
+      else if (i !== prev) img.src = '';
+    });
+  }, [current, prev, items]);
+
+  function captureFrame0(img: HTMLImageElement) {
+    const canvas = canvasRef.current;
+    if (!canvas || img.naturalWidth === 0) return;
+    const dw = img.clientWidth || img.naturalWidth;
+    const dh = img.clientHeight || img.naturalHeight;
+    canvas.width = dw;
+    canvas.height = dh;
+    const ctx = canvas.getContext('2d');
+    if (ctx) ctx.drawImage(img, 0, 0, dw, dh);
+  }
+
+  function handleStop() {
+    const img = imgRefs.current[current];
+    if (img) { captureFrame0(img); img.src = ''; }
+    setStopped(true);
+  }
+
+  function handlePlay() {
+    const img = imgRefs.current[current];
+    if (img) img.src = items[current].src;
+    setStopped(false);
+  }
+
+  function getTransform(i: number) {
+    if (i === current) return 'translateY(0px)';
+    if (i === prev) return 'translateY(-20px)';   // exits upward
+    return 'translateY(24px)';                     // waits below, ready to enter
+  }
+
+  return (
+    <div style={{ position: 'relative', borderRadius: 16, overflow: 'hidden', background: 'rgba(220,232,248,0.45)', minHeight: 660 }}>
+      {items.map((item, i) => (
+        <div key={i} style={{
+          position: 'absolute', inset: 0,
+          display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 32,
+          opacity: i === current ? 1 : 0,
+          transform: getTransform(i),
+          transition: 'opacity 0.75s ease, transform 0.75s cubic-bezier(0.25, 0.46, 0.45, 0.94)',
+          pointerEvents: 'none',
+        }}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            ref={el => { imgRefs.current[i] = el; }}
+            src={item.src}
+            alt={item.alt}
+            onLoad={i === current ? e => captureFrame0(e.currentTarget) : undefined}
+            style={{
+              display: stopped && i === current ? 'none' : 'block',
+              maxWidth: '100%', maxHeight: 580,
+              objectFit: 'contain', borderRadius: 10,
+              boxShadow: '0 8px 40px rgba(0,0,0,0.10)',
+            }}
+          />
+          {i === current && (
+            <canvas ref={canvasRef} style={{
+              display: stopped ? 'block' : 'none',
+              maxWidth: '100%', borderRadius: 10,
+              boxShadow: '0 8px 40px rgba(0,0,0,0.10)',
+            }} />
+          )}
+        </div>
+      ))}
+
+      {/* GIF badge */}
+      <div style={{
+        position: 'absolute', top: 10, left: 10,
+        background: 'rgba(0,0,0,0.5)', color: 'white',
+        fontSize: 11, fontWeight: 500, letterSpacing: '0.05em',
+        padding: '2px 8px', borderRadius: 6, pointerEvents: 'none',
+      }}>GIF</div>
+
+      <StopPlayButton stopped={stopped} onClick={stopped ? handlePlay : handleStop} />
+    </div>
+  );
+}
+
+// ── Divider ──────────────────────────────────────────────────────────────────
+function Divider({ label, id }: { label?: string; id?: string }) {
+  return (
+    <div id={id} className="max-w-[1200px] mx-auto flex items-center h-[84px] px-10">
+      <div className="flex-1 h-px bg-[#e8e8e8]" />
+      {label && (
+        <>
+          <span className="mx-5 text-[15px] text-[#1a1a1a] font-semibold">{label}</span>
+          <div className="flex-1 h-px bg-[#e8e8e8]" />
+        </>
+      )}
+    </div>
+  );
+}
+
+// ── Page ─────────────────────────────────────────────────────────────────────
+export default function NodeAIAssistantCaseStudy() {
+  const ideationSentinelRef = useRef<HTMLDivElement>(null);
+  const ideationWrapperRef = useRef<HTMLDivElement>(null);
+  const ideationMaskRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function check() {
+      const sentinel = ideationSentinelRef.current;
+      const wrapper = ideationWrapperRef.current;
+      const mask = ideationMaskRef.current;
+      if (!sentinel || !wrapper || !mask) return;
+      const stuck = sentinel.getBoundingClientRect().top < 48
+        && wrapper.getBoundingClientRect().bottom > 48;
+      mask.style.display = stuck ? 'block' : 'none';
+    }
+    window.addEventListener('scroll', check, { passive: true });
+    return () => window.removeEventListener('scroll', check);
+  }, []);
+
+  return (
+    <div className="min-h-screen bg-white text-[#444444] min-[600px]:pr-[100px]">
+
+      {/* Fixed white bar — DOM-controlled (no React state) to stay in sync with scroll */}
+      <div ref={ideationMaskRef} style={{
+        display: 'none', position: 'fixed', top: 0, left: 0, right: 0, height: 48,
+        background: 'white', zIndex: 50, pointerEvents: 'none',
+      }} />
+
+      <SectionNav />
+
+      {/* ── HERO ── */}
+      <header id="section-intro" className="relative bg-gradient-to-b from-[rgba(38,179,255,0.12)] to-white to-[87%] min-[600px]:-mr-[100px]">
+        <div className="max-w-[1200px] mx-auto px-6 pt-[80px] pb-0">
+
+          {/* Company branding */}
+          <div className="flex items-center gap-2.5 mb-6" style={{ opacity: 0.65 }}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/case-studies/node-ai/finding-focus-logo.svg" alt="Finding Focus logo" className="h-7 w-auto" style={{ filter: 'brightness(0)' }} />
+            <span className="text-[15px] font-semibold text-[#000] tracking-[-0.1px]">Finding Focus</span>
           </div>
 
-          {/* Hero Image Placeholder */}
-          <div className="w-full max-w-[1200px] h-[850px] flex-shrink-0 aspect-[24/17] bg-[#38f] rounded-3xl" />
-        </div>
-      </header>
+          {/* Title */}
+          <h1 style={{ fontSize: '40px', fontWeight: 600, lineHeight: '110%', letterSpacing: '-1px', color: '#1a1a1a', marginBottom: '16px', maxWidth: '680px' }}>
+            Finding Focus Assistant
+          </h1>
 
-      {/* Role and Overview Section */}
-      <section className="bg-[#262626]">
-        <div className="max-w-[1200px] mx-auto flex flex-col lg:flex-row justify-center items-start gap-16 p-20 flex-shrink-0">
-          {/* Left Column - Roles */}
-          <div className="flex-1 flex flex-col gap-8">
-            {/* My Role */}
+          {/* Description */}
+          <p className="text-[18px] font-normal leading-[170%] text-[#555] max-w-[800px] mb-10">
+            My team and I designed an LLM-powered AI assistant to provide our teachers with on-demand, personalized support directly from within their interface.
+          </p>
+
+          {/* Hero illustration */}
+          <HeroIllustration />
+
+          {/* My Role / Team / Timeline */}
+          <div className="grid grid-cols-3 gap-10 mt-10 pb-16 text-center">
             <div>
-              <h4 className="cs-subheading mb-4">My Role</h4>
-              <p className="cs-body">
-                <span className="cs-body-bold">UX Lead</span>
-                <span className="cs-body"> — </span>
-                <span className="cs-body">Interaction Design, Visual Design, Information Architecture, User Flows, Prompt Engineering, Knowledge Base Management</span>
-              </p>
+              <p className="text-[20px] font-semibold text-[#1a1a1a] mb-2">My Role</p>
+              <p className="text-[17px] font-normal leading-[175%] text-[#555]">UX Lead</p>
             </div>
-            {/* Team */}
             <div>
-              <h4 className="cs-subheading mb-4">Team</h4>
-              <p className="cs-body">
-                Mike Mrazek, PM<br />
+              <p className="text-[20px] font-semibold text-[#1a1a1a] mb-2">Team</p>
+              <p className="text-[17px] font-normal leading-[175%] text-[#555]">
+                Mike Mrazek, Co-founder<br />
                 Thomas Kennedy, SWE
               </p>
             </div>
-            {/* Timeline & Status */}
             <div>
-              <h4 className="cs-subheading mb-4">Timeline &amp; Status</h4>
-              <p className="cs-body">
-                <span className="cs-body-bold">2 Months,</span> <span className="cs-body-bold">Launched November 2024</span>
-              </p>
+              <p className="text-[20px] font-semibold text-[#1a1a1a] mb-2">Timeline</p>
+              <p className="text-[17px] font-normal leading-[175%] text-[#555]">Aug – Nov 2024</p>
             </div>
           </div>
 
-          {/* Right Column - Overview */}
-          <div className="flex-1 flex flex-col">
-            <h4 className="cs-subheading mb-4">Overview</h4>
-            <div className="flex flex-col gap-6">
-              <p className="cs-body">
-                With educational grants increasingly emphasizing AI integration, Finding Focus - an academic spin-off from UT Austin - needed to thoughtfully incorporate AI technology into their educational platform.
-              </p>
-              <p className="cs-body">
-                Our experience showed that teachers who received direct support from our team had significantly higher implementation success rates. This insight led to the development of the Finding Focus AI Assistant, an LLM-powered support agent that provides on-demand support for educators.
-              </p>
-              <p className="cs-body">
-                Early feedback from our teacher community has been overwhelmingly positive, with users highlighting the assistant&apos;s ability to provide immediate, personalized support - effectively scaling our team&apos;s hands-on approach to implementation guidance.
-              </p>
-            </div>
-          </div>
         </div>
+      </header>
+
+      <Divider label="Overview" id="section-overview" />
+
+      {/* ── CONTEXT ── */}
+      <section className="max-w-[1200px] mx-auto px-20 pb-28">
+        <Section
+          eyebrow="Context"
+          heading="Turning a grant requirement into an opportunity for personalized support."
+          body="Our most successful teachers shared one common thread — direct support from our team during implementation. With grant requirements pushing us toward AI integration, we recognized that an LLM-powered assistant could provide that same hands-on support to every teacher at scale."
+        >
+          <VisualCard caption="Clearly we needed a way to scale our support">
+            <div className="flex items-center justify-center py-12 px-8">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/case-studies/node-ai/teacher-reach-diagram.png" alt="Teacher reach diagram" className="w-full max-w-[520px] h-auto block" />
+            </div>
+          </VisualCard>
+        </Section>
       </section>
 
-      {/* Highlights Section */}
-      <section className="bg-[#262626] pt-[120px]">
-        <div className="max-w-[1200px] mx-auto px-20">
-          <div className="relative bg-[#303030] rounded-[32px] overflow-hidden">
-            {/* Radial gradient background at top */}
-            <div
-              className="absolute top-0 left-0 right-0 h-[200px] pointer-events-none"
-              style={{
-                background: 'radial-gradient(100% 100% at 50% 0%, rgba(38, 179, 255, 0.25) 0%, transparent 70%)',
-              }}
-            />
+      {/* ── THE PROBLEM ── */}
+      <section className="max-w-[1200px] mx-auto px-20 pb-28">
+        <div className="flex flex-col gap-16">
 
-            {/* Content Container */}
-            <div className="relative flex flex-col justify-center items-start gap-10 p-6">
-              {/* Header */}
-              <div className="flex flex-col items-center text-center w-full pt-4 px-14">
-                {/* Icon */}
-                <div className="w-16 h-16 rounded-[100px] overflow-hidden">
+          <Section
+            eyebrow="User Insight"
+            heading="Teachers don't like chatbots."
+            body="The teachers we talked to were burned out from previous experiences with other chatbots — and for good reason. Traditional chatbots run on rigid decision trees. So when a teacher's question didn't match a pre-defined path, the conversation simply stalled — leaving them frustrated."
+          >
+            {/* Chatbot flow diagram */}
+            <VisualCard caption="Simplified diagram showing how a traditional chatbot handles user queries">
+              <div className="p-10 md:p-14 flex items-center justify-center">
+                <ChatbotFlowDiagram />
+              </div>
+            </VisualCard>
+
+            {/* Three failure modes — side by side, light red */}
+            <div className="flex flex-col gap-3 mt-6">
+              <p className="text-[12px] font-medium text-[#aaa] uppercase tracking-[1.5px] mb-1">
+                Painpoints with traditional chatbots:
+              </p>
+              <div className="grid grid-cols-3 gap-3">
+                <div className="rounded-[20px] p-6 flex flex-col gap-3" style={{ background: 'rgba(224,48,48,0.06)' }}>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src="/images/case-studies/highlights-icon.png"
-                    alt=""
-                    className="w-full h-full object-cover"
-                  />
+                  <img src="/images/case-studies/image.svg" alt="" className="w-6 h-6 flex-shrink-0" />
+                  <div>
+                    <p className="text-[15px] font-semibold text-[#e03030] mb-1.5">Limited Responses</p>
+                    <p className="text-[15px] font-normal leading-[175%] text-[#555]">Reliance on decision trees creates a rigid conversational flow. If a user&apos;s input doesn&apos;t fit the pre-defined options, the chatbot gets stuck or provides unhelpful responses.</p>
+                  </div>
                 </div>
-
-                {/* Label */}
-                <span className="text-[20px] tracking-[2px] text-white/50 leading-[24px] mt-4">HIGHLIGHTS</span>
-
-                {/* Heading */}
-                <h2 className="cs-callout max-w-[850px] mt-6">
-                  A quick, accessible way for teachers to ask questions, troubleshoot, or just have a conversation about anything related to Finding Focus.
-                </h2>
+                <div className="rounded-[20px] p-6 flex flex-col gap-3" style={{ background: 'rgba(224,48,48,0.06)' }}>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src="/images/case-studies/svg11884258658.svg" alt="" className="w-6 h-6 flex-shrink-0" />
+                  <div>
+                    <p className="text-[15px] font-semibold text-[#e03030] mb-1.5">Lack of Context</p>
+                    <p className="text-[15px] font-normal leading-[175%] text-[#555]">Chatbots struggle to grasp the overall meaning or intent behind a message, especially when the language is complex or not straightforward.</p>
+                  </div>
+                </div>
+                <div className="rounded-[20px] p-6 flex flex-col gap-3" style={{ background: 'rgba(224,48,48,0.06)' }}>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src="/images/case-studies/svg11845331731.svg" alt="" className="w-6 h-6 flex-shrink-0" />
+                  <div>
+                    <p className="text-[15px] font-semibold text-[#e03030] mb-1.5">Inefficiency</p>
+                    <p className="text-[15px] font-normal leading-[175%] text-[#555]">Users end up resorting to other options — like messaging the support team directly — which is time-consuming for everyone involved.</p>
+                  </div>
+                </div>
               </div>
-
-              {/* Image Cards - gap-10 = 40px */}
-              <ImageCard
-                src={assets.accessingNodeAi}
-                alt="Accessing Node AI"
-                caption="0.1 Accessing Node AI"
-                pillText="VIDEO LOOP"
-              />
-              <ImageCard
-                src={assets.uiComponents}
-                alt="UI Components"
-                caption="0.2 UI Components"
-                pillText="IMAGE"
-              />
-              <ImageCard
-                src={assets.uiComponents}
-                alt="Mobile Designs"
-                caption="0.3 Mobile Designs"
-                pillText="IMAGE"
-              />
             </div>
+          </Section>
+
+          {/* Challenge callout — width capped at ~2 columns */}
+          <div style={{ maxWidth: '690px' }}>
+            <Callout
+              accentColor="#ff8826"
+              label="Our North Star"
+              heading="Create a genuinely helpful assistant that provides relevant answers to any teacher question."
+            />
           </div>
+
         </div>
       </section>
 
-      {/* Context Section */}
-      <section className="max-w-[1200px] mx-auto">
-        <div className="flex flex-col justify-center items-start gap-16 p-20">
-          <SectionIndicator label="CONTEXT" />
+      <Divider label="Research" id="section-research" />
 
-          <h1 className="text-[56px] font-bold leading-[64px] tracking-[-1px] text-white">
-            Turning a grant requirement into an opportunity to provide personalized support.
-          </h1>
+      {/* ── RESEARCH ── */}
+      <section className="max-w-[1200px] mx-auto px-20 pb-28">
+        <div className="flex flex-col gap-24">
 
-          <div className="flex flex-row flex-wrap gap-x-16 gap-y-6 w-full">
-            <div className="flex-[2] min-w-[250px]">
-              <h3 className="cs-subheading">
-                Helping our teachers was the main priority
-              </h3>
+          {/* Unit 1: Two options */}
+          <Section
+            eyebrow="Evaluation"
+            heading="Two options. One clear winner."
+            body="Before anything else, Finding Focus had to decide on the 'brain' of our chat interface — the core technology that would understand and respond to user requests. I evaluated two main approaches: Rule-Based NLU systems and Large Language Model (LLM) APIs."
+          >
+            {/* Comparison card */}
+            <div className="rounded-[24px] overflow-hidden" style={{ background: 'rgba(220,232,248,0.45)' }}>
+              <div className="grid grid-cols-2 divide-x divide-[rgba(150,170,210,0.3)]">
+
+                {/* Left: NLU */}
+                <div className="p-8 flex flex-col gap-5">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src="/images/case-studies/NLU.svg" alt="" className="w-8 h-8" />
+                  <div>
+                    <p className="text-[17px] font-semibold text-[#1a1a1a]">Rule-Based NLU APIs</p>
+                    <p className="text-[13px] text-[#999] mt-0.5">Diagflow, Amazon Lex, Rasa</p>
+                  </div>
+                  <div className="flex flex-col gap-3">
+                    <div>
+                      <p className="text-[11px] font-medium uppercase tracking-[1.2px] text-[#2a8a50] mb-2">Pros</p>
+                      <div className="flex flex-wrap gap-1.5">
+                        {['Fast', 'Accurate', 'Predictable', 'Cost Effective'].map(t => (
+                          <span key={t} className="text-[13px] font-medium bg-[rgba(13,186,79,0.08)] text-[#2a8a50] rounded-full px-3 py-1">{t}</span>
+                        ))}
+                      </div>
+                    </div>
+                    <div>
+                      <p className="text-[11px] font-medium uppercase tracking-[1.2px] text-[#c03030] mb-2">Cons</p>
+                      <div className="flex flex-wrap gap-1.5">
+                        {['Robotic', 'Less Flexible', 'Knowledge Gaps', 'Context Blind'].map(t => (
+                          <span key={t} className="text-[13px] font-medium bg-[rgba(186,13,13,0.05)] text-[#c03030] rounded-full px-3 py-1">{t}</span>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                  <p className="text-[15px] font-normal leading-[170%] text-[#666]">
+                    Excels with well-defined interactions and predictable inputs — fast, accurate, and cost-effective. But rigid.
+                  </p>
+                </div>
+
+                {/* Right: LLM — winner */}
+                <div className="p-8 flex flex-col gap-5 relative">
+                  <div className="absolute top-6 right-6">
+                    <span className="text-[11px] font-semibold uppercase tracking-[1px] bg-[rgba(39,180,255,0.12)] text-[#27b4ff] rounded-full px-3 py-1">Winner</span>
+                  </div>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src="/images/case-studies/openai.svg" alt="" className="w-8 h-8" />
+                  <div>
+                    <p className="text-[17px] font-semibold text-[#1a1a1a]">LLM APIs</p>
+                    <p className="text-[13px] text-[#999] mt-0.5">OpenAI (GPT), Anthropic (Claude), Gemini</p>
+                  </div>
+                  <div className="flex flex-col gap-3">
+                    <div>
+                      <p className="text-[11px] font-medium uppercase tracking-[1.2px] text-[#2a8a50] mb-2">Pros</p>
+                      <div className="flex flex-wrap gap-1.5">
+                        {['Versatile', 'Generative', 'Contextually Aware', 'Natural'].map(t => (
+                          <span key={t} className="text-[13px] font-medium bg-[rgba(13,186,79,0.08)] text-[#2a8a50] rounded-full px-3 py-1">{t}</span>
+                        ))}
+                      </div>
+                    </div>
+                    <div>
+                      <p className="text-[11px] font-medium uppercase tracking-[1.2px] text-[#c03030] mb-2">Cons</p>
+                      <div className="flex flex-wrap gap-1.5">
+                        {['Cost', 'Less Control', 'Hallucinations', 'High Maintenance'].map(t => (
+                          <span key={t} className="text-[13px] font-medium bg-[rgba(186,13,13,0.05)] text-[#c03030] rounded-full px-3 py-1">{t}</span>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                  <p className="text-[15px] font-normal leading-[170%] text-[#666]">
+                    Provides dynamic, contextually aware responses that adapt to any query — at the cost of predictability.
+                  </p>
+                </div>
+
+              </div>
             </div>
-            <div className="flex-[3] min-w-[325px]">
-              <p className="cs-body">
-                Our most successful teachers shared one common thread - direct support from our team during implementation. With grant requirements pushing us toward AI integration, we recognized that an LLM powered assistant could be a great way to provide hands-on support for every teacher.
-              </p>
+          </Section>
+
+          {/* Winning choice */}
+          <div style={{ maxWidth: '690px' }}>
+            <Callout
+              accentColor="#27b4ff"
+              label="The Winning Choice"
+              heading="LLM Powered API"
+              body="OpenAI's Assistants API was the clear choice — its ability to truly understand queries, respond naturally, and connect directly to our external knowledge base made it the right fit."
+              compactBody
+            />
+          </div>
+
+          {/* Unit 2: Competitive analysis */}
+          <Section
+            eyebrow="Comparative Analysis"
+            heading="Before designing anything, we did our homework."
+            body="I conducted a comprehensive comparative analysis of leading LLM chat interfaces — Gemini, Claude, Meta AI, and ChatGPT — focusing on three key areas that would shape our design direction."
+          />
+
+          <ResearchDeck />
+
+          {/* Key Insights — three ingredients */}
+          <div className="flex flex-col gap-6 -mt-10">
+            <div className="flex flex-col gap-3">
+              <Eyebrow label="Key Insights" />
+              <h2 className="text-[30px] font-semibold text-[#1a1a1a] leading-[120%]">Three ingredients for a great LLM chat experience.</h2>
+              <p className="text-[18px] font-normal leading-[180%] text-[#555]">The comparative analysis of leading AI chat products revealed consistent patterns that separate frustrating experiences from genuinely effective ones — three design decisions that every LLM chat interface should get right.</p>
+            </div>
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mt-2">
+              <div className="bg-white rounded-[20px] border border-[#e8e8e8] p-6 flex flex-col gap-4">
+                <div className="w-9 h-9 rounded-xl bg-[#27b4ff]/10 flex items-center justify-center flex-shrink-0">
+                  <SmsIcon sx={{ fontSize: 20, color: '#27b4ff' }} />
+                </div>
+                <div>
+                  <p className="text-[16px] font-semibold text-[#1a1a1a] mb-2">Implement letter-by-letter text streaming</p>
+                  <p className="text-[15px] font-normal leading-[170%] text-[#666]">Streaming text as it generates provides immediate visual feedback, making the assistant feel faster and more responsive than waiting for a complete response.</p>
+                </div>
+              </div>
+              <div className="bg-white rounded-[20px] border border-[#e8e8e8] p-6 flex flex-col gap-4">
+                <div className="w-9 h-9 rounded-xl bg-[#27b4ff]/10 flex items-center justify-center flex-shrink-0">
+                  <ForumIcon sx={{ fontSize: 20, color: '#27b4ff' }} />
+                </div>
+                <div>
+                  <p className="text-[16px] font-semibold text-[#1a1a1a] mb-2">Use distinctive styling for user vs. AI messages</p>
+                  <p className="text-[15px] font-normal leading-[170%] text-[#666]">Left/right message layout with user bubbles follows conventions teachers already know, making it effortless to follow the conversation without learning new patterns.</p>
+                </div>
+              </div>
+              <div className="bg-white rounded-[20px] border border-[#e8e8e8] p-6 flex flex-col gap-4">
+                <div className="w-9 h-9 rounded-xl bg-[#27b4ff]/10 flex items-center justify-center flex-shrink-0">
+                  <VerticalAlignTopIcon sx={{ fontSize: 20, color: '#27b4ff' }} />
+                </div>
+                <div>
+                  <p className="text-[16px] font-semibold text-[#1a1a1a] mb-2">Anchor each message in a fixed section</p>
+                  <p className="text-[15px] font-normal leading-[170%] text-[#666]">Keeping each exchange in its own stable container prevents the layout from shifting as text streams in — so teachers can read without losing their place.</p>
+                </div>
+              </div>
             </div>
           </div>
+
         </div>
       </section>
 
-      {/* Divider */}
-      <div className="max-w-[1200px] mx-auto flex justify-center items-center h-[84px] px-10">
-        <div className="w-full h-1 bg-[#303030]" />
-      </div>
+      <Divider label="Design" id="section-design" />
 
-      {/* Problem Section - Intro */}
-      <section className="max-w-[1200px] mx-auto">
-        <div className="flex flex-col justify-center items-start gap-16 p-20">
-          <SectionIndicator label="THE PROBLEM" />
+      {/* ── DESIGN PHASE ── */}
+      <section className="max-w-[1200px] mx-auto px-20 pb-28">
+        <div className="flex flex-col gap-12">
 
-          <h1 className="text-[56px] font-bold leading-[64px] tracking-[-1px] text-white">
-            Not all Chatbots are created equally.
-          </h1>
+          <Section
+            eyebrow="UX Considerations"
+            heading="Designing for a teacher's first 30 seconds."
+            body="With research and key insights in hand, I focused on the decisions that would define a teacher's first impression — where the assistant lives, how it opens, and what they see before typing a single word."
+          />
 
-          {/* Secondary title + Explanatory text side by side */}
-          <div className="flex flex-row flex-wrap gap-x-16 gap-y-6 w-full">
-            <div className="flex-[2] min-w-[250px]">
-              <h3 className="text-[24px] font-semibold leading-[32px] tracking-[-0.5px] text-white">
-                Most users have a negative connotation of &ldquo;chatbots&rdquo;
-              </h3>
-            </div>
-            <div className="flex-[3] min-w-[325px] flex flex-col gap-6">
-              <p className="text-base text-white/80 leading-6">
-                We wanted to create a virtual support agent that was actually helpful and answered user&apos;s novel questions, something that traditional chatbots don&apos;t typically succeed at.
-              </p>
-              <p className="text-base text-white/80 leading-6">
-                Traditional chatbots, as seen in figure 2.0, often fail at providing adequate support to users because they have rudimentary NLP (natural language processing) and rely heavily upon decision trees, and when users send a message that is not a part of the chatbot&apos;s repertoire, the conversation stalls. Traditional chatbots lack the ability to &ldquo;understand&rdquo; user&apos;s requests, and are very restricted in their ability to respond.
-              </p>
-            </div>
-          </div>
-
-          {/* Subheader + Problem Cards - centered, max 880px */}
-          <div className="flex flex-col items-center w-full">
-            <h3 className="text-[20px] font-medium leading-[26px] tracking-[-0.3px] text-white/80 w-full max-w-[1040px] mb-10">
-              Limitations of traditional chatbots:
-            </h3>
-            <div className="flex flex-col gap-6 w-full max-w-[1040px]">
-            {/* Limited Responses */}
-            <div className="bg-[#303030] rounded-[24px] p-6">
-              <div className="flex gap-4">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src="/images/case-studies/image.svg" alt="" className="w-6 h-6 flex-shrink-0" />
-                <div>
-                  <h4 className="text-base font-semibold text-[#ff3d3d] mb-2">Limited Responses</h4>
-                  <p className="text-base text-white/80 leading-6">
-                    Reliance on decision trees creates a rigid conversational flow. If a user&apos;s input doesn&apos;t fit the pre-defined options, the chatbot often gets stuck or provides unhelpful responses.
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {/* Lack of Contextual Understanding */}
-            <div className="bg-[#303030] rounded-[24px] p-6">
-              <div className="flex gap-4">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src="/images/case-studies/svg11884258658.svg" alt="" className="w-6 h-6 flex-shrink-0" />
-                <div>
-                  <h4 className="text-base font-semibold text-[#ff3d3d] mb-2">Lack of Contextual Understanding</h4>
-                  <p className="text-base text-white/80 leading-6">
-                    They struggle to grasp the overall meaning or intent behind a user&apos;s message, especially when the language is more complex or not straightforward.
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {/* Inefficient */}
-            <div className="bg-[#303030] rounded-[24px] p-6">
-              <div className="flex gap-4">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src="/images/case-studies/svg11845331731.svg" alt="" className="w-6 h-6 flex-shrink-0" />
-                <div>
-                  <h4 className="text-base font-semibold text-[#ff3d3d] mb-2">Inefficient</h4>
-                  <p className="text-base text-white/80 leading-6">
-                    Users may end up resorting to other options, like messaging the support team directly to resolve their issues, which can be time-consuming for users and companies alike.
-                  </p>
-                </div>
-              </div>
-            </div>
-            </div>
-          </div>
-
-          {/* Image 2.0 - Typical Chat Interface */}
-          <div className="w-full">
-            <div className="rounded-[32px] overflow-hidden bg-[#303030] flex items-center justify-center py-20 aspect-[125/93]">
+          {/* Design iterate image container */}
+          <div>
+            <div className="rounded-[24px] overflow-hidden relative h-[500px] md:h-[380px] flex items-center justify-center p-8 pb-10" style={{ background: 'rgba(220,232,248,0.45)' }}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/case-studies/node-ai/design-iterate.png" alt="Design iteration" style={{ width: '60%', height: 'auto', display: 'block' }} />
+            </div>
+            <div className="mt-3 flex justify-center">
+              <p className="text-[13px] text-[#999]">Time to wireframe and explore different ideas</p>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+      {/* ── IDEATION: sections 1 & 2 share a sticky eyebrow; eyebrow releases at section 3 ── */}
+      <div ref={ideationWrapperRef} style={{ position: 'relative' }}>
+
+        {/* Sentinel: 0-height element at the wrapper top. The IntersectionObserver
+            above detects when this scrolls within 48px of the viewport top and
+            triggers the fixed white bar to fill the gap above the sticky eyebrow. */}
+        <div ref={ideationSentinelRef} style={{ height: 0 }} />
+
+        {/* Sticky "Ideation" eyebrow */}
+        <div style={{
+          position: 'sticky', top: 48, zIndex: 20, pointerEvents: 'none',
+          background: 'white',
+        }}>
+          <div className="max-w-[1200px] mx-auto px-20" style={{ paddingTop: 0, paddingBottom: 16 }}>
+            <Eyebrow label="Ideation" />
+          </div>
+        </div>
+
+        {/* ── IDEATION: ACCESS POINT ── */}
+        <section className="max-w-[1200px] mx-auto px-20 pb-28" style={{ marginTop: -16 }}>
+          <div className="flex flex-col gap-12">
+
+            <Section
+              heading="Where should teachers access the assistant from?"
+              body="Entry point placement shapes everything — it determines how often teachers reach for the tool, and whether it feels like a core part of the platform or an afterthought. Getting this wrong means the assistant goes unused, no matter how good the experience inside it is."
+            />
+
+            <IdeationViewer items={[
+              { src: assets.ideationNavDrawerWireframe, alt: 'Dedicated tab in the nav drawer wireframe', secondSrc: assets.ideationNavDrawerComparison, secondAlt: 'Nav drawer pros and cons', label: 'Option 1 — Dedicated Tab in the Nav Drawer', caption: '' },
+              { src: assets.ideationFabWireframe, alt: 'Floating action button wireframe', secondSrc: assets.ideationFabComparison, secondAlt: 'FAB pros and cons', label: 'Option 2 — Floating Action Button (FAB)', caption: '' },
+            ]} />
+
+            <Callout
+              accentColor="#27b4ff"
+              label="The Winning Choice"
+              heading="Floating Action Button"
+              body="Always reachable without pulling teachers away from what they're doing."
+              compactBody
+            />
+
+          </div>
+        </section>
+
+        {/* ── IDEATION: DISPLAY FORMAT ── */}
+        <section className="max-w-[1200px] mx-auto px-20 pb-28">
+          <div className="flex flex-col gap-12">
+
+            <Section
+              heading="How should the assistant appear when launched?"
+              body="How the assistant appears on launch had real stakes — would it feel like an interruption, could teachers easily dismiss it without losing progress, and would it give the experience enough room to work?"
+            />
+
+            <IdeationViewer items={[
+              { src: assets.ideationDisplayFullscreenWireframe, alt: 'Full screen modal wireframe', secondSrc: assets.ideationDisplayFullscreenComparison, secondAlt: 'Full screen modal pros and cons', label: 'Option 1 — Full Screen Modal', caption: '' },
+              { src: assets.ideationDisplayAnchoredWireframe, alt: 'Anchored modal overlay wireframe', secondSrc: assets.ideationDisplayAnchoredComparison, secondAlt: 'Anchored modal pros and cons', label: 'Option 2 — Anchored Modal Overlay', caption: '' },
+              { src: assets.ideationDisplaySplitWireframe, alt: 'Split view wireframe', secondSrc: assets.ideationDisplaySplitComparison, secondAlt: 'Split view pros and cons', label: 'Option 3 — Split View', caption: '' },
+            ]} />
+
+            <Callout
+              accentColor="#27b4ff"
+              label="The Winning Choice"
+              heading="Anchored Modal Overlay"
+              body="Stays present without taking over — enough screen space to have a real conversation, without losing sight of where you are."
+              compactBody
+            />
+
+          </div>
+        </section>
+
+      </div>{/* sticky eyebrow releases here — section 3 scrolls freely */}
+
+      {/* ── IDEATION: EMPTY STATE ── */}
+      <section className="max-w-[1200px] mx-auto px-20 pb-28">
+        <div className="flex flex-col gap-12">
+
+          <Section
+            heading="What does a teacher see before the conversation starts?"
+            body="The empty state is the assistant's first impression. Get it wrong and teachers either don't know where to start, or worse — don't trust the tool enough to try. The goal was to give just enough guidance without making the experience feel scripted."
+          />
+
+          <IdeationViewer items={[
+            { src: assets.ideationEmptyBlankWireframe, alt: 'Blank input wireframe', secondSrc: assets.ideationEmptyBlankComparison, secondAlt: 'Blank input pros and cons', label: 'Option 1 — Blank Input · No Suggested Questions', caption: '' },
+            { src: assets.ideationEmptyTilesWireframe, alt: 'Suggested question tiles wireframe', secondSrc: assets.ideationEmptyTilesComparison, secondAlt: 'Suggested question tiles pros and cons', label: 'Option 2 — Suggested Question Tiles', caption: '' },
+            { src: assets.ideationEmptyProactiveWireframe, alt: 'Proactive greeting wireframe', secondSrc: assets.ideationEmptyProactiveComparison, secondAlt: 'Proactive greeting pros and cons', label: 'Option 3 — Proactive Greeting & Response Prompts', caption: '' },
+          ]} />
+
+          <Callout
+            accentColor="#27b4ff"
+            label="The Winning Choice"
+            heading="Suggested Question Tiles"
+            body="Question tiles give teachers a clear starting point — and signal what the assistant is actually capable of from the moment it opens."
+            compactBody
+          />
+
+        </div>
+      </section>
+
+      {/* ── FINAL DESIGNS ── */}
+      <section className="max-w-[1200px] mx-auto px-20 pb-20">
+        <div className="flex flex-col gap-10">
+          <Section
+            eyebrow="Final Design"
+            heading="Putting it all together."
+            body="The three big decisions shown above — access point, display format, empty state — shaped the core design direction; however, this project also included dozens of smaller decisions that don't each merit their own section, but collectively helped shape the final experience."
+          />
+          {/* Hero — full width */}
+          <div className="rounded-[20px] overflow-hidden bg-[rgba(220,232,248,0.45)]">
+            <CyclingGif items={[
+              { src: assets.openingChatInterface, alt: 'Opening the chat interface', duration: 6870 },
+              { src: assets.finalDesignsHero, alt: 'Final design in use', duration: 16350 },
+            ]} />
+          </div>
+          {/* Two-column row — 1:2 ratio, both columns scale together */}
+          <div className="grid gap-4" style={{ gridTemplateColumns: '1fr 2fr' }}>
+            {/* Left — iPhone mockup (narrower) */}
+            <div className="bg-[rgba(220,232,248,0.45)] rounded-[20px] flex items-center justify-center py-12 px-6 overflow-hidden">
               <img
-                src={assets.typicalChatInterface}
-                alt="Typical Chat Interface"
-                className="max-w-[50%] h-auto object-contain rounded-lg"
+                src={assets.iPhoneMockup}
+                alt="Mobile view of the AI assistant"
+                style={{ maxHeight: 420, objectFit: 'contain', transform: 'rotate(-5deg)' }}
               />
             </div>
-            <div className="flex items-center justify-end gap-4 mt-2">
-              <span className="text-sm text-white/50">2.0 Typical Chat Interface</span>
-              <span className="px-2 py-1 rounded-full bg-white/10 text-[10px] font-mono text-white/80">
-                Image
-              </span>
-            </div>
-          </div>
-        </div>
-
-        {/* The Challenge Card */}
-        <div className="px-20">
-          <div className="relative rounded-[32px] overflow-hidden bg-[#303030] flex flex-col justify-center items-center text-center px-20 pt-14 pb-10">
-            {/* Orange radial gradient */}
-            <div
-              className="absolute top-0 left-0 right-0 h-[200px] pointer-events-none"
-              style={{
-                background: 'radial-gradient(100% 100% at 50% 0%, rgba(255, 136, 38, 0.25) 0%, transparent 70%)',
-              }}
-            />
-            {/* Icon in rounded pill */}
-            <div className="relative w-16 h-16 rounded-full overflow-hidden mb-4">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={assets.challengeIcon} alt="" className="w-full h-full object-cover" />
-            </div>
-
-            {/* Label */}
-            <span className="relative text-xl tracking-[2px] text-white/50 mb-6">THE CHALLENGE</span>
-
-            {/* Heading */}
-            <h2 className="relative cs-callout max-w-[870px]">
-              Create a genuinely helpful assistant that provides relevant answers to teachers&apos; questions.
-            </h2>
-          </div>
-        </div>
-
-        {/* Objectives Section */}
-        <div className="flex flex-col justify-center items-start px-20 pt-20 pb-10">
-          {/* Title - left aligned with containers */}
-          <div className="w-full max-w-[1040px] mb-10">
-            <h3 className="text-[20px] font-medium leading-[26px] tracking-[-0.3px] text-white/80">
-              Project Objectives:
-            </h3>
-          </div>
-
-          {/* Objective Cards */}
-          <div className="flex flex-col gap-6 w-full max-w-[1040px]">
-            <ObjectiveCard
-              iconSrc="/images/case-studies/sparkles.svg"
-              title="Truly Understand Queries"
-              description="Create a virtual support agent that is able to understand what users are asking."
-            />
-            <ObjectiveCard
-              iconSrc="/images/case-studies/target-arrow.svg"
-              title="Provide Relevant Responses"
-              description="Provide teachers with answers to any question they might have - without limiting the responses."
-            />
-            <ObjectiveCard
-              iconSrc="/images/case-studies/mood-smile.svg"
-              title="Exceed Teacher Expectations"
-              description="Create an experience that sets the standard for Edtech virtual support agents."
-            />
-          </div>
-        </div>
-
-        {/* Image 2.1 - Project Timeline */}
-        <div className="px-20 py-6">
-          <div className="w-full aspect-[125/93] rounded-[32px] bg-[#303030]" />
-          <div className="flex items-center justify-end gap-4 mt-2">
-            <span className="text-sm text-white/50">2.1 Project Timeline</span>
-            <span className="px-2 py-1 rounded-full bg-white/10 text-[10px] font-mono text-white/80">
-              Image
-            </span>
-          </div>
-        </div>
-      </section>
-
-      {/* Divider */}
-      <div className="max-w-[1200px] mx-auto flex justify-center items-center h-[84px] px-10">
-        <div className="w-full h-1 bg-[#303030]" />
-      </div>
-
-      {/* Research Phase Section */}
-      <section className="max-w-[1200px] mx-auto">
-        <div className="flex flex-col justify-center items-start gap-16 p-20">
-          <SectionIndicator label="RESEARCH PHASE" />
-
-          <h1 className="text-[56px] font-bold leading-[64px] tracking-[-1px] text-white">
-            Understanding the landscape.
-          </h1>
-
-          <div className="flex flex-row flex-wrap gap-x-16 gap-y-6 w-full">
-            <div className="flex-[2] min-w-[250px]">
-              <h3 className="cs-subheading">
-                Doing a deep dive into our API options
-              </h3>
-            </div>
-            <div className="flex-[3] min-w-[325px] flex flex-col gap-4">
-              <p className="cs-body">
-                Before anything else, Finding Focus had to decide on the &lsquo;brain&rsquo; of our chat interface – the core technology that would enable it to understand and respond to user requests.
-              </p>
-              <p className="cs-body">
-                After researching the topic, I found that there were two main approaches we could take to implement the chatbot:
-              </p>
-              <div className="flex flex-col gap-3 pl-4">
-                <p className="text-base text-white/80 leading-6">
-                  <span className="font-semibold text-white">1. Rule-based system with basic NLU techniques:</span> Uses predefined rules, keywords, and decision trees to process and respond to user input. These systems follow a structured approach where specific inputs trigger specific outputs.
-                </p>
-                <p className="text-base text-white/80 leading-6">
-                  <span className="font-semibold text-white">2. Large Language Model (LLM):</span> Leverages advanced AI models trained on vast amounts of text data to understand context, generate human-like responses, and handle a wide range of queries without predefined rules.
-                </p>
-              </div>
-              <p className="text-base text-white/80 leading-6">
-                I synthesized my findings and shared them with my team to help us make an informed decision:
-              </p>
-            </div>
-          </div>
-
-          {/* API Cards */}
-          <div className="flex flex-col gap-6">
-            <div className="bg-[#303030] rounded-[24px] p-6 flex flex-col justify-center">
-              <img src="/images/case-studies/NLU.svg" alt="" className="w-10 h-10 mb-4" />
-              <h4 className="text-[20px] font-semibold text-white tracking-[-0.3px] leading-[26px] mb-2">
-                Rule Based NLU APIs
-              </h4>
-              <p className="text-base leading-6">
-                <span className="font-bold text-white">Popular Options:</span>
-                <span className="text-white/80"> Diagflow, Amazon Lex, Rasa</span>
-              </p>
-            </div>
-            {/* Pros and Cons side by side */}
-            <div className="flex flex-row flex-wrap gap-6">
-              {/* Pros */}
-              <div className="flex-1 min-w-[300px] bg-[rgba(13,186,79,0.1)] rounded-[24px] p-6 flex flex-col">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src="/images/case-studies/thumbsup.svg" alt="" className="w-10 h-10 mb-4" />
-                <h4 className="text-2xl font-semibold text-white tracking-[-0.5px] leading-8 mb-4">Pros</h4>
-                <div className="flex flex-col gap-3 mb-6">
-                  <div className="flex items-center gap-2">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src="/images/case-studies/fast.svg" alt="" className="w-6 h-6" />
-                    <span className="text-base font-bold text-white leading-6">Fast</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src="/images/case-studies/accurate.svg" alt="" className="w-6 h-6" />
-                    <span className="text-base font-bold text-white leading-6">Accurate</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src="/images/case-studies/predictable.svg" alt="" className="w-6 h-6" />
-                    <span className="text-base font-bold text-white leading-6">Predictable</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src="/images/case-studies/cost-effective.svg" alt="" className="w-6 h-6" />
-                    <span className="text-base font-bold text-white leading-6">Cost Effective</span>
-                  </div>
-                </div>
-                <p className="text-sm text-white leading-5">
-                  Excel in situations with well-defined interactions and predictable user inputs, offering a fast, accurate, and cost-effective solution.
-                </p>
-              </div>
-
-              {/* Cons */}
-              <div className="flex-1 min-w-[300px] bg-[rgba(186,13,13,0.1)] rounded-[24px] p-6 flex flex-col">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src="/images/case-studies/thumbsdown.svg" alt="" className="w-10 h-10 mb-4" />
-                <h4 className="text-2xl font-semibold text-white tracking-[-0.5px] leading-8 mb-4">Cons</h4>
-                <div className="flex flex-col gap-3 mb-6">
-                  <div className="flex items-center gap-2">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src="/images/case-studies/robotic.svg" alt="" className="w-6 h-6" />
-                    <span className="text-base font-bold text-white leading-6">Robotic</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src="/images/case-studies/lessflexible.svg" alt="" className="w-6 h-6" />
-                    <span className="text-base font-bold text-white leading-6">Less Flexible</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src="/images/case-studies/knowledgegaps.svg" alt="" className="w-6 h-6" />
-                    <span className="text-base font-bold text-white leading-6">Knowledge Gaps</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src="/images/case-studies/contextblindness.svg" alt="" className="w-6 h-6" />
-                    <span className="text-base font-bold text-white leading-6">Context Blindness</span>
-                  </div>
-                </div>
-                <p className="text-sm text-white leading-5">
-                  Struggles with understanding nuanced language, adapting to unexpected situations, and handling complex or open-ended interactions.
-                </p>
-              </div>
-            </div>
-          </div>
-
-          {/* LLM APIs */}
-          <div className="flex flex-col gap-6 mt-4">
-            <div className="bg-[#303030] rounded-[24px] p-6 flex flex-col justify-center">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/images/case-studies/openai.svg" alt="" className="w-10 h-10 mb-4" />
-              <h4 className="text-[20px] font-semibold text-white tracking-[-0.3px] leading-[26px] mb-2">
-                LLM APIs
-              </h4>
-              <p className="text-base leading-6">
-                <span className="font-bold text-white">Popular Options:</span>
-                <span className="text-white/80"> Open AI (GPT), Anthropic (Claude), Gemini</span>
-              </p>
-            </div>
-            {/* LLM Pros and Cons side by side */}
-            <div className="flex flex-row flex-wrap gap-6">
-              {/* Pros */}
-              <div className="flex-1 min-w-[300px] bg-[rgba(13,186,79,0.1)] rounded-[24px] p-6 flex flex-col">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src="/images/case-studies/thumbsup.svg" alt="" className="w-10 h-10 mb-4" />
-                <h4 className="text-2xl font-semibold text-white tracking-[-0.5px] leading-8 mb-4">Pros</h4>
-                <div className="flex flex-col gap-3 mb-6">
-                  <div className="flex items-center gap-2">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src="/images/case-studies/versatile.svg" alt="" className="w-6 h-6" />
-                    <span className="text-base font-bold text-white leading-6">Versatile</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src="/images/case-studies/generative.svg" alt="" className="w-6 h-6" />
-                    <span className="text-base font-bold text-white leading-6">Generative</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src="/images/case-studies/contextually-aware.svg" alt="" className="w-6 h-6" />
-                    <span className="text-base font-bold text-white leading-6">Contextually Aware</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src="/images/case-studies/natural-conversation.svg" alt="" className="w-6 h-6" />
-                    <span className="text-base font-bold text-white leading-6">Natural Conversation</span>
-                  </div>
-                </div>
-                <p className="text-sm text-white leading-5">
-                  Provides dynamic, human-like interactions by generating contextually aware responses that can adapt to a wide range of user queries.
-                </p>
-              </div>
-
-              {/* Cons */}
-              <div className="flex-1 min-w-[300px] bg-[rgba(186,13,13,0.1)] rounded-[24px] p-6 flex flex-col">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src="/images/case-studies/thumbsdown.svg" alt="" className="w-10 h-10 mb-4" />
-                <h4 className="text-2xl font-semibold text-white tracking-[-0.5px] leading-8 mb-4">Cons</h4>
-                <div className="flex flex-col gap-3 mb-6">
-                  <div className="flex items-center gap-2">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src="/images/case-studies/cost.svg" alt="" className="w-6 h-6" />
-                    <span className="text-base font-bold text-white leading-6">Cost</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src="/images/case-studies/less-control.svg" alt="" className="w-6 h-6" />
-                    <span className="text-base font-bold text-white leading-6">Less Control</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src="/images/case-studies/hallucinations.svg" alt="" className="w-6 h-6" />
-                    <span className="text-base font-bold text-white leading-6">Hallucinations</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src="/images/case-studies/high-maintenance.svg" alt="" className="w-6 h-6" />
-                    <span className="text-base font-bold text-white leading-6">High Maintenance</span>
-                  </div>
-                </div>
-                <p className="text-sm text-white leading-5">
-                  Require investment in both cost and maintenance, while offering less direct control over responses and potentially generating inaccurate information.
-                </p>
-              </div>
-            </div>
-          </div>
-
-          {/* The Winning Choice Card */}
-          <div className="mt-16">
-            <div className="relative rounded-[32px] overflow-hidden bg-[#303030] flex flex-col justify-center items-center text-center px-20 pt-14 pb-10">
-              {/* Yellow/gold radial gradient */}
-              <div
-                className="absolute top-0 left-0 right-0 h-[200px] pointer-events-none"
-                style={{
-                  background: 'radial-gradient(100% 100% at 50% 0%, rgba(38, 179, 255, 0.25) 0%, transparent 70%)',
-                }}
+            {/* Right — iMac mockup (wider) */}
+            <div className="bg-[rgba(220,232,248,0.45)] rounded-[20px] flex items-end justify-center overflow-hidden px-10 pt-10">
+              <img
+                src={assets.iMacMockup}
+                alt="Desktop view of the AI assistant"
+                style={{ width: '88%', objectFit: 'contain' }}
               />
-              {/* Icon in rounded pill */}
-              <div className="relative w-16 h-16 rounded-full overflow-hidden mb-4">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={assets.winningChoiceIcon} alt="" className="w-full h-full object-cover" />
-              </div>
-
-              {/* Label */}
-              <span className="relative text-xl tracking-[2px] text-white/50 mb-6">THE WINNING CHOICE</span>
-
-              {/* Heading */}
-              <h2 className="relative cs-callout max-w-[870px] mb-6">
-                LLM Powered API
-              </h2>
-
-              {/* Copy */}
-              <p className="relative cs-body max-w-[870px]">
-                For our team, an LLM powered API was exactly what we were looking for due to its ability to truly understand users queries and respond naturally with relevant information. We decided to use the Assistant&apos;s API from Open AI
-              </p>
             </div>
           </div>
+        </div>
+      </section>
 
-          {/* Learning from Existing Experiences */}
-          <div className="w-full">
-            <div className="flex flex-row flex-wrap gap-x-16 gap-y-6 w-full">
-              <div className="flex-[2] min-w-[250px]">
-                <h3 className="text-2xl font-semibold leading-8 tracking-[-0.5px] text-white">
-                  Learning from existing experiences
-                </h3>
+      {/* ── OUTCOMES ── */}
+      <section className="max-w-[1200px] mx-auto px-20 pb-20">
+        <div className="flex flex-col gap-10">
+          <Section
+            eyebrow="Outcomes"
+            heading="What happened after launch."
+            body="We didn't approach this project with explicit success metrics — the original driver was grant competitiveness. That said, the results were still meaningful: since implementing the assistant, support ticket volume has decreased by 12% compared to previous semesters. The assistant has helped teachers get answers without needing to directly reach out to our team — which was the core promise of the tool."
+          />
+          {/* Stat card */}
+          <div className="flex">
+            <div className="bg-[rgba(220,232,248,0.45)] rounded-[24px] p-8 flex items-center gap-5">
+              {/* Down arrow icon */}
+              <div className="flex-shrink-0 w-14 h-14 rounded-2xl bg-[rgba(79,160,230,0.12)] flex items-center justify-center">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M12 5v14M5 12l7 7 7-7" stroke="#4FA0E6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
               </div>
-              <div className="flex-[3] min-w-[325px] flex flex-col gap-6">
-                <p className="text-base text-white/80 leading-6">
-                  In order to inform our design direction, I conducted a comprehensive comparative analysis of leading LLM chat interfaces: <strong className="font-bold text-white/80">Gemini, Claude, Meta AI, and ChatGPT.</strong>
-                </p>
-                <p className="text-base text-white/80 leading-6">
-                  I focused on <strong className="font-bold text-white">three key areas</strong> to inform our design:
-                </p>
-              </div>
-            </div>
-
-            {/* Carousel */}
-            <div className="mt-10">
-              {/* Carousel with side arrows */}
-              <div className="flex items-center gap-4">
-                {/* Left arrow */}
-                <button
-                  onClick={() => goToSlide(carouselIndex === 0 ? totalSlides - 1 : carouselIndex - 1)}
-                  className="w-10 h-10 flex-shrink-0 rounded-full border border-[#4d4d4d] flex items-center justify-center hover:bg-white/10 transition-colors"
-                >
-                  <ChevronLeft size={20} className="text-white" />
-                </button>
-
-                {/* Carousel viewport */}
-                <div className="overflow-hidden flex-1">
-                  <div
-                    className="flex transition-transform duration-500 ease-in-out"
-                    style={{ transform: `translateX(-${carouselIndex * 100}%)` }}
-                  >
-                    {/* Slide 1: Text Output Behavior */}
-                    <div className="w-full flex-shrink-0 pt-5">
-                      <div className="relative">
-                        {/* Number sticker */}
-                        <div className="absolute left-1/2 -translate-x-1/2 -top-4 z-10">
-                          <NumberSticker number={1} />
-                        </div>
-                        <div className="bg-[#262626] rounded-[24px] border-2 border-[#4d4d4d] overflow-hidden">
-                          {/* Header */}
-                          <div className="px-6 pt-8 pb-5">
-                            <div className="flex items-center gap-4 mb-4">
-                              <SmsIcon sx={{ fontSize: 32, color: '#27b4ff' }} />
-                              <h3 className="cs-subheading">
-                                Text Output Behavior
-                              </h3>
-                            </div>
-                            <p className="cs-body">
-                              How text is displayed in messages (e.g., letter-by-letter, word-by-word, or all at once).
-                            </p>
-                          </div>
-                          {/* Divider */}
-                          <div className="mx-6 h-1 bg-[#303030]" />
-                          {/* Why it matters */}
-                          <div className="px-6 pt-5 pb-6">
-                            <h4 className="cs-subheading mb-6">Why it matters</h4>
-                            <p className="cs-body">
-                              Pacing and visual feedback impacts the perceived responsiveness and speed of the AI.
-                            </p>
-                          </div>
-                          {/* Images */}
-                          <div className="px-6 pb-6">
-                            <div className="grid grid-cols-2 gap-6">
-                              <div className="rounded-lg overflow-hidden">
-                                {/* eslint-disable-next-line @next/next/no-img-element */}
-                                <img src={assets.chatgptTextOutput} alt="ChatGPT text output" className="w-full aspect-[484/500] object-cover" />
-                              </div>
-                              <div className="rounded-lg overflow-hidden">
-                                {/* eslint-disable-next-line @next/next/no-img-element */}
-                                <img src={assets.geminiTextOutput} alt="Gemini text output" className="w-full aspect-[484/500] object-cover" />
-                              </div>
-                            </div>
-                            {/* Captions */}
-                            <div className="grid grid-cols-2 gap-6 mt-3">
-                              <div>
-                                <p className="text-base font-bold text-white/80 leading-6">ChatGPT</p>
-                                <p className="text-base text-white/80 leading-6">Streams text letter-by-letter, with a dot as a visual reference</p>
-                              </div>
-                              <div>
-                                <p className="text-base font-bold text-white/80 leading-6">Gemini</p>
-                                <p className="text-base text-white/80 leading-6">Displays the entire message almost instantaneously with a text skeleton in its loading state.</p>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Slide 2: Message Structure and Layout */}
-                    <div className="w-full flex-shrink-0 pt-5">
-                      <div className="relative">
-                        {/* Number sticker */}
-                        <div className="absolute left-1/2 -translate-x-1/2 -top-4 z-10">
-                          <NumberSticker number={2} />
-                        </div>
-                        <div className="bg-[#262626] rounded-[24px] border-2 border-[#4d4d4d] overflow-hidden">
-                          {/* Header */}
-                          <div className="px-6 pt-8 pb-5">
-                            <div className="flex items-center gap-4 mb-4">
-                              <ForumIcon sx={{ fontSize: 32, color: '#27b4ff' }} />
-                              <h3 className="text-2xl font-semibold leading-8 tracking-[-0.5px] text-white">
-                                Message Structure and Layout
-                              </h3>
-                            </div>
-                            <p className="text-base text-white/80 leading-6">
-                              The organization and visual differentiation of user and AI messages.
-                            </p>
-                          </div>
-                          {/* Divider */}
-                          <div className="mx-6 h-1 bg-[#303030]" />
-                          {/* Why it matters */}
-                          <div className="px-6 pt-5 pb-6">
-                            <h4 className="text-[20px] font-semibold text-white tracking-[-0.3px] leading-[26px] mb-6">Why it matters</h4>
-                            <p className="text-base text-white/80 leading-6">
-                              Clear visual hierarchy and structure helps ensure users can easily follow the conversation and distinguish between their messages and the AI&apos;s responses.
-                            </p>
-                          </div>
-                          {/* Images */}
-                          <div className="px-6 pb-6">
-                            <div className="grid grid-cols-2 gap-6">
-                              <div className="rounded-lg overflow-hidden">
-                                {/* eslint-disable-next-line @next/next/no-img-element */}
-                                <img src={assets.geminiLayout} alt="Gemini layout" className="w-full aspect-[484/500] object-cover" />
-                              </div>
-                              <div className="rounded-lg overflow-hidden">
-                                {/* eslint-disable-next-line @next/next/no-img-element */}
-                                <img src={assets.metaAiLayout} alt="Meta AI layout" className="w-full aspect-[484/500] object-cover" />
-                              </div>
-                            </div>
-                            {/* Captions */}
-                            <div className="grid grid-cols-2 gap-6 mt-3">
-                              <div>
-                                <p className="text-base font-bold text-white/80 leading-6">Gemini</p>
-                                <p className="text-base text-white/80 leading-6">User messages and LLM responses both appear on the left, with icons indicating each source.</p>
-                              </div>
-                              <div>
-                                <p className="text-base font-bold text-white/80 leading-6">Meta AI</p>
-                                <p className="text-base text-white/80 leading-6">User messages appear on the right; LLM responses on the left, with user messages appearing in a text bubble.</p>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Slide 3: Dynamic Page Behavior */}
-                    <div className="w-full flex-shrink-0 pt-5">
-                      <div className="relative">
-                        {/* Number sticker */}
-                        <div className="absolute left-1/2 -translate-x-1/2 -top-4 z-10">
-                          <NumberSticker number={3} />
-                        </div>
-                        <div className="bg-[#262626] rounded-[24px] border-2 border-[#4d4d4d] overflow-hidden">
-                          {/* Header */}
-                          <div className="px-6 pt-8 pb-5">
-                            <div className="flex items-center gap-4 mb-4">
-                              <VerticalAlignTopIcon sx={{ fontSize: 32, color: '#27b4ff' }} />
-                              <h3 className="text-2xl font-semibold leading-8 tracking-[-0.5px] text-white">
-                                Dynamic Page Behavior
-                              </h3>
-                            </div>
-                            <p className="text-base text-white/80 leading-6">
-                              How the interface adapts to new messages, including scrolling and focus management.
-                            </p>
-                          </div>
-                          {/* Divider */}
-                          <div className="mx-6 h-1 bg-[#303030]" />
-                          {/* Why it matters */}
-                          <div className="px-6 pt-5 pb-6">
-                            <h4 className="text-[20px] font-semibold text-white tracking-[-0.3px] leading-[26px] mb-6">Why it matters</h4>
-                            <p className="text-base text-white/80 leading-6">
-                              Smooth and intuitive page behavior ensures users can follow the conversation without losing their place or having to manually scroll.
-                            </p>
-                          </div>
-                          {/* Images */}
-                          <div className="px-6 pb-6">
-                            <div className="grid grid-cols-2 gap-6">
-                              <div className="rounded-lg overflow-hidden">
-                                {/* eslint-disable-next-line @next/next/no-img-element */}
-                                <img src={assets.claudePageBehavior} alt="Claude page behavior" className="w-full aspect-[484/500] object-cover" />
-                              </div>
-                              <div className="rounded-lg overflow-hidden">
-                                {/* eslint-disable-next-line @next/next/no-img-element */}
-                                <img src={assets.geminiPageBehavior} alt="Gemini page behavior" className="w-full aspect-[484/500] object-cover" />
-                              </div>
-                            </div>
-                            {/* Captions */}
-                            <div className="grid grid-cols-2 gap-6 mt-3">
-                              <div>
-                                <p className="text-base font-bold text-white/80 leading-6">Claude</p>
-                                <p className="text-base text-white/80 leading-6">Responses push content upward as text streams in, making it hard to read the response as it loads.</p>
-                              </div>
-                              <div>
-                                <p className="text-base font-bold text-white/80 leading-6">Gemini</p>
-                                <p className="text-base text-white/80 leading-6">Each new message appears in a separate section, keeping the page steady and easy to read.</p>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Right arrow */}
-                <button
-                  onClick={() => goToSlide(carouselIndex === totalSlides - 1 ? 0 : carouselIndex + 1)}
-                  className="w-10 h-10 flex-shrink-0 rounded-full border border-[#4d4d4d] flex items-center justify-center hover:bg-white/10 transition-colors"
-                >
-                  <ChevronRight size={20} className="text-white" />
-                </button>
-              </div>
-
-              {/* Pagination dots */}
-              <div className="flex items-center justify-center gap-3 mt-4">
-                {[0, 1, 2].map((i) => (
-                  <button
-                    key={i}
-                    onClick={() => goToSlide(i)}
-                    className={`rounded-full transition-all ${
-                      carouselIndex === i
-                        ? 'w-3 h-3 bg-white'
-                        : 'w-2.5 h-2.5 bg-white/30 hover:bg-white/50'
-                    }`}
-                  />
-                ))}
-              </div>
-            </div>
-          </div>
-
-          {/* Design Insights */}
-          <div className="mt-4 w-full">
-            {/* Header - left aligned with containers */}
-            <div className="flex flex-col items-start w-full mb-10">
-              <div className="w-full max-w-[1040px]">
-                <h3 className="text-[20px] font-medium leading-[26px] tracking-[-0.3px] text-white/80">
-                  Three Ingredients for a Great LLM Chat Experience:
-                </h3>
-              </div>
-            </div>
-
-            {/* Insight Cards */}
-            <div className="flex flex-col gap-6 w-full max-w-[1040px]">
-              {/* Card 1: Text Streaming */}
-              <div className="bg-[#262626] rounded-[24px] border-2 border-[#4d4d4d] p-6">
-                <StreamIcon sx={{ fontSize: 40, color: '#27b4ff', marginBottom: '16px' }} />
-                <h4 className="text-[20px] font-semibold text-white tracking-[-0.3px] leading-[26px] mb-4">
-                  Text Streaming Enables Faster Response Times
-                </h4>
-                <p className="text-base text-white/80 leading-6 mb-4">
-                  Our analysis revealed that streaming text as it generates (ChatGPT&apos;s approach) provides quicker feedback to users rather than waiting for complete message generation (Gemini&apos;s approach), especially when using APIs.
-                </p>
-                <p className="text-sm text-white/50 italic">
-                  Design Requirement: Implement letter-by-letter streaming
-                </p>
-              </div>
-
-              {/* Card 2: Familiar Message Structure */}
-              <div className="bg-[#262626] rounded-[24px] border-2 border-[#4d4d4d] p-6">
-                <PsychologyIcon sx={{ fontSize: 40, color: '#27b4ff', marginBottom: '16px' }} />
-                <h4 className="text-[20px] font-semibold text-white tracking-[-0.3px] leading-[26px] mb-4">
-                  Familiar Message Structure Reduces Cognitive Load
-                </h4>
-                <p className="text-base text-white/80 leading-6 mb-4">
-                  Left/right message structure with text &quot;bubbles&quot; encasing the user&apos;s messages and an icon next to the Assistant&apos;s responses follows familiar conventions, allowing teachers to instantly distinguish between their messages and the Assistant&apos;s responses without learning new interface patterns.
-                </p>
-                <p className="text-sm text-white/50 italic">
-                  Design Requirement: Use distinctive styling for user vs. AI messages
-                </p>
-              </div>
-
-              {/* Card 3: Dedicated Message Sections */}
-              <div className="bg-[#262626] rounded-[24px] border-2 border-[#4d4d4d] p-6">
-                <ArticleIcon sx={{ fontSize: 40, color: '#27b4ff', marginBottom: '16px' }} />
-                <h4 className="text-[20px] font-semibold text-white tracking-[-0.3px] leading-[26px] mb-4">
-                  Dedicated Message Sections Prevent Reading Disruption
-                </h4>
-                <p className="text-base text-white/80 leading-6 mb-4">
-                  Creating a fresh section for each new exchange (Gemini&apos;s approach) keeps the conversation stable and readable, unlike Claude&apos;s upward-pushing layout that disrupts users mid-reading.
-                </p>
-                <p className="text-sm text-white/50 italic">
-                  Design Requirement: Anchor each message in fixed containers without auto-scrolling during generation
-                </p>
+              <div>
+                <p className="text-[36px] font-bold text-[#1a1a1a] leading-none">12%</p>
+                <p className="text-[14px] text-[#666] mt-1">decrease in support tickets</p>
               </div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Divider */}
-      <div className="max-w-[1200px] mx-auto flex justify-center items-center h-[84px] px-10">
-        <div className="w-full h-1 bg-[#303030]" />
-      </div>
+      <Divider id="section-reflection" label="Reflection" />
 
-      {/* Design Phase Section */}
-      <section className="max-w-[1200px] mx-auto">
-        <div className="flex flex-col justify-center items-start gap-16 p-20">
-          <SectionIndicator label="DESIGN PHASE" />
+      {/* ── REFLECTION ── */}
+      <section className="max-w-[1200px] mx-auto px-20 pb-28">
+        <div className="flex flex-col gap-12">
 
-          <h1 className="text-[56px] font-bold leading-[64px] tracking-[-1px] text-white">
-            Crafting the user experience.
-          </h1>
+          <Section
+            eyebrow="Key Takeaways"
+          />
 
-          <div className="flex flex-row flex-wrap gap-x-16 gap-y-6 w-full">
-            <div className="flex-[2] min-w-[250px]">
-              <h3 className="text-2xl font-semibold leading-8 tracking-[-0.5px] text-white">
-                Translating insights into interface decisions
-              </h3>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="bg-[rgba(220,232,248,0.45)] rounded-[24px] p-8">
+              <p className="text-[11px] font-medium tracking-[1.5px] uppercase text-[#27b4ff] mb-3">Design Landscape</p>
+              <h4 className="text-[18px] font-semibold text-[#1a1a1a] mb-3">LLM chat interfaces are still early — design around your use case, not conventions</h4>
+              <p className="text-[16px] font-normal leading-[175%] text-[#555]">There&apos;s no settled playbook for LLM chat UI yet. Patterns that work for ChatGPT don&apos;t automatically translate to a tool teachers use mid-workflow.</p>
             </div>
-            <div className="flex-[3] min-w-[325px]">
-              <p className="text-base text-white/80 leading-6">
-                Armed with clear design principles from our competitive analysis, I began designing our AI assistant. My approach focused on systematic exploration of key interface decisions — from how users would access the assistant to how conversations would flow — all while ensuring the experience felt native to the Finding Focus platform that teachers already knew and trusted.
-              </p>
+            <div className="bg-[rgba(220,232,248,0.45)] rounded-[24px] p-8">
+              <p className="text-[11px] font-medium tracking-[1.5px] uppercase text-[#27b4ff] mb-3">What I Learned</p>
+              <h4 className="text-[18px] font-semibold text-[#1a1a1a] mb-3">The depth of what goes into making an LLM actually useful surprised me</h4>
+              <p className="text-[16px] font-normal leading-[175%] text-[#555]">Working hands-on with the Assistants API — vector storage, context windows, system prompt design — gave me a much more grounded picture of what&apos;s actually happening under the hood.</p>
             </div>
-          </div>
-
-          {/* Key Design Decisions - carousel matching Learning from existing experiences */}
-          <div className="w-full mt-10">
-            <div className="flex flex-col items-start w-full mb-10">
-              <div className="w-full max-w-[1040px]">
-                <h3 className="text-[20px] font-medium leading-[26px] tracking-[-0.3px] text-white/80">
-                  Key Design Decisions:
-                </h3>
-              </div>
+            <div className="bg-[rgba(220,232,248,0.45)] rounded-[24px] p-8">
+              <p className="text-[11px] font-medium tracking-[1.5px] uppercase text-[#27b4ff] mb-3">Honest Takeaway</p>
+              <h4 className="text-[18px] font-semibold text-[#1a1a1a] mb-3">The assistant helps — but it doesn&apos;t replace a person</h4>
+              <p className="text-[16px] font-normal leading-[175%] text-[#555]">Teachers who onboard with a team member still see higher implementation success than those who don&apos;t. The assistant is a support layer, not a replacement for human connection.</p>
             </div>
-
-            <div className="flex items-center gap-4">
-              <button
-                onClick={() => goToDesignSlide(designCarouselIndex === 0 ? totalDesignSlides - 1 : designCarouselIndex - 1)}
-                className="w-10 h-10 flex-shrink-0 rounded-full border border-[#4d4d4d] flex items-center justify-center hover:bg-white/10 transition-colors"
-              >
-                <ChevronLeft size={20} className="text-white" />
-              </button>
-
-              <div className="overflow-hidden flex-1">
-                <div
-                  className="flex transition-transform duration-500 ease-in-out"
-                  style={{ transform: `translateX(-${designCarouselIndex * 100}%)` }}
-                >
-                  {/* Slide 1: Assistant Access Point */}
-                  <div className="w-full flex-shrink-0 pt-5">
-                    <div className="relative">
-                      <div className="absolute left-1/2 -translate-x-1/2 -top-4 z-10">
-                        <NumberSticker number={1} />
-                      </div>
-                      <div className="bg-[#262626] rounded-[24px] border-2 border-[#4d4d4d] overflow-hidden">
-                        <div className="px-6 pt-8 pb-5">
-                          <div className="flex items-center gap-4 mb-4">
-                            <PlaceIcon sx={{ fontSize: 32, color: '#27b4ff' }} />
-                            <h3 className="text-2xl font-semibold leading-8 tracking-[-0.5px] text-white">
-                              Assistant Access Point
-                            </h3>
-                          </div>
-                          <p className="text-base text-white/80 leading-6">
-                            Where in our interface should users access the assistant from?
-                          </p>
-                        </div>
-                        <div className="mx-6 h-1 bg-[#303030]" />
-                        <div className="px-6 pt-5 pb-6">
-                          <h4 className="text-[20px] font-semibold text-white tracking-[-0.3px] leading-[26px] mb-6">Why it matters</h4>
-                          <p className="text-base text-white/80 leading-6">
-                            The assistant needed to feel ever-present and accessible from anywhere in the platform, while remaining unobtrusive enough that teachers could choose when to engage with it.
-                          </p>
-                        </div>
-                        <div className="mx-6 h-1 bg-[#303030]" />
-                        <div className="px-6 pt-5 pb-6">
-                          <h4 className="text-[20px] font-semibold text-white tracking-[-0.3px] leading-[26px] mb-6">Explorations</h4>
-                          <div className="grid grid-cols-2 gap-6">
-                            <div className="rounded-lg overflow-hidden bg-[#303030] aspect-[484/500]" />
-                            <div className="rounded-lg overflow-hidden bg-[#303030] aspect-[484/500]" />
-                          </div>
-                          <div className="grid grid-cols-2 gap-6 mt-3">
-                            <div>
-                              <p className="text-base font-bold text-white/80 leading-6">Exploration 1</p>
-                              <p className="text-base text-white/80 leading-6">Add caption for first exploration image.</p>
-                            </div>
-                            <div>
-                              <p className="text-base font-bold text-white/80 leading-6">Exploration 2</p>
-                              <p className="text-base text-white/80 leading-6">Add caption for second exploration image.</p>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Slide 2: Modal vs. Inline Experience */}
-                  <div className="w-full flex-shrink-0 pt-5">
-                    <div className="relative">
-                      <div className="absolute left-1/2 -translate-x-1/2 -top-4 z-10">
-                        <NumberSticker number={2} />
-                      </div>
-                      <div className="bg-[#262626] rounded-[24px] border-2 border-[#4d4d4d] overflow-hidden">
-                        <div className="px-6 pt-8 pb-5">
-                          <div className="flex items-center gap-4 mb-4">
-                            <ViewModuleIcon sx={{ fontSize: 32, color: '#27b4ff' }} />
-                            <h3 className="text-2xl font-semibold leading-8 tracking-[-0.5px] text-white">
-                              Modal vs. Inline Experience
-                            </h3>
-                          </div>
-                          <p className="text-base text-white/80 leading-6">
-                            How should the assistant appear in the interface — as an overlay (modal) or embedded within the page layout (inline)?
-                          </p>
-                        </div>
-                        <div className="mx-6 h-1 bg-[#303030]" />
-                        <div className="px-6 pt-5 pb-6">
-                          <h4 className="text-[20px] font-semibold text-white tracking-[-0.3px] leading-[26px] mb-6">Why it matters</h4>
-                          <p className="text-base text-white/80 leading-6">
-                            The presentation affects discoverability, context, and whether users feel the assistant is part of the flow or a separate tool.
-                          </p>
-                        </div>
-                        <div className="mx-6 h-1 bg-[#303030]" />
-                        <div className="px-6 pt-5 pb-6">
-                          <h4 className="text-[20px] font-semibold text-white tracking-[-0.3px] leading-[26px] mb-6">Explorations</h4>
-                          <div className="grid grid-cols-2 gap-6">
-                            <div className="rounded-lg overflow-hidden bg-[#303030] aspect-[484/500]" />
-                            <div className="rounded-lg overflow-hidden bg-[#303030] aspect-[484/500]" />
-                          </div>
-                          <div className="grid grid-cols-2 gap-6 mt-3">
-                            <div>
-                              <p className="text-base font-bold text-white/80 leading-6">Exploration 1</p>
-                              <p className="text-base text-white/80 leading-6">Add caption for first exploration image.</p>
-                            </div>
-                            <div>
-                              <p className="text-base font-bold text-white/80 leading-6">Exploration 2</p>
-                              <p className="text-base text-white/80 leading-6">Add caption for second exploration image.</p>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Slide 3: Empty State Design */}
-                  <div className="w-full flex-shrink-0 pt-5">
-                    <div className="relative">
-                      <div className="absolute left-1/2 -translate-x-1/2 -top-4 z-10">
-                        <NumberSticker number={3} />
-                      </div>
-                      <div className="bg-[#262626] rounded-[24px] border-2 border-[#4d4d4d] overflow-hidden">
-                        <div className="px-6 pt-8 pb-5">
-                          <div className="flex items-center gap-4 mb-4">
-                            <InboxIcon sx={{ fontSize: 32, color: '#27b4ff' }} />
-                            <h3 className="text-2xl font-semibold leading-8 tracking-[-0.5px] text-white">
-                              Empty State Design
-                            </h3>
-                          </div>
-                          <p className="text-base text-white/80 leading-6">
-                            How should the assistant&apos;s empty state clue users in to its functionality — without adding friction?
-                          </p>
-                        </div>
-                        <div className="mx-6 h-1 bg-[#303030]" />
-                        <div className="px-6 pt-5 pb-6">
-                          <h4 className="text-[20px] font-semibold text-white tracking-[-0.3px] leading-[26px] mb-6">Why it matters</h4>
-                          <p className="text-base text-white/80 leading-6">
-                            A clear empty state sets expectations and invites interaction without overwhelming teachers who may be exploring for the first time.
-                          </p>
-                        </div>
-                        <div className="mx-6 h-1 bg-[#303030]" />
-                        <div className="px-6 pt-5 pb-6">
-                          <h4 className="text-[20px] font-semibold text-white tracking-[-0.3px] leading-[26px] mb-6">Explorations</h4>
-                          <div className="grid grid-cols-2 gap-6">
-                            <div className="rounded-lg overflow-hidden bg-[#303030] aspect-[484/500]" />
-                            <div className="rounded-lg overflow-hidden bg-[#303030] aspect-[484/500]" />
-                          </div>
-                          <div className="grid grid-cols-2 gap-6 mt-3">
-                            <div>
-                              <p className="text-base font-bold text-white/80 leading-6">Exploration 1</p>
-                              <p className="text-base text-white/80 leading-6">Add caption for first exploration image.</p>
-                            </div>
-                            <div>
-                              <p className="text-base font-bold text-white/80 leading-6">Exploration 2</p>
-                              <p className="text-base text-white/80 leading-6">Add caption for second exploration image.</p>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <button
-                onClick={() => goToDesignSlide(designCarouselIndex === totalDesignSlides - 1 ? 0 : designCarouselIndex + 1)}
-                className="w-10 h-10 flex-shrink-0 rounded-full border border-[#4d4d4d] flex items-center justify-center hover:bg-white/10 transition-colors"
-              >
-                <ChevronRight size={20} className="text-white" />
-              </button>
-            </div>
-
-            <div className="flex items-center justify-center gap-3 mt-4">
-              {[0, 1, 2].map((i) => (
-                <button
-                  key={i}
-                  onClick={() => goToDesignSlide(i)}
-                  className={`rounded-full transition-all ${
-                    designCarouselIndex === i
-                      ? 'w-3 h-3 bg-white'
-                      : 'w-2.5 h-2.5 bg-white/30 hover:bg-white/50'
-                  }`}
-                />
-              ))}
+            <div className="bg-[rgba(220,232,248,0.45)] rounded-[24px] p-8">
+              <p className="text-[11px] font-medium tracking-[1.5px] uppercase text-[#27b4ff] mb-3">If I Could Do It Again</p>
+              <h4 className="text-[18px] font-semibold text-[#1a1a1a] mb-3">I would have invested more in user testing — but it wasn&apos;t in the cards</h4>
+              <p className="text-[16px] font-normal leading-[175%] text-[#555]">Early-stage startup work rarely has runway for structured usability testing before shipping. It made the competitive research more load-bearing — when you can&apos;t test with users, understanding what established products got right becomes your best available signal.</p>
             </div>
           </div>
+
         </div>
       </section>
 
-      {/* Footer Padding */}
+      {/* Footer */}
       <div className="h-20" />
     </div>
   );

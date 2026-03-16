@@ -36,12 +36,10 @@ export function ImageCard({
         />
       </div>
       <div className="flex items-center justify-end gap-2.5">
-        <span className="text-sm text-white/50">{caption}</span>
-        <div className="px-3 py-1 rounded-full bg-white/10">
-          <span className="text-[10px] font-mono text-white/80 uppercase">
-            {pillText}
-          </span>
-        </div>
+        <span className="cs-caption">{caption}</span>
+        <span className="cs-pill">
+          <span className="cs-pill-text">{pillText}</span>
+        </span>
       </div>
     </div>
   );

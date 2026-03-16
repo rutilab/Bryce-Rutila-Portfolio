@@ -12,21 +12,14 @@ export function ProsConsCard({ type, items, summary }: ProsConsCardProps) {
   const isPros = type === 'pros';
 
   return (
-    <div
-      className="p-6 rounded-3xl"
-      style={{
-        backgroundColor: isPros
-          ? 'rgba(13, 186, 79, 0.1)'
-          : 'rgba(186, 13, 13, 0.1)',
-      }}
-    >
+    <div className={isPros ? 'cs-pros-card' : 'cs-cons-card'}>
       <div className="flex items-center gap-3 mb-4">
         {isPros ? (
           <ThumbsUp className="w-6 h-6 text-[#0dba4f]" />
         ) : (
           <ThumbsDown className="w-6 h-6 text-[#ff3d3d]" />
         )}
-        <h3 className="text-2xl font-semibold text-white">
+        <h3 className="cs-card-title">
           {isPros ? 'Pros' : 'Cons'}
         </h3>
       </div>
@@ -38,11 +31,11 @@ export function ProsConsCard({ type, items, summary }: ProsConsCardProps) {
                 isPros ? 'bg-[#0dba4f]' : 'bg-[#ff3d3d]'
               }`}
             />
-            <span className="text-base text-white/80">{item}</span>
+            <span className="cs-body">{item}</span>
           </li>
         ))}
       </ul>
-      {summary && <p className="text-sm text-white/50">{summary}</p>}
+      {summary && <p className="cs-caption">{summary}</p>}
     </div>
   );
 }

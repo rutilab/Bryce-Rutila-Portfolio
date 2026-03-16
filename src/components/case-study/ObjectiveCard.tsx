@@ -23,8 +23,8 @@ export function ObjectiveCard({ icon, title, description }: ObjectiveCardProps) 
         <IconComponent className="w-5 h-5 text-[#27b4ff]" />
       </div>
       <div>
-        <h4 className="text-lg font-semibold text-white mb-1">{title}</h4>
-        <p className="text-base text-white/80">{description}</p>
+        <h4 className="cs-card-title mb-1">{title}</h4>
+        <p className="cs-body">{description}</p>
       </div>
     </div>
   );
