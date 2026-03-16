@@ -910,10 +910,10 @@ function ResearchDeck() {
     return () => observer.disconnect();
   }, []);
 
-  // Enable/disable deck based on viewport height
+  // Enable/disable deck based on viewport height AND width
   useEffect(() => {
     function checkSize() {
-      setDeckDisabled(window.innerHeight < MIN_DECK_HEIGHT);
+      setDeckDisabled(window.innerHeight < MIN_DECK_HEIGHT || window.innerWidth < 900);
     }
     checkSize();
     window.addEventListener('resize', checkSize);
@@ -1092,7 +1092,7 @@ function DesignDeck() {
   const aniState = useRef({ scrollP: 0, displayP: 0, animating: false, animTarget: 0, animStartP: 0, animStartTime: 0, animId: 0 });
 
   useEffect(() => {
-    function checkSize() { setDeckDisabled(window.innerHeight < MIN_DECK_HEIGHT); }
+    function checkSize() { setDeckDisabled(window.innerHeight < MIN_DECK_HEIGHT || window.innerWidth < 900); }
     checkSize();
     window.addEventListener('resize', checkSize);
     return () => window.removeEventListener('resize', checkSize);
