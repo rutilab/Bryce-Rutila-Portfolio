@@ -1514,7 +1514,7 @@ export default function NodeAIAssistantCaseStudy() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-white text-[#444444] min-[600px]:pr-[100px] overflow-x-hidden">
+    <div className="min-h-screen bg-white text-[#444444] min-[600px]:pr-[100px]">
 
       {/* Fixed white bar — DOM-controlled (no React state) to stay in sync with scroll */}
       <div ref={ideationMaskRef} style={{
@@ -1664,7 +1664,7 @@ export default function NodeAIAssistantCaseStudy() {
           >
             {/* Comparison card */}
             <div className="rounded-[24px] overflow-hidden" style={{ background: 'rgba(220,232,248,0.45)' }}>
-              <div className="grid grid-cols-1 sm:grid-cols-2 divide-y sm:divide-y-0 sm:divide-x divide-[rgba(150,170,210,0.3)]">
+              <div className="grid grid-cols-1 lg:grid-cols-2 divide-y lg:divide-y-0 lg:divide-x divide-[rgba(150,170,210,0.3)]">
 
                 {/* Left: NLU */}
                 <div className="p-8 flex flex-col gap-5">
@@ -1810,12 +1810,9 @@ export default function NodeAIAssistantCaseStudy() {
 
           {/* Design iterate image container */}
           <div>
-            <div className="rounded-[24px] overflow-hidden relative h-[500px] md:h-[380px] flex items-center justify-center p-8 pb-10" style={{ background: 'rgba(220,232,248,0.45)' }}>
+            <div className="rounded-[24px] overflow-hidden relative h-[500px] md:h-[380px] flex items-center justify-center p-8" style={{ background: 'rgba(220,232,248,0.45)' }}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/case-studies/node-ai/design-iterate.png" alt="Design iteration" style={{ width: '60%', height: 'auto', display: 'block' }} />
-            </div>
-            <div className="mt-3 flex justify-center">
-              <p className="text-[13px] text-[#999]">Time to wireframe and explore different ideas</p>
+              <img src="/case-studies/node-ai/design-iterate.png" alt="Design iteration" style={{ maxWidth: '100%', maxHeight: '100%', width: 'auto', height: 'auto', display: 'block' }} />
             </div>
           </div>
 
@@ -1992,7 +1989,7 @@ export default function NodeAIAssistantCaseStudy() {
             eyebrow="Key Takeaways"
           />
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             <div className="bg-[rgba(220,232,248,0.45)] rounded-[24px] p-8">
               <p className="text-[11px] font-medium tracking-[1.5px] uppercase text-[#27b4ff] mb-3">Design Landscape</p>
               <h4 className="text-[18px] font-semibold text-[#1a1a1a] mb-3">LLM chat interfaces are still early — design around your use case, not conventions</h4>

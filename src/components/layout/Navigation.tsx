@@ -58,7 +58,7 @@ export function Navigation() {
               key={item.href}
               href={item.href}
               className={cn(
-                'px-4 py-2 rounded-full text-sm font-medium transition-all duration-200',
+                'px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 whitespace-nowrap',
                 isActive
                   ? 'bg-black text-white'
                   : 'text-white/80 hover:text-white hover:bg-white/10'
