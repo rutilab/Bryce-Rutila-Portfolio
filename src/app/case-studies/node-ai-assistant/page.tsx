@@ -116,12 +116,12 @@ function Section({
       <div className="flex flex-col gap-4">
         <div className="max-w-[720px]">
           {eyebrow && <Eyebrow label={eyebrow} />}
-          <h2 className="text-[30px] font-semibold leading-[125%] tracking-[-0.5px] text-[#1a1a1a] mt-4">
+          <h2 className="text-[22px] md:text-[30px] font-semibold leading-[125%] tracking-[-0.5px] text-[#1a1a1a] mt-4">
             {heading}
           </h2>
         </div>
         {body && (
-          <p className="text-[18px] font-normal leading-[180%] text-[#555] max-w-[920px]">{body}</p>
+          <p className="text-[15px] md:text-[18px] font-normal leading-[180%] text-[#555] max-w-[920px]">{body}</p>
         )}
       </div>
       {children}
@@ -303,7 +303,7 @@ function ComparisonGrid({
 }) {
   return (
     <div>
-      <div className="grid grid-cols-2 gap-3 p-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-6">
         <div className="rounded-xl overflow-hidden bg-white">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={left.src} alt={left.alt} className="w-full h-auto block" />
@@ -313,7 +313,7 @@ function ComparisonGrid({
           <img src={right.src} alt={right.alt} className="w-full h-auto block" />
         </div>
       </div>
-      <div className="grid grid-cols-2 gap-3 px-6 pb-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 px-6 pb-6">
         <div>
           <p className="text-[14px] font-semibold text-[#1a1a1a]">{left.label}</p>
           <p className="text-[14px] font-normal leading-[165%] text-[#777] mt-0.5">{left.caption}</p>
@@ -1481,7 +1481,7 @@ function CyclingGif({ items }: { items: GifItem[] }) {
 // ── Divider ──────────────────────────────────────────────────────────────────
 function Divider({ label, id }: { label?: string; id?: string }) {
   return (
-    <div id={id} className="max-w-[1200px] mx-auto flex items-center h-[84px] px-10">
+    <div id={id} className="max-w-[1200px] mx-auto flex items-center h-[84px] px-5 sm:px-10">
       <div className="flex-1 h-px bg-[#e8e8e8]" />
       {label && (
         <>
@@ -1514,7 +1514,7 @@ export default function NodeAIAssistantCaseStudy() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-white text-[#444444] min-[600px]:pr-[100px]">
+    <div className="min-h-screen bg-white text-[#444444] min-[600px]:pr-[100px] overflow-x-hidden">
 
       {/* Fixed white bar — DOM-controlled (no React state) to stay in sync with scroll */}
       <div ref={ideationMaskRef} style={{
@@ -1536,12 +1536,12 @@ export default function NodeAIAssistantCaseStudy() {
           </div>
 
           {/* Title */}
-          <h1 style={{ fontSize: '40px', fontWeight: 600, lineHeight: '110%', letterSpacing: '-1px', color: '#1a1a1a', marginBottom: '16px', maxWidth: '680px' }}>
+          <h1 className="text-[28px] sm:text-[34px] md:text-[40px] font-semibold leading-[110%] tracking-[-1px] text-[#1a1a1a] mb-4 max-w-[680px]">
             Finding Focus Assistant
           </h1>
 
           {/* Description */}
-          <p className="text-[18px] font-normal leading-[170%] text-[#555] max-w-[800px] mb-10">
+          <p className="text-[15px] md:text-[18px] font-normal leading-[170%] text-[#555] max-w-[800px] mb-10">
             My team and I designed an LLM-powered AI assistant to provide our teachers with on-demand, personalized support directly from within their interface.
           </p>
 
@@ -1549,21 +1549,21 @@ export default function NodeAIAssistantCaseStudy() {
           <HeroIllustration />
 
           {/* My Role / Team / Timeline */}
-          <div className="grid grid-cols-3 gap-10 mt-10 pb-16 text-center">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 sm:gap-10 mt-10 pb-16 text-center sm:text-center">
             <div>
-              <p className="text-[20px] font-semibold text-[#1a1a1a] mb-2">My Role</p>
-              <p className="text-[17px] font-normal leading-[175%] text-[#555]">UX Lead</p>
+              <p className="text-[17px] md:text-[20px] font-semibold text-[#1a1a1a] mb-2">My Role</p>
+              <p className="text-[15px] md:text-[17px] font-normal leading-[175%] text-[#555]">UX Lead</p>
             </div>
             <div>
-              <p className="text-[20px] font-semibold text-[#1a1a1a] mb-2">Team</p>
-              <p className="text-[17px] font-normal leading-[175%] text-[#555]">
+              <p className="text-[17px] md:text-[20px] font-semibold text-[#1a1a1a] mb-2">Team</p>
+              <p className="text-[15px] md:text-[17px] font-normal leading-[175%] text-[#555]">
                 Mike Mrazek, Co-founder<br />
                 Thomas Kennedy, SWE
               </p>
             </div>
             <div>
-              <p className="text-[20px] font-semibold text-[#1a1a1a] mb-2">Timeline</p>
-              <p className="text-[17px] font-normal leading-[175%] text-[#555]">Aug – Nov 2024</p>
+              <p className="text-[17px] md:text-[20px] font-semibold text-[#1a1a1a] mb-2">Timeline</p>
+              <p className="text-[15px] md:text-[17px] font-normal leading-[175%] text-[#555]">Aug – Nov 2024</p>
             </div>
           </div>
 
@@ -1573,7 +1573,7 @@ export default function NodeAIAssistantCaseStudy() {
       <Divider label="Overview" id="section-overview" />
 
       {/* ── CONTEXT ── */}
-      <section className="max-w-[1200px] mx-auto px-20 pb-28">
+      <section className="max-w-[1200px] mx-auto px-5 sm:px-10 md:px-20 pb-14 md:pb-28">
         <Section
           eyebrow="Context"
           heading="Turning a grant requirement into an opportunity for personalized support."
@@ -1589,7 +1589,7 @@ export default function NodeAIAssistantCaseStudy() {
       </section>
 
       {/* ── THE PROBLEM ── */}
-      <section className="max-w-[1200px] mx-auto px-20 pb-28">
+      <section className="max-w-[1200px] mx-auto px-5 sm:px-10 md:px-20 pb-14 md:pb-28">
         <div className="flex flex-col gap-16">
 
           <Section
@@ -1609,7 +1609,7 @@ export default function NodeAIAssistantCaseStudy() {
               <p className="text-[12px] font-medium text-[#aaa] uppercase tracking-[1.5px] mb-1">
                 Painpoints with traditional chatbots:
               </p>
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div className="rounded-[20px] p-6 flex flex-col gap-3" style={{ background: 'rgba(224,48,48,0.06)' }}>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src="/images/case-studies/image.svg" alt="" className="w-6 h-6 flex-shrink-0" />
@@ -1653,7 +1653,7 @@ export default function NodeAIAssistantCaseStudy() {
       <Divider label="Research" id="section-research" />
 
       {/* ── RESEARCH ── */}
-      <section className="max-w-[1200px] mx-auto px-20 pb-28">
+      <section className="max-w-[1200px] mx-auto px-5 sm:px-10 md:px-20 pb-14 md:pb-28">
         <div className="flex flex-col gap-24">
 
           {/* Unit 1: Two options */}
@@ -1664,7 +1664,7 @@ export default function NodeAIAssistantCaseStudy() {
           >
             {/* Comparison card */}
             <div className="rounded-[24px] overflow-hidden" style={{ background: 'rgba(220,232,248,0.45)' }}>
-              <div className="grid grid-cols-2 divide-x divide-[rgba(150,170,210,0.3)]">
+              <div className="grid grid-cols-1 sm:grid-cols-2 divide-y sm:divide-y-0 sm:divide-x divide-[rgba(150,170,210,0.3)]">
 
                 {/* Left: NLU */}
                 <div className="p-8 flex flex-col gap-5">
@@ -1759,8 +1759,8 @@ export default function NodeAIAssistantCaseStudy() {
           <div className="flex flex-col gap-6 -mt-10">
             <div className="flex flex-col gap-3">
               <Eyebrow label="Key Insights" />
-              <h2 className="text-[30px] font-semibold text-[#1a1a1a] leading-[120%]">Three ingredients for a great LLM chat experience.</h2>
-              <p className="text-[18px] font-normal leading-[180%] text-[#555]">The comparative analysis of leading AI chat products revealed consistent patterns that separate frustrating experiences from genuinely effective ones — three design decisions that every LLM chat interface should get right.</p>
+              <h2 className="text-[22px] md:text-[30px] font-semibold text-[#1a1a1a] leading-[120%]">Three ingredients for a great LLM chat experience.</h2>
+              <p className="text-[15px] md:text-[18px] font-normal leading-[180%] text-[#555]">The comparative analysis of leading AI chat products revealed consistent patterns that separate frustrating experiences from genuinely effective ones — three design decisions that every LLM chat interface should get right.</p>
             </div>
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mt-2">
               <div className="bg-white rounded-[20px] border border-[#e8e8e8] p-6 flex flex-col gap-4">
@@ -1799,7 +1799,7 @@ export default function NodeAIAssistantCaseStudy() {
       <Divider label="Design" id="section-design" />
 
       {/* ── DESIGN PHASE ── */}
-      <section className="max-w-[1200px] mx-auto px-20 pb-28">
+      <section className="max-w-[1200px] mx-auto px-5 sm:px-10 md:px-20 pb-14 md:pb-28">
         <div className="flex flex-col gap-12">
 
           <Section
@@ -1835,13 +1835,13 @@ export default function NodeAIAssistantCaseStudy() {
           position: 'sticky', top: 48, zIndex: 20, pointerEvents: 'none',
           background: 'white',
         }}>
-          <div className="max-w-[1200px] mx-auto px-20" style={{ paddingTop: 0, paddingBottom: 16 }}>
+          <div className="max-w-[1200px] mx-auto px-5 sm:px-10 md:px-20" style={{ paddingTop: 0, paddingBottom: 16 }}>
             <Eyebrow label="Ideation" />
           </div>
         </div>
 
         {/* ── IDEATION: ACCESS POINT ── */}
-        <section className="max-w-[1200px] mx-auto px-20 pb-28" style={{ marginTop: -16 }}>
+        <section className="max-w-[1200px] mx-auto px-5 sm:px-10 md:px-20 pb-14 md:pb-28" style={{ marginTop: -16 }}>
           <div className="flex flex-col gap-12">
 
             <Section
@@ -1866,7 +1866,7 @@ export default function NodeAIAssistantCaseStudy() {
         </section>
 
         {/* ── IDEATION: DISPLAY FORMAT ── */}
-        <section className="max-w-[1200px] mx-auto px-20 pb-28">
+        <section className="max-w-[1200px] mx-auto px-5 sm:px-10 md:px-20 pb-14 md:pb-28">
           <div className="flex flex-col gap-12">
 
             <Section
@@ -1894,7 +1894,7 @@ export default function NodeAIAssistantCaseStudy() {
       </div>{/* sticky eyebrow releases here — section 3 scrolls freely */}
 
       {/* ── IDEATION: EMPTY STATE ── */}
-      <section className="max-w-[1200px] mx-auto px-20 pb-28">
+      <section className="max-w-[1200px] mx-auto px-5 sm:px-10 md:px-20 pb-14 md:pb-28">
         <div className="flex flex-col gap-12">
 
           <Section
@@ -1920,7 +1920,7 @@ export default function NodeAIAssistantCaseStudy() {
       </section>
 
       {/* ── FINAL DESIGNS ── */}
-      <section className="max-w-[1200px] mx-auto px-20 pb-20">
+      <section className="max-w-[1200px] mx-auto px-5 sm:px-10 md:px-20 pb-12 md:pb-20">
         <div className="flex flex-col gap-10">
           <Section
             eyebrow="Final Design"
@@ -1934,8 +1934,8 @@ export default function NodeAIAssistantCaseStudy() {
               { src: assets.finalDesignsHero, alt: 'Final design in use', duration: 16350 },
             ]} />
           </div>
-          {/* Two-column row — 1:2 ratio, both columns scale together */}
-          <div className="grid gap-4" style={{ gridTemplateColumns: '1fr 2fr' }}>
+          {/* Two-column row — 1:2 ratio on md+, stacked on mobile */}
+          <div className="grid gap-4 final-devices-grid">
             {/* Left — iPhone mockup (narrower) */}
             <div className="bg-[rgba(220,232,248,0.45)] rounded-[20px] flex items-center justify-center py-12 px-6 overflow-hidden">
               <img
@@ -1957,7 +1957,7 @@ export default function NodeAIAssistantCaseStudy() {
       </section>
 
       {/* ── OUTCOMES ── */}
-      <section className="max-w-[1200px] mx-auto px-20 pb-20">
+      <section className="max-w-[1200px] mx-auto px-5 sm:px-10 md:px-20 pb-12 md:pb-20">
         <div className="flex flex-col gap-10">
           <Section
             eyebrow="Outcomes"
@@ -1985,14 +1985,14 @@ export default function NodeAIAssistantCaseStudy() {
       <Divider id="section-reflection" label="Reflection" />
 
       {/* ── REFLECTION ── */}
-      <section className="max-w-[1200px] mx-auto px-20 pb-28">
+      <section className="max-w-[1200px] mx-auto px-5 sm:px-10 md:px-20 pb-14 md:pb-28">
         <div className="flex flex-col gap-12">
 
           <Section
             eyebrow="Key Takeaways"
           />
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="bg-[rgba(220,232,248,0.45)] rounded-[24px] p-8">
               <p className="text-[11px] font-medium tracking-[1.5px] uppercase text-[#27b4ff] mb-3">Design Landscape</p>
               <h4 className="text-[18px] font-semibold text-[#1a1a1a] mb-3">LLM chat interfaces are still early — design around your use case, not conventions</h4>

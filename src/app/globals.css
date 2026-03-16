@@ -23,6 +23,16 @@ body {
   overflow-x: hidden;
 }
 
+/* Final designs device mockup grid — 1 col on mobile, 1fr 2fr on md+ */
+.final-devices-grid {
+  grid-template-columns: 1fr;
+}
+@media (min-width: 768px) {
+  .final-devices-grid {
+    grid-template-columns: 1fr 2fr;
+  }
+}
+
 /* Glassmorphism utility classes - from Figma design */
 .glass-card {
   background: rgba(0, 0, 0, 0.2);
