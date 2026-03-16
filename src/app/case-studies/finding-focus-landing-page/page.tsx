@@ -507,8 +507,7 @@ export default function LandingPageCaseStudy() {
           {/* Description */}
           <p className="text-[15px] md:text-[18px] font-normal leading-[170%] text-[#555] max-w-[800px] mb-10">
             Led the end-to-end redesign of Finding Focus&apos;s marketing landing page — shifting from a student-centered,
-            outdated design to a teacher-first, modern marketing experience. Every visual asset was created from scratch,
-            with animations and full responsiveness as first-class design concerns.
+            outdated design to a teacher-first, modern marketing experience.
           </p>
 
           {/* Hero image — new design */}
