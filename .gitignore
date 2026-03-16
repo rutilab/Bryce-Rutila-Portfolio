@@ -39,3 +39,14 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# local dev / reference files
+/.nextbuild/
+/Landing Page Reference/
+/Images for claude/
+/sessions/
+/brand-guide.html
+/context-animation-preview.jsx
+/landing-page-case-study.tsx
+/landing-page-case-study-wireframe.md
+/DESIGN.md
