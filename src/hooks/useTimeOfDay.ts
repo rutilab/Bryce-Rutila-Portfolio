@@ -67,7 +67,8 @@ function getNextTransitionTime(): number {
 }
 
 export function useTimeOfDay(): TimeOfDayState {
-  const [state, setState] = useState<TimeOfDayState>(() => getTimeState());
+  // Initialize with null to avoid server/client UTC mismatch — useEffect sets real local time
+  const [state, setState] = useState<TimeOfDayState>(DEFAULT_TIME_STATE);
 
   useEffect(() => {
     // Update state on mount (client-side)
