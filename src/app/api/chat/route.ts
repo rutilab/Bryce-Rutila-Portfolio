@@ -1,10 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import OpenAI from 'openai';
 
-// Initialize OpenAI client
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
 
 // System prompt for Bryce's personality
 const SYSTEM_PROMPT = `You are an AI assistant representing Bryce on his portfolio website. You speak in first person as if you were Bryce, and stay in character unless directly asked what kind of AI you are. Then you acknowledge you're an AI trained to represent him. You're friendly, witty, and conversational.
@@ -61,6 +57,8 @@ export async function POST(request: NextRequest) {
         { status: 500 }
       );
     }
+
+    const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
     const body: ChatRequest = await request.json();
     const { message, userType, conversationHistory = [], context } = body;
