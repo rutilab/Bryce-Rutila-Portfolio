@@ -850,7 +850,7 @@ export default function LandingPageCaseStudy() {
           <Section
             eyebrow="Responsiveness"
             heading="Built for every screen."
-            body="Responsiveness was a first-class design concern — not an afterthought. Every section was designed with mobile in mind from the start."
+            body="Responsiveness was on our mind from the start — not an afterthought. Every section was designed with multiple breakpoints and specific mobile designs."
           >
             <VisualCard>
               <div className="p-6 sm:p-10 flex justify-center">
