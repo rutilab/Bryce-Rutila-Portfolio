@@ -206,7 +206,7 @@ function IdeationViewer({ items }: {
   const [inViewport, setInViewport] = useState(false);
   const itemsRef = useRef(items);
   itemsRef.current = items;
-  const DURATION = 20000;
+  const DURATION = 12000;
 
   useEffect(() => {
     const el = containerRef.current;
@@ -1367,6 +1367,57 @@ function MacBezel({ src, alt }: { src: string; alt: string }) {
   );
 }
 
+// ── ExpandableImage: click-to-lightbox wrapper for static images ──────────────
+function ExpandableImage({ src, alt, style, className }: { src: string; alt: string; style?: React.CSSProperties; className?: string }) {
+  const [open, setOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => { setMounted(true); }, []);
+
+  return (
+    <>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={src} alt={alt} style={{ ...style, cursor: 'zoom-in' }} className={className}
+        onClick={() => setOpen(true)}
+      />
+      {open && mounted && createPortal(
+        <div
+          onClick={() => setOpen(false)}
+          style={{
+            position: 'fixed', inset: 0, zIndex: 9999,
+            background: 'rgba(8,8,8,0.92)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            padding: '40px 32px', cursor: 'zoom-out',
+          }}
+        >
+          <button
+            onClick={() => setOpen(false)}
+            style={{
+              position: 'absolute', top: 20, right: 20,
+              width: 36, height: 36, borderRadius: '50%',
+              background: 'rgba(255,255,255,0.1)', border: 'none',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              color: 'white', cursor: 'pointer',
+            }}
+            className="hover:bg-white/20"
+          >
+            <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
+              <path d="M11.5 3.5l-8 8M3.5 3.5l8 8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+            </svg>
+          </button>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={src} alt={alt}
+            onClick={e => e.stopPropagation()}
+            style={{ maxWidth: 'min(88vw, 1280px)', maxHeight: '82vh', objectFit: 'contain', borderRadius: 14, cursor: 'default', display: 'block' }}
+          />
+        </div>,
+        document.body
+      )}
+    </>
+  );
+}
+
 // ── CyclingGif ───────────────────────────────────────────────────────────────
 type GifItem = { src: string; alt: string; duration: number };
 
@@ -1805,7 +1856,7 @@ export default function NodeAIAssistantCaseStudy() {
           <Section
             eyebrow="UX Considerations"
             heading="Designing for a teacher's first 30 seconds."
-            body="With research and key insights in hand, I focused on the decisions that would define a teacher's first impression — where the assistant lives, how it opens, and what they see before typing a single word."
+            body="With research and key insights in hand, I focused on the decisions that would define a teacher's first impression — where the assistant lives, how it opens, and what they see before asking a question."
           />
 
           {/* Design iterate image container */}
@@ -1920,7 +1971,7 @@ export default function NodeAIAssistantCaseStudy() {
       <section className="max-w-[1200px] mx-auto px-5 sm:px-10 md:px-20 pb-12 md:pb-20">
         <div className="flex flex-col gap-10">
           <Section
-            eyebrow="Final Design"
+            eyebrow="Final Designs"
             heading="Putting it all together."
             body="The three big decisions shown above — access point, display format, empty state — shaped the core design direction; however, this project also included dozens of smaller decisions that don't each merit their own section, but collectively helped shape the final experience."
           />
@@ -1935,7 +1986,7 @@ export default function NodeAIAssistantCaseStudy() {
           <div className="grid gap-4 final-devices-grid">
             {/* Left — iPhone mockup (narrower) */}
             <div className="bg-[rgba(220,232,248,0.45)] rounded-[20px] flex items-center justify-center py-12 px-6 overflow-hidden">
-              <img
+              <ExpandableImage
                 src={assets.iPhoneMockup}
                 alt="Mobile view of the AI assistant"
                 style={{ maxHeight: 420, objectFit: 'contain', transform: 'rotate(-5deg)' }}
@@ -1943,7 +1994,7 @@ export default function NodeAIAssistantCaseStudy() {
             </div>
             {/* Right — iMac mockup (wider) */}
             <div className="bg-[rgba(220,232,248,0.45)] rounded-[20px] flex items-end justify-center overflow-hidden px-10 pt-10">
-              <img
+              <ExpandableImage
                 src={assets.iMacMockup}
                 alt="Desktop view of the AI assistant"
                 style={{ width: '88%', objectFit: 'contain' }}
