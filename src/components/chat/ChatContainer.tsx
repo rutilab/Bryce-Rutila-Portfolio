@@ -317,26 +317,28 @@ export function ChatContainer({ className, disclaimerVisible = true, disclaimerH
   // Interaction lock during animation
   const isInteractionDisabled = isAnimating;
 
-  // Top offset: nav (80px) + actual disclaimer height + 8px gap, or original 160px if dismissed
-  const topPx = disclaimerVisible ? 80 + disclaimerHeight + 8 : 160;
+  // Top offset: nav (80px) + disclaimer + 8px gap, or nav + 24px gap when dismissed
+  const topPx = disclaimerVisible ? 80 + disclaimerHeight + 8 : 104;
+
+  // Max available height: 800px cap, always leaves 24px at the bottom
+  const maxHeight = `min(800px, calc(100dvh - ${topPx + 24}px))`;
 
   // Container height changes per animation stage for smooth transitions
-  // At stage 3 and chat mode: fill down from topPx, cap at 800px, leave 24px at bottom
-  const flexHeight = `min(800px, calc(100dvh - ${topPx + 24}px))`;
-
   const getHeight = () => {
-    if (isChatMode) return flexHeight;
+    if (isChatMode) return maxHeight; // chat mode: explicit height so flex layout works
     if (animationStage === 0) return '200px';
     if (animationStage === 1) return '290px';
     if (animationStage === 2 && !showButtons) return '290px';
     if (animationStage === 2 && showButtons) return '360px';
-    return flexHeight;
+    return 'auto'; // stage 3 non-chat: content drives height naturally
   };
 
   const containerStyle = {
     height: getHeight(),
+    // Non-chat stage 3: cap with max-height so it doesn't overflow on short screens
+    maxHeight: !isChatMode && animationStage >= 3 ? maxHeight : undefined,
     transition: 'all 0.8s cubic-bezier(0.22, 1, 0.36, 1)',
-    overflow: isChatMode ? 'visible' : animationStage >= 3 ? 'visible' : 'hidden',
+    overflow: isChatMode ? 'visible' : animationStage >= 3 ? 'auto' : 'hidden',
   };
 
   const containerClassName = cn(
