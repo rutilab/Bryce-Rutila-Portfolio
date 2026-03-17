@@ -1,41 +1,68 @@
 'use client';
 
+import { useState } from 'react';
 import { ChatContainer } from '@/components/chat';
 
 export default function Home() {
-  return (
-    <main className="min-h-screen flex flex-col px-4 pt-20 pb-8">
+  const [showDisclaimer, setShowDisclaimer] = useState(true);
 
-      {/* Disclaimer — pinned at top, above the chat */}
-      <div className="w-full max-w-3xl mx-auto mb-3 shrink-0">
+  return (
+    <main className="min-h-screen">
+      {/* Disclaimer — fixed below nav, always on top, dismissable */}
+      {showDisclaimer && (
         <div
           style={{
-            background: 'rgba(0,0,0,0.28)',
-            backdropFilter: 'blur(16px)',
-            WebkitBackdropFilter: 'blur(16px)',
-            borderRadius: '1rem',
-            border: '1px solid rgba(255,200,100,0.25)',
-            padding: '12px 18px',
+            position: 'fixed',
+            top: 80,
+            left: 0,
+            right: 0,
+            zIndex: 50,
             display: 'flex',
-            alignItems: 'flex-start',
-            gap: 10,
+            justifyContent: 'center',
+            padding: '0 12px',
           }}
         >
-          <span style={{ fontSize: 16, lineHeight: 1, marginTop: 1 }}>⚠️</span>
-          <p style={{ fontSize: 13, lineHeight: '160%', color: 'rgba(255,230,150,0.85)', margin: 0 }}>
-            <strong style={{ color: 'rgba(255,230,150,1)' }}>BAR 9000 is a work in progress.</strong>{' '}
-            My knowledge base isn&apos;t finalized and the AI hasn&apos;t been fully trained to respond like me yet — so interactions won&apos;t reflect a finished experience. Check back soon to see the completed version.
-          </p>
+          <div
+            style={{
+              maxWidth: '768px',
+              width: '100%',
+              background: 'rgba(0,0,0,0.35)',
+              backdropFilter: 'blur(16px)',
+              WebkitBackdropFilter: 'blur(16px)',
+              borderRadius: '1rem',
+              border: '1px solid rgba(255,200,50,0.55)',
+              padding: '10px 14px 10px 16px',
+              display: 'flex',
+              alignItems: 'flex-start',
+              gap: 10,
+            }}
+          >
+            <span style={{ fontSize: 15, lineHeight: 1, marginTop: 2, flexShrink: 0 }}>⚠️</span>
+            <p style={{ fontSize: 13, lineHeight: '160%', color: 'rgba(255,230,150,0.85)', margin: 0, flex: 1 }}>
+              <strong style={{ color: 'rgba(255,230,150,1)' }}>BAR 9000 is a work in progress.</strong>{' '}
+              My knowledge base isn&apos;t finalized and the AI hasn&apos;t been fully trained to respond like me yet — so interactions won&apos;t reflect a finished experience.
+            </p>
+            <button
+              onClick={() => setShowDisclaimer(false)}
+              aria-label="Dismiss"
+              style={{
+                background: 'none',
+                border: 'none',
+                color: 'rgba(255,230,150,0.5)',
+                cursor: 'pointer',
+                fontSize: 16,
+                lineHeight: 1,
+                padding: '2px 0 0 6px',
+                flexShrink: 0,
+              }}
+            >
+              ✕
+            </button>
+          </div>
         </div>
-      </div>
+      )}
 
-      {/* Chat — takes remaining height, centered */}
-      <div className="flex-1 flex items-center justify-center">
-        <div className="w-full max-w-3xl">
-          <ChatContainer />
-        </div>
-      </div>
-
+      <ChatContainer disclaimerVisible={showDisclaimer} />
     </main>
   );
 }

@@ -63,9 +63,10 @@ const generateId = () => Math.random().toString(36).substring(2, 9);
 
 interface ChatContainerProps {
   className?: string;
+  disclaimerVisible?: boolean;
 }
 
-export function ChatContainer({ className }: ChatContainerProps) {
+export function ChatContainer({ className, disclaimerVisible = true }: ChatContainerProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [userType, setUserType] = useState<UserType | null>(null);
   const [isTyping, setIsTyping] = useState(false);
@@ -84,6 +85,15 @@ export function ChatContainer({ className }: ChatContainerProps) {
   // Ref to track current userType for async callbacks
   const userTypeRef = useRef<UserType | null>(null);
   userTypeRef.current = userType;
+
+  // Ref for the non-chat scrollable content area — auto-scroll to bottom so hero
+  // slides out of view and the question/buttons are always visible on short screens
+  const scrollableRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (animationStage >= 3 && !isChatMode && scrollableRef.current) {
+      scrollableRef.current.scrollTop = scrollableRef.current.scrollHeight;
+    }
+  }, [animationStage, isChatMode]);
 
   // Orchestrate multi-stage progressive reveal animation
   useEffect(() => {
@@ -306,23 +316,25 @@ export function ChatContainer({ className }: ChatContainerProps) {
   // Interaction lock during animation
   const isInteractionDisabled = isAnimating;
 
+  // Top offset depends on whether the disclaimer is visible
+  // disclaimer ~68px tall + 80px nav + 8px gap = ~156px; without = 80px nav + 8px = 88px
+  const topPx = disclaimerVisible ? 152 : 88;
+
   // Container height changes per animation stage for smooth transitions
-  // Using height (not max-height) so the transition actually animates visibly
-  // Heights account for 40px padding on all sides
   const getHeight = () => {
-    if (isChatMode) return 'auto'; // Let content determine height in chat mode
+    if (isChatMode) return 'auto';
     if (animationStage === 0) return '200px';
     if (animationStage === 1) return '290px';
     if (animationStage === 2 && !showButtons) return '290px';
     if (animationStage === 2 && showButtons) return '360px';
-    return 'auto';
+    return `calc(100dvh - ${topPx + 16}px)`; // Stage 3: fill to bottom with small gap
   };
 
   const containerStyle = {
     height: getHeight(),
     maxHeight: isChatMode ? '800px' : undefined,
     transition: 'all 0.8s cubic-bezier(0.22, 1, 0.36, 1)',
-    overflow: isChatMode ? 'visible' : 'hidden',
+    overflow: isChatMode ? 'visible' : animationStage >= 3 ? 'visible' : 'hidden',
   };
 
   const containerClassName = cn(
@@ -330,71 +342,79 @@ export function ChatContainer({ className }: ChatContainerProps) {
     isChatMode && 'rounded-3xl' // Full rounding in chat mode
   );
 
-  // Outer container positioning based on mode
-  const outerContainerClassName = cn(
-    'fixed left-0 right-0 px-5 z-40 flex justify-center',
-    isChatMode
-      ? 'top-[calc(80px+40px)] bottom-[40px]' // 40px below nav (80px) and 40px from bottom
-      : 'top-[160px]',
-    className
-  );
+  // Outer container positioning — uses dynamic topPx based on disclaimer visibility
+  const outerContainerStyle = {
+    position: 'fixed' as const,
+    left: 0,
+    right: 0,
+    top: topPx,
+    bottom: isChatMode ? 12 : undefined,
+    zIndex: 40,
+    display: 'flex',
+    justifyContent: 'center',
+    padding: '0 12px',
+  };
 
   return (
-    <div className={outerContainerClassName}>
-      <div className={cn(containerClassName, 'w-full max-w-[1200px]', isChatMode && 'h-full')} style={containerStyle}>
+    <div style={outerContainerStyle} className={className}>
+      <div className={cn(containerClassName, 'w-full max-w-[1200px]', (isChatMode || animationStage >= 3) && 'h-full')} style={containerStyle}>
         <GlassCard
           className={cn(
-            'w-full',
-            isChatMode ? 'rounded-3xl h-full flex flex-col' : 'rounded-b-3xl'
+            'w-full p-5 sm:p-10 flex flex-col',
+            isChatMode ? 'rounded-3xl' : 'rounded-b-3xl',
+            (isChatMode || animationStage >= 3) && 'h-full'
           )}
-          padding="lg"
+          padding="none"
         >
-          {/* Stage 0+: Hero Section */}
-          {showHero && (
-            <div className="mb-8">
-              <h1 className="text-4xl font-bold text-white mb-2">
-                Hello I&apos;m Bryce.
-              </h1>
-              <p className="text-lg text-white/90">
-                A product designer who loves turning <em>ideas</em> into <em>reality</em>.
-              </p>
-            </div>
-          )}
-
-          {/* Stage 1+: Divider */}
-          {showDivider && (
-            <div className="h-px bg-white/20 mb-8 animate-fade-in-slide-down" />
-          )}
-
-          {/* Stage 1: Typing Indicator (universal component) */}
-          {showTypingIndicator && (
-            <div className="mb-6 animate-fade-in-slide-down">
-              <TypingIndicator showWrapper={false} />
-            </div>
-          )}
-
-          {/* Stage 2: Message Bubble (content-sized, text fades in) */}
-          {showMessage && (
-            <div className="mb-6 max-w-fit">
-              <div className="bg-[#262629] rounded-3xl rounded-bl-none px-4 py-3">
-                <p
-                  className="text-white text-xl leading-[25px] tracking-[-0.45px] opacity-0 animate-fade-in"
-                  style={{ animationDelay: '100ms', fontFamily: 'var(--font-sf-pro)' }}
-                >
-                  So I can point you in the right direction — who am I chatting with?
+          {/* Non-chat scrollable content area — becomes flex-1 at stage 3 so input anchors to bottom */}
+          <div ref={animationStage >= 3 && !isChatMode ? scrollableRef : undefined} className={animationStage >= 3 && !isChatMode ? 'flex-1 overflow-y-auto min-h-0' : 'contents'}>
+            {/* Stage 0+: Hero Section */}
+            {showHero && (
+              <div className="mb-8">
+                <h1 className="text-4xl max-[440px]:text-2xl font-bold text-white mb-2">
+                  Hello I&apos;m Bryce.
+                </h1>
+                <p className="text-lg max-[440px]:text-sm text-white/90">
+                  A product designer who loves turning <em>ideas</em> into <em>reality</em>.
                 </p>
               </div>
-            </div>
-          )}
+            )}
 
-          {/* Stage 2+: User Type Buttons (with staggered spring animation) */}
-          {showUserTypeButtons && (
-            <UserTypeSelector
-              onSelect={handleUserTypeSelect}
-              disabled={isInteractionDisabled}
-              className="mb-8"
-            />
-          )}
+            {/* Stage 1+: Divider */}
+            {showDivider && (
+              <div className="h-px bg-white/20 mb-8 animate-fade-in-slide-down" />
+            )}
+
+            {/* Stage 1: Typing Indicator (universal component) */}
+            {showTypingIndicator && (
+              <div className="mb-6 animate-fade-in-slide-down">
+                <TypingIndicator showWrapper={false} />
+              </div>
+            )}
+
+            {/* Stage 2: Message Bubble (content-sized, text fades in) */}
+            {showMessage && (
+              <div className="mb-6 max-w-fit">
+                <div className="bg-[#262629] rounded-3xl rounded-bl-none px-4 py-3">
+                  <p
+                    className="text-white text-xl max-[440px]:text-base leading-[25px] max-[440px]:leading-[22px] tracking-[-0.45px] opacity-0 animate-fade-in"
+                    style={{ animationDelay: '100ms', fontFamily: 'var(--font-sf-pro)' }}
+                  >
+                    So I can point you in the right direction — who am I chatting with?
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* Stage 2+: User Type Buttons (with staggered spring animation) */}
+            {showUserTypeButtons && (
+              <UserTypeSelector
+                onSelect={handleUserTypeSelect}
+                disabled={isInteractionDisabled}
+                className="mb-8"
+              />
+            )}
+          </div>
 
           {/* Chat Messages (shown after user type selection) */}
           {hasStarted && showInputSection && (
@@ -410,9 +430,9 @@ export function ChatContainer({ className }: ChatContainerProps) {
             />
           )}
 
-          {/* Stage 3+: Input Section */}
+          {/* Stage 3+: Input Section — anchored to bottom via flex layout */}
           {showInputSection && (
-            <div className={cn(!isChatMode && 'animate-fade-in-slide-down', isChatMode && 'mt-auto')}>
+            <div className={cn('-mx-5 sm:-mx-10', !isChatMode && 'animate-fade-in-slide-down')}>
               <ChatInput
                 onSend={handleSendMessage}
                 disabled={isInteractionDisabled || isTyping || isApiLoading}

@@ -76,19 +76,26 @@ export function ChatInput({
     backdropFilter: 'blur(40px)',
     WebkitBackdropFilter: 'blur(40px)',
     borderRadius: '1.5rem',
+    overflow: 'hidden', // clip scrollbar within rounded corners
+    // Fixed max-width centered with auto margins.
+    // 100% = full glass card width (wrapper has negative margins canceling GlassCard padding).
+    // Margins absorb shrinkage from ~80px down to 24px, then input shrinks.
+    width: 'min(calc(100% - 48px), 1040px)',
+    marginLeft: 'auto',
+    marginRight: 'auto',
   };
 
   return (
     <div
       className={cn(
-        'relative mx-20',
+        'relative',
         className,
         disabled && 'opacity-50'
       )}
       style={containerStyle}
     >
       {/* Text input area with send button */}
-      <div className="relative px-6 pt-6 pb-[76px]">
+      <div className="relative px-4 sm:px-6 pt-4 sm:pt-6 pb-[64px] sm:pb-[76px]">
         <textarea
           ref={textareaRef}
           value={value}
@@ -99,7 +106,7 @@ export function ChatInput({
           rows={1}
           className={cn(
             'w-full bg-transparent resize-none outline-none',
-            'text-[#e5e5e5] text-xl leading-[25px] tracking-[-0.45px]',
+            'text-[#e5e5e5] text-xl max-[440px]:text-base leading-[25px] max-[440px]:leading-[22px] tracking-[-0.45px]',
             'placeholder:text-white/40',
             'pr-12',
             disabled && 'cursor-not-allowed'
@@ -150,13 +157,13 @@ export function ChatInput({
         </button>
       </div>
 
-      {/* Separator line */}
+      {/* Separator line + quick questions — hidden on short viewports (<650px height) */}
       {showQuickQuestions && quickQuestions.length > 0 && (
-        <>
+        <div className="[@media(max-height:650px)]:hidden">
           <div className="mx-6 h-px bg-white/15" />
 
           {/* Quick questions */}
-          <div className="px-6 py-4 flex flex-wrap gap-4">
+          <div className="px-4 sm:px-6 pt-3 sm:pt-4 pb-2 flex overflow-x-auto gap-2 sm:gap-3">
             {quickQuestions.map((question) => (
               <button
                 key={question.id}
@@ -164,9 +171,9 @@ export function ChatInput({
                 disabled={disabled}
                 className={cn(
                   'backdrop-blur-[50px] bg-black/5 border border-white/50 rounded-[12px]',
-                  'px-3 py-3',
+                  'px-2.5 py-2 sm:px-3 sm:py-3 shrink-0',
                   'shadow-[0px_4px_12px_0px_rgba(0,0,0,0.3)]',
-                  'text-[#e7e7e7] text-[17px] leading-[22px] tracking-[-0.43px]',
+                  'text-[#e7e7e7] text-[17px] max-[440px]:text-sm leading-[22px] max-[440px]:leading-[20px] tracking-[-0.43px] max-[440px]:tracking-[-0.3px]',
                   'transition-all hover:bg-black hover:text-white cursor-pointer',
                   'disabled:opacity-50 disabled:cursor-not-allowed'
                 )}
@@ -176,7 +183,7 @@ export function ChatInput({
               </button>
             ))}
           </div>
-        </>
+        </div>
       )}
     </div>
   );

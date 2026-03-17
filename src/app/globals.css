@@ -300,9 +300,17 @@ body {
   to { opacity: 1; transform: translateY(0); }
 }
 
+/* Hide scrollbar utility */
+@utility no-scrollbar {
+  &::-webkit-scrollbar { display: none; }
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
 /* Scrollbar styling */
 ::-webkit-scrollbar {
   width: 6px;
+  height: 3px; /* horizontal scrollbars */
 }
 
 ::-webkit-scrollbar-track {
@@ -311,7 +319,7 @@ body {
 
 ::-webkit-scrollbar-thumb {
   background: rgba(255, 255, 255, 0.2);
-  border-radius: 3px;
+  border-radius: 9999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {

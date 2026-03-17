@@ -20,7 +20,7 @@ export function UserTypeSelector({ onSelect, disabled = false, className }: User
   return (
     <div className={cn('', className, disabled && 'pointer-events-none')}>
       {/* User type buttons */}
-      <div className="flex flex-wrap gap-4">
+      <div className="flex flex-wrap gap-2 sm:gap-4">
         {userTypes.map(({ type, label }, index) => (
           <button
             key={type}
@@ -32,9 +32,9 @@ export function UserTypeSelector({ onSelect, disabled = false, className }: User
             }}
             className={cn(
               'backdrop-blur-[50px] bg-black/5 border border-white/50 rounded-[12px]',
-              'px-3 py-3',
+              'px-2.5 py-2 sm:px-3 sm:py-3',
               'shadow-[0px_4px_12px_0px_rgba(0,0,0,0.3)]',
-              'text-[#e7e7e7] text-[17px] leading-[22px] tracking-[-0.43px]',
+              'text-[#e7e7e7] text-[17px] max-[440px]:text-sm leading-[22px] max-[440px]:leading-[20px] tracking-[-0.43px] max-[440px]:tracking-[-0.3px]',
               'transition-all hover:bg-black hover:text-white cursor-pointer',
               'animate-spring-in',
               disabled && 'opacity-50 cursor-not-allowed'
