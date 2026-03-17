@@ -64,9 +64,10 @@ const generateId = () => Math.random().toString(36).substring(2, 9);
 interface ChatContainerProps {
   className?: string;
   disclaimerVisible?: boolean;
+  disclaimerHeight?: number;
 }
 
-export function ChatContainer({ className, disclaimerVisible = true }: ChatContainerProps) {
+export function ChatContainer({ className, disclaimerVisible = true, disclaimerHeight = 68 }: ChatContainerProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [userType, setUserType] = useState<UserType | null>(null);
   const [isTyping, setIsTyping] = useState(false);
@@ -316,9 +317,8 @@ export function ChatContainer({ className, disclaimerVisible = true }: ChatConta
   // Interaction lock during animation
   const isInteractionDisabled = isAnimating;
 
-  // Top offset depends on whether the disclaimer is visible
-  // disclaimer ~68px tall + 80px nav + 8px gap = ~156px; without = 80px nav + 8px = 88px
-  const topPx = disclaimerVisible ? 152 : 88;
+  // Top offset: nav (80px) + actual disclaimer height + 8px gap, or just nav + 8px if dismissed
+  const topPx = disclaimerVisible ? 80 + disclaimerHeight + 8 : 88;
 
   // Container height changes per animation stage for smooth transitions
   const getHeight = () => {

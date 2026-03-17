@@ -1,16 +1,29 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { ChatContainer } from '@/components/chat';
 
 export default function Home() {
   const [showDisclaimer, setShowDisclaimer] = useState(true);
+  const [disclaimerHeight, setDisclaimerHeight] = useState(68); // initial estimate
+  const disclaimerRef = useRef<HTMLDivElement>(null);
+
+  // Measure actual rendered height so ChatContainer always starts below the disclaimer
+  useEffect(() => {
+    if (!showDisclaimer || !disclaimerRef.current) return;
+    const observer = new ResizeObserver(() => {
+      setDisclaimerHeight(disclaimerRef.current?.offsetHeight ?? 68);
+    });
+    observer.observe(disclaimerRef.current);
+    return () => observer.disconnect();
+  }, [showDisclaimer]);
 
   return (
     <main className="min-h-screen">
       {/* Disclaimer — fixed below nav, always on top, dismissable */}
       {showDisclaimer && (
         <div
+          ref={disclaimerRef}
           style={{
             position: 'fixed',
             top: 80,
@@ -62,7 +75,10 @@ export default function Home() {
         </div>
       )}
 
-      <ChatContainer disclaimerVisible={showDisclaimer} />
+      <ChatContainer
+        disclaimerVisible={showDisclaimer}
+        disclaimerHeight={showDisclaimer ? disclaimerHeight : 0}
+      />
     </main>
   );
 }
