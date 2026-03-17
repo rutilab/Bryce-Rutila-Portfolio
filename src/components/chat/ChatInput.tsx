@@ -80,7 +80,7 @@ export function ChatInput({
     // Fixed max-width centered with auto margins.
     // 100% = full glass card width (wrapper has negative margins canceling GlassCard padding).
     // Margins absorb shrinkage from ~80px down to 24px, then input shrinks.
-    width: 'min(calc(100% - 48px), 1040px)',
+    width: 'min(calc(100% - 48px), 740px)',
     marginLeft: 'auto',
     marginRight: 'auto',
   };

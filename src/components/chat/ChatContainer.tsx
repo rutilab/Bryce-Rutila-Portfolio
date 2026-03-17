@@ -317,8 +317,8 @@ export function ChatContainer({ className, disclaimerVisible = true, disclaimerH
   // Interaction lock during animation
   const isInteractionDisabled = isAnimating;
 
-  // Top offset: nav (80px) + actual disclaimer height + 8px gap, or just nav + 8px if dismissed
-  const topPx = disclaimerVisible ? 80 + disclaimerHeight + 8 : 88;
+  // Top offset: nav (80px) + actual disclaimer height + 8px gap, or original 160px if dismissed
+  const topPx = disclaimerVisible ? 80 + disclaimerHeight + 8 : 160;
 
   // Container height changes per animation stage for smooth transitions
   const getHeight = () => {
@@ -332,7 +332,7 @@ export function ChatContainer({ className, disclaimerVisible = true, disclaimerH
 
   const containerStyle = {
     height: getHeight(),
-    maxHeight: isChatMode ? '800px' : undefined,
+    maxHeight: '800px', // cap height on both chat and non-chat modes
     transition: 'all 0.8s cubic-bezier(0.22, 1, 0.36, 1)',
     overflow: isChatMode ? 'visible' : animationStage >= 3 ? 'visible' : 'hidden',
   };
@@ -357,7 +357,7 @@ export function ChatContainer({ className, disclaimerVisible = true, disclaimerH
 
   return (
     <div style={outerContainerStyle} className={className}>
-      <div className={cn(containerClassName, 'w-full max-w-[1200px]', (isChatMode || animationStage >= 3) && 'h-full')} style={containerStyle}>
+      <div className={cn(containerClassName, 'w-full max-w-[900px]', (isChatMode || animationStage >= 3) && 'h-full')} style={containerStyle}>
         <GlassCard
           className={cn(
             'w-full p-5 sm:p-10 flex flex-col',
