@@ -116,7 +116,7 @@ export function ChatMessage({
         )}
       >
         <p
-          className="text-xl leading-[25px] tracking-[-0.45px] whitespace-pre-wrap"
+          className="text-base sm:text-xl leading-[22px] sm:leading-[25px] tracking-[-0.45px] whitespace-pre-wrap"
           style={{ fontFamily: 'var(--font-sf-pro)' }}
         >
           {message.content}

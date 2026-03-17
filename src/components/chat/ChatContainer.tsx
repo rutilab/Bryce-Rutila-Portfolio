@@ -321,18 +321,20 @@ export function ChatContainer({ className, disclaimerVisible = true, disclaimerH
   const topPx = disclaimerVisible ? 80 + disclaimerHeight + 8 : 160;
 
   // Container height changes per animation stage for smooth transitions
+  // At stage 3 and chat mode: fill down from topPx, cap at 800px, leave 24px at bottom
+  const flexHeight = `min(800px, calc(100dvh - ${topPx + 24}px))`;
+
   const getHeight = () => {
-    if (isChatMode) return 'auto';
+    if (isChatMode) return flexHeight;
     if (animationStage === 0) return '200px';
     if (animationStage === 1) return '290px';
     if (animationStage === 2 && !showButtons) return '290px';
     if (animationStage === 2 && showButtons) return '360px';
-    return `calc(100dvh - ${topPx + 16}px)`; // Stage 3: fill to bottom with small gap
+    return flexHeight;
   };
 
   const containerStyle = {
     height: getHeight(),
-    maxHeight: '800px', // cap height on both chat and non-chat modes
     transition: 'all 0.8s cubic-bezier(0.22, 1, 0.36, 1)',
     overflow: isChatMode ? 'visible' : animationStage >= 3 ? 'visible' : 'hidden',
   };
@@ -342,13 +344,12 @@ export function ChatContainer({ className, disclaimerVisible = true, disclaimerH
     isChatMode && 'rounded-3xl' // Full rounding in chat mode
   );
 
-  // Outer container positioning — uses dynamic topPx based on disclaimer visibility
+  // Outer container positioning — top-anchored, height fills down with 24px bottom min
   const outerContainerStyle = {
     position: 'fixed' as const,
     left: 0,
     right: 0,
     top: topPx,
-    bottom: isChatMode ? 12 : undefined,
     zIndex: 40,
     display: 'flex',
     justifyContent: 'center',
