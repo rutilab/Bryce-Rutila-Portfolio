@@ -1,11 +1,11 @@
 export default function CaseStudiesPage() {
   const caseStudies = [
     {
-      id: 'node-ai-assistant',
+      id: 'finding-focus-ai-assistant',
       title: 'Finding Focus AI Assistant',
       description: 'An LLM-powered support agent that provides on-demand support for educators.',
       role: 'UX Lead — Finding Focus',
-      image: '/case-studies/node-ai/GIFs/final-designs-hero.gif',
+      image: '/case-studies/finding-focus-ai-assistant/GIFs/final-designs-hero.gif',
     },
     {
       id: 'finding-focus-landing-page',

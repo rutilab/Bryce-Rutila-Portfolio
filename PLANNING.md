@@ -146,7 +146,7 @@ BAR 9000/
 │   │   ├── about/           # About page
 │   │   ├── case-studies/
 │   │   │   ├── [slug]/      # Dynamic case study route
-│   │   │   └── node-ai-assistant/  # Node AI case study
+│   │   │   └── finding-focus-ai-assistant/  # Finding Focus AI Assistant case study
 │   │   ├── layout.tsx       # Root layout
 │   │   ├── page.tsx         # Home page
 │   │   └── globals.css      # Global styles
@@ -248,7 +248,8 @@ OPENAI_API_KEY=sk-...
 
 - **Background**: #262626
 - **Card background**: #303030
-- **Primary accent**: #27b4ff (rgba(38, 179, 255))
+- **Case study default accent**: #006EFE (`rgb(0, 110, 254)` / `rgba(0, 110, 254, …)`) — use for eyebrows, links, goal cards, objective cards, and most case study UI accents. This is the standard blue for case studies sitewide.
+- **Case study section accents**: Some blocks use a different color on purpose (e.g. **North Star** callouts use **#690FD0** for border and label). Default to the case study accent above unless a section is explicitly designed with its own token.
 - **Error/negative**: #ff3d3d
 - **Text**: white, white/80, white/50
 

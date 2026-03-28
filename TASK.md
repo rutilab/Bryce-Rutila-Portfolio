@@ -1,6 +1,6 @@
 # TASK.md
 
-## Case Study: Node AI Assistant
+## Case Study: Finding Focus AI Assistant
 
 ### Design Implementation (from Figma)
 - [ ] Refine Context section to match Figma design

@@ -10,39 +10,42 @@ import PlaceIcon from '@mui/icons-material/Place';
 import ViewModuleIcon from '@mui/icons-material/ViewModule';
 import InboxIcon from '@mui/icons-material/Inbox';
 
+/** North Star callout: left border + eyebrow (matches NorthStar.svg fills) */
+const NORTH_STAR_CONTAINER_ACCENT = '#690FD0';
+
 // ── Asset paths ──────────────────────────────────────────────────────────────
 const assets = {
-  accessingNodeAi: '/case-studies/node-ai/accessing-node-ai.gif',
-  typicalChatInterface: '/case-studies/node-ai/typical-chat-interface.png',
-  chatgptTextOutput: '/case-studies/node-ai/chatgpt-text-output.gif',
-  geminiTextOutput: '/case-studies/node-ai/gemini-text-output.gif',
-  geminiLayout: '/case-studies/node-ai/gemini-layout.png',
-  metaAiLayout: '/case-studies/node-ai/meta-ai-layout.png',
-  claudePageBehavior: '/case-studies/node-ai/claude-page-behavior.gif',
-  geminiPageBehavior: '/case-studies/node-ai/gemini-page-behavior.gif',
-  openingChatInterface: '/case-studies/node-ai/GIFs/Opening%20Chat%20Interface.gif',
-  emptyStateExample: '/case-studies/node-ai/GIFs/Empty%20State%20Example%20Question.gif',
-  alwaysVisible: '/case-studies/node-ai/GIFs/Always%20Visible.gif',
-  ideationNavDrawerWireframe: '/case-studies/node-ai/ideation-nav-drawer-wireframe.png',
-  ideationNavDrawerComparison: '/case-studies/node-ai/ideation-nav-drawer-comparison.png',
-  ideationFabWireframe: '/case-studies/node-ai/ideation-fab-wireframe.png',
-  ideationFabComparison: '/case-studies/node-ai/ideation-fab-comparison.png',
-  ideationDisplayFullscreenWireframe: '/case-studies/node-ai/ideation-display-fullscreen-wireframe.png',
-  ideationDisplayFullscreenComparison: '/case-studies/node-ai/ideation-display-fullscreen-comparison.png',
-  ideationDisplayAnchoredWireframe: '/case-studies/node-ai/ideation-display-anchored-wireframe.png',
-  ideationDisplayAnchoredComparison: '/case-studies/node-ai/ideation-display-anchored-comparison.png',
-  ideationDisplaySplitWireframe: '/case-studies/node-ai/ideation-display-split-wireframe.png',
-  ideationDisplaySplitComparison: '/case-studies/node-ai/ideation-display-split-comparison.png',
-  ideationEmptyBlankWireframe: '/case-studies/node-ai/ideation-empty-blank-wireframe.png',
-  ideationEmptyBlankComparison: '/case-studies/node-ai/ideation-empty-blank-comparison.png',
-  ideationEmptyTilesWireframe: '/case-studies/node-ai/ideation-empty-tiles-wireframe.png',
-  ideationEmptyTilesComparison: '/case-studies/node-ai/ideation-empty-tiles-comparison.png',
-  ideationEmptyProactiveWireframe: '/case-studies/node-ai/ideation-empty-proactive-wireframe.png',
-  ideationEmptyProactiveComparison: '/case-studies/node-ai/ideation-empty-proactive-comparison.png',
-  finalDesignsHero: '/case-studies/node-ai/GIFs/final-designs-hero.gif',
-  emptyStateDesign: '/case-studies/node-ai/empty-state-design.png',
-  iPhoneMockup: '/case-studies/node-ai/iphone-mockup.png',
-  iMacMockup: '/case-studies/node-ai/imac-mockup.png',
+  accessingAssistant: '/case-studies/finding-focus-ai-assistant/accessing-assistant.gif',
+  typicalChatInterface: '/case-studies/finding-focus-ai-assistant/typical-chat-interface.png',
+  chatgptTextOutput: '/case-studies/finding-focus-ai-assistant/chatgpt-text-output.gif',
+  geminiTextOutput: '/case-studies/finding-focus-ai-assistant/gemini-text-output.gif',
+  geminiLayout: '/case-studies/finding-focus-ai-assistant/gemini-layout.png',
+  metaAiLayout: '/case-studies/finding-focus-ai-assistant/meta-ai-layout.png',
+  claudePageBehavior: '/case-studies/finding-focus-ai-assistant/claude-page-behavior.gif',
+  geminiPageBehavior: '/case-studies/finding-focus-ai-assistant/gemini-page-behavior.gif',
+  openingChatInterface: '/case-studies/finding-focus-ai-assistant/GIFs/Opening%20Chat%20Interface.gif',
+  emptyStateExample: '/case-studies/finding-focus-ai-assistant/GIFs/Empty%20State%20Example%20Question.gif',
+  alwaysVisible: '/case-studies/finding-focus-ai-assistant/GIFs/Always%20Visible.gif',
+  ideationNavDrawerWireframe: '/case-studies/finding-focus-ai-assistant/ideation-nav-drawer-wireframe.png',
+  ideationNavDrawerComparison: '/case-studies/finding-focus-ai-assistant/ideation-nav-drawer-comparison.png',
+  ideationFabWireframe: '/case-studies/finding-focus-ai-assistant/ideation-fab-wireframe.png',
+  ideationFabComparison: '/case-studies/finding-focus-ai-assistant/ideation-fab-comparison.png',
+  ideationDisplayFullscreenWireframe: '/case-studies/finding-focus-ai-assistant/ideation-display-fullscreen-wireframe.png',
+  ideationDisplayFullscreenComparison: '/case-studies/finding-focus-ai-assistant/ideation-display-fullscreen-comparison.png',
+  ideationDisplayAnchoredWireframe: '/case-studies/finding-focus-ai-assistant/ideation-display-anchored-wireframe.png',
+  ideationDisplayAnchoredComparison: '/case-studies/finding-focus-ai-assistant/ideation-display-anchored-comparison.png',
+  ideationDisplaySplitWireframe: '/case-studies/finding-focus-ai-assistant/ideation-display-split-wireframe.png',
+  ideationDisplaySplitComparison: '/case-studies/finding-focus-ai-assistant/ideation-display-split-comparison.png',
+  ideationEmptyBlankWireframe: '/case-studies/finding-focus-ai-assistant/ideation-empty-blank-wireframe.png',
+  ideationEmptyBlankComparison: '/case-studies/finding-focus-ai-assistant/ideation-empty-blank-comparison.png',
+  ideationEmptyTilesWireframe: '/case-studies/finding-focus-ai-assistant/ideation-empty-tiles-wireframe.png',
+  ideationEmptyTilesComparison: '/case-studies/finding-focus-ai-assistant/ideation-empty-tiles-comparison.png',
+  ideationEmptyProactiveWireframe: '/case-studies/finding-focus-ai-assistant/ideation-empty-proactive-wireframe.png',
+  ideationEmptyProactiveComparison: '/case-studies/finding-focus-ai-assistant/ideation-empty-proactive-comparison.png',
+  finalDesignsHero: '/case-studies/finding-focus-ai-assistant/GIFs/final-designs-hero.gif',
+  emptyStateDesign: '/case-studies/finding-focus-ai-assistant/empty-state-design.png',
+  iPhoneMockup: '/case-studies/finding-focus-ai-assistant/iphone-mockup.png',
+  iMacMockup: '/case-studies/finding-focus-ai-assistant/imac-mockup.png',
 };
 
 // ── Text scale (explicit, not relying on cs-* classes) ───────────────────────
@@ -94,7 +97,7 @@ function StopPlayButton({ stopped, onClick }: { stopped: boolean; onClick: () =>
 
 function Eyebrow({ label }: { label: string }) {
   return (
-    <p className="text-[11px] font-medium tracking-[1.5px] uppercase text-[#27b4ff]">
+    <p className="text-[11px] font-medium tracking-[1.5px] uppercase text-[#006EFE]">
       {label}
     </p>
   );
@@ -135,19 +138,27 @@ function Callout({
   heading,
   body,
   compactBody,
+  iconSrc,
 }: {
   accentColor: string;
   label: string;
   heading: string;
   body?: string;
   compactBody?: boolean;
+  iconSrc?: string;
 }) {
   return (
     <div
-      className="pl-6 flex flex-col gap-3 max-w-[760px] bg-white rounded-[16px] py-6 pr-6"
+      className="flex max-w-[760px] items-stretch bg-white rounded-[16px]"
       style={{ boxShadow: '0 2px 16px rgba(0,0,0,0.07)', borderLeft: `2px solid ${accentColor}` }}
     >
-      <div className="flex flex-col gap-3 flex-1">
+      {iconSrc && (
+        <div className="flex shrink-0 items-center justify-center self-stretch px-4" aria-hidden>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={iconSrc} alt="" width={64} height={64} className="block size-16 object-contain" />
+        </div>
+      )}
+      <div className={`flex min-w-0 flex-1 flex-col gap-3 py-6 pr-6 ${iconSrc ? '' : 'pl-6'}`}>
         <p className="text-[11px] font-medium tracking-[1.5px] uppercase" style={{ color: accentColor }}>
           {label}
         </p>
@@ -162,9 +173,9 @@ function Callout({
 
 function DecisionPill({ children }: { children: React.ReactNode }) {
   return (
-    <div className="inline-flex self-start items-center gap-2 bg-[rgba(39,180,255,0.08)] border border-[rgba(39,180,255,0.2)] rounded-full px-4 py-2">
-      <div className="w-1.5 h-1.5 rounded-full bg-[#27b4ff] flex-shrink-0" />
-      <span className="text-[13px] font-medium text-[#27b4ff]">{children}</span>
+    <div className="inline-flex self-start items-center gap-2 bg-[rgba(0,110,254,0.08)] border border-[rgba(0,110,254,0.2)] rounded-full px-4 py-2">
+      <div className="w-1.5 h-1.5 rounded-full bg-[#006EFE] flex-shrink-0" />
+      <span className="text-[13px] font-medium text-[#006EFE]">{children}</span>
     </div>
   );
 }
@@ -284,7 +295,7 @@ function IdeationViewer({ items }: {
         <div className="flex items-center gap-1.5">
           {items.map((_, i) => (
             <button key={i} onClick={() => setCurrent(i)} style={{ height: 5, borderRadius: 3, width: i === current ? 48 : 5, transition: 'width 0.25s', background: 'rgba(0,0,0,0.12)', border: 'none', cursor: 'pointer', padding: 0, position: 'relative', overflow: 'hidden', flexShrink: 0 }}>
-              {i === current && <div style={{ position: 'absolute', left: 0, top: 0, height: '100%', width: `${dotProgress}%`, background: '#27b4ff' }} />}
+              {i === current && <div style={{ position: 'absolute', left: 0, top: 0, height: '100%', width: `${dotProgress}%`, background: '#006EFE' }} />}
             </button>
           ))}
         </div>
@@ -557,7 +568,7 @@ function MediaViewer({
               }}
             >
               {i === current && (
-                <div style={{ position: 'absolute', left: 0, top: 0, height: '100%', width: `${dotProgress}%`, background: '#27b4ff' }} />
+                <div style={{ position: 'absolute', left: 0, top: 0, height: '100%', width: `${dotProgress}%`, background: '#006EFE' }} />
               )}
             </button>
           ))}
@@ -680,21 +691,21 @@ function HeroIllustration() {
 function ChatbotFlowDiagram() {
   return (
     <svg viewBox="0 0 620 230" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full max-w-[620px]">
-      {/* Node 1: User question */}
+      {/* Step 1: User question */}
       <rect x="10" y="80" width="116" height="50" rx="12" fill="#F0F0F0" stroke="#DEDEDE" strokeWidth="1.5"/>
       <text x="68" y="101" textAnchor="middle" fontSize="11" fill="#555" fontFamily="Inter, sans-serif" fontWeight="400">User question</text>
       <text x="68" y="117" textAnchor="middle" fontSize="10" fill="#888" fontFamily="Inter, sans-serif">&quot;How do I log in?&quot;</text>
       {/* Arrow 1 */}
       <line x1="126" y1="105" x2="170" y2="105" stroke="#CACACA" strokeWidth="1.5" strokeDasharray="4 2"/>
       <polygon points="170,100 180,105 170,110" fill="#CACACA"/>
-      {/* Node 2: Decision */}
+      {/* Step 2: Decision */}
       <rect x="180" y="77" width="118" height="56" rx="12" fill="#EEF6FF" stroke="#B8D8F8" strokeWidth="1.5"/>
       <text x="239" y="101" textAnchor="middle" fontSize="11" fill="#3A7EC0" fontFamily="Inter, sans-serif" fontWeight="500">Is it in the</text>
       <text x="239" y="117" textAnchor="middle" fontSize="11" fill="#3A7EC0" fontFamily="Inter, sans-serif" fontWeight="500">decision tree?</text>
       {/* Down arrow: YES */}
       <line x1="239" y1="133" x2="239" y2="170" stroke="#CACACA" strokeWidth="1.5" strokeDasharray="4 2"/>
       <polygon points="234,170 239,180 244,170" fill="#CACACA"/>
-      <text x="239" y="158" textAnchor="middle" fontSize="9.5" fill="#27B4FF" fontFamily="Inter, sans-serif" fontWeight="500">YES</text>
+      <text x="239" y="158" textAnchor="middle" fontSize="9.5" fill="#006EFE" fontFamily="Inter, sans-serif" fontWeight="500">YES</text>
       {/* Scripted reply — pushed down */}
       <rect x="189" y="180" width="100" height="36" rx="10" fill="#EAFAF1" stroke="#A8DFBC" strokeWidth="1.5"/>
       <text x="239" y="203" textAnchor="middle" fontSize="10.5" fill="#2A8A50" fontFamily="Inter, sans-serif" fontWeight="400">Scripted reply ✓</text>
@@ -702,14 +713,14 @@ function ChatbotFlowDiagram() {
       <line x1="298" y1="105" x2="348" y2="105" stroke="#CACACA" strokeWidth="1.5" strokeDasharray="4 2"/>
       <polygon points="348,100 358,105 348,110" fill="#CACACA"/>
       <text x="323" y="96" textAnchor="middle" fontSize="9.5" fill="#E03030" fontFamily="Inter, sans-serif" fontWeight="500">NO</text>
-      {/* Node 3: Input not recognized */}
+      {/* Step 3: Input not recognized */}
       <rect x="358" y="77" width="118" height="56" rx="12" fill="#FFF3F3" stroke="#F5C0C0" strokeWidth="1.5"/>
       <text x="417" y="101" textAnchor="middle" fontSize="11" fill="#C03030" fontFamily="Inter, sans-serif" fontWeight="500">Input not</text>
       <text x="417" y="117" textAnchor="middle" fontSize="11" fill="#C03030" fontFamily="Inter, sans-serif" fontWeight="500">recognized</text>
       {/* Arrow 3 */}
       <line x1="476" y1="105" x2="520" y2="105" stroke="#CACACA" strokeWidth="1.5" strokeDasharray="4 2"/>
       <polygon points="520,100 530,105 520,110" fill="#CACACA"/>
-      {/* Node 4: Stuck */}
+      {/* Step 4: Stuck */}
       <rect x="530" y="80" width="72" height="50" rx="12" fill="#F5F5F5" stroke="#DEDEDE" strokeWidth="1.5"/>
       <text x="566" y="103" textAnchor="middle" fontSize="18" fill="#AAAAAA" fontFamily="Inter, sans-serif">?</text>
       <text x="566" y="119" textAnchor="middle" fontSize="9" fill="#AAAAAA" fontFamily="Inter, sans-serif">stuck</text>
@@ -750,9 +761,9 @@ function APIComparisonDiagram() {
       <text x="110" y="200" textAnchor="middle" fontSize="10" fill="#9CA3AF" fontFamily="Inter, sans-serif">Limited to known inputs</text>
       <line x1="270" y1="10" x2="270" y2="210" stroke="#E5E7EB" strokeWidth="1.5" strokeDasharray="4 3"/>
       <text x="270" y="214" textAnchor="middle" fontSize="9" fill="#C0C0C0" fontFamily="Inter, sans-serif">VS</text>
-      <text x="415" y="18" textAnchor="middle" fontSize="11" fill="#27B4FF" fontFamily="Inter, sans-serif" fontWeight="500" letterSpacing="1">LLM API</text>
+      <text x="415" y="18" textAnchor="middle" fontSize="11" fill="#006EFE" fontFamily="Inter, sans-serif" fontWeight="500" letterSpacing="1">LLM API</text>
       <circle cx="415" cy="110" r="32" fill="#EEF9FF" stroke="#B0E0FF" strokeWidth="1.8"/>
-      <text x="415" y="106" textAnchor="middle" fontSize="10" fill="#27B4FF" fontFamily="Inter, sans-serif" fontWeight="600">LLM</text>
+      <text x="415" y="106" textAnchor="middle" fontSize="10" fill="#006EFE" fontFamily="Inter, sans-serif" fontWeight="600">LLM</text>
       <text x="415" y="120" textAnchor="middle" fontSize="9" fill="#60BFEF" fontFamily="Inter, sans-serif">model</text>
       {[
         { cx: 310, cy: 60, label: 'Query A', color: '#6366F1', bg: '#EEF2FF', border: '#C7D2FE' },
@@ -1000,7 +1011,7 @@ function ResearchDeck() {
   const cards = [
     {
       number: 1 as const,
-      icon: <SmsIcon sx={{ fontSize: 32, color: '#27b4ff' }} />,
+      icon: <SmsIcon sx={{ fontSize: 32, color: '#006EFE' }} />,
       title: 'Text Output Behavior',
       body: 'How text is displayed in responses — letter-by-letter, word-by-word, or all at once. Pacing and visual feedback directly impact how responsive and fast the AI feels.',
       media: [
@@ -1010,7 +1021,7 @@ function ResearchDeck() {
     },
     {
       number: 2 as const,
-      icon: <ForumIcon sx={{ fontSize: 32, color: '#27b4ff' }} />,
+      icon: <ForumIcon sx={{ fontSize: 32, color: '#006EFE' }} />,
       title: 'Message Structure and Layout',
       body: "The visual organization and differentiation of user and AI messages. Clear hierarchy helps users easily follow the conversation and distinguish between their messages and the AI's responses.",
       media: [
@@ -1020,7 +1031,7 @@ function ResearchDeck() {
     },
     {
       number: 3 as const,
-      icon: <VerticalAlignTopIcon sx={{ fontSize: 32, color: '#27b4ff' }} />,
+      icon: <VerticalAlignTopIcon sx={{ fontSize: 32, color: '#006EFE' }} />,
       title: 'Dynamic Page Behavior',
       body: 'How the interface adapts to new messages — scrolling, anchoring, and focus management. Smooth, stable behavior ensures users can follow the conversation without losing their place.',
       media: [
@@ -1145,7 +1156,7 @@ function DesignDeck() {
   const cards = [
     {
       number: 1 as const,
-      icon: <PlaceIcon sx={{ fontSize: 32, color: '#27b4ff' }} />,
+      icon: <PlaceIcon sx={{ fontSize: 32, color: '#006EFE' }} />,
       title: 'Where should teachers access the assistant?',
       body: "If the assistant requires multiple steps to reach, it stays undiscovered. Placement determines whether the feature becomes a daily habit or a buried tool teachers forget exists.",
       decision: 'Persistent entry point in the main nav',
@@ -1155,7 +1166,7 @@ function DesignDeck() {
     },
     {
       number: 2 as const,
-      icon: <ViewModuleIcon sx={{ fontSize: 32, color: '#27b4ff' }} />,
+      icon: <ViewModuleIcon sx={{ fontSize: 32, color: '#006EFE' }} />,
       title: 'Modal overlay or dedicated page experience?',
       body: "A modal risks feeling temporary and constrained — ill-suited to the back-and-forth of a real conversation. The container shape needs to match the nature of the interaction.",
       decision: 'Dedicated full page, accessible from the primary nav',
@@ -1165,7 +1176,7 @@ function DesignDeck() {
     },
     {
       number: 3 as const,
-      icon: <InboxIcon sx={{ fontSize: 32, color: '#27b4ff' }} />,
+      icon: <InboxIcon sx={{ fontSize: 32, color: '#006EFE' }} />,
       title: 'What should teachers see when they first open it?',
       body: "A blank text field with no context is intimidating. If teachers don't immediately understand what to ask, they'll close it without engaging — the empty state is a critical conversion moment.",
       decision: 'Personalized greeting with contextual example questions',
@@ -1577,7 +1588,7 @@ function Divider({ label, id }: { label?: string; id?: string }) {
 }
 
 // ── Page ─────────────────────────────────────────────────────────────────────
-export default function NodeAIAssistantCaseStudy() {
+export default function FindingFocusAiAssistantCaseStudy() {
   const ideationSentinelRef = useRef<HTMLDivElement>(null);
   const ideationWrapperRef = useRef<HTMLDivElement>(null);
   const ideationMaskRef = useRef<HTMLDivElement>(null);
@@ -1608,13 +1619,13 @@ export default function NodeAIAssistantCaseStudy() {
       <SectionNav />
 
       {/* ── HERO ── */}
-      <header id="section-intro" className="relative bg-gradient-to-b from-[rgba(38,179,255,0.12)] to-white to-[87%] min-[600px]:-mr-[100px]">
+      <header id="section-intro" className="relative bg-gradient-to-b from-[rgba(0,110,254,0.12)] to-white to-[87%] min-[600px]:-mr-[100px]">
         <div className="max-w-[1200px] mx-auto px-6 pt-[80px] pb-0">
 
           {/* Company branding */}
           <div className="flex items-center gap-2.5 mb-6" style={{ opacity: 0.65 }}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/case-studies/node-ai/finding-focus-logo.svg" alt="Finding Focus logo" className="h-7 w-auto" style={{ filter: 'brightness(0)' }} />
+            <img src="/case-studies/finding-focus-ai-assistant/finding-focus-logo.svg" alt="Finding Focus logo" className="h-7 w-auto" style={{ filter: 'brightness(0)' }} />
             <span className="text-[15px] font-semibold text-[#000] tracking-[-0.1px]">Finding Focus</span>
           </div>
 
@@ -1665,7 +1676,7 @@ export default function NodeAIAssistantCaseStudy() {
           <VisualCard caption="Clearly we needed a way to scale our support">
             <div className="flex items-center justify-center py-12 px-8">
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/case-studies/node-ai/teacher-reach-diagram.png" alt="Teacher reach diagram" className="w-full max-w-[520px] h-auto block" />
+              <img src="/case-studies/finding-focus-ai-assistant/teacher-reach-diagram.png" alt="Teacher reach diagram" className="w-full max-w-[520px] h-auto block" />
             </div>
           </VisualCard>
         </Section>
@@ -1724,9 +1735,10 @@ export default function NodeAIAssistantCaseStudy() {
           {/* Challenge callout — width capped at ~2 columns */}
           <div style={{ maxWidth: '690px' }}>
             <Callout
-              accentColor="#ff8826"
-              label="Our North Star"
+              accentColor={NORTH_STAR_CONTAINER_ACCENT}
+              label="NORTH STAR"
               heading="Create a genuinely helpful assistant that provides relevant answers to any teacher question."
+              iconSrc="/images/case-studies/NorthStar.svg"
             />
           </div>
 
@@ -1783,7 +1795,7 @@ export default function NodeAIAssistantCaseStudy() {
                 {/* Right: LLM — winner */}
                 <div className="p-8 flex flex-col gap-5 relative">
                   <div className="absolute top-6 right-6">
-                    <span className="text-[11px] font-semibold uppercase tracking-[1px] bg-[rgba(39,180,255,0.12)] text-[#27b4ff] rounded-full px-3 py-1">Winner</span>
+                    <span className="text-[11px] font-semibold uppercase tracking-[1px] bg-[rgba(0,110,254,0.12)] text-[#006EFE] rounded-full px-3 py-1">Winner</span>
                   </div>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src="/images/case-studies/openai.svg" alt="" className="w-8 h-8" />
@@ -1821,7 +1833,7 @@ export default function NodeAIAssistantCaseStudy() {
           {/* Winning choice */}
           <div style={{ maxWidth: '690px' }}>
             <Callout
-              accentColor="#27b4ff"
+              accentColor="#006EFE"
               label="The Winning Choice"
               heading="LLM Powered API"
               body="OpenAI's Assistants API was the clear choice — its ability to truly understand queries, respond naturally, and connect directly to our external knowledge base made it the right fit."
@@ -1847,8 +1859,8 @@ export default function NodeAIAssistantCaseStudy() {
             </div>
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mt-2">
               <div className="bg-white rounded-[20px] border border-[#e8e8e8] p-6 flex flex-col gap-4">
-                <div className="w-9 h-9 rounded-xl bg-[#27b4ff]/10 flex items-center justify-center flex-shrink-0">
-                  <SmsIcon sx={{ fontSize: 20, color: '#27b4ff' }} />
+                <div className="w-9 h-9 rounded-xl bg-[#006EFE]/10 flex items-center justify-center flex-shrink-0">
+                  <SmsIcon sx={{ fontSize: 20, color: '#006EFE' }} />
                 </div>
                 <div>
                   <p className="text-[16px] font-semibold text-[#1a1a1a] mb-2">Implement letter-by-letter text streaming</p>
@@ -1856,8 +1868,8 @@ export default function NodeAIAssistantCaseStudy() {
                 </div>
               </div>
               <div className="bg-white rounded-[20px] border border-[#e8e8e8] p-6 flex flex-col gap-4">
-                <div className="w-9 h-9 rounded-xl bg-[#27b4ff]/10 flex items-center justify-center flex-shrink-0">
-                  <ForumIcon sx={{ fontSize: 20, color: '#27b4ff' }} />
+                <div className="w-9 h-9 rounded-xl bg-[#006EFE]/10 flex items-center justify-center flex-shrink-0">
+                  <ForumIcon sx={{ fontSize: 20, color: '#006EFE' }} />
                 </div>
                 <div>
                   <p className="text-[16px] font-semibold text-[#1a1a1a] mb-2">Use distinctive styling for user vs. AI messages</p>
@@ -1865,8 +1877,8 @@ export default function NodeAIAssistantCaseStudy() {
                 </div>
               </div>
               <div className="bg-white rounded-[20px] border border-[#e8e8e8] p-6 flex flex-col gap-4">
-                <div className="w-9 h-9 rounded-xl bg-[#27b4ff]/10 flex items-center justify-center flex-shrink-0">
-                  <VerticalAlignTopIcon sx={{ fontSize: 20, color: '#27b4ff' }} />
+                <div className="w-9 h-9 rounded-xl bg-[#006EFE]/10 flex items-center justify-center flex-shrink-0">
+                  <VerticalAlignTopIcon sx={{ fontSize: 20, color: '#006EFE' }} />
                 </div>
                 <div>
                   <p className="text-[16px] font-semibold text-[#1a1a1a] mb-2">Anchor each message in a fixed section</p>
@@ -1914,7 +1926,7 @@ export default function NodeAIAssistantCaseStudy() {
             ]} />
 
             <Callout
-              accentColor="#27b4ff"
+              accentColor="#006EFE"
               label="The Winning Choice"
               heading="Floating Action Button"
               body="Always reachable without pulling teachers away from what they're doing."
@@ -1940,7 +1952,7 @@ export default function NodeAIAssistantCaseStudy() {
             ]} />
 
             <Callout
-              accentColor="#27b4ff"
+              accentColor="#006EFE"
               label="The Winning Choice"
               heading="Anchored Modal Overlay"
               body="Stays present without taking over — enough screen space to have a real conversation, without losing sight of where you are."
@@ -1968,7 +1980,7 @@ export default function NodeAIAssistantCaseStudy() {
           ]} />
 
           <Callout
-            accentColor="#27b4ff"
+            accentColor="#006EFE"
             label="The Winning Choice"
             heading="Suggested Question Tiles"
             body="Question tiles give teachers a clear starting point — and signal what the assistant is actually capable of from the moment it opens."
@@ -2054,22 +2066,22 @@ export default function NodeAIAssistantCaseStudy() {
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             <div className="bg-[rgba(220,232,248,0.45)] rounded-[24px] p-8">
-              <p className="text-[11px] font-medium tracking-[1.5px] uppercase text-[#27b4ff] mb-3">Design Landscape</p>
+              <p className="text-[11px] font-medium tracking-[1.5px] uppercase text-[#006EFE] mb-3">Design Landscape</p>
               <h4 className="text-[18px] font-semibold text-[#1a1a1a] mb-3">LLM chat interfaces are still early — design around your use case, not conventions</h4>
               <p className="text-[16px] font-normal leading-[175%] text-[#555]">There&apos;s no settled playbook for LLM chat UI yet. Patterns that work for ChatGPT don&apos;t automatically translate to a tool teachers use mid-workflow.</p>
             </div>
             <div className="bg-[rgba(220,232,248,0.45)] rounded-[24px] p-8">
-              <p className="text-[11px] font-medium tracking-[1.5px] uppercase text-[#27b4ff] mb-3">What I Learned</p>
+              <p className="text-[11px] font-medium tracking-[1.5px] uppercase text-[#006EFE] mb-3">What I Learned</p>
               <h4 className="text-[18px] font-semibold text-[#1a1a1a] mb-3">The depth of what goes into making an LLM actually useful surprised me</h4>
               <p className="text-[16px] font-normal leading-[175%] text-[#555]">Working hands-on with the Assistants API — vector storage, context windows, system prompt design — gave me a much more grounded picture of what&apos;s actually happening under the hood.</p>
             </div>
             <div className="bg-[rgba(220,232,248,0.45)] rounded-[24px] p-8">
-              <p className="text-[11px] font-medium tracking-[1.5px] uppercase text-[#27b4ff] mb-3">Honest Takeaway</p>
+              <p className="text-[11px] font-medium tracking-[1.5px] uppercase text-[#006EFE] mb-3">Honest Takeaway</p>
               <h4 className="text-[18px] font-semibold text-[#1a1a1a] mb-3">The assistant helps — but it doesn&apos;t replace a person</h4>
               <p className="text-[16px] font-normal leading-[175%] text-[#555]">Teachers who onboard with a team member still see higher implementation success than those who don&apos;t. The assistant is a support layer, not a replacement for human connection.</p>
             </div>
             <div className="bg-[rgba(220,232,248,0.45)] rounded-[24px] p-8">
-              <p className="text-[11px] font-medium tracking-[1.5px] uppercase text-[#27b4ff] mb-3">If I Could Do It Again</p>
+              <p className="text-[11px] font-medium tracking-[1.5px] uppercase text-[#006EFE] mb-3">If I Could Do It Again</p>
               <h4 className="text-[18px] font-semibold text-[#1a1a1a] mb-3">I would have invested more in user testing — but it wasn&apos;t in the cards</h4>
               <p className="text-[16px] font-normal leading-[175%] text-[#555]">Early-stage startup work rarely has runway for structured usability testing before shipping. It made the competitive research more load-bearing — when you can&apos;t test with users, understanding what established products got right becomes your best available signal.</p>
             </div>
