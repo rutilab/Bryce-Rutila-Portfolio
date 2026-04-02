@@ -6,10 +6,12 @@ import { createPortal } from 'react-dom';
 import PersonSearchOutlined from '@mui/icons-material/PersonSearchOutlined';
 import AutoFixHighOutlined from '@mui/icons-material/AutoFixHighOutlined';
 import VerifiedUserOutlined from '@mui/icons-material/VerifiedUserOutlined';
+import { NorthStarAnimatedIcon, PainPointGridPlaceholder } from '@/components/case-study';
 
-const CASE_STUDY_ACCENT = '#006EFE';
-/** North Star callout: left border + eyebrow (matches NorthStar.svg fills) */
-const NORTH_STAR_CONTAINER_ACCENT = '#690FD0';
+/** Section eyebrows + goal-card icons/titles (both case studies) */
+const EYEBROW_ICON_COLOR = '#272727';
+/** North Star callout: neutral border + #272727 label; icon is inline animated SVG */
+const NORTH_STAR_LABEL_COLOR = '#272727';
 /** Matches Node AI pain cards: rgba(theme, 0.06) */
 const GOAL_CARD_FILL = 'rgba(0, 110, 254, 0.06)';
 
@@ -46,13 +48,13 @@ const assets = {
 // Card title:       17–19px semibold
 // Card body:        16px normal 175%
 // Caption:          13px normal #888–#999
-// Eyebrow:          11px medium tracking-wide #006EFE
+// Eyebrow:          11px medium tracking-wide #272727
 
 // ── Utility components ───────────────────────────────────────────────────────
 
 function Eyebrow({ label }: { label: string }) {
   return (
-    <p className="text-[11px] font-medium tracking-[1.5px] uppercase text-[#006EFE]">
+    <p className="text-[11px] font-medium tracking-[1.5px] uppercase" style={{ color: EYEBROW_ICON_COLOR }}>
       {label}
     </p>
   );
@@ -96,6 +98,8 @@ function Callout({
   body,
   compactBody,
   iconSrc,
+  icon,
+  variant = 'default',
 }: {
   accentColor: string;
   label: string;
@@ -103,20 +107,32 @@ function Callout({
   body?: string;
   compactBody?: boolean;
   iconSrc?: string;
+  icon?: ReactNode;
+  variant?: 'default' | 'northStar';
 }) {
+  const hasIcon = Boolean(iconSrc || icon);
+  const isNorthStar = variant === 'northStar';
+  const containerStyle = isNorthStar
+    ? { boxShadow: '0 0 0 2px #efefef' }
+    : { boxShadow: '0 2px 16px rgba(0,0,0,0.07)', borderLeft: `2px solid ${accentColor}` };
+  const labelColor = isNorthStar ? NORTH_STAR_LABEL_COLOR : accentColor;
   return (
     <div
       className="flex max-w-[760px] items-stretch bg-white rounded-[16px]"
-      style={{ boxShadow: '0 2px 16px rgba(0,0,0,0.07)', borderLeft: `2px solid ${accentColor}` }}
+      style={containerStyle}
     >
-      {iconSrc && (
+      {hasIcon && (
         <div className="flex shrink-0 items-center justify-center self-stretch px-4" aria-hidden>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={iconSrc} alt="" width={64} height={64} className="block size-16 object-contain" />
+          {icon ?? (
+            iconSrc ? (
+              /* eslint-disable-next-line @next/next/no-img-element */
+              <img src={iconSrc} alt="" width={64} height={64} className="block size-16 object-contain" />
+            ) : null
+          )}
         </div>
       )}
-      <div className={`flex min-w-0 flex-1 flex-col gap-3 py-6 pr-6 ${iconSrc ? '' : 'pl-6'}`}>
-        <p className="text-[11px] font-medium tracking-[1.5px] uppercase" style={{ color: accentColor }}>
+      <div className={`flex min-w-0 flex-1 flex-col gap-3 py-6 pr-6 ${hasIcon ? '' : 'pl-6'}`}>
+        <p className="text-[11px] font-medium tracking-[1.5px] uppercase" style={{ color: labelColor }}>
           {label}
         </p>
         <p className="text-[20px] font-semibold leading-[135%] text-[#1a1a1a]">{heading}</p>
@@ -345,7 +361,7 @@ function IdeationViewer({
               }}
             >
               {i === current && (
-                <div style={{ position: 'absolute', left: 0, top: 0, height: '100%', width: `${dotProgress}%`, background: '#006EFE' }} />
+                <div style={{ position: 'absolute', left: 0, top: 0, height: '100%', width: `${dotProgress}%`, background: EYEBROW_ICON_COLOR }} />
               )}
             </button>
           ))}
@@ -599,11 +615,11 @@ export default function LandingPageCaseStudy() {
             body="The goal for this project was simple: create a kick ass landing page that helps teachers understand the value of Finding Focus and gets them to sign up."
           >
             {/* Goal cards — layout matches Node AI painpoint cards (Finding Focus Assistant case study) */}
-            <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-3">
+            <div className="pain-point-grid mt-6 grid gap-3 grid-cols-[repeat(auto-fit,minmax(250px,1fr))]">
                 <div className="rounded-[20px] p-6 flex flex-col gap-3" style={{ background: GOAL_CARD_FILL }}>
-                  <PersonSearchOutlined sx={{ fontSize: 24, color: CASE_STUDY_ACCENT }} className="flex-shrink-0" aria-hidden />
+                  <PersonSearchOutlined sx={{ fontSize: 24, color: EYEBROW_ICON_COLOR }} className="flex-shrink-0" aria-hidden />
                   <div>
-                    <p className="text-[15px] font-semibold mb-1.5" style={{ color: CASE_STUDY_ACCENT }}>
+                    <p className="text-[15px] font-semibold mb-1.5" style={{ color: EYEBROW_ICON_COLOR }}>
                       Align With Audience
                     </p>
                     <p className="text-[15px] font-normal leading-[175%] text-[#555]">
@@ -612,9 +628,9 @@ export default function LandingPageCaseStudy() {
                   </div>
                 </div>
                 <div className="rounded-[20px] p-6 flex flex-col gap-3" style={{ background: GOAL_CARD_FILL }}>
-                  <AutoFixHighOutlined sx={{ fontSize: 24, color: CASE_STUDY_ACCENT }} className="flex-shrink-0" aria-hidden />
+                  <AutoFixHighOutlined sx={{ fontSize: 24, color: EYEBROW_ICON_COLOR }} className="flex-shrink-0" aria-hidden />
                   <div>
-                    <p className="text-[15px] font-semibold mb-1.5" style={{ color: CASE_STUDY_ACCENT }}>
+                    <p className="text-[15px] font-semibold mb-1.5" style={{ color: EYEBROW_ICON_COLOR }}>
                       Update Visual Design
                     </p>
                     <p className="text-[15px] font-normal leading-[175%] text-[#555]">
@@ -623,9 +639,9 @@ export default function LandingPageCaseStudy() {
                   </div>
                 </div>
                 <div className="rounded-[20px] p-6 flex flex-col gap-3" style={{ background: GOAL_CARD_FILL }}>
-                  <VerifiedUserOutlined sx={{ fontSize: 24, color: CASE_STUDY_ACCENT }} className="flex-shrink-0" aria-hidden />
+                  <VerifiedUserOutlined sx={{ fontSize: 24, color: EYEBROW_ICON_COLOR }} className="flex-shrink-0" aria-hidden />
                   <div>
-                    <p className="text-[15px] font-semibold mb-1.5" style={{ color: CASE_STUDY_ACCENT }}>
+                    <p className="text-[15px] font-semibold mb-1.5" style={{ color: EYEBROW_ICON_COLOR }}>
                       Include Trust Signals
                     </p>
                     <p className="text-[15px] font-normal leading-[175%] text-[#555]">
@@ -633,15 +649,17 @@ export default function LandingPageCaseStudy() {
                     </p>
                   </div>
                 </div>
+                <PainPointGridPlaceholder />
             </div>
           </Section>
 
           <div style={{ maxWidth: '690px' }}>
             <Callout
-              accentColor={NORTH_STAR_CONTAINER_ACCENT}
+              accentColor="#272727"
+              variant="northStar"
               label="North Star"
               heading="Convert skeptical teachers into sign-ups by making a great first impression and building confidence in the product."
-              iconSrc="/images/case-studies/NorthStar.svg"
+              icon={<NorthStarAnimatedIcon className="block size-16 shrink-0" />}
             />
           </div>
         </div>

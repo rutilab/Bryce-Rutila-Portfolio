@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { AI_ASSISTANT_CSS, AI_ASSISTANT_HTML } from './ai-assistant-modal';
 import SmsIcon from '@mui/icons-material/Sms';
@@ -9,9 +9,12 @@ import VerticalAlignTopIcon from '@mui/icons-material/VerticalAlignTop';
 import PlaceIcon from '@mui/icons-material/Place';
 import ViewModuleIcon from '@mui/icons-material/ViewModule';
 import InboxIcon from '@mui/icons-material/Inbox';
+import { NorthStarAnimatedIcon, PainPointGridPlaceholder } from '@/components/case-study';
 
-/** North Star callout: left border + eyebrow (matches NorthStar.svg fills) */
-const NORTH_STAR_CONTAINER_ACCENT = '#690FD0';
+/** North Star callout: neutral border + #272727 label; icon is inline animated SVG */
+const NORTH_STAR_LABEL_COLOR = '#272727';
+/** Section eyebrows, MUI icons, diagram labels, carousel progress (Finding Focus case studies) */
+const EYEBROW_ICON_COLOR = '#272727';
 
 // ── Asset paths ──────────────────────────────────────────────────────────────
 const assets = {
@@ -54,7 +57,7 @@ const assets = {
 // Card title:         17px semibold
 // Card body:          16px normal 175%
 // Caption:            13px normal #888
-// Eyebrow:            11px medium tracking-wide blue
+// Eyebrow:            11px medium tracking-wide #272727
 
 // ── Utility components ───────────────────────────────────────────────────────
 
@@ -97,7 +100,7 @@ function StopPlayButton({ stopped, onClick }: { stopped: boolean; onClick: () =>
 
 function Eyebrow({ label }: { label: string }) {
   return (
-    <p className="text-[11px] font-medium tracking-[1.5px] uppercase text-[#006EFE]">
+    <p className="text-[11px] font-medium tracking-[1.5px] uppercase" style={{ color: EYEBROW_ICON_COLOR }}>
       {label}
     </p>
   );
@@ -139,6 +142,8 @@ function Callout({
   body,
   compactBody,
   iconSrc,
+  icon,
+  variant = 'default',
 }: {
   accentColor: string;
   label: string;
@@ -146,20 +151,32 @@ function Callout({
   body?: string;
   compactBody?: boolean;
   iconSrc?: string;
+  icon?: ReactNode;
+  variant?: 'default' | 'northStar';
 }) {
+  const hasIcon = Boolean(iconSrc || icon);
+  const isNorthStar = variant === 'northStar';
+  const containerStyle = isNorthStar
+    ? { boxShadow: '0 0 0 2px #efefef' }
+    : { boxShadow: '0 2px 16px rgba(0,0,0,0.07)', borderLeft: `2px solid ${accentColor}` };
+  const labelColor = isNorthStar ? NORTH_STAR_LABEL_COLOR : accentColor;
   return (
     <div
       className="flex max-w-[760px] items-stretch bg-white rounded-[16px]"
-      style={{ boxShadow: '0 2px 16px rgba(0,0,0,0.07)', borderLeft: `2px solid ${accentColor}` }}
+      style={containerStyle}
     >
-      {iconSrc && (
+      {hasIcon && (
         <div className="flex shrink-0 items-center justify-center self-stretch px-4" aria-hidden>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={iconSrc} alt="" width={64} height={64} className="block size-16 object-contain" />
+          {icon ?? (
+            iconSrc ? (
+              /* eslint-disable-next-line @next/next/no-img-element */
+              <img src={iconSrc} alt="" width={64} height={64} className="block size-16 object-contain" />
+            ) : null
+          )}
         </div>
       )}
-      <div className={`flex min-w-0 flex-1 flex-col gap-3 py-6 pr-6 ${iconSrc ? '' : 'pl-6'}`}>
-        <p className="text-[11px] font-medium tracking-[1.5px] uppercase" style={{ color: accentColor }}>
+      <div className={`flex min-w-0 flex-1 flex-col gap-3 py-6 pr-6 ${hasIcon ? '' : 'pl-6'}`}>
+        <p className="text-[11px] font-medium tracking-[1.5px] uppercase" style={{ color: labelColor }}>
           {label}
         </p>
         <p className="text-[20px] font-semibold leading-[135%] text-[#1a1a1a]">{heading}</p>
@@ -173,9 +190,9 @@ function Callout({
 
 function DecisionPill({ children }: { children: React.ReactNode }) {
   return (
-    <div className="inline-flex self-start items-center gap-2 bg-[rgba(0,110,254,0.08)] border border-[rgba(0,110,254,0.2)] rounded-full px-4 py-2">
-      <div className="w-1.5 h-1.5 rounded-full bg-[#006EFE] flex-shrink-0" />
-      <span className="text-[13px] font-medium text-[#006EFE]">{children}</span>
+    <div className="inline-flex self-start items-center gap-2 bg-[rgba(39,39,39,0.08)] border border-[rgba(39,39,39,0.2)] rounded-full px-4 py-2">
+      <div className="w-1.5 h-1.5 rounded-full bg-[#272727] flex-shrink-0" />
+      <span className="text-[13px] font-medium text-[#272727]">{children}</span>
     </div>
   );
 }
@@ -295,7 +312,7 @@ function IdeationViewer({ items }: {
         <div className="flex items-center gap-1.5">
           {items.map((_, i) => (
             <button key={i} onClick={() => setCurrent(i)} style={{ height: 5, borderRadius: 3, width: i === current ? 48 : 5, transition: 'width 0.25s', background: 'rgba(0,0,0,0.12)', border: 'none', cursor: 'pointer', padding: 0, position: 'relative', overflow: 'hidden', flexShrink: 0 }}>
-              {i === current && <div style={{ position: 'absolute', left: 0, top: 0, height: '100%', width: `${dotProgress}%`, background: '#006EFE' }} />}
+              {i === current && <div style={{ position: 'absolute', left: 0, top: 0, height: '100%', width: `${dotProgress}%`, background: '#272727' }} />}
             </button>
           ))}
         </div>
@@ -568,7 +585,7 @@ function MediaViewer({
               }}
             >
               {i === current && (
-                <div style={{ position: 'absolute', left: 0, top: 0, height: '100%', width: `${dotProgress}%`, background: '#006EFE' }} />
+                <div style={{ position: 'absolute', left: 0, top: 0, height: '100%', width: `${dotProgress}%`, background: '#272727' }} />
               )}
             </button>
           ))}
@@ -705,7 +722,7 @@ function ChatbotFlowDiagram() {
       {/* Down arrow: YES */}
       <line x1="239" y1="133" x2="239" y2="170" stroke="#CACACA" strokeWidth="1.5" strokeDasharray="4 2"/>
       <polygon points="234,170 239,180 244,170" fill="#CACACA"/>
-      <text x="239" y="158" textAnchor="middle" fontSize="9.5" fill="#006EFE" fontFamily="Inter, sans-serif" fontWeight="500">YES</text>
+      <text x="239" y="158" textAnchor="middle" fontSize="9.5" fill="#272727" fontFamily="Inter, sans-serif" fontWeight="500">YES</text>
       {/* Scripted reply — pushed down */}
       <rect x="189" y="180" width="100" height="36" rx="10" fill="#EAFAF1" stroke="#A8DFBC" strokeWidth="1.5"/>
       <text x="239" y="203" textAnchor="middle" fontSize="10.5" fill="#2A8A50" fontFamily="Inter, sans-serif" fontWeight="400">Scripted reply ✓</text>
@@ -761,10 +778,10 @@ function APIComparisonDiagram() {
       <text x="110" y="200" textAnchor="middle" fontSize="10" fill="#9CA3AF" fontFamily="Inter, sans-serif">Limited to known inputs</text>
       <line x1="270" y1="10" x2="270" y2="210" stroke="#E5E7EB" strokeWidth="1.5" strokeDasharray="4 3"/>
       <text x="270" y="214" textAnchor="middle" fontSize="9" fill="#C0C0C0" fontFamily="Inter, sans-serif">VS</text>
-      <text x="415" y="18" textAnchor="middle" fontSize="11" fill="#006EFE" fontFamily="Inter, sans-serif" fontWeight="500" letterSpacing="1">LLM API</text>
+      <text x="415" y="18" textAnchor="middle" fontSize="11" fill="#272727" fontFamily="Inter, sans-serif" fontWeight="500" letterSpacing="1">LLM API</text>
       <circle cx="415" cy="110" r="32" fill="#EEF9FF" stroke="#B0E0FF" strokeWidth="1.8"/>
-      <text x="415" y="106" textAnchor="middle" fontSize="10" fill="#006EFE" fontFamily="Inter, sans-serif" fontWeight="600">LLM</text>
-      <text x="415" y="120" textAnchor="middle" fontSize="9" fill="#60BFEF" fontFamily="Inter, sans-serif">model</text>
+      <text x="415" y="106" textAnchor="middle" fontSize="10" fill="#272727" fontFamily="Inter, sans-serif" fontWeight="600">LLM</text>
+      <text x="415" y="120" textAnchor="middle" fontSize="9" fill="#272727" fontFamily="Inter, sans-serif">model</text>
       {[
         { cx: 310, cy: 60, label: 'Query A', color: '#6366F1', bg: '#EEF2FF', border: '#C7D2FE' },
         { cx: 310, cy: 110, label: 'Query B', color: '#8B5CF6', bg: '#F5F3FF', border: '#DDD6FE' },
@@ -779,8 +796,8 @@ function APIComparisonDiagram() {
           <text x={cx} y={cy + 4} textAnchor="middle" fontSize="9.5" fill={color} fontFamily="Inter, sans-serif" fontWeight="500">{label}</text>
         </g>
       ))}
-      <text x="415" y="186" textAnchor="middle" fontSize="10" fill="#60BFEF" fontFamily="Inter, sans-serif">Understands any input</text>
-      <text x="415" y="200" textAnchor="middle" fontSize="10" fill="#60BFEF" fontFamily="Inter, sans-serif">Generates contextual responses</text>
+      <text x="415" y="186" textAnchor="middle" fontSize="10" fill="#272727" fontFamily="Inter, sans-serif">Understands any input</text>
+      <text x="415" y="200" textAnchor="middle" fontSize="10" fill="#272727" fontFamily="Inter, sans-serif">Generates contextual responses</text>
     </svg>
   );
 }
@@ -1011,7 +1028,7 @@ function ResearchDeck() {
   const cards = [
     {
       number: 1 as const,
-      icon: <SmsIcon sx={{ fontSize: 32, color: '#006EFE' }} />,
+      icon: <SmsIcon sx={{ fontSize: 32, color: '#272727' }} />,
       title: 'Text Output Behavior',
       body: 'How text is displayed in responses — letter-by-letter, word-by-word, or all at once. Pacing and visual feedback directly impact how responsive and fast the AI feels.',
       media: [
@@ -1021,7 +1038,7 @@ function ResearchDeck() {
     },
     {
       number: 2 as const,
-      icon: <ForumIcon sx={{ fontSize: 32, color: '#006EFE' }} />,
+      icon: <ForumIcon sx={{ fontSize: 32, color: '#272727' }} />,
       title: 'Message Structure and Layout',
       body: "The visual organization and differentiation of user and AI messages. Clear hierarchy helps users easily follow the conversation and distinguish between their messages and the AI's responses.",
       media: [
@@ -1031,7 +1048,7 @@ function ResearchDeck() {
     },
     {
       number: 3 as const,
-      icon: <VerticalAlignTopIcon sx={{ fontSize: 32, color: '#006EFE' }} />,
+      icon: <VerticalAlignTopIcon sx={{ fontSize: 32, color: '#272727' }} />,
       title: 'Dynamic Page Behavior',
       body: 'How the interface adapts to new messages — scrolling, anchoring, and focus management. Smooth, stable behavior ensures users can follow the conversation without losing their place.',
       media: [
@@ -1156,7 +1173,7 @@ function DesignDeck() {
   const cards = [
     {
       number: 1 as const,
-      icon: <PlaceIcon sx={{ fontSize: 32, color: '#006EFE' }} />,
+      icon: <PlaceIcon sx={{ fontSize: 32, color: '#272727' }} />,
       title: 'Where should teachers access the assistant?',
       body: "If the assistant requires multiple steps to reach, it stays undiscovered. Placement determines whether the feature becomes a daily habit or a buried tool teachers forget exists.",
       decision: 'Persistent entry point in the main nav',
@@ -1166,7 +1183,7 @@ function DesignDeck() {
     },
     {
       number: 2 as const,
-      icon: <ViewModuleIcon sx={{ fontSize: 32, color: '#006EFE' }} />,
+      icon: <ViewModuleIcon sx={{ fontSize: 32, color: '#272727' }} />,
       title: 'Modal overlay or dedicated page experience?',
       body: "A modal risks feeling temporary and constrained — ill-suited to the back-and-forth of a real conversation. The container shape needs to match the nature of the interaction.",
       decision: 'Dedicated full page, accessible from the primary nav',
@@ -1176,7 +1193,7 @@ function DesignDeck() {
     },
     {
       number: 3 as const,
-      icon: <InboxIcon sx={{ fontSize: 32, color: '#006EFE' }} />,
+      icon: <InboxIcon sx={{ fontSize: 32, color: '#272727' }} />,
       title: 'What should teachers see when they first open it?',
       body: "A blank text field with no context is intimidating. If teachers don't immediately understand what to ask, they'll close it without engaging — the empty state is a critical conversion moment.",
       decision: 'Personalized greeting with contextual example questions',
@@ -1673,7 +1690,7 @@ export default function FindingFocusAiAssistantCaseStudy() {
           heading="Turning a grant requirement into an opportunity for personalized support."
           body="Our most successful teachers shared one common thread — direct support from our team during implementation. With grant requirements pushing us toward AI integration, we recognized that an LLM-powered assistant could provide that same hands-on support to every teacher at scale."
         >
-          <VisualCard caption="Clearly we needed a way to scale our support">
+          <VisualCard caption="less than 5% of all of Finding Focus's sign-ups received one-on-one support">
             <div className="flex items-center justify-center py-12 px-8">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src="/case-studies/finding-focus-ai-assistant/teacher-reach-diagram.png" alt="Teacher reach diagram" className="w-full max-w-[520px] h-auto block" />
@@ -1691,19 +1708,13 @@ export default function FindingFocusAiAssistantCaseStudy() {
             heading="Teachers don't like chatbots."
             body="The teachers we talked to were burned out from previous experiences with other chatbots — and for good reason. Traditional chatbots run on rigid decision trees. So when a teacher's question didn't match a pre-defined path, the conversation simply stalled — leaving them frustrated."
           >
-            {/* Chatbot flow diagram */}
-            <VisualCard caption="Simplified diagram showing how a traditional chatbot handles user queries">
-              <div className="p-10 md:p-14 flex items-center justify-center">
-                <ChatbotFlowDiagram />
-              </div>
-            </VisualCard>
-
-            {/* Three failure modes — side by side, light red */}
-            <div className="flex flex-col gap-3 mt-6">
-              <p className="text-[12px] font-medium text-[#aaa] uppercase tracking-[1.5px] mb-1">
-                Painpoints with traditional chatbots:
-              </p>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div className="flex flex-col gap-6">
+              <VisualCard>
+                <div className="p-10 md:p-14 flex items-center justify-center">
+                  <ChatbotFlowDiagram />
+                </div>
+              </VisualCard>
+              <div className="pain-point-grid grid gap-3 grid-cols-[repeat(auto-fit,minmax(250px,1fr))]">
                 <div className="rounded-[20px] p-6 flex flex-col gap-3" style={{ background: 'rgba(224,48,48,0.06)' }}>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src="/images/case-studies/image.svg" alt="" className="w-6 h-6 flex-shrink-0" />
@@ -1728,6 +1739,7 @@ export default function FindingFocusAiAssistantCaseStudy() {
                     <p className="text-[15px] font-normal leading-[175%] text-[#555]">Users end up resorting to other options — like messaging the support team directly — which is time-consuming for everyone involved.</p>
                   </div>
                 </div>
+                <PainPointGridPlaceholder />
               </div>
             </div>
           </Section>
@@ -1735,10 +1747,11 @@ export default function FindingFocusAiAssistantCaseStudy() {
           {/* Challenge callout — width capped at ~2 columns */}
           <div style={{ maxWidth: '690px' }}>
             <Callout
-              accentColor={NORTH_STAR_CONTAINER_ACCENT}
+              accentColor="#272727"
+              variant="northStar"
               label="NORTH STAR"
               heading="Create a genuinely helpful assistant that provides relevant answers to any teacher question."
-              iconSrc="/images/case-studies/NorthStar.svg"
+              icon={<NorthStarAnimatedIcon className="block size-16 shrink-0" />}
             />
           </div>
 
@@ -1795,7 +1808,7 @@ export default function FindingFocusAiAssistantCaseStudy() {
                 {/* Right: LLM — winner */}
                 <div className="p-8 flex flex-col gap-5 relative">
                   <div className="absolute top-6 right-6">
-                    <span className="text-[11px] font-semibold uppercase tracking-[1px] bg-[rgba(0,110,254,0.12)] text-[#006EFE] rounded-full px-3 py-1">Winner</span>
+                    <span className="text-[11px] font-semibold uppercase tracking-[1px] bg-[rgba(39,39,39,0.12)] text-[#272727] rounded-full px-3 py-1">Winner</span>
                   </div>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src="/images/case-studies/openai.svg" alt="" className="w-8 h-8" />
@@ -1833,7 +1846,7 @@ export default function FindingFocusAiAssistantCaseStudy() {
           {/* Winning choice */}
           <div style={{ maxWidth: '690px' }}>
             <Callout
-              accentColor="#006EFE"
+              accentColor="#272727"
               label="The Winning Choice"
               heading="LLM Powered API"
               body="OpenAI's Assistants API was the clear choice — its ability to truly understand queries, respond naturally, and connect directly to our external knowledge base made it the right fit."
@@ -1859,8 +1872,8 @@ export default function FindingFocusAiAssistantCaseStudy() {
             </div>
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mt-2">
               <div className="bg-white rounded-[20px] border border-[#e8e8e8] p-6 flex flex-col gap-4">
-                <div className="w-9 h-9 rounded-xl bg-[#006EFE]/10 flex items-center justify-center flex-shrink-0">
-                  <SmsIcon sx={{ fontSize: 20, color: '#006EFE' }} />
+                <div className="w-9 h-9 rounded-xl bg-[#272727]/10 flex items-center justify-center flex-shrink-0">
+                  <SmsIcon sx={{ fontSize: 20, color: '#272727' }} />
                 </div>
                 <div>
                   <p className="text-[16px] font-semibold text-[#1a1a1a] mb-2">Implement letter-by-letter text streaming</p>
@@ -1868,8 +1881,8 @@ export default function FindingFocusAiAssistantCaseStudy() {
                 </div>
               </div>
               <div className="bg-white rounded-[20px] border border-[#e8e8e8] p-6 flex flex-col gap-4">
-                <div className="w-9 h-9 rounded-xl bg-[#006EFE]/10 flex items-center justify-center flex-shrink-0">
-                  <ForumIcon sx={{ fontSize: 20, color: '#006EFE' }} />
+                <div className="w-9 h-9 rounded-xl bg-[#272727]/10 flex items-center justify-center flex-shrink-0">
+                  <ForumIcon sx={{ fontSize: 20, color: '#272727' }} />
                 </div>
                 <div>
                   <p className="text-[16px] font-semibold text-[#1a1a1a] mb-2">Use distinctive styling for user vs. AI messages</p>
@@ -1877,8 +1890,8 @@ export default function FindingFocusAiAssistantCaseStudy() {
                 </div>
               </div>
               <div className="bg-white rounded-[20px] border border-[#e8e8e8] p-6 flex flex-col gap-4">
-                <div className="w-9 h-9 rounded-xl bg-[#006EFE]/10 flex items-center justify-center flex-shrink-0">
-                  <VerticalAlignTopIcon sx={{ fontSize: 20, color: '#006EFE' }} />
+                <div className="w-9 h-9 rounded-xl bg-[#272727]/10 flex items-center justify-center flex-shrink-0">
+                  <VerticalAlignTopIcon sx={{ fontSize: 20, color: '#272727' }} />
                 </div>
                 <div>
                   <p className="text-[16px] font-semibold text-[#1a1a1a] mb-2">Anchor each message in a fixed section</p>
@@ -1926,7 +1939,7 @@ export default function FindingFocusAiAssistantCaseStudy() {
             ]} />
 
             <Callout
-              accentColor="#006EFE"
+              accentColor="#272727"
               label="The Winning Choice"
               heading="Floating Action Button"
               body="Always reachable without pulling teachers away from what they're doing."
@@ -1952,7 +1965,7 @@ export default function FindingFocusAiAssistantCaseStudy() {
             ]} />
 
             <Callout
-              accentColor="#006EFE"
+              accentColor="#272727"
               label="The Winning Choice"
               heading="Anchored Modal Overlay"
               body="Stays present without taking over — enough screen space to have a real conversation, without losing sight of where you are."
@@ -1980,7 +1993,7 @@ export default function FindingFocusAiAssistantCaseStudy() {
           ]} />
 
           <Callout
-            accentColor="#006EFE"
+            accentColor="#272727"
             label="The Winning Choice"
             heading="Suggested Question Tiles"
             body="Question tiles give teachers a clear starting point — and signal what the assistant is actually capable of from the moment it opens."
@@ -2066,22 +2079,22 @@ export default function FindingFocusAiAssistantCaseStudy() {
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             <div className="bg-[rgba(220,232,248,0.45)] rounded-[24px] p-8">
-              <p className="text-[11px] font-medium tracking-[1.5px] uppercase text-[#006EFE] mb-3">Design Landscape</p>
+              <p className="text-[11px] font-medium tracking-[1.5px] uppercase text-[#272727] mb-3">Design Landscape</p>
               <h4 className="text-[18px] font-semibold text-[#1a1a1a] mb-3">LLM chat interfaces are still early — design around your use case, not conventions</h4>
               <p className="text-[16px] font-normal leading-[175%] text-[#555]">There&apos;s no settled playbook for LLM chat UI yet. Patterns that work for ChatGPT don&apos;t automatically translate to a tool teachers use mid-workflow.</p>
             </div>
             <div className="bg-[rgba(220,232,248,0.45)] rounded-[24px] p-8">
-              <p className="text-[11px] font-medium tracking-[1.5px] uppercase text-[#006EFE] mb-3">What I Learned</p>
+              <p className="text-[11px] font-medium tracking-[1.5px] uppercase text-[#272727] mb-3">What I Learned</p>
               <h4 className="text-[18px] font-semibold text-[#1a1a1a] mb-3">The depth of what goes into making an LLM actually useful surprised me</h4>
               <p className="text-[16px] font-normal leading-[175%] text-[#555]">Working hands-on with the Assistants API — vector storage, context windows, system prompt design — gave me a much more grounded picture of what&apos;s actually happening under the hood.</p>
             </div>
             <div className="bg-[rgba(220,232,248,0.45)] rounded-[24px] p-8">
-              <p className="text-[11px] font-medium tracking-[1.5px] uppercase text-[#006EFE] mb-3">Honest Takeaway</p>
+              <p className="text-[11px] font-medium tracking-[1.5px] uppercase text-[#272727] mb-3">Honest Takeaway</p>
               <h4 className="text-[18px] font-semibold text-[#1a1a1a] mb-3">The assistant helps — but it doesn&apos;t replace a person</h4>
               <p className="text-[16px] font-normal leading-[175%] text-[#555]">Teachers who onboard with a team member still see higher implementation success than those who don&apos;t. The assistant is a support layer, not a replacement for human connection.</p>
             </div>
             <div className="bg-[rgba(220,232,248,0.45)] rounded-[24px] p-8">
-              <p className="text-[11px] font-medium tracking-[1.5px] uppercase text-[#006EFE] mb-3">If I Could Do It Again</p>
+              <p className="text-[11px] font-medium tracking-[1.5px] uppercase text-[#272727] mb-3">If I Could Do It Again</p>
               <h4 className="text-[18px] font-semibold text-[#1a1a1a] mb-3">I would have invested more in user testing — but it wasn&apos;t in the cards</h4>
               <p className="text-[16px] font-normal leading-[175%] text-[#555]">Early-stage startup work rarely has runway for structured usability testing before shipping. It made the competitive research more load-bearing — when you can&apos;t test with users, understanding what established products got right becomes your best available signal.</p>
             </div>

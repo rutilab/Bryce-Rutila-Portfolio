@@ -1,3 +1,5 @@
+export { PainPointGridPlaceholder } from './PainPointGridPlaceholder';
+export { NorthStarAnimatedIcon } from './NorthStarAnimatedIcon';
 export { SectionIndicator } from './SectionIndicator';
 export { ImageCard } from './ImageCard';
 export { ProsConsCard } from './ProsConsCard';

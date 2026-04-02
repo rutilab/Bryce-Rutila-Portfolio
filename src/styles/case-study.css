@@ -302,3 +302,29 @@
     line-height: 90%;
   }
 }
+
+/*
+  Pain point / goal card grids: auto-fit minmax(250px, 1fr), gap 12px (gap-3).
+  Placeholder fills bottom-right only when the grid is exactly 2 columns (2+1 layout),
+  so the row reads as 2×2. Bounds: 2 cols when 512px ≤ W < 774px; 3 cols when W ≥ 774px.
+*/
+.pain-point-grid {
+  container-type: inline-size;
+  container-name: pain-point-grid;
+}
+
+.pain-point-grid__placeholder {
+  display: none;
+  position: relative;
+  box-sizing: border-box;
+  border-radius: 20px;
+  background: transparent;
+  min-height: 0;
+  align-self: stretch;
+}
+
+@container pain-point-grid (min-width: 512px) and (max-width: 773px) {
+  .pain-point-grid__placeholder {
+    display: flex;
+  }
+}

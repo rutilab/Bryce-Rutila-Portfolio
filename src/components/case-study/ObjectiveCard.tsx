@@ -19,8 +19,8 @@ export function ObjectiveCard({ icon, title, description }: ObjectiveCardProps) 
 
   return (
     <div className="flex gap-4 p-6 rounded-2xl bg-[#303030]">
-      <div className="flex-shrink-0 w-10 h-10 rounded-xl bg-[#006EFE]/20 flex items-center justify-center">
-        <IconComponent className="w-5 h-5 text-[#006EFE]" />
+      <div className="flex-shrink-0 w-10 h-10 rounded-xl bg-[#272727]/15 flex items-center justify-center">
+        <IconComponent className="w-5 h-5 text-[#272727]" />
       </div>
       <div>
         <h4 className="cs-card-title mb-1">{title}</h4>
