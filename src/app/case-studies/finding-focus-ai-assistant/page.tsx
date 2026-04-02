@@ -1693,7 +1693,7 @@ export default function FindingFocusAiAssistantCaseStudy() {
           <VisualCard caption="Less than 5% of all of Finding Focus's sign-ups received one-on-one support">
             <div className="flex items-center justify-center py-12 px-8">
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/case-studies/finding-focus-ai-assistant/teacher-reach-diagram.png" alt="Teacher reach diagram" className="w-full max-w-[520px] h-auto block" />
+              <img src="/case-studies/finding-focus-ai-assistant/teacher%20reach%20diagram.png" alt="Teacher reach diagram" className="w-full max-w-[520px] h-auto block" />
             </div>
           </VisualCard>
         </Section>
