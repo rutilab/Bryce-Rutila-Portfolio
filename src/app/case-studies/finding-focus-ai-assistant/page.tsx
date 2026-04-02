@@ -1690,7 +1690,7 @@ export default function FindingFocusAiAssistantCaseStudy() {
           heading="Turning a grant requirement into an opportunity for personalized support."
           body="Our most successful teachers shared one common thread — direct support from our team during implementation. With grant requirements pushing us toward AI integration, we recognized that an LLM-powered assistant could provide that same hands-on support to every teacher at scale."
         >
-          <VisualCard caption="less than 5% of all of Finding Focus's sign-ups received one-on-one support">
+          <VisualCard caption="Less than 5% of all of Finding Focus's sign-ups received one-on-one support">
             <div className="flex items-center justify-center py-12 px-8">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src="/case-studies/finding-focus-ai-assistant/teacher-reach-diagram.png" alt="Teacher reach diagram" className="w-full max-w-[520px] h-auto block" />

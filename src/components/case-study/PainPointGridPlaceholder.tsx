@@ -21,8 +21,9 @@ export function PainPointGridPlaceholder() {
     return () => window.clearTimeout(t);
   }, [poofing]);
 
+  // Preprocess bunny early so we never flash the raw black background on reveal.
   useEffect(() => {
-    if (!revealed || bunnySrc) return;
+    if (bunnySrc) return;
 
     let cancelled = false;
     const img = new Image();
@@ -109,7 +110,7 @@ export function PainPointGridPlaceholder() {
     return () => {
       cancelled = true;
     };
-  }, [revealed, bunnySrc]);
+  }, [bunnySrc]);
 
   const tooltipPos = useMemo(
     () => ({ left: mouse.clientX + 14, top: mouse.clientY + 16 }),
@@ -211,18 +212,22 @@ export function PainPointGridPlaceholder() {
         </p>
       ) : (
         <div className="relative z-[1] p-[10px]">
-          <img
-            src={bunnySrc ?? '/easter-eggs/bunny.png'}
-            alt="A bunny popping out of a magician hat"
-            className="block h-auto"
-            style={{
-              width: 180,
-              maxWidth: 'calc(100% - 20px)',
-              opacity: 0,
-              transform: 'scale(0.96)',
-              animation: 'pp-reveal 260ms ease forwards',
-            }}
-          />
+          {bunnySrc ? (
+            <img
+              src={bunnySrc}
+              alt="A bunny popping out of a magician hat"
+              className="block h-auto"
+              style={{
+                width: 180,
+                maxWidth: 'calc(100% - 20px)',
+                opacity: 0,
+                transform: 'scale(0.96)',
+                animation: 'pp-reveal 260ms ease forwards',
+              }}
+            />
+          ) : (
+            <div style={{ width: 180, height: 180 }} aria-hidden />
+          )}
         </div>
       )}
 
