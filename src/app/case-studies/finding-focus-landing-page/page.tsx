@@ -1,12 +1,13 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import type { CSSProperties, ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import PersonSearchOutlined from '@mui/icons-material/PersonSearchOutlined';
 import AutoFixHighOutlined from '@mui/icons-material/AutoFixHighOutlined';
 import VerifiedUserOutlined from '@mui/icons-material/VerifiedUserOutlined';
 import { NorthStarAnimatedIcon, PainPointGridPlaceholder } from '@/components/case-study';
+import { useBodyScrollLock } from '@/hooks/useBodyScrollLock';
 
 /** Section eyebrows + goal-card icons/titles (both case studies) */
 const EYEBROW_ICON_COLOR = '#272727';
@@ -158,6 +159,293 @@ function VisualCard({ children, caption, subcaption }: { children: ReactNode; ca
   );
 }
 
+/** Matches in-page VisualCard captions: `text-[13px] text-[#999]` → subcaption `text-[#bbb] italic`. */
+const LIGHTBOX_CAPTION_PRIMARY: CSSProperties = {
+  color: '#999',
+  fontSize: 13,
+  lineHeight: 1.6,
+  fontWeight: 400,
+  margin: 0,
+  textAlign: 'center',
+};
+
+const LIGHTBOX_CAPTION_SECONDARY: CSSProperties = {
+  color: '#bbb',
+  fontSize: 13,
+  lineHeight: 1.6,
+  fontWeight: 400,
+  margin: 0,
+  marginTop: 4,
+  fontStyle: 'italic',
+  textAlign: 'center',
+};
+
+const ZOOM_LIGHTBOX_MIN = 1;
+const ZOOM_LIGHTBOX_MAX = 2.5;
+
+function clampPanForZoom(
+  pan: { x: number; y: number },
+  zoom: number,
+  vw: number,
+  vh: number,
+  fitW: number,
+  fitH: number,
+) {
+  if (zoom <= ZOOM_LIGHTBOX_MIN || !fitW || !fitH) return { x: 0, y: 0 };
+  const sw = fitW * zoom;
+  const sh = fitH * zoom;
+  const maxX = Math.max(0, (sw - vw) / 2);
+  const maxY = Math.max(0, (sh - vh) / 2);
+  return {
+    x: Math.max(-maxX, Math.min(maxX, pan.x)),
+    y: Math.max(-maxY, Math.min(maxY, pan.y)),
+  };
+}
+
+/** Slider + drag-to-pan when zoomed; used for dense research board lightbox only. */
+function ZoomableLightboxImage({
+  src,
+  alt,
+  caption,
+  subcaption,
+}: {
+  src: string;
+  alt: string;
+  caption?: string;
+  subcaption?: string;
+}) {
+  const [zoom, setZoom] = useState(ZOOM_LIGHTBOX_MIN);
+  const [pan, setPan] = useState({ x: 0, y: 0 });
+  const [fit, setFit] = useState({ w: 0, h: 0 });
+  const [dragging, setDragging] = useState(false);
+  const dragRef = useRef<{ x: number; y: number; panX: number; panY: number } | null>(null);
+  const viewportRef = useRef<HTMLDivElement>(null);
+  const imgRef = useRef<HTMLImageElement>(null);
+  const panRef = useRef({ x: 0, y: 0 });
+  panRef.current = pan;
+
+  const hasCaption = Boolean(caption?.trim() || subcaption?.trim());
+
+  const recalcFit = useCallback(() => {
+    const img = imgRef.current;
+    const vp = viewportRef.current;
+    if (!img?.naturalWidth || !vp) return;
+    const vw = vp.clientWidth;
+    const vh = vp.clientHeight;
+    if (!vw || !vh) return;
+    const r = Math.min(vw / img.naturalWidth, vh / img.naturalHeight, 1);
+    setFit({ w: img.naturalWidth * r, h: img.naturalHeight * r });
+  }, []);
+
+  useEffect(() => {
+    function onResize() {
+      recalcFit();
+    }
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, [recalcFit]);
+
+  useEffect(() => {
+    if (zoom <= ZOOM_LIGHTBOX_MIN) {
+      setPan({ x: 0, y: 0 });
+      return;
+    }
+    setPan(p => {
+      const vp = viewportRef.current;
+      if (!vp || !fit.w) return p;
+      return clampPanForZoom(p, zoom, vp.clientWidth, vp.clientHeight, fit.w, fit.h);
+    });
+  }, [zoom, fit.w, fit.h]);
+
+  function handleImgLoad() {
+    recalcFit();
+  }
+
+  function handlePointerDown(e: React.PointerEvent) {
+    if (zoom <= ZOOM_LIGHTBOX_MIN) return;
+    e.preventDefault();
+    e.stopPropagation();
+    (e.currentTarget as HTMLDivElement).setPointerCapture(e.pointerId);
+    setDragging(true);
+    dragRef.current = {
+      x: e.clientX,
+      y: e.clientY,
+      panX: panRef.current.x,
+      panY: panRef.current.y,
+    };
+  }
+
+  function handlePointerMove(e: React.PointerEvent) {
+    if (!dragRef.current || zoom <= ZOOM_LIGHTBOX_MIN) return;
+    e.preventDefault();
+    const dx = e.clientX - dragRef.current.x;
+    const dy = e.clientY - dragRef.current.y;
+    const vp = viewportRef.current;
+    if (!vp || !fit.w) return;
+    const next = clampPanForZoom(
+      { x: dragRef.current.panX + dx, y: dragRef.current.panY + dy },
+      zoom,
+      vp.clientWidth,
+      vp.clientHeight,
+      fit.w,
+      fit.h,
+    );
+    setPan(next);
+  }
+
+  function handlePointerUp(e: React.PointerEvent) {
+    if (dragRef.current) {
+      try {
+        (e.currentTarget as HTMLDivElement).releasePointerCapture(e.pointerId);
+      } catch {
+        /* ignore */
+      }
+    }
+    setDragging(false);
+    dragRef.current = null;
+  }
+
+  return (
+    <div
+      onClick={e => e.stopPropagation()}
+      style={{
+        maxWidth: 'min(88vw, 1280px)',
+        width: '100%',
+        cursor: 'default',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+      }}
+    >
+      <div
+        ref={viewportRef}
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={handlePointerUp}
+        onPointerCancel={handlePointerUp}
+        onWheel={e => {
+          e.preventDefault();
+          e.stopPropagation();
+          const delta = e.deltaY > 0 ? -0.06 : 0.06;
+          setZoom(z => Math.min(ZOOM_LIGHTBOX_MAX, Math.max(ZOOM_LIGHTBOX_MIN, z + delta)));
+        }}
+        style={{
+          width: '100%',
+          height: 'min(74vh, 820px)',
+          overflow: 'hidden',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          touchAction: 'none',
+          cursor: zoom > ZOOM_LIGHTBOX_MIN ? (dragging ? 'grabbing' : 'grab') : 'default',
+        }}
+      >
+        <div
+          style={{
+            transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
+            transformOrigin: 'center center',
+            transition: dragging ? 'none' : 'transform 0.12s ease-out',
+            willChange: dragging ? 'transform' : undefined,
+          }}
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            ref={imgRef}
+            src={src}
+            alt={alt}
+            onLoad={handleImgLoad}
+            draggable={false}
+            style={{
+              width: fit.w ? fit.w : undefined,
+              height: fit.h ? fit.h : undefined,
+              maxWidth: fit.w ? undefined : '100%',
+              maxHeight: fit.h ? undefined : '100%',
+              objectFit: 'contain',
+              display: 'block',
+              borderRadius: 14,
+              userSelect: 'none',
+            }}
+          />
+        </div>
+      </div>
+
+      {hasCaption ? (
+        <LightboxCaptionBar caption={caption} subcaption={subcaption} />
+      ) : null}
+
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: 14,
+          marginTop: 16,
+          padding: '0 4px',
+        }}
+      >
+        <span style={{ color: 'rgba(255,255,255,0.35)', fontSize: 11, width: 36, textAlign: 'right' }}>Zoom</span>
+        <input
+          type="range"
+          aria-label="Zoom level"
+          min={ZOOM_LIGHTBOX_MIN}
+          max={ZOOM_LIGHTBOX_MAX}
+          step={0.05}
+          value={zoom}
+          onChange={e => setZoom(Number(e.target.value))}
+          onClick={e => e.stopPropagation()}
+          style={{
+            width: 'min(240px, 42vw)',
+            accentColor: 'rgba(255,255,255,0.55)',
+            cursor: 'pointer',
+          }}
+        />
+        <span style={{ color: 'rgba(255,255,255,0.45)', fontSize: 12, width: 40, fontVariantNumeric: 'tabular-nums' }}>
+          {Math.round(zoom * 100)}%
+        </span>
+      </div>
+    </div>
+  );
+}
+
+// ── Lightbox caption: `inline` = under image (VisualCard-style); `anchored` = pinned bar for scrollable full-page ──
+function LightboxCaptionBar({
+  caption,
+  subcaption,
+  variant = 'inline',
+}: {
+  caption?: string;
+  subcaption?: string;
+  variant?: 'anchored' | 'inline';
+}) {
+  const c = caption?.trim();
+  const s = subcaption?.trim();
+  if (!c && !s) return null;
+
+  if (variant === 'anchored') {
+    return (
+      <div
+        style={{
+          flexShrink: 0,
+          textAlign: 'center',
+          padding: '14px 18px 16px',
+          borderTop: '1px solid rgba(255,255,255,0.06)',
+          background: 'rgba(8,8,8,0.55)',
+        }}
+      >
+        {c ? <p style={LIGHTBOX_CAPTION_PRIMARY}>{c}</p> : null}
+        {s ? <p style={c ? LIGHTBOX_CAPTION_SECONDARY : LIGHTBOX_CAPTION_PRIMARY}>{s}</p> : null}
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ marginTop: 12, width: '100%', maxWidth: 'min(720px, 92vw)' }}>
+      {c ? <p style={LIGHTBOX_CAPTION_PRIMARY}>{c}</p> : null}
+      {s ? <p style={c ? LIGHTBOX_CAPTION_SECONDARY : LIGHTBOX_CAPTION_PRIMARY}>{s}</p> : null}
+    </div>
+  );
+}
+
 // ── ExpandableImage: click-to-lightbox wrapper ───────────────────────────────
 function ExpandableImage({
   src,
@@ -165,16 +453,27 @@ function ExpandableImage({
   style,
   className,
   scrollable,
+  caption,
+  subcaption,
+  zoomableLightbox,
 }: {
   src: string;
   alt: string;
   style?: CSSProperties;
   className?: string;
   scrollable?: boolean;
+  /** Shown in the lightbox (matches VisualCard caption where applicable). */
+  caption?: string;
+  subcaption?: string;
+  /** Slider + pan when zoomed; max zoom capped. Incompatible with `scrollable`. */
+  zoomableLightbox?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
   useEffect(() => { setMounted(true); }, []);
+  useBodyScrollLock(open && mounted);
+
+  const hasCaption = Boolean(caption?.trim() || subcaption?.trim());
 
   return (
     <>
@@ -193,14 +492,16 @@ function ExpandableImage({
             position: 'fixed', inset: 0, zIndex: 9999,
             background: 'rgba(8,8,8,0.92)',
             display: 'flex',
-            alignItems: scrollable ? 'flex-start' : 'center',
+            alignItems: 'center',
             justifyContent: 'center',
-            overflowY: scrollable ? 'auto' : 'hidden',
-            padding: scrollable ? '60px 32px 48px' : '40px 32px',
+            overflow: 'hidden',
+            padding: '56px 24px 24px',
+            boxSizing: 'border-box',
             cursor: 'zoom-out',
           }}
         >
           <button
+            type="button"
             onClick={() => setOpen(false)}
             style={{
               position: 'fixed', top: 20, right: 20,
@@ -215,19 +516,73 @@ function ExpandableImage({
               <path d="M11.5 3.5l-8 8M3.5 3.5l8 8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
             </svg>
           </button>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={src}
-            alt={alt}
-            onClick={e => e.stopPropagation()}
-            style={scrollable ? {
-              width: 'min(90vw, 960px)', height: 'auto',
-              borderRadius: 14, cursor: 'default', display: 'block',
-            } : {
-              maxWidth: 'min(88vw, 1280px)', maxHeight: '82vh',
-              objectFit: 'contain', borderRadius: 14, cursor: 'default', display: 'block',
-            }}
-          />
+          {scrollable ? (
+            <div
+              onClick={e => e.stopPropagation()}
+              style={{
+                width: '100%',
+                maxWidth: 'min(90vw, 960px)',
+                height: 'calc(100vh - 80px)',
+                maxHeight: 'calc(100vh - 80px)',
+                display: 'flex',
+                flexDirection: 'column',
+                cursor: 'default',
+                overflow: 'hidden',
+                background: 'transparent',
+                boxShadow: 'none',
+              }}
+            >
+              <div
+                style={{
+                  flex: '1 1 auto',
+                  minHeight: 0,
+                  overflowY: 'auto',
+                  overflowX: 'hidden',
+                  WebkitOverflowScrolling: 'touch',
+                }}
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={src}
+                  alt={alt}
+                  style={{
+                    width: '100%',
+                    height: 'auto',
+                    display: 'block',
+                  }}
+                />
+              </div>
+              {hasCaption ? (
+                <LightboxCaptionBar caption={caption} subcaption={subcaption} variant="anchored" />
+              ) : null}
+            </div>
+          ) : zoomableLightbox ? (
+            <ZoomableLightboxImage src={src} alt={alt} caption={caption} subcaption={subcaption} />
+          ) : (
+            <div
+              onClick={e => e.stopPropagation()}
+              style={{
+                maxWidth: 'min(88vw, 1280px)',
+                width: '100%',
+                cursor: 'default',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+              }}
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={src}
+                alt={alt}
+                style={{
+                  width: '100%',
+                  maxHeight: hasCaption ? 'min(74vh, 82vh)' : '82vh',
+                  objectFit: 'contain', borderRadius: 14, cursor: 'default', display: 'block',
+                }}
+              />
+              {hasCaption ? <LightboxCaptionBar caption={caption} subcaption={subcaption} /> : null}
+            </div>
+          )}
         </div>,
         document.body,
       )}
@@ -238,17 +593,23 @@ function ExpandableImage({
 // ── IdeationViewer: auto-advance image carousel with progress dots ────────────
 function IdeationViewer({
   items,
+  roundedImages = false,
+  imageScaleMultiplier = 1,
 }: {
   items: { src: string; alt: string; secondSrc?: string; secondAlt?: string; label: string; caption: string }[];
+  /** Slight rounding on slide images (e.g. Visual Identity section). */
+  roundedImages?: boolean;
+  /** Slide frame height vs default (`1.2` = 20% taller; images scale within the frame). */
+  imageScaleMultiplier?: 1 | 1.2;
 }) {
   const [current, setCurrent] = useState(0);
   const [dotProgress, setDotProgress] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);
   const [inViewport, setInViewport] = useState(false);
-  const [lightboxSrc, setLightboxSrc] = useState<string | null>(null);
-  const [lightboxAlt, setLightboxAlt] = useState('');
+  const [lightboxOpen, setLightboxOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
   useEffect(() => { setMounted(true); }, []);
+  useBodyScrollLock(lightboxOpen && mounted);
   const itemsRef = useRef(items);
   itemsRef.current = items;
   const DURATION = 12000;
@@ -266,6 +627,7 @@ function IdeationViewer({
 
   useEffect(() => {
     if (!inViewport) { setDotProgress(0); return; }
+    if (lightboxOpen) return;
     const startTime = Date.now();
     setDotProgress(0);
     let rafId: number;
@@ -277,15 +639,19 @@ function IdeationViewer({
     }
     rafId = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(rafId);
-  }, [current, inViewport]);
+  }, [current, inViewport, lightboxOpen]);
 
   const item = items[current];
+  const frameHeightClass =
+    imageScaleMultiplier === 1.2
+      ? 'h-[600px] md:h-[456px]'
+      : 'h-[500px] md:h-[380px]';
 
   return (
     <>
     <div ref={containerRef}>
       <div
-        className="rounded-[24px] overflow-hidden relative h-[500px] md:h-[380px]"
+        className={`rounded-[24px] overflow-hidden relative ${frameHeightClass}`}
         style={{ background: 'rgba(220,232,248,0.45)' }}
       >
         {items.map((it, i) => (
@@ -298,18 +664,20 @@ function IdeationViewer({
             <img
               src={it.src}
               alt={it.alt}
-              className={it.secondSrc
+              className={`${roundedImages ? 'rounded-xl ' : ''}${it.secondSrc
                 ? 'max-h-[44%] md:max-h-full md:max-w-[52%] max-w-full w-auto h-auto block flex-shrink-0'
-                : 'max-h-full max-w-full w-auto h-auto block'}
+                : 'max-h-full max-w-full w-auto h-auto block'}`}
               style={{ cursor: i === current ? 'zoom-in' : 'default' }}
-              onClick={i === current ? () => { setLightboxSrc(it.src); setLightboxAlt(it.alt); } : undefined}
+              onClick={i === current ? () => setLightboxOpen(true) : undefined}
             />
             {it.secondSrc && (
               // eslint-disable-next-line @next/next/no-img-element
               <img
                 src={it.secondSrc}
                 alt={it.secondAlt ?? ''}
-                className="max-h-[44%] md:max-h-full md:max-w-[44%] max-w-full w-auto h-auto block flex-shrink-0"
+                className={`${roundedImages ? 'rounded-xl ' : ''}max-h-[44%] md:max-h-full md:max-w-[44%] max-w-full w-auto h-auto block flex-shrink-0`}
+                style={{ cursor: i === current ? 'zoom-in' : 'default' }}
+                onClick={i === current ? () => setLightboxOpen(true) : undefined}
               />
             )}
           </div>
@@ -368,20 +736,209 @@ function IdeationViewer({
         </div>
       </div>
     </div>
-    {lightboxSrc && mounted && createPortal(
+    {lightboxOpen && mounted && createPortal(
       <div
-        onClick={() => setLightboxSrc(null)}
-        style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(8,8,8,0.92)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '40px 32px', cursor: 'zoom-out' }}
+        onClick={() => setLightboxOpen(false)}
+        style={{
+          position: 'fixed', inset: 0, zIndex: 9999,
+          background: 'rgba(8,8,8,0.92)',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: '56px 24px 24px',
+          boxSizing: 'border-box',
+          cursor: 'zoom-out',
+          overflow: 'hidden',
+        }}
       >
         <button
-          onClick={() => setLightboxSrc(null)}
-          style={{ position: 'absolute', top: 20, right: 20, width: 36, height: 36, borderRadius: '50%', background: 'rgba(255,255,255,0.1)', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', cursor: 'pointer' }}
+          type="button"
+          onClick={() => setLightboxOpen(false)}
+          style={{
+            position: 'fixed', top: 20, right: 20,
+            width: 36, height: 36, borderRadius: '50%',
+            background: 'rgba(255,255,255,0.1)', border: 'none',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            color: 'white', cursor: 'pointer', transition: 'background 0.15s',
+          }}
           className="hover:bg-white/20"
         >
-          <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><path d="M11.5 3.5l-8 8M3.5 3.5l8 8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
+          <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
+            <path d="M11.5 3.5l-8 8M3.5 3.5l8 8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+          </svg>
         </button>
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={lightboxSrc} alt={lightboxAlt} onClick={e => e.stopPropagation()} style={{ maxWidth: 'min(88vw, 1280px)', maxHeight: '82vh', objectFit: 'contain', borderRadius: 14, cursor: 'default', display: 'block' }} />
+
+        {items.length === 1 ? (
+          <div
+            onClick={e => e.stopPropagation()}
+            style={{
+              width: '100%',
+              maxWidth: 'min(88vw, 1280px)',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              cursor: 'default',
+              maxHeight: 'calc(100vh - 80px)',
+              overflow: 'auto',
+            }}
+          >
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: '12px 8px',
+              }}
+            >
+              {item.secondSrc ? (
+                <div className="flex flex-col items-center justify-center gap-4 md:flex-row md:gap-6">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={item.src}
+                    alt={item.alt}
+                    className="max-h-[min(70vh,calc(100vh-200px))] w-auto max-w-[min(48%,560px)] object-contain rounded-[14px]"
+                  />
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={item.secondSrc}
+                    alt={item.secondAlt ?? ''}
+                    className="max-h-[min(70vh,calc(100vh-200px))] w-auto max-w-[min(48%,560px)] object-contain rounded-[14px]"
+                  />
+                </div>
+              ) : (
+                /* eslint-disable-next-line @next/next/no-img-element */
+                <img
+                  src={item.src}
+                  alt={item.alt}
+                  style={{
+                    maxWidth: '100%',
+                    maxHeight: 'min(74vh, calc(100vh - 200px))',
+                    width: 'auto',
+                    height: 'auto',
+                    objectFit: 'contain',
+                    borderRadius: 14,
+                    display: 'block',
+                  }}
+                />
+              )}
+            </div>
+            <LightboxCaptionBar caption={item.label} subcaption={item.caption} />
+          </div>
+        ) : (
+          <div
+            onClick={e => e.stopPropagation()}
+            style={{
+              width: '100%',
+              maxWidth: 'min(88vw, 1280px)',
+              height: 'calc(100vh - 80px)',
+              maxHeight: 'calc(100vh - 80px)',
+              display: 'flex',
+              flexDirection: 'column',
+              cursor: 'default',
+              overflow: 'hidden',
+              background: 'transparent',
+              boxShadow: 'none',
+            }}
+          >
+            <div
+              style={{
+                flex: '1 1 auto',
+                minHeight: 0,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: '12px 8px',
+                overflow: 'hidden',
+              }}
+            >
+              {item.secondSrc ? (
+                <div className="flex h-full w-full max-h-full flex-col items-center justify-center gap-4 md:flex-row md:gap-6">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={item.src}
+                    alt={item.alt}
+                    className="max-h-full max-w-[min(48%,560px)] w-auto object-contain rounded-[14px]"
+                  />
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={item.secondSrc}
+                    alt={item.secondAlt ?? ''}
+                    className="max-h-full max-w-[min(48%,560px)] w-auto object-contain rounded-[14px]"
+                  />
+                </div>
+              ) : (
+                /* eslint-disable-next-line @next/next/no-img-element */
+                <img
+                  src={item.src}
+                  alt={item.alt}
+                  style={{
+                    maxWidth: '100%',
+                    maxHeight: '100%',
+                    width: 'auto',
+                    height: 'auto',
+                    objectFit: 'contain',
+                    borderRadius: 14,
+                    display: 'block',
+                  }}
+                />
+              )}
+            </div>
+
+            <div
+              style={{
+                flexShrink: 0,
+                borderTop: '1px solid rgba(255,255,255,0.08)',
+                background: 'rgba(8,8,8,0.85)',
+                padding: '14px 16px 16px',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 24 }}>
+                <button
+                  type="button"
+                  onClick={e => { e.stopPropagation(); setCurrent(c => (c - 1 + items.length) % items.length); }}
+                  style={{
+                    visibility: current > 0 ? 'visible' : 'hidden',
+                    width: 34, height: 34, borderRadius: '50%', flexShrink: 0,
+                    background: 'rgba(255,255,255,0.1)', border: 'none',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    color: 'white', cursor: 'pointer', transition: 'background 0.15s',
+                  }}
+                  className="hover:bg-white/20"
+                >
+                  <svg width="13" height="13" viewBox="0 0 14 14" fill="none">
+                    <path d="M9 11L4 7l5-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                </button>
+
+                <div style={{ textAlign: 'center', minWidth: 0, flex: '1 1 auto', maxWidth: 'min(720px, 86vw)' }}>
+                  <p style={LIGHTBOX_CAPTION_PRIMARY}>{item.label}</p>
+                  {item.caption ? (
+                    <p style={LIGHTBOX_CAPTION_SECONDARY}>{item.caption}</p>
+                  ) : null}
+                  <p style={{ color: 'rgba(255,255,255,0.25)', fontSize: 12, marginTop: 8 }}>{current + 1} / {items.length}</p>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={e => { e.stopPropagation(); setCurrent(c => (c + 1) % items.length); }}
+                  style={{
+                    visibility: current < items.length - 1 ? 'visible' : 'hidden',
+                    width: 34, height: 34, borderRadius: '50%', flexShrink: 0,
+                    background: 'rgba(255,255,255,0.1)', border: 'none',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    color: 'white', cursor: 'pointer', transition: 'background 0.15s',
+                  }}
+                  className="hover:bg-white/20"
+                >
+                  <svg width="13" height="13" viewBox="0 0 14 14" fill="none">
+                    <path d="M5 3l5 4-5 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>,
       document.body
     )}
@@ -586,6 +1143,7 @@ export default function LandingPageCaseStudy() {
                   alt="Original Finding Focus landing page — full page screenshot"
                   style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'top', display: 'block' }}
                   scrollable
+                  caption="The original landing page — a student-first design that wasn't speaking to our primary audience"
                 />
                 {/* Click affordance tag — visible on hover only */}
                 <div
@@ -675,12 +1233,14 @@ export default function LandingPageCaseStudy() {
             heading="Looking at other edtech landing pages made it clear what ours was missing."
             body="Reviewing other edtech landing pages gave me a better sense of what strong pages in the space were doing well and how we could improve our own. It helped me think through how we should introduce the product, communicate its value, and build trust with our audience."
           >
-            <VisualCard caption="Competitive audit of edtech landing pages — screenshots and sticky-note notes within FigJam">
+            <VisualCard caption="Competitive audit of edtech landing pages — screenshots and sticky-note notes from FigJam file I created">
               <div className="p-4 sm:p-8">
                 <ExpandableImage
                   src={assets.approachResearchBoard}
                   alt="Research board comparing edtech landing pages with annotated sticky notes"
                   style={{ width: '100%', height: 'auto', display: 'block', borderRadius: 12 }}
+                  caption="Competitive audit of edtech landing pages — screenshots and sticky-note notes from FigJam file I created"
+                  zoomableLightbox
                 />
               </div>
             </VisualCard>
@@ -694,6 +1254,7 @@ export default function LandingPageCaseStudy() {
 We knew we wanted our visual identity to convey: cool, modern, mature, and science-based – but we still needed to settle on a design style. One of the ways we as a team were able to tackle this was by sharing our existing assets and going over possible design styles we could lean into.`}
           >
             <IdeationViewer
+              roundedImages
               items={[
                 {
                   src: assets.viIntroSlackCanvas,
@@ -735,8 +1296,16 @@ One activity we did as a team to help answer these questions was to imagine ours
                 <ExpandableImage
                   src={assets.messagingStorybrandDoc}
                   alt="Google Doc titled Storybrand: Teacher — StoryBrand framework mapping teacher goals, problems, and Finding Focus as guide, with collaborator comments"
-                  scrollable
-                  style={{ width: '100%', height: 'auto', display: 'block', borderRadius: 12 }}
+                  style={{
+                    width: '80%',
+                    maxWidth: '80%',
+                    height: 'auto',
+                    display: 'block',
+                    marginLeft: 'auto',
+                    marginRight: 'auto',
+                    borderRadius: 12,
+                  }}
+                  caption="Google Doc we used to map out the teacher's narrative"
                 />
               </div>
             </VisualCard>
@@ -759,7 +1328,16 @@ One activity we did as a team to help answer these questions was to imagine ours
                 <ExpandableImage
                   src={assets.headerAndHero}
                   alt="Redesigned landing page header and hero section"
-                  style={{ width: '100%', height: 'auto', display: 'block', borderRadius: 12 }}
+                  style={{
+                    width: '75%',
+                    maxWidth: '75%',
+                    height: 'auto',
+                    display: 'block',
+                    marginLeft: 'auto',
+                    marginRight: 'auto',
+                    borderRadius: 12,
+                  }}
+                  caption="A hero designed around teacher outcomes, credibility cues, and a clear path to sign up"
                 />
               </div>
             </VisualCard>
@@ -780,6 +1358,7 @@ One activity we did as a team to help answer these questions was to imagine ours
                   src={assets.socialProofStrip}
                   alt="Why Teachers Choose Finding Focus — social proof strip"
                   style={{ width: '100%', height: 'auto', display: 'block', borderRadius: 12 }}
+                  caption="Trust signals placed early: university backing, educator involvement, and US DOE funding"
                 />
               </div>
             </VisualCard>
@@ -794,7 +1373,9 @@ One activity we did as a team to help answer these questions was to imagine ours
               heading="Teachers needed to quickly understand what Finding Focus actually includes."
               body="One of the biggest problems with the original landing page was that it described Finding Focus without really going over the full product offering. I decided to show off the different offerings Finding Focus has by creating abstracted versions of the interface. These assets helped make the product easier to understand at a glance by showing the core parts of the platform in a way that felt clear, cohesive with the rest of the page, and easy to scan."
           />
-          <IdeationViewer items={[
+          <IdeationViewer
+            imageScaleMultiplier={1.2}
+            items={[
             {
               src: assets.tenDayCourse,
               alt: '10-Day Course section — stacked 3D card design',
@@ -813,7 +1394,8 @@ One activity we did as a team to help answer these questions was to imagine ours
               label: 'Teacher interface',
               caption: '',
             },
-          ]} />
+          ]}
+          />
         </div>
       </section>
 
@@ -850,7 +1432,15 @@ One activity we did as a team to help answer these questions was to imagine ours
               <ExpandableImage
                 src={assets.testimonialSection}
                 alt="Testimonial section with teacher video and quote cards"
-                style={{ width: '100%', height: 'auto', display: 'block', borderRadius: 12 }}
+                style={{
+                  width: '60%',
+                  maxWidth: '60%',
+                  height: 'auto',
+                  display: 'block',
+                  marginLeft: 'auto',
+                  marginRight: 'auto',
+                  borderRadius: 12,
+                }}
               />
             </div>
           </VisualCard>
@@ -870,7 +1460,15 @@ One activity we did as a team to help answer these questions was to imagine ours
               <ExpandableImage
                 src={assets.faq}
                 alt="FAQ section — Frequently Asked Questions"
-                style={{ width: '100%', height: 'auto', display: 'block', borderRadius: 12 }}
+                style={{
+                  width: '75%',
+                  maxWidth: '75%',
+                  height: 'auto',
+                  display: 'block',
+                  marginLeft: 'auto',
+                  marginRight: 'auto',
+                  borderRadius: 12,
+                }}
               />
             </div>
           </VisualCard>
@@ -890,7 +1488,15 @@ One activity we did as a team to help answer these questions was to imagine ours
               <ExpandableImage
                 src={assets.finalCta}
                 alt="Final CTA and footer section"
-                style={{ width: '100%', height: 'auto', display: 'block', borderRadius: 12 }}
+                style={{
+                  width: '85%',
+                  maxWidth: '85%',
+                  height: 'auto',
+                  display: 'block',
+                  marginLeft: 'auto',
+                  marginRight: 'auto',
+                  borderRadius: 12,
+                }}
               />
             </div>
           </VisualCard>
@@ -906,6 +1512,7 @@ One activity we did as a team to help answer these questions was to imagine ours
             body="The complete landing page — all sections, from hero to footer."
           />
           <VisualCard
+            caption="The complete landing page — all sections, from hero to footer."
             subcaption="Click the image above to view the full landing page design"
           >
             <div className="p-6 sm:p-10">
@@ -918,6 +1525,7 @@ One activity we did as a team to help answer these questions was to imagine ours
                   alt="Redesigned Finding Focus landing page — full page screenshot"
                   style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'top', display: 'block' }}
                   scrollable
+                  caption="The complete landing page — all sections, from hero to footer."
                 />
                 <div
                   className="pointer-events-none opacity-0 transition-opacity duration-200 group-hover:opacity-100"

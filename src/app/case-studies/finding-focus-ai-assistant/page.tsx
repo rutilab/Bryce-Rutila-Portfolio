@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef, type ReactNode } from 'react';
+import { useState, useEffect, useRef, type ReactNode, type CSSProperties } from 'react';
 import { createPortal } from 'react-dom';
 import { AI_ASSISTANT_CSS, AI_ASSISTANT_HTML } from './ai-assistant-modal';
 import SmsIcon from '@mui/icons-material/Sms';
@@ -9,12 +9,35 @@ import VerticalAlignTopIcon from '@mui/icons-material/VerticalAlignTop';
 import PlaceIcon from '@mui/icons-material/Place';
 import ViewModuleIcon from '@mui/icons-material/ViewModule';
 import InboxIcon from '@mui/icons-material/Inbox';
-import { NorthStarAnimatedIcon, PainPointGridPlaceholder } from '@/components/case-study';
+import { NorthStarAnimatedIcon, PainPointGridPlaceholder, WinningChoiceScrollStars } from '@/components/case-study';
+import { useBodyScrollLock } from '@/hooks/useBodyScrollLock';
 
 /** North Star callout: neutral border + #272727 label; icon is inline animated SVG */
 const NORTH_STAR_LABEL_COLOR = '#272727';
 /** Section eyebrows, MUI icons, diagram labels, carousel progress (Finding Focus case studies) */
 const EYEBROW_ICON_COLOR = '#272727';
+/** Pencil cursor for “homework” hover in Comparative Analysis (hotspot: tip, top-left of asset). */
+const PENCIL_CURSOR_URL = '/case-studies/finding-focus-ai-assistant/pencil-cursor.png';
+
+/** Single-image lightbox copy — matches VisualCard on case study pages (#999 / #bbb). */
+const LB_CAP_PRIMARY: CSSProperties = {
+  color: '#999',
+  fontSize: 13,
+  lineHeight: 1.6,
+  fontWeight: 400,
+  margin: 0,
+  textAlign: 'center',
+};
+const LB_CAP_SECONDARY: CSSProperties = {
+  color: '#bbb',
+  fontSize: 13,
+  lineHeight: 1.6,
+  fontWeight: 400,
+  margin: 0,
+  marginTop: 4,
+  fontStyle: 'italic',
+  textAlign: 'center',
+};
 
 // ── Asset paths ──────────────────────────────────────────────────────────────
 const assets = {
@@ -113,7 +136,7 @@ function Section({
   children,
 }: {
   eyebrow?: string;
-  heading: string;
+  heading: ReactNode;
   body?: string;
   children?: React.ReactNode;
 }) {
@@ -405,6 +428,8 @@ function MediaViewer({
   // Mark as client-mounted so createPortal can safely target document.body
   useEffect(() => { setMounted(true); }, []);
 
+  useBodyScrollLock(lightboxOpen && mounted);
+
   // Track viewport visibility
   useEffect(() => {
     const el = containerRef.current;
@@ -592,25 +617,28 @@ function MediaViewer({
         </div>
       )}
 
-      {/* ── Lightbox ──────────────────────────────────────────────────────────── */}
+      {/* ── Lightbox — fixed image slot + pinned caption/nav (no jump between slides) ── */}
       {lightboxOpen && mounted && createPortal(
-        /* Outer overlay: zoom-out cursor + click-outside-to-close */
         <div
           onClick={() => closeLightbox()}
           style={{
             position: 'fixed', inset: 0, zIndex: 9999,
             background: 'rgba(8,8,8,0.92)',
-            display: 'flex', flexDirection: 'column',
-            alignItems: 'center', justifyContent: 'center',
-            padding: '40px 32px',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '56px 24px 24px',
+            boxSizing: 'border-box',
             cursor: 'zoom-out',
+            overflow: 'hidden',
           }}
         >
-          {/* Close button */}
           <button
+            type="button"
             onClick={() => closeLightbox()}
             style={{
-              position: 'absolute', top: 20, right: 20,
+              position: 'fixed', top: 20, right: 20,
               width: 36, height: 36, borderRadius: '50%',
               background: 'rgba(255,255,255,0.1)', border: 'none',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -623,64 +651,134 @@ function MediaViewer({
             </svg>
           </button>
 
-          {/* Content panel — click inside does NOT close */}
-          <div
-            onClick={e => e.stopPropagation()}
-            style={{ maxWidth: 'min(88vw, 1280px)', width: '100%', cursor: 'default' }}
-          >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={item.src} alt={item.alt}
-              style={{ width: '100%', maxHeight: '74vh', objectFit: 'contain', borderRadius: 14, display: 'block' }}
-            />
-
-            {/* Caption + navigation row */}
-            <div style={{ marginTop: 22, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 24 }}>
-              {items.length > 1 && (
-                <button
-                  onClick={() => setCurrent(c => (c - 1 + items.length) % items.length)}
+          {items.length === 1 ? (
+            <div
+              onClick={e => e.stopPropagation()}
+              style={{
+                width: '100%',
+                maxWidth: 'min(88vw, 1280px)',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                cursor: 'default',
+                maxHeight: 'calc(100vh - 80px)',
+                overflow: 'auto',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '12px 8px' }}>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={item.src} alt={item.alt}
                   style={{
-                    visibility: current > 0 ? 'visible' : 'hidden',
-                    width: 34, height: 34, borderRadius: '50%', flexShrink: 0,
-                    background: 'rgba(255,255,255,0.1)', border: 'none',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    color: 'white', cursor: 'pointer', transition: 'background 0.15s',
+                    maxWidth: '100%',
+                    maxHeight: 'min(74vh, calc(100vh - 200px))',
+                    width: 'auto',
+                    height: 'auto',
+                    objectFit: 'contain',
+                    borderRadius: 14,
+                    display: 'block',
                   }}
-                  className="hover:bg-white/20"
-                >
-                  <svg width="13" height="13" viewBox="0 0 14 14" fill="none">
-                    <path d="M9 11L4 7l5-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                  </svg>
-                </button>
-              )}
-
-              <div style={{ textAlign: 'center' }}>
-                <p style={{ color: 'white', fontWeight: 600, fontSize: 15, margin: 0 }}>{item.label}</p>
-                <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: 13, marginTop: 5, lineHeight: 1.6 }}>{item.caption}</p>
-                {items.length > 1 && (
-                  <p style={{ color: 'rgba(255,255,255,0.25)', fontSize: 12, marginTop: 8 }}>{current + 1} / {items.length}</p>
-                )}
+                />
+              </div>
+              <div style={{ marginTop: 12, width: '100%', maxWidth: 'min(720px, 92vw)' }}>
+                <p style={LB_CAP_PRIMARY}>{item.label}</p>
+                {item.caption ? <p style={LB_CAP_SECONDARY}>{item.caption}</p> : null}
+              </div>
+            </div>
+          ) : (
+            <div
+              onClick={e => e.stopPropagation()}
+              style={{
+                width: '100%',
+                maxWidth: 'min(88vw, 1280px)',
+                height: 'calc(100vh - 80px)',
+                maxHeight: 'calc(100vh - 80px)',
+                display: 'flex',
+                flexDirection: 'column',
+                cursor: 'default',
+                overflow: 'hidden',
+                background: 'transparent',
+                boxShadow: 'none',
+              }}
+            >
+              <div
+                style={{
+                  flex: '1 1 auto',
+                  minHeight: 0,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  padding: '12px 8px',
+                  overflow: 'hidden',
+                }}
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={item.src} alt={item.alt}
+                  style={{
+                    maxWidth: '100%',
+                    maxHeight: '100%',
+                    width: 'auto',
+                    height: 'auto',
+                    objectFit: 'contain',
+                    borderRadius: 14,
+                    display: 'block',
+                  }}
+                />
               </div>
 
-              {items.length > 1 && (
-                <button
-                  onClick={() => setCurrent(c => (c + 1) % items.length)}
-                  style={{
-                    visibility: current < items.length - 1 ? 'visible' : 'hidden',
-                    width: 34, height: 34, borderRadius: '50%', flexShrink: 0,
-                    background: 'rgba(255,255,255,0.1)', border: 'none',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    color: 'white', cursor: 'pointer', transition: 'background 0.15s',
-                  }}
-                  className="hover:bg-white/20"
-                >
-                  <svg width="13" height="13" viewBox="0 0 14 14" fill="none">
-                    <path d="M5 3l5 4-5 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                  </svg>
-                </button>
-              )}
+              <div
+                style={{
+                  flexShrink: 0,
+                  borderTop: '1px solid rgba(255,255,255,0.08)',
+                  background: 'rgba(8,8,8,0.85)',
+                  padding: '14px 16px 16px',
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 24 }}>
+                  <button
+                    type="button"
+                    onClick={e => { e.stopPropagation(); setCurrent(c => (c - 1 + items.length) % items.length); }}
+                    style={{
+                      visibility: current > 0 ? 'visible' : 'hidden',
+                      width: 34, height: 34, borderRadius: '50%', flexShrink: 0,
+                      background: 'rgba(255,255,255,0.1)', border: 'none',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      color: 'white', cursor: 'pointer', transition: 'background 0.15s',
+                    }}
+                    className="hover:bg-white/20"
+                  >
+                    <svg width="13" height="13" viewBox="0 0 14 14" fill="none">
+                      <path d="M9 11L4 7l5-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                  </button>
+
+                  <div style={{ textAlign: 'center', minWidth: 0, flex: '1 1 auto', maxWidth: 'min(720px, 86vw)' }}>
+                    <p style={LB_CAP_PRIMARY}>{item.label}</p>
+                    {item.caption ? <p style={LB_CAP_SECONDARY}>{item.caption}</p> : null}
+                    <p style={{ color: 'rgba(255,255,255,0.25)', fontSize: 12, marginTop: 8 }}>{current + 1} / {items.length}</p>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={e => { e.stopPropagation(); setCurrent(c => (c + 1) % items.length); }}
+                    style={{
+                      visibility: current < items.length - 1 ? 'visible' : 'hidden',
+                      width: 34, height: 34, borderRadius: '50%', flexShrink: 0,
+                      background: 'rgba(255,255,255,0.1)', border: 'none',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      color: 'white', cursor: 'pointer', transition: 'background 0.15s',
+                    }}
+                    className="hover:bg-white/20"
+                  >
+                    <svg width="13" height="13" viewBox="0 0 14 14" fill="none">
+                      <path d="M5 3l5 4-5 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                  </button>
+                </div>
+              </div>
             </div>
-          </div>
+          )}
         </div>,
         document.body
       )}
@@ -915,9 +1013,10 @@ function getCardStyle(i: number, progress: number): {
 
 // Below this viewport height the cards won't fit, so fall back to a simple stack.
 const MIN_DECK_HEIGHT = 680;
-// Dead zone at the start: this many px of scroll do nothing, acting as a "bumper"
-// so users who arrive while mid-scroll don't blast right past card 1.
-const FIRST_CARD_DEAD_ZONE = 300;
+// Dead zone at the start: px of scroll after the deck sticks before raw progress ramps (bumper).
+const DESIGN_DECK_DEAD_ZONE = 300;
+// Comparative-analysis ResearchDeck: smaller dead zone so cards snap into place sooner; Design deck unchanged.
+const RESEARCH_DECK_DEAD_ZONE = 160;
 
 function ResearchDeck() {
   const outerRef = useRef<HTMLDivElement>(null);
@@ -985,9 +1084,7 @@ function ResearchDeck() {
     function onScroll() {
       if (!outerRef.current) return;
       const rect = outerRef.current.getBoundingClientRect();
-      // FIRST_CARD_DEAD_ZONE: first 300px of scroll does nothing — bumper so users
-      // can arrive at the deck without momentum-scrolling past card 1.
-      const rawP = Math.max(0, Math.min(2, (-rect.top - FIRST_CARD_DEAD_ZONE) / SCROLL_PER_CARD));
+      const rawP = Math.max(0, Math.min(2, (-rect.top - RESEARCH_DECK_DEAD_ZONE) / SCROLL_PER_CARD));
       const scrollingForward = prevRawP < 0 || rawP >= prevRawP;
       prevRawP = rawP;
       state.scrollP = rawP;
@@ -1073,13 +1170,13 @@ function ResearchDeck() {
 
   return (
     // Outer height: 100vh + 2 card exits + dead zone bumper at start
-    <div ref={outerRef} style={{ height: `calc(100vh + ${SCROLL_PER_CARD * 2 + FIRST_CARD_DEAD_ZONE}px)` }}>
+    <div ref={outerRef} style={{ height: `calc(100vh + ${SCROLL_PER_CARD * 2 + RESEARCH_DECK_DEAD_ZONE}px)` }}>
       {/* Sticky viewport — fills 100vh, overflow hidden clips peeking cards at viewport bottom */}
       <div style={{
         position: 'sticky',
         top: 0,
         height: '100vh',
-        paddingTop: 80,
+        paddingTop: 64,
         paddingBottom: 48,
         overflow: 'hidden',
         display: 'flex',
@@ -1151,7 +1248,7 @@ function DesignDeck() {
     function onScroll() {
       if (!outerRef.current) return;
       const rect = outerRef.current.getBoundingClientRect();
-      const rawP = Math.max(0, Math.min(2, (-rect.top - FIRST_CARD_DEAD_ZONE) / SCROLL_PER_CARD));
+      const rawP = Math.max(0, Math.min(2, (-rect.top - DESIGN_DECK_DEAD_ZONE) / SCROLL_PER_CARD));
       const scrollingForward = prevRawP < 0 || rawP >= prevRawP;
       prevRawP = rawP; state.scrollP = rawP;
       if (state.animating) {
@@ -1234,7 +1331,7 @@ function DesignDeck() {
   }
 
   return (
-    <div ref={outerRef} style={{ height: `calc(100vh + ${SCROLL_PER_CARD * 2 + FIRST_CARD_DEAD_ZONE}px)` }}>
+    <div ref={outerRef} style={{ height: `calc(100vh + ${SCROLL_PER_CARD * 2 + DESIGN_DECK_DEAD_ZONE}px)` }}>
       <div style={{ position: 'sticky', top: 0, height: '100vh', paddingTop: 80, paddingBottom: 48, overflow: 'hidden', display: 'flex', flexDirection: 'column', justifyContent: 'flex-start' }}>
         <div style={{ position: 'relative', flex: 1 }}>
           {cards.map((card, i) => {
@@ -1400,6 +1497,7 @@ function ExpandableImage({ src, alt, style, className }: { src: string; alt: str
   const [open, setOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
   useEffect(() => { setMounted(true); }, []);
+  useBodyScrollLock(open && mounted);
 
   return (
     <>
@@ -1456,6 +1554,7 @@ function CyclingGif({ items }: { items: GifItem[] }) {
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
   useEffect(() => { setMounted(true); }, []);
+  useBodyScrollLock(lightboxOpen && mounted);
   const imgRefs = useRef<(HTMLImageElement | null)[]>([]);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const prevTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
@@ -1847,21 +1946,38 @@ export default function FindingFocusAiAssistantCaseStudy() {
           <div style={{ maxWidth: '690px' }}>
             <Callout
               accentColor="#272727"
+              variant="northStar"
               label="The Winning Choice"
               heading="LLM Powered API"
               body="OpenAI's Assistants API was the clear choice — its ability to truly understand queries, respond naturally, and connect directly to our external knowledge base made it the right fit."
               compactBody
+              icon={<WinningChoiceScrollStars className="block size-[72px] shrink-0 md:size-20" />}
             />
           </div>
 
-          {/* Unit 2: Competitive analysis */}
-          <Section
-            eyebrow="Comparative Analysis"
-            heading="Before designing anything, we did our homework."
-            body="I conducted a comprehensive comparative analysis of leading LLM chat interfaces — Gemini, Claude, Meta AI, and ChatGPT — focusing on three key areas that would shape our design direction."
-          />
-
-          <ResearchDeck />
+          {/* Unit 2: Competitive analysis + scroll deck — gap-20 (80px) between intro copy and deck only */}
+          <div className="flex flex-col gap-20">
+            <Section
+              eyebrow="Comparative Analysis"
+              heading={
+                <>
+                  Before designing anything, we did our{' '}
+                  <span
+                    className="inline-block align-baseline"
+                    style={{
+                      padding: 4,
+                      cursor: `url(${PENCIL_CURSOR_URL}) 0 0, auto`,
+                    }}
+                  >
+                    homework
+                  </span>
+                  .
+                </>
+              }
+              body="I conducted a comprehensive comparative analysis of leading LLM chat interfaces — Gemini, Claude, Meta AI, and ChatGPT — focusing on three key areas that would shape our design direction."
+            />
+            <ResearchDeck />
+          </div>
 
           {/* Key Insights — three ingredients */}
           <div className="flex flex-col gap-6 -mt-10">
@@ -1940,10 +2056,12 @@ export default function FindingFocusAiAssistantCaseStudy() {
 
             <Callout
               accentColor="#272727"
+              variant="northStar"
               label="The Winning Choice"
               heading="Floating Action Button"
               body="Always reachable without pulling teachers away from what they're doing."
               compactBody
+              icon={<WinningChoiceScrollStars className="block size-[72px] shrink-0 md:size-20" />}
             />
 
           </div>
@@ -1966,10 +2084,12 @@ export default function FindingFocusAiAssistantCaseStudy() {
 
             <Callout
               accentColor="#272727"
+              variant="northStar"
               label="The Winning Choice"
               heading="Anchored Modal Overlay"
               body="Stays present without taking over — enough screen space to have a real conversation, without losing sight of where you are."
               compactBody
+              icon={<WinningChoiceScrollStars className="block size-[72px] shrink-0 md:size-20" />}
             />
 
           </div>
@@ -1994,10 +2114,12 @@ export default function FindingFocusAiAssistantCaseStudy() {
 
           <Callout
             accentColor="#272727"
+            variant="northStar"
             label="The Winning Choice"
             heading="Suggested Question Tiles"
             body="Question tiles give teachers a clear starting point — and signal what the assistant is actually capable of from the moment it opens."
             compactBody
+            icon={<WinningChoiceScrollStars className="block size-[72px] shrink-0 md:size-20" />}
           />
 
         </div>
@@ -2071,11 +2193,6 @@ export default function FindingFocusAiAssistantCaseStudy() {
       {/* ── REFLECTION ── */}
       <section className="max-w-[1200px] mx-auto px-5 sm:px-10 md:px-20 pb-14 md:pb-28">
         <div className="flex flex-col gap-12">
-
-          <Section
-            eyebrow="Key Takeaways"
-            heading=""
-          />
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             <div className="bg-[rgba(220,232,248,0.45)] rounded-[24px] p-8">
