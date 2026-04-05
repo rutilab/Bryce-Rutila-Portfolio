@@ -138,6 +138,15 @@ body {
   border-bottom-left-radius: 0;
 }
 
+/* Home hero scroll layer: WebKit rubber-band; +1px inner min-height can show a sliver of scrollbar */
+.home-hero-scroll {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.home-hero-scroll::-webkit-scrollbar {
+  display: none;
+}
+
 /* ── Subtitle slam — fires once when the final phrase locks in ── */
 /*    Per-keyframe timing functions drive the slam feel:
       rise uses ease-out (controlled float up),

@@ -168,49 +168,6 @@ export default function Home() {
     return () => ro.disconnect();
   }, []);
 
-  /** Mobile: lock document scroll so overscroll bounces inside the hero layer (nav stays fixed). */
-  useEffect(() => {
-    const mq = window.matchMedia('(max-width: 767px)');
-    const html = document.documentElement;
-    const body = document.body;
-    let saved: { htmlOverflow: string; bodyOverflow: string; htmlHeight: string; bodyHeight: string } | null = null;
-
-    const lock = () => {
-      if (saved) return;
-      saved = {
-        htmlOverflow: html.style.overflow,
-        bodyOverflow: body.style.overflow,
-        htmlHeight: html.style.height,
-        bodyHeight: body.style.height,
-      };
-      html.style.overflow = 'hidden';
-      body.style.overflow = 'hidden';
-      html.style.height = '100%';
-      body.style.height = '100%';
-    };
-
-    const unlock = () => {
-      if (!saved) return;
-      html.style.overflow = saved.htmlOverflow;
-      body.style.overflow = saved.bodyOverflow;
-      html.style.height = saved.htmlHeight;
-      body.style.height = saved.bodyHeight;
-      saved = null;
-    };
-
-    const sync = () => {
-      if (mq.matches) lock();
-      else unlock();
-    };
-
-    sync();
-    mq.addEventListener('change', sync);
-    return () => {
-      mq.removeEventListener('change', sync);
-      unlock();
-    };
-  }, []);
-
   useLayoutEffect(() => {
     const container = heroContentRef.current;
     const measure = heroSubtitleMeasureRef.current;
@@ -442,20 +399,24 @@ export default function Home() {
 
         {/* Hero copy: scroll layer (sibling of butterflies) — tall content grows; no clipping. Header may scroll under nav. */}
         <div
+          className="home-hero-scroll"
           style={{
             position: 'absolute',
             inset: 0,
             zIndex: 2,
-            overflowY: 'auto',
+            overflowY: 'scroll',
             overflowX: 'hidden',
             WebkitOverflowScrolling: 'touch',
-            overscrollBehavior: 'contain',
             pointerEvents: 'none',
           }}
         >
+          {/*
+            +1px min-height gives WebKit a tiny scroll range so native rubber-band
+            overscroll works even when the hero column fits the viewport (standard iOS behavior).
+          */}
           <div
             style={{
-              minHeight: '100vh',
+              minHeight: 'calc(100% + 1px)',
               display: 'flex',
               flexDirection: 'column',
               alignItems: 'center',
