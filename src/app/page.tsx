@@ -134,6 +134,8 @@ export default function Home() {
   const [showSlam, setShowSlam] = useState(false);
 
   const heroContainerRef = useRef<HTMLDivElement>(null);
+  /** Scrollport for hero + butterflies (matches case-studies page pattern). */
+  const heroScrollRef = useRef<HTMLDivElement>(null);
   const heroContentRef = useRef<HTMLDivElement>(null);
   const heroTitleRef = useRef<HTMLHeadingElement>(null);
   const heroSubtitleRef = useRef<HTMLParagraphElement>(null);
@@ -155,6 +157,49 @@ export default function Home() {
   const activeDragIndexRef = useRef<number | null>(null);
   const butterflyPosRef = useRef(butterflyPos);
   butterflyPosRef.current = butterflyPos;
+
+  /** Mobile: lock document scroll so rubber-band happens only in heroScrollRef (nav stays fixed). */
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 767px)');
+    const html = document.documentElement;
+    const body = document.body;
+    let saved: { htmlOverflow: string; bodyOverflow: string; htmlHeight: string; bodyHeight: string } | null = null;
+
+    const lock = () => {
+      if (saved) return;
+      saved = {
+        htmlOverflow: html.style.overflow,
+        bodyOverflow: body.style.overflow,
+        htmlHeight: html.style.height,
+        bodyHeight: body.style.height,
+      };
+      html.style.overflow = 'hidden';
+      body.style.overflow = 'hidden';
+      html.style.height = '100%';
+      body.style.height = '100%';
+    };
+
+    const unlock = () => {
+      if (!saved) return;
+      html.style.overflow = saved.htmlOverflow;
+      body.style.overflow = saved.bodyOverflow;
+      html.style.height = saved.htmlHeight;
+      body.style.height = saved.bodyHeight;
+      saved = null;
+    };
+
+    const sync = () => {
+      if (mq.matches) lock();
+      else unlock();
+    };
+
+    sync();
+    mq.addEventListener('change', sync);
+    return () => {
+      mq.removeEventListener('change', sync);
+      unlock();
+    };
+  }, []);
 
   useLayoutEffect(() => {
     const el = heroContainerRef.current;
@@ -268,9 +313,12 @@ export default function Home() {
     (e: React.PointerEvent<HTMLImageElement>, index: number) => {
       if (activeDragIndexRef.current !== index) return;
       const cr = heroContainerRef.current?.getBoundingClientRect();
-      if (!cr || cr.width <= 0 || cr.height <= 0) return;
-      const localLeft = e.clientX - cr.left - dragOffsetPxRef.current.x;
-      const localTop = e.clientY - cr.top - dragOffsetPxRef.current.y;
+      const scrollEl = heroScrollRef.current;
+      if (!cr || !scrollEl || cr.width <= 0 || cr.height <= 0) return;
+      const sy = scrollEl.scrollTop;
+      const sx = scrollEl.scrollLeft;
+      const localLeft = e.clientX - cr.left - dragOffsetPxRef.current.x + sx;
+      const localTop = e.clientY - cr.top - dragOffsetPxRef.current.y + sy;
       const leftFrac = localLeft / cr.width;
       const topFrac = localTop / cr.height;
       setButterflyPos(prev => {
@@ -356,49 +404,12 @@ export default function Home() {
           cursor: BUTTERFLY_CURSOR,
         }}
       >
-        {/* Butterflies — fractional layout + drag after slam; hero column stays above for hit-testing */}
-        {butterflies.map((b, i) => {
-          const cw = containerSize.width;
-          const ch = containerSize.height;
-          const usePx = cw > 0 && ch > 0;
-          const posStyle: CSSProperties = usePx
-            ? {
-                left: `${butterflyPos[i].leftFrac * cw}px`,
-                top: `${butterflyPos[i].topFrac * ch}px`,
-              }
-            : { left: b.style.left, top: b.style.top };
-          const dragging = draggingIndex === i;
-          return (
-            <img
-              key={i}
-              src={b.src}
-              alt=""
-              aria-hidden="true"
-              className={showSlam && !dragging ? b.reactClass : undefined}
-              onPointerDown={e => handleButterflyPointerDown(e, i)}
-              onPointerMove={e => handleButterflyPointerMove(e, i)}
-              onPointerUp={e => handleButterflyPointerUp(e, i)}
-              onPointerCancel={e => handleButterflyPointerCancel(e, i)}
-              style={{
-                position: 'absolute',
-                zIndex: dragging ? 10 : 1,
-                pointerEvents: 'auto',
-                touchAction: 'none',
-                cursor: dragging ? 'grabbing' : 'grab',
-                transition:
-                  snapRevertingIndex === i
-                    ? 'left 0.26s ease-out, top 0.26s ease-out'
-                    : 'none',
-                width: b.style.width,
-                ...posStyle,
-                ...(showSlam && !dragging ? { animationDelay: b.reactDelay } : {}),
-              }}
-            />
-          );
-        })}
-
-        {/* Hero copy: scroll layer (sibling of butterflies) — tall content grows; no clipping. Header may scroll under nav. */}
+        {/*
+          Single scroll surface (case-studies pattern): butterflies + hero copy move together on
+          overscroll; body scroll stays locked on mobile so the fixed nav does not rubber-band.
+        */}
         <div
+          ref={heroScrollRef}
           className="home-hero-scroll"
           style={{
             position: 'absolute',
@@ -407,26 +418,83 @@ export default function Home() {
             overflowY: 'scroll',
             overflowX: 'hidden',
             WebkitOverflowScrolling: 'touch',
-            pointerEvents: 'none',
           }}
         >
-          {/*
-            +1px min-height gives WebKit a tiny scroll range so native rubber-band
-            overscroll works even when the hero column fits the viewport (standard iOS behavior).
-          */}
           <div
             style={{
+              position: 'relative',
+              /* min-height + height so % children resolve; +1px preserves iOS edge overscroll */
               minHeight: 'calc(100% + 1px)',
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
+              height: '100%',
+              width: '100%',
               boxSizing: 'border-box',
-              paddingTop: HOME_HERO_TOP_PAD,
-              paddingBottom: HOME_HERO_BOTTOM_PAD,
-              paddingLeft: 'max(20px, env(safe-area-inset-left, 0px))',
-              paddingRight: 'max(20px, env(safe-area-inset-right, 0px))',
             }}
           >
+            <div
+              style={{
+                position: 'absolute',
+                inset: 0,
+                zIndex: 1,
+                pointerEvents: 'none',
+              }}
+            >
+              {butterflies.map((b, i) => {
+                const cw = containerSize.width;
+                const ch = containerSize.height;
+                const usePx = cw > 0 && ch > 0;
+                const posStyle: CSSProperties = usePx
+                  ? {
+                      left: `${butterflyPos[i].leftFrac * cw}px`,
+                      top: `${butterflyPos[i].topFrac * ch}px`,
+                    }
+                  : { left: b.style.left, top: b.style.top };
+                const dragging = draggingIndex === i;
+                return (
+                  <img
+                    key={i}
+                    src={b.src}
+                    alt=""
+                    aria-hidden="true"
+                    className={showSlam && !dragging ? b.reactClass : undefined}
+                    onPointerDown={e => handleButterflyPointerDown(e, i)}
+                    onPointerMove={e => handleButterflyPointerMove(e, i)}
+                    onPointerUp={e => handleButterflyPointerUp(e, i)}
+                    onPointerCancel={e => handleButterflyPointerCancel(e, i)}
+                    style={{
+                      position: 'absolute',
+                      zIndex: dragging ? 10 : 1,
+                      pointerEvents: 'auto',
+                      touchAction: 'none',
+                      cursor: dragging ? 'grabbing' : 'grab',
+                      transition:
+                        snapRevertingIndex === i
+                          ? 'left 0.26s ease-out, top 0.26s ease-out'
+                          : 'none',
+                      width: b.style.width,
+                      ...posStyle,
+                      ...(showSlam && !dragging ? { animationDelay: b.reactDelay } : {}),
+                    }}
+                  />
+                );
+              })}
+            </div>
+
+            <div
+              style={{
+                position: 'relative',
+                zIndex: 2,
+                /* Must fill scrollport so margin:auto on hero recenters (100% alone failed after scroll split) */
+                minHeight: 'calc(100% + 1px)',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                boxSizing: 'border-box',
+                paddingTop: HOME_HERO_TOP_PAD,
+                paddingBottom: HOME_HERO_BOTTOM_PAD,
+                paddingLeft: 'max(20px, env(safe-area-inset-left, 0px))',
+                paddingRight: 'max(20px, env(safe-area-inset-right, 0px))',
+              }}
+            >
         {/* ── Hero content — margin auto centers when short; tall blocks grow and scroll ── */}
         <div
           ref={heroContentRef}
@@ -616,6 +684,7 @@ export default function Home() {
 
           </div>
         </div>
+            </div>
           </div>
         </div>
 
