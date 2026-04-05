@@ -138,6 +138,109 @@ body {
   border-bottom-left-radius: 0;
 }
 
+/* ── Subtitle slam — fires once when the final phrase locks in ── */
+/*    Per-keyframe timing functions drive the slam feel:
+      rise uses ease-out (controlled float up),
+      fall uses a steep cubic-bezier so it drops like gravity flipped on,
+      impact uses spring-out so the stop feels hard. */
+@keyframes subtitle-slam {
+  0% {
+    transform: translateY(0) scale(1);
+    text-shadow: none;
+    animation-timing-function: cubic-bezier(0.34, 0, 0.66, 0); /* ease-in up */
+  }
+  /* Peak of rise */
+  34% {
+    transform: translateY(-26px) scale(1.09);
+    text-shadow: none;
+    animation-timing-function: cubic-bezier(0.7, 0, 1, 0.5); /* steep fall — near freefall */
+  }
+  /* SLAM — hard overshoot below baseline */
+  51% {
+    transform: translateY(11px) scale(0.93);
+    text-shadow:
+      0  5px 0 #89FF12,
+      0 10px 0 #FF9C12,
+      0 15px 0 #FF12FB,
+      0  0 28px rgba(137, 255,  18, 0.50);
+    animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1); /* hard stop / spring out */
+  }
+  /* First bounce */
+  64% {
+    transform: translateY(-7px) scale(1.03);
+    text-shadow:
+      0 3px 0 rgba(137, 255,  18, 0.45),
+      0 5px 0 rgba(255, 156,  18, 0.25);
+    animation-timing-function: ease-in-out;
+  }
+  /* Second bounce (smaller) */
+  77% {
+    transform: translateY(3px) scale(0.99);
+    text-shadow: none;
+  }
+  /* Settle */
+  90% {
+    transform: translateY(-1px) scale(1);
+    text-shadow: none;
+  }
+  100% {
+    transform: translateY(0) scale(1);
+    text-shadow: none;
+  }
+}
+
+.subtitle-slam {
+  animation: subtitle-slam 1000ms linear 150ms both;
+}
+
+/* ── Butterfly scatter — triggered by the slam, fires once ── */
+/*    More keyframes in the 70-100% range give the return a smooth,
+      organic glide instead of the previous abrupt snap-back.
+      ease-out timing (no spring) lets each keyframe transition flow
+      without overshoot at the tail.                               */
+
+@keyframes butterfly-react-left {
+  0%   { transform: translate(  0,      0)    rotate(   0deg) scale(1);     }
+  14%  { transform: translate(-22px,  -26px)  rotate( -28deg) scale(1.18);  }
+  30%  { transform: translate(-12px,  -36px)  rotate(  16deg) scale(1.12);  }
+  46%  { transform: translate(-18px,  -22px)  rotate( -10deg) scale(1.07);  }
+  60%  { transform: translate( -7px,  -11px)  rotate(   5deg) scale(1.03);  }
+  71%  { transform: translate( -4px,   -6px)  rotate(   2deg) scale(1.015); }
+  81%  { transform: translate(-1.5px,  -2.5px) rotate( 0.5deg) scale(1.006); }
+  90%  { transform: translate(-0.5px, -0.8px) rotate(   0deg) scale(1.001); }
+  100% { transform: translate(  0,      0)    rotate(   0deg) scale(1);     }
+}
+
+.butterfly-react-left {
+  animation: butterfly-react-left 1150ms ease-out both;
+}
+
+@keyframes butterfly-react-right {
+  0%   { transform: translate(  0,     0)    rotate(   0deg) scale(1);     }
+  14%  { transform: translate( 22px, -26px)  rotate(  28deg) scale(1.18);  }
+  30%  { transform: translate( 12px, -36px)  rotate( -16deg) scale(1.12);  }
+  46%  { transform: translate( 18px, -22px)  rotate(  10deg) scale(1.07);  }
+  60%  { transform: translate(  7px, -11px)  rotate(  -5deg) scale(1.03);  }
+  71%  { transform: translate(  4px,  -6px)  rotate(  -2deg) scale(1.015); }
+  81%  { transform: translate( 1.5px, -2.5px) rotate(-0.5deg) scale(1.006); }
+  90%  { transform: translate( 0.5px, -0.8px) rotate(   0deg) scale(1.001); }
+  100% { transform: translate(  0,     0)    rotate(   0deg) scale(1);     }
+}
+
+.butterfly-react-right {
+  animation: butterfly-react-right 1150ms ease-out both;
+}
+
+
+/* Cursor blink — used by the landing page subtitle typewriter */
+@keyframes cursor-blink {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0; }
+}
+.cursor-blink {
+  animation: cursor-blink 1s step-end infinite;
+}
+
 /* Animations */
 @keyframes fadeIn {
   from {

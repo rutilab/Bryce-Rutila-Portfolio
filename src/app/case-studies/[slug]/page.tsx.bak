@@ -1,0 +1,29 @@
+// ARCHIVED — old glassmorphic slug catch-all page
+// import { GlassCard } from '@/components/layout';
+// import Link from 'next/link';
+//
+// interface CaseStudyPageProps {
+//   params: Promise<{ slug: string }>;
+// }
+//
+// export default async function CaseStudyPage({ params }: CaseStudyPageProps) {
+//   const { slug } = await params;
+//   const caseStudy = {
+//     id: slug,
+//     title: `Project ${slug}`,
+//     description: 'Detailed description of this project will go here.',
+//     role: 'Lead Designer',
+//     duration: '3 months',
+//     outcomes: ['Outcome 1', 'Outcome 2', 'Outcome 3'],
+//     technologies: ['Figma', 'React', 'TypeScript'],
+//   };
+//   return (
+//     <main className="min-h-screen px-4 pt-28 pb-8">
+//       <div className="max-w-4xl mx-auto">
+//         <GlassCard padding="lg">
+//           ...old glassmorphic content...
+//         </GlassCard>
+//       </div>
+//     </main>
+//   );
+// }
