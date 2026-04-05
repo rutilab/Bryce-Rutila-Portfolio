@@ -15,6 +15,9 @@ const MIN_DIST       = 2;    // px — min distance between stored points
 // How many pixels of cursor travel = one full green→orange→magenta→green cycle.
 // Lower = faster cycling; higher = more gradual.
 const CYCLE_PX       = 700;
+// Home cursor: 32×32 PNG with hotspot (0,0) = top-left; trail emerges from image center.
+const TRAIL_ORIGIN_X = 16;
+const TRAIL_ORIGIN_Y = 16;
 
 // Smoothly interpolate between two palette entries
 function lerp(a: { r: number; g: number; b: number }, b: { r: number; g: number; b: number }, t: number) {
@@ -60,14 +63,16 @@ export function CursorContrail() {
     window.addEventListener('resize', resize);
 
     const onMove = (e: MouseEvent) => {
-      const now  = Date.now();
+      const now = Date.now();
+      const tx = e.clientX + TRAIL_ORIGIN_X;
+      const ty = e.clientY + TRAIL_ORIGIN_Y;
       const last = trail[trail.length - 1];
 
       // Measure distance from last stored point
       let dist = 0;
       if (last) {
-        const dx = e.clientX - last.x;
-        const dy = e.clientY - last.y;
+        const dx = tx - last.x;
+        const dy = ty - last.y;
         dist = Math.sqrt(dx * dx + dy * dy);
         if (dist < MIN_DIST) return; // skip micro-movements
       }
@@ -77,7 +82,7 @@ export function CursorContrail() {
 
       // Bake the current ribbon color directly into this dot
       const { r, g, b } = sampleRibbon(ribbonPos);
-      trail.push({ x: e.clientX, y: e.clientY, t: now, r, g, b });
+      trail.push({ x: tx, y: ty, t: now, r, g, b });
     };
 
     window.addEventListener('mousemove', onMove);
