@@ -18,10 +18,23 @@ export const viewport: Viewport = {
   themeColor: '#0a0a0a',
 };
 
-const rawSiteUrl =
-  process.env.NEXT_PUBLIC_SITE_URL ??
-  (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000');
-const siteUrl = rawSiteUrl.replace(/\/$/, '');
+/** Empty string is a common .env mistake and breaks `new URL('')` → 500 on every route. */
+function resolveSiteUrl(): string {
+  const fromEnv = process.env.NEXT_PUBLIC_SITE_URL?.trim();
+  if (fromEnv) {
+    try {
+      // Validate; invalid values would throw at metadataBase
+      new URL(fromEnv);
+      return fromEnv.replace(/\/$/, '');
+    } catch {
+      /* fall through */
+    }
+  }
+  if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL}`.replace(/\/$/, '');
+  return 'http://localhost:3000';
+}
+
+const siteUrl = resolveSiteUrl();
 
 /** Static JPEG in /public so crawlers (e.g. iMessage) fetch a simple URL, not a dynamic route. */
 const ogImage = {

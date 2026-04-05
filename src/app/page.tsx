@@ -155,8 +155,18 @@ export default function Home() {
   const dragOffsetPxRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
   /** Synced on pointer down/up so first pointermove sees the drag (state can lag one frame). */
   const activeDragIndexRef = useRef<number | null>(null);
+  /** True if butterfly already overlapped the hero zone at pointer down (e.g. breakpoint moved copy). */
+  const dragStartOverlapsHeroRef = useRef(false);
   const butterflyPosRef = useRef(butterflyPos);
   butterflyPosRef.current = butterflyPos;
+
+  const getHeroExclusionRect = useCallback((): DOMRect | null => {
+    const t = heroTitleRef.current?.getBoundingClientRect();
+    const s = heroSubtitleRef.current?.getBoundingClientRect();
+    const c = heroCtasRef.current?.getBoundingClientRect();
+    if (t && s && c) return unionRects(unionRects(t, s), c);
+    return heroContentRef.current?.getBoundingClientRect() ?? null;
+  }, []);
 
   /** Mobile: lock document scroll so rubber-band happens only in heroScrollRef (nav stays fixed). */
   useEffect(() => {
@@ -302,11 +312,13 @@ export default function Home() {
       const imgRect = img.getBoundingClientRect();
       dragOffsetPxRef.current = { x: e.clientX - imgRect.left, y: e.clientY - imgRect.top };
       dragStartFracRef.current = { ...butterflyPosRef.current[index] };
+      const zone = getHeroExclusionRect();
+      dragStartOverlapsHeroRef.current = Boolean(zone && rectsOverlap(imgRect, zone));
       activeDragIndexRef.current = index;
       setDraggingIndex(index);
       img.setPointerCapture(e.pointerId);
     },
-    [],
+    [getHeroExclusionRect],
   );
 
   const handleButterflyPointerMove = useCallback(
@@ -341,28 +353,29 @@ export default function Home() {
     }
 
     const br = img.getBoundingClientRect();
-    const t = heroTitleRef.current?.getBoundingClientRect();
-    const s = heroSubtitleRef.current?.getBoundingClientRect();
-    const c = heroCtasRef.current?.getBoundingClientRect();
-    const zone = t && s && c ? unionRects(unionRects(t, s), c) : heroContentRef.current?.getBoundingClientRect();
+    const zone = getHeroExclusionRect();
     const overlaps = Boolean(zone && rectsOverlap(br, zone));
+    /** Only reject placement when dragging in from outside the zone; allow rescue drags from inside. */
+    const shouldSnapBack =
+      Boolean(overlaps && start) && !dragStartOverlapsHeroRef.current;
 
     activeDragIndexRef.current = null;
     setDraggingIndex(null);
+    dragStartOverlapsHeroRef.current = false;
 
-    if (overlaps && start) {
+    if (shouldSnapBack && start) {
       setSnapRevertingIndex(index);
       requestAnimationFrame(() => {
         setButterflyPos(prev => {
           const next = [...prev];
-          next[index] = { ...start };
+          next[index] = { leftFrac: start.leftFrac, topFrac: start.topFrac };
           return next;
         });
       });
       window.setTimeout(() => setSnapRevertingIndex(null), 280);
     }
     dragStartFracRef.current = null;
-  }, []);
+  }, [getHeroExclusionRect]);
 
   const handleButterflyPointerUp = useCallback(
     (e: React.PointerEvent<HTMLImageElement>, index: number) => {
@@ -432,112 +445,131 @@ export default function Home() {
           >
             <div
               style={{
-                position: 'absolute',
-                inset: 0,
-                zIndex: 1,
-                pointerEvents: 'none',
-              }}
-            >
-              {butterflies.map((b, i) => {
-                const cw = containerSize.width;
-                const ch = containerSize.height;
-                const usePx = cw > 0 && ch > 0;
-                const posStyle: CSSProperties = usePx
-                  ? {
-                      left: `${butterflyPos[i].leftFrac * cw}px`,
-                      top: `${butterflyPos[i].topFrac * ch}px`,
-                    }
-                  : { left: b.style.left, top: b.style.top };
-                const dragging = draggingIndex === i;
-                return (
-                  <img
-                    key={i}
-                    src={b.src}
-                    alt=""
-                    aria-hidden="true"
-                    className={showSlam && !dragging ? b.reactClass : undefined}
-                    onPointerDown={e => handleButterflyPointerDown(e, i)}
-                    onPointerMove={e => handleButterflyPointerMove(e, i)}
-                    onPointerUp={e => handleButterflyPointerUp(e, i)}
-                    onPointerCancel={e => handleButterflyPointerCancel(e, i)}
-                    style={{
-                      position: 'absolute',
-                      zIndex: dragging ? 10 : 1,
-                      pointerEvents: 'auto',
-                      touchAction: 'none',
-                      cursor: dragging ? 'grabbing' : 'grab',
-                      transition:
-                        snapRevertingIndex === i
-                          ? 'left 0.26s ease-out, top 0.26s ease-out'
-                          : 'none',
-                      width: b.style.width,
-                      ...posStyle,
-                      ...(showSlam && !dragging ? { animationDelay: b.reactDelay } : {}),
-                    }}
-                  />
-                );
-              })}
-            </div>
-
-            <div
-              style={{
                 position: 'relative',
-                zIndex: 2,
                 /* Must fill scrollport so margin:auto on hero recenters (100% alone failed after scroll split) */
                 minHeight: 'calc(100% + 1px)',
                 display: 'flex',
                 flexDirection: 'column',
                 alignItems: 'center',
+                justifyContent: 'center',
                 boxSizing: 'border-box',
                 paddingTop: HOME_HERO_TOP_PAD,
                 paddingBottom: HOME_HERO_BOTTOM_PAD,
                 paddingLeft: 'max(20px, env(safe-area-inset-left, 0px))',
                 paddingRight: 'max(20px, env(safe-area-inset-right, 0px))',
-                /* Let pointer events reach butterflies below; heroContentRef uses pointer-events: auto */
                 pointerEvents: 'none',
               }}
             >
-        {/* ── Hero content — margin auto centers when short; tall blocks grow and scroll ── */}
+              {/* Title below butterflies in z-order so wings receive hits; subtitle/CTAs are z4 above butterflies */}
+              <div
+                style={{
+                  position: 'relative',
+                  zIndex: 2,
+                  textAlign: 'center',
+                  pointerEvents: 'none',
+                  width: 'min(860px, max(88vw, min(300px, calc(100vw - 40px))))',
+                }}
+              >
+                <h1
+                  ref={heroTitleRef}
+                  style={{
+                    fontFamily: 'Inter, sans-serif',
+                    fontSize: '36px',
+                    fontWeight: 700,
+                    lineHeight: '44px',
+                    color: '#141510',
+                    margin: 0,
+                    letterSpacing: 0,
+                    maxWidth: '100%',
+                    width: 'fit-content',
+                    marginLeft: 'auto',
+                    marginRight: 'auto',
+                    pointerEvents: 'none',
+                  }}
+                >
+                  <span
+                    style={{
+                      WebkitTextStroke: '4px #ffffff',
+                      paintOrder: 'stroke fill',
+                      pointerEvents: 'none',
+                    }}
+                  >
+                    Howdy I&apos;m Bryce
+                  </span>
+                </h1>
+              </div>
+
+              {/* Between title (z2) and subtitle (z4): grab/hover works near hero copy */}
+              <div
+                style={{
+                  position: 'absolute',
+                  inset: 0,
+                  zIndex: 3,
+                  pointerEvents: 'none',
+                }}
+              >
+                {butterflies.map((b, i) => {
+                  const cw = containerSize.width;
+                  const ch = containerSize.height;
+                  const usePx = cw > 0 && ch > 0;
+                  const posStyle: CSSProperties = usePx
+                    ? {
+                        left: `${butterflyPos[i].leftFrac * cw}px`,
+                        top: `${butterflyPos[i].topFrac * ch}px`,
+                      }
+                    : { left: b.style.left, top: b.style.top };
+                  const dragging = draggingIndex === i;
+                  return (
+                    <img
+                      key={i}
+                      src={b.src}
+                      alt=""
+                      aria-hidden="true"
+                      className={showSlam && !dragging ? b.reactClass : undefined}
+                      onPointerDown={e => handleButterflyPointerDown(e, i)}
+                      onPointerMove={e => handleButterflyPointerMove(e, i)}
+                      onPointerUp={e => handleButterflyPointerUp(e, i)}
+                      onPointerCancel={e => handleButterflyPointerCancel(e, i)}
+                      style={{
+                        position: 'absolute',
+                        zIndex: dragging ? 10 : 1,
+                        pointerEvents: 'auto',
+                        touchAction: 'none',
+                        cursor: dragging ? 'grabbing' : 'grab',
+                        transition:
+                          snapRevertingIndex === i
+                            ? 'left 0.26s ease-out, top 0.26s ease-out'
+                            : 'none',
+                        width: b.style.width,
+                        ...posStyle,
+                        ...(showSlam && !dragging ? { animationDelay: b.reactDelay } : {}),
+                      }}
+                    />
+                  );
+                })}
+              </div>
+
+        {/* ── Subtitle + CTAs — z4 above butterflies so links/subtitle stay clickable ── */}
         <div
           ref={heroContentRef}
           style={{
+            position: 'relative',
+            zIndex: 4,
             textAlign: 'center',
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
-            pointerEvents: 'auto',
+            pointerEvents: 'none',
             boxSizing: 'border-box',
             flexShrink: 0,
-            marginTop: 'auto',
-            marginBottom: 'auto',
-            // Prefer ≥300px when the viewport allows; never exceed usable width
+            marginTop: '32px',
             width: 'min(860px, max(88vw, min(300px, calc(100vw - 40px))))',
           }}
         >
-          {/* Title — Inter Bold 36px / 44px line-height, color #141510 */}
-          <h1
-            ref={heroTitleRef}
-            style={{
-              fontFamily: 'Inter, sans-serif',
-              fontSize: '36px',
-              fontWeight: 700,
-              lineHeight: '44px',
-              color: '#141510',
-              margin: 0,
-              letterSpacing: 0,
-              maxWidth: '100%',
-              width: 'fit-content',
-              WebkitTextStroke: '4px #ffffff',
-              paintOrder: 'stroke fill',
-            }}
-          >
-            Howdy I&apos;m Bryce
-          </h1>
-
           {/* Subtitle — min-height from max phrase height so CTAs do not jump when lines change */}
           <div
             style={{
-              marginTop: '32px',
+              marginTop: 0,
               width: '100%',
               alignSelf: 'stretch',
               display: 'flex',
@@ -546,6 +578,7 @@ export default function Home() {
               position: 'relative',
               boxSizing: 'border-box',
               minHeight: subtitleBlockMinPx ?? undefined,
+              pointerEvents: 'none',
             }}
           >
             <div
@@ -573,6 +606,7 @@ export default function Home() {
                 display: 'inline-block',
                 width: 'fit-content',
                 cursor: phase === 'done' && slamDoneRef.current ? 'pointer' : 'default',
+                pointerEvents: 'auto',
               }}
             >
               a product designer who{' '}
@@ -611,7 +645,10 @@ export default function Home() {
           </div>
 
           {/* CTAs — 48px below the text block, 16px gap between buttons */}
-          <div ref={heroCtasRef} style={{ display: 'flex', gap: '16px', marginTop: '48px' }}>
+          <div
+            ref={heroCtasRef}
+            style={{ display: 'flex', gap: '16px', marginTop: '48px', pointerEvents: 'none' }}
+          >
 
             {/* View my work — dark fill, 2px black stroke, 12px radius
                 Hover: hard lime-green drop shadow offset 4px down (no blur) */}
@@ -633,6 +670,7 @@ export default function Home() {
                 boxShadow: 'none',
                 transition: 'box-shadow 0.15s ease',
                 cursor: 'pointer',
+                pointerEvents: 'auto',
               }}
               {...(canPrimaryHover
                 ? {
@@ -669,6 +707,7 @@ export default function Home() {
                 boxShadow: 'none',
                 transition: 'box-shadow 0.15s ease',
                 cursor: 'pointer',
+                pointerEvents: 'auto',
               }}
               {...(canPrimaryHover
                 ? {
