@@ -493,6 +493,8 @@ export default function Home() {
                 paddingBottom: HOME_HERO_BOTTOM_PAD,
                 paddingLeft: 'max(20px, env(safe-area-inset-left, 0px))',
                 paddingRight: 'max(20px, env(safe-area-inset-right, 0px))',
+                /* Let pointer events reach butterflies below; heroContentRef uses pointer-events: auto */
+                pointerEvents: 'none',
               }}
             >
         {/* ── Hero content — margin auto centers when short; tall blocks grow and scroll ── */}

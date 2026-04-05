@@ -18,13 +18,25 @@ export const viewport: Viewport = {
   themeColor: '#0a0a0a',
 };
 
+const siteUrl =
+  process.env.NEXT_PUBLIC_SITE_URL ??
+  (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000');
+
 export const metadata: Metadata = {
-  title: 'BAR 9000 | Bryce\'s Portfolio',
-  description: 'A product designer who loves turning ideas into reality. Chat with BAR 9000 to learn more about my work.',
+  metadataBase: new URL(siteUrl),
+  title: "Bryce's Portfolio",
+  description:
+    'A product designer who loves turning ideas into reality. Chat with BAR 9000 to learn more about my work.',
   openGraph: {
-    title: 'BAR 9000 | Bryce\'s Portfolio',
+    title: "Bryce's Portfolio",
     description: 'A product designer who loves turning ideas into reality.',
     type: 'website',
+    siteName: "Bryce's Portfolio",
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: "Bryce's Portfolio",
+    description: 'A product designer who loves turning ideas into reality.',
   },
 };
 
