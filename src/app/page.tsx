@@ -132,8 +132,6 @@ export default function Home() {
   const slamDoneRef = useRef(false);
   // Drives the slam CSS class — true only during the initial slam window
   const [showSlam, setShowSlam] = useState(false);
-  /** After slam animation (~1400ms), butterflies become draggable */
-  const [slamComplete, setSlamComplete] = useState(false);
 
   const heroContainerRef = useRef<HTMLDivElement>(null);
   const heroContentRef = useRef<HTMLDivElement>(null);
@@ -168,6 +166,49 @@ export default function Home() {
     const ro = new ResizeObserver(update);
     ro.observe(el);
     return () => ro.disconnect();
+  }, []);
+
+  /** Mobile: lock document scroll so overscroll bounces inside the hero layer (nav stays fixed). */
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 767px)');
+    const html = document.documentElement;
+    const body = document.body;
+    let saved: { htmlOverflow: string; bodyOverflow: string; htmlHeight: string; bodyHeight: string } | null = null;
+
+    const lock = () => {
+      if (saved) return;
+      saved = {
+        htmlOverflow: html.style.overflow,
+        bodyOverflow: body.style.overflow,
+        htmlHeight: html.style.height,
+        bodyHeight: body.style.height,
+      };
+      html.style.overflow = 'hidden';
+      body.style.overflow = 'hidden';
+      html.style.height = '100%';
+      body.style.height = '100%';
+    };
+
+    const unlock = () => {
+      if (!saved) return;
+      html.style.overflow = saved.htmlOverflow;
+      body.style.overflow = saved.bodyOverflow;
+      html.style.height = saved.htmlHeight;
+      body.style.height = saved.bodyHeight;
+      saved = null;
+    };
+
+    const sync = () => {
+      if (mq.matches) lock();
+      else unlock();
+    };
+
+    sync();
+    mq.addEventListener('change', sync);
+    return () => {
+      mq.removeEventListener('change', sync);
+      unlock();
+    };
   }, []);
 
   useLayoutEffect(() => {
@@ -246,14 +287,12 @@ export default function Home() {
     const t = setTimeout(() => {
       slamDoneRef.current = true;
       setShowSlam(false);
-      setSlamComplete(true);
     }, 1400);
     return () => clearTimeout(t);
   }, [showSlam]);
 
   const handleButterflyPointerDown = useCallback(
     (e: React.PointerEvent<HTMLImageElement>, index: number) => {
-      if (!slamComplete || showSlam) return;
       e.preventDefault();
       const img = e.currentTarget;
       const cr = heroContainerRef.current?.getBoundingClientRect();
@@ -265,7 +304,7 @@ export default function Home() {
       setDraggingIndex(index);
       img.setPointerCapture(e.pointerId);
     },
-    [slamComplete, showSlam],
+    [],
   );
 
   const handleButterflyPointerMove = useCallback(
@@ -371,7 +410,6 @@ export default function Home() {
                 top: `${butterflyPos[i].topFrac * ch}px`,
               }
             : { left: b.style.left, top: b.style.top };
-          const draggable = slamComplete && !showSlam;
           const dragging = draggingIndex === i;
           return (
             <img
@@ -379,7 +417,7 @@ export default function Home() {
               src={b.src}
               alt=""
               aria-hidden="true"
-              className={showSlam ? b.reactClass : undefined}
+              className={showSlam && !dragging ? b.reactClass : undefined}
               onPointerDown={e => handleButterflyPointerDown(e, i)}
               onPointerMove={e => handleButterflyPointerMove(e, i)}
               onPointerUp={e => handleButterflyPointerUp(e, i)}
@@ -387,16 +425,16 @@ export default function Home() {
               style={{
                 position: 'absolute',
                 zIndex: dragging ? 10 : 1,
-                pointerEvents: draggable ? 'auto' : 'none',
+                pointerEvents: 'auto',
                 touchAction: 'none',
-                cursor: draggable ? (dragging ? 'grabbing' : 'grab') : 'default',
+                cursor: dragging ? 'grabbing' : 'grab',
                 transition:
                   snapRevertingIndex === i
                     ? 'left 0.26s ease-out, top 0.26s ease-out'
                     : 'none',
                 width: b.style.width,
                 ...posStyle,
-                ...(showSlam ? { animationDelay: b.reactDelay } : {}),
+                ...(showSlam && !dragging ? { animationDelay: b.reactDelay } : {}),
               }}
             />
           );
@@ -411,6 +449,7 @@ export default function Home() {
             overflowY: 'auto',
             overflowX: 'hidden',
             WebkitOverflowScrolling: 'touch',
+            overscrollBehavior: 'contain',
             pointerEvents: 'none',
           }}
         >

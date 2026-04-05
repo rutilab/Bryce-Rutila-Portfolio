@@ -1,4 +1,4 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import { Geist, Geist_Mono } from 'next/font/google';
 import { Navigation, BackgroundImage } from '@/components/layout';
 import './globals.css';
@@ -12,6 +12,11 @@ const geistMono = Geist_Mono({
   variable: '--font-geist-mono',
   subsets: ['latin'],
 });
+
+/** Default Safari / mobile browser UI tint; case-studies layout overrides to white. */
+export const viewport: Viewport = {
+  themeColor: '#0a0a0a',
+};
 
 export const metadata: Metadata = {
   title: 'BAR 9000 | Bryce\'s Portfolio',

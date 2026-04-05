@@ -328,3 +328,14 @@
     display: flex;
   }
 }
+
+/* Mobile: fade images in when decoded instead of hard pops (case study drill-down pages). */
+@media (max-width: 639px) {
+  .case-study-content-layer img {
+    opacity: 0;
+    transition: opacity 0.45s ease-out;
+  }
+  .case-study-content-layer img.case-study-img-visible {
+    opacity: 1;
+  }
+}
