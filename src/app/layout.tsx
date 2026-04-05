@@ -23,11 +23,13 @@ const rawSiteUrl =
   (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000');
 const siteUrl = rawSiteUrl.replace(/\/$/, '');
 
+/** Static JPEG in /public so crawlers (e.g. iMessage) fetch a simple URL, not a dynamic route. */
 const ogImage = {
-  url: '/opengraph-image',
+  url: '/og-share.jpg',
   width: 1200,
   height: 630,
   alt: "Bryce's Portfolio — home hero",
+  type: 'image/jpeg',
 } as const;
 
 export const metadata: Metadata = {
