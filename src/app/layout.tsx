@@ -18,9 +18,17 @@ export const viewport: Viewport = {
   themeColor: '#0a0a0a',
 };
 
-const siteUrl =
+const rawSiteUrl =
   process.env.NEXT_PUBLIC_SITE_URL ??
   (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000');
+const siteUrl = rawSiteUrl.replace(/\/$/, '');
+
+const ogImage = {
+  url: '/opengraph-image',
+  width: 1200,
+  height: 630,
+  alt: "Bryce's Portfolio — home hero",
+} as const;
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
@@ -32,11 +40,13 @@ export const metadata: Metadata = {
     description: 'A product designer who loves turning ideas into reality.',
     type: 'website',
     siteName: "Bryce's Portfolio",
+    images: [ogImage],
   },
   twitter: {
     card: 'summary_large_image',
     title: "Bryce's Portfolio",
     description: 'A product designer who loves turning ideas into reality.',
+    images: [ogImage.url],
   },
 };
 

@@ -1,10 +1,11 @@
 import { ImageResponse } from 'next/og';
 
 export const alt = "Bryce's Portfolio — home hero";
+/** iMessage and other clients often reject very large OG PNGs; keep layout simple for a small file. */
 export const size = { width: 1200, height: 630 };
 export const contentType = 'image/png';
 
-/** Social preview image styled like the home page (dots + hero copy). */
+/** Social preview: plain white + text only (no dot grid — that bloated PNG size and broke some previews). */
 export default function Image() {
   return new ImageResponse(
     (
@@ -17,8 +18,6 @@ export default function Image() {
           alignItems: 'center',
           justifyContent: 'center',
           backgroundColor: '#ffffff',
-          backgroundImage: 'radial-gradient(circle, #F0F0F0 1px, transparent 1px)',
-          backgroundSize: '8px 8px',
           fontFamily: 'ui-sans-serif, system-ui, sans-serif',
         }}
       >
