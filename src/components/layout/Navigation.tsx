@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
+import { useCanPrimaryHover } from '@/hooks/useCanPrimaryHover';
 
 const navItems = [
   { href: '/', label: 'Home' },
@@ -16,6 +17,7 @@ const BUTTERFLY_CURSOR = `url('/cursors/butterfly-cursor.png') 0 0, auto`;
 
 export function Navigation() {
   const pathname = usePathname();
+  const canPrimaryHover = useCanPrimaryHover();
   const [visible, setVisible] = useState(true);
   const lastScrollY = useRef(0);
 
@@ -69,8 +71,12 @@ export function Navigation() {
                 isActive
                   ? 'bg-black text-white'
                   : isLightPage
-                    ? 'text-black/60 hover:text-black hover:bg-black/10'
-                    : 'text-white/80 hover:text-white hover:bg-white/10'
+                    ? canPrimaryHover
+                      ? 'text-black/60 hover:text-black hover:bg-black/10'
+                      : 'text-black/60'
+                    : canPrimaryHover
+                      ? 'text-white/80 hover:text-white hover:bg-white/10'
+                      : 'text-white/80'
               )}
             >
               {item.label}

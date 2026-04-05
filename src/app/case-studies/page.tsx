@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { ChatContainer } from '@/components/chat';
+import { useCanPrimaryHover } from '@/hooks/useCanPrimaryHover';
 
 // ── SVG path constants ────────────────────────────────────────────────────────
 
@@ -114,10 +115,12 @@ function FolderItem({
   label,
   cards,
   folderWidth,
+  canHover,
 }: {
   href: string;
   label: string;
   folderWidth: string;
+  canHover: boolean;
   cards: {
     title: string;
     subtitle: string;
@@ -140,8 +143,8 @@ function FolderItem({
           transition: 'transform 0.22s ease',
           transform: hovered ? 'scale(1.035) translateY(-4px)' : 'scale(1) translateY(0px)',
         }}
-        onMouseEnter={() => setHovered(true)}
-        onMouseLeave={() => setHovered(false)}
+        onMouseEnter={() => canHover && setHovered(true)}
+        onMouseLeave={() => canHover && setHovered(false)}
       >
 
         {/* ── Layer 1: Dark blue folder back (sets container height) ── */}
@@ -236,6 +239,7 @@ function FolderItem({
 export default function CaseStudies() {
   const [chatOpen, setChatOpen] = useState(false);
   const [isStacked, setIsStacked] = useState(false);
+  const canHover = useCanPrimaryHover();
 
   useEffect(() => {
     // Stack folders when the viewport can no longer fit both at 40px margins each side.
@@ -295,6 +299,7 @@ export default function CaseStudies() {
             href="/case-studies/finding-focus"
             label="Finding Focus"
             folderWidth={folderWidth}
+            canHover={canHover}
             cards={[
               {
                 title: 'FF AI Assistant',
@@ -317,6 +322,7 @@ export default function CaseStudies() {
             href="/case-studies/personal-projects"
             label="Personal Projects"
             folderWidth={folderWidth}
+            canHover={canHover}
             cards={[
               {
                 title: 'Coming Soon',

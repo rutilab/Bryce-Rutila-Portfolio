@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef, useLayoutEffect, useCallback, type 
 import Link from 'next/link';
 import { ChatContainer } from '@/components/chat';
 import { CursorContrail } from '@/components/CursorContrail';
+import { useCanPrimaryHover } from '@/hooks/useCanPrimaryHover';
 
 /** 32×32 asset in `public/cursors/butterfly-cursor.png`; hotspot upper-left (wing tip). */
 const BUTTERFLY_CURSOR = `url('/cursors/butterfly-cursor.png') 0 0, auto`;
@@ -95,6 +96,24 @@ type AnimPhase = 'typing' | 'highlighted' | 'pre-typing' | 'done';
 const HOME_HERO_TOP_PAD = 'calc(24px + 48px + 24px + env(safe-area-inset-top, 0px))';
 const HOME_HERO_BOTTOM_PAD = 'calc(24px + env(safe-area-inset-bottom, 0px))';
 
+/** Static prefix + phrase — must match the hero subtitle JSX for height measurement. */
+const HERO_SUBTITLE_PREFIX = 'a product designer who ';
+
+const HERO_SUBTITLE_TEXT_STYLE: CSSProperties = {
+  fontFamily: 'Inter, sans-serif',
+  fontSize: '24px',
+  fontWeight: 400,
+  lineHeight: '32px',
+  color: '#141510',
+  margin: 0,
+  maxWidth: '100%',
+  wordBreak: 'normal',
+  overflowWrap: 'normal',
+  userSelect: 'none',
+  WebkitTextStroke: '2px #ffffff',
+  paintOrder: 'stroke fill',
+};
+
 // ───────────────────────────────────────────────────────────────────────────
 
 export default function Home() {
@@ -120,7 +139,11 @@ export default function Home() {
   const heroContentRef = useRef<HTMLDivElement>(null);
   const heroTitleRef = useRef<HTMLHeadingElement>(null);
   const heroSubtitleRef = useRef<HTMLParagraphElement>(null);
+  const heroSubtitleMeasureRef = useRef<HTMLDivElement>(null);
   const heroCtasRef = useRef<HTMLDivElement>(null);
+  /** Max height of full subtitle lines at current width — keeps CTAs from jumping as phrases change. */
+  const [subtitleBlockMinPx, setSubtitleBlockMinPx] = useState<number | null>(null);
+  const canPrimaryHover = useCanPrimaryHover();
   const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
   /** Position as fraction of container width/height (matches Figma l/W, t/H) */
   const [butterflyPos, setButterflyPos] = useState<{ leftFrac: number; topFrac: number }[]>(() =>
@@ -144,6 +167,27 @@ export default function Home() {
     update();
     const ro = new ResizeObserver(update);
     ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
+  useLayoutEffect(() => {
+    const container = heroContentRef.current;
+    const measure = heroSubtitleMeasureRef.current;
+    if (!container || !measure) return;
+
+    const run = () => {
+      if (container.clientWidth < 16) return;
+      let maxH = 0;
+      for (const phrase of PHRASES) {
+        measure.textContent = HERO_SUBTITLE_PREFIX + phrase;
+        maxH = Math.max(maxH, measure.offsetHeight);
+      }
+      setSubtitleBlockMinPx(maxH);
+    };
+
+    run();
+    const ro = new ResizeObserver(run);
+    ro.observe(container);
     return () => ro.disconnect();
   }, []);
 
@@ -420,63 +464,81 @@ export default function Home() {
             Howdy I&apos;m Bryce
           </h1>
 
-          {/* Subtitle — animated typewriter, slams in on final phrase */}
-          <p
-            ref={heroSubtitleRef}
-            className={showSlam ? 'subtitle-slam' : undefined}
-            onClick={handleSubtitleClick}
+          {/* Subtitle — min-height from max phrase height so CTAs do not jump when lines change */}
+          <div
             style={{
-              fontFamily: 'Inter, sans-serif',
-              fontSize: '24px',
-              fontWeight: 400,
-              lineHeight: '32px',
-              color: '#141510',
-              margin: 0,
               marginTop: '32px',
-              display: 'inline-block',
-              maxWidth: '100%',
-              width: 'fit-content',
-              wordBreak: 'normal',
-              overflowWrap: 'normal',
-              cursor: phase === 'done' && slamDoneRef.current ? 'pointer' : 'default',
-              userSelect: 'none',
-              WebkitTextStroke: '2px #ffffff',
-              paintOrder: 'stroke fill',
+              width: '100%',
+              alignSelf: 'stretch',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              position: 'relative',
+              boxSizing: 'border-box',
+              minHeight: subtitleBlockMinPx ?? undefined,
             }}
           >
-            a product designer who{' '}
-
-            {/* Animated suffix with alternating highlight */}
-            <span
+            <div
+              ref={heroSubtitleMeasureRef}
+              aria-hidden
               style={{
-                backgroundColor: phase === 'highlighted'
-                  ? HIGHLIGHT_COLORS[phraseIndex % HIGHLIGHT_COLORS.length]
-                  : 'transparent',
-                borderRadius: '3px',
-                padding: phase === 'highlighted' ? '0 2px' : '0',
-                transition: 'background-color 0.08s ease',
+                ...HERO_SUBTITLE_TEXT_STYLE,
+                position: 'absolute',
+                visibility: 'hidden',
+                pointerEvents: 'none',
+                left: 0,
+                top: 0,
+                width: '100%',
+                boxSizing: 'border-box',
+                display: 'block',
+              }}
+            />
+            <p
+              ref={heroSubtitleRef}
+              className={showSlam ? 'subtitle-slam' : undefined}
+              onClick={handleSubtitleClick}
+              style={{
+                ...HERO_SUBTITLE_TEXT_STYLE,
+                marginTop: 0,
+                display: 'inline-block',
+                width: 'fit-content',
+                cursor: phase === 'done' && slamDoneRef.current ? 'pointer' : 'default',
               }}
             >
-              {PHRASES[phraseIndex].slice(0, charIndex)}
-            </span>
+              a product designer who{' '}
 
-            {/* Blinking cursor — visible while typing, hidden when highlighted or done */}
-            {(phase === 'typing' || phase === 'pre-typing') && (
+              {/* Animated suffix with alternating highlight */}
               <span
-                aria-hidden="true"
-                className="cursor-blink"
                 style={{
-                  display: 'inline-block',
-                  width: '2px',
-                  height: '1.1em',
-                  background: '#141510',
-                  borderRadius: '1px',
-                  marginLeft: '1px',
-                  verticalAlign: 'text-bottom',
+                  backgroundColor: phase === 'highlighted'
+                    ? HIGHLIGHT_COLORS[phraseIndex % HIGHLIGHT_COLORS.length]
+                    : 'transparent',
+                  borderRadius: '3px',
+                  padding: phase === 'highlighted' ? '0 2px' : '0',
+                  transition: 'background-color 0.08s ease',
                 }}
-              />
-            )}
-          </p>
+              >
+                {PHRASES[phraseIndex].slice(0, charIndex)}
+              </span>
+
+              {/* Blinking cursor — visible while typing, hidden when highlighted or done */}
+              {(phase === 'typing' || phase === 'pre-typing') && (
+                <span
+                  aria-hidden="true"
+                  className="cursor-blink"
+                  style={{
+                    display: 'inline-block',
+                    width: '2px',
+                    height: '1.1em',
+                    background: '#141510',
+                    borderRadius: '1px',
+                    marginLeft: '1px',
+                    verticalAlign: 'text-bottom',
+                  }}
+                />
+              )}
+            </p>
+          </div>
 
           {/* CTAs — 48px below the text block, 16px gap between buttons */}
           <div ref={heroCtasRef} style={{ display: 'flex', gap: '16px', marginTop: '48px' }}>
@@ -502,11 +564,17 @@ export default function Home() {
                 transition: 'box-shadow 0.15s ease',
                 cursor: 'pointer',
               }}
-              onMouseEnter={e => {
-                e.currentTarget.style.boxShadow = `0 4px 0 0 ${VMW_HOVER_COLORS[vmwColorIndex]}`;
-                setVmwColorIndex(i => (i + 1) % VMW_HOVER_COLORS.length);
-              }}
-              onMouseLeave={e => (e.currentTarget.style.boxShadow = 'none')}
+              {...(canPrimaryHover
+                ? {
+                    onMouseEnter: (e: React.MouseEvent<HTMLAnchorElement>) => {
+                      e.currentTarget.style.boxShadow = `0 4px 0 0 ${VMW_HOVER_COLORS[vmwColorIndex]}`;
+                      setVmwColorIndex(i => (i + 1) % VMW_HOVER_COLORS.length);
+                    },
+                    onMouseLeave: (e: React.MouseEvent<HTMLAnchorElement>) => {
+                      e.currentTarget.style.boxShadow = 'none';
+                    },
+                  }
+                : {})}
             >
               View my work
             </Link>
@@ -532,8 +600,16 @@ export default function Home() {
                 transition: 'box-shadow 0.15s ease',
                 cursor: 'pointer',
               }}
-              onMouseEnter={e => (e.currentTarget.style.boxShadow = '0 4px 0 0 #000000')}
-              onMouseLeave={e => (e.currentTarget.style.boxShadow = 'none')}
+              {...(canPrimaryHover
+                ? {
+                    onMouseEnter: (e: React.MouseEvent<HTMLAnchorElement>) => {
+                      e.currentTarget.style.boxShadow = '0 4px 0 0 #000000';
+                    },
+                    onMouseLeave: (e: React.MouseEvent<HTMLAnchorElement>) => {
+                      e.currentTarget.style.boxShadow = 'none';
+                    },
+                  }
+                : {})}
             >
               Get to know me
             </Link>
