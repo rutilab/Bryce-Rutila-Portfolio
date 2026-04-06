@@ -161,10 +161,18 @@ export default function Home() {
   butterflyPosRef.current = butterflyPos;
 
   const getHeroExclusionRect = useCallback((): DOMRect | null => {
+    const rects: DOMRect[] = [];
     const t = heroTitleRef.current?.getBoundingClientRect();
     const s = heroSubtitleRef.current?.getBoundingClientRect();
     const c = heroCtasRef.current?.getBoundingClientRect();
-    if (t && s && c) return unionRects(unionRects(t, s), c);
+    if (t) rects.push(t);
+    if (s) rects.push(s);
+    if (c) rects.push(c);
+    if (rects.length > 0) {
+      let u = rects[0];
+      for (let i = 1; i < rects.length; i++) u = unionRects(u, rects[i]);
+      return u;
+    }
     return heroContentRef.current?.getBoundingClientRect() ?? null;
   }, []);
 
@@ -212,14 +220,21 @@ export default function Home() {
   }, []);
 
   useLayoutEffect(() => {
-    const el = heroContainerRef.current;
-    if (!el) return;
     const update = () => {
-      setContainerSize({ width: el.clientWidth, height: el.clientHeight });
+      const scroll = heroScrollRef.current ?? heroContainerRef.current;
+      if (!scroll) return;
+      const w = scroll.clientWidth;
+      const h = scroll.clientHeight;
+      if (w > 0 && h > 0) {
+        setContainerSize({ width: w, height: h });
+      }
     };
     update();
     const ro = new ResizeObserver(update);
-    ro.observe(el);
+    const s = heroScrollRef.current;
+    const c = heroContainerRef.current;
+    if (s) ro.observe(s);
+    if (c) ro.observe(c);
     return () => ro.disconnect();
   }, []);
 
@@ -307,7 +322,7 @@ export default function Home() {
     (e: React.PointerEvent<HTMLImageElement>, index: number) => {
       e.preventDefault();
       const img = e.currentTarget;
-      const cr = heroContainerRef.current?.getBoundingClientRect();
+      const cr = heroScrollRef.current?.getBoundingClientRect();
       if (!cr) return;
       const imgRect = img.getBoundingClientRect();
       dragOffsetPxRef.current = { x: e.clientX - imgRect.left, y: e.clientY - imgRect.top };
@@ -324,8 +339,8 @@ export default function Home() {
   const handleButterflyPointerMove = useCallback(
     (e: React.PointerEvent<HTMLImageElement>, index: number) => {
       if (activeDragIndexRef.current !== index) return;
-      const cr = heroContainerRef.current?.getBoundingClientRect();
       const scrollEl = heroScrollRef.current;
+      const cr = scrollEl?.getBoundingClientRect();
       if (!cr || !scrollEl || cr.width <= 0 || cr.height <= 0) return;
       const sy = scrollEl.scrollTop;
       const sx = scrollEl.scrollLeft;
@@ -446,6 +461,7 @@ export default function Home() {
             <div
               style={{
                 position: 'relative',
+                isolation: 'isolate',
                 /* Must fill scrollport so margin:auto on hero recenters (100% alone failed after scroll split) */
                 minHeight: 'calc(100% + 1px)',
                 display: 'flex',
@@ -460,51 +476,12 @@ export default function Home() {
                 pointerEvents: 'none',
               }}
             >
-              {/* Title below butterflies in z-order so wings receive hits; subtitle/CTAs are z4 above butterflies */}
-              <div
-                style={{
-                  position: 'relative',
-                  zIndex: 2,
-                  textAlign: 'center',
-                  pointerEvents: 'none',
-                  width: 'min(860px, max(88vw, min(300px, calc(100vw - 40px))))',
-                }}
-              >
-                <h1
-                  ref={heroTitleRef}
-                  style={{
-                    fontFamily: 'Inter, sans-serif',
-                    fontSize: '36px',
-                    fontWeight: 700,
-                    lineHeight: '44px',
-                    color: '#141510',
-                    margin: 0,
-                    letterSpacing: 0,
-                    maxWidth: '100%',
-                    width: 'fit-content',
-                    marginLeft: 'auto',
-                    marginRight: 'auto',
-                    pointerEvents: 'none',
-                  }}
-                >
-                  <span
-                    style={{
-                      WebkitTextStroke: '4px #ffffff',
-                      paintOrder: 'stroke fill',
-                      pointerEvents: 'none',
-                    }}
-                  >
-                    Howdy I&apos;m Bryce
-                  </span>
-                </h1>
-              </div>
-
-              {/* Between title (z2) and subtitle (z4): grab/hover works near hero copy */}
+              {/* Butterflies z1 — behind headline + subtitle; z6 while dragging so the active butterfly paints above copy */}
               <div
                 style={{
                   position: 'absolute',
                   inset: 0,
-                  zIndex: 3,
+                  zIndex: draggingIndex !== null ? 6 : 1,
                   pointerEvents: 'none',
                 }}
               >
@@ -547,6 +524,45 @@ export default function Home() {
                     />
                   );
                 })}
+              </div>
+
+              {/* Headline z2 — above butterflies; pointer-events none so drags pass through gaps */}
+              <div
+                style={{
+                  position: 'relative',
+                  zIndex: 2,
+                  textAlign: 'center',
+                  pointerEvents: 'none',
+                  width: 'min(860px, max(88vw, min(300px, calc(100vw - 40px))))',
+                }}
+              >
+                <h1
+                  ref={heroTitleRef}
+                  style={{
+                    fontFamily: 'Inter, sans-serif',
+                    fontSize: '36px',
+                    fontWeight: 700,
+                    lineHeight: '44px',
+                    color: '#141510',
+                    margin: 0,
+                    letterSpacing: 0,
+                    maxWidth: '100%',
+                    width: 'fit-content',
+                    marginLeft: 'auto',
+                    marginRight: 'auto',
+                    pointerEvents: 'none',
+                  }}
+                >
+                  <span
+                    style={{
+                      WebkitTextStroke: '4px #ffffff',
+                      paintOrder: 'stroke fill',
+                      pointerEvents: 'none',
+                    }}
+                  >
+                    Howdy I&apos;m Bryce
+                  </span>
+                </h1>
               </div>
 
         {/* ── Subtitle + CTAs — z4 above butterflies so links/subtitle stay clickable ── */}
