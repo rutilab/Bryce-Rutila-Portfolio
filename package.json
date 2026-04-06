@@ -7,7 +7,9 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "og:generate": "node scripts/generate-og.mjs"
+    "og:generate": "node scripts/generate-og.mjs",
+    "favicon:generate": "node scripts/generate-favicon.mjs",
+    "assets:generate": "node scripts/generate-favicon.mjs && node scripts/generate-og.mjs"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",
