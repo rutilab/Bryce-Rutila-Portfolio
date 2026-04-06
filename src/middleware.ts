@@ -2,6 +2,11 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { jwtVerify } from 'jose';
 
+/** Exact /admin/login only; `/admin/login/` must be treated as login too or it hits the secret gate. */
+function isAdminLoginPath(pathname: string): boolean {
+  return pathname === '/admin/login' || pathname === '/admin/login/';
+}
+
 /**
  * Visitor id cookie for analytics (set on all HTML routes).
  * Admin JWT gate for /admin (except /admin/login).
@@ -20,7 +25,7 @@ export async function middleware(request: NextRequest) {
     });
   }
 
-  if (pathname.startsWith('/admin') && pathname !== '/admin/login') {
+  if (pathname.startsWith('/admin') && !isAdminLoginPath(pathname)) {
     const adminSecret = process.env.ADMIN_SECRET?.trim();
     if (!adminSecret || adminSecret.length < 16) {
       return NextResponse.rewrite(new URL('/404', request.url));
