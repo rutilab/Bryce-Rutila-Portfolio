@@ -1,11 +1,13 @@
+import { type NextRequest } from 'next/server';
 import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
 import { ensureAnalyticsSchema, getSql } from '@/lib/analytics/db';
 import { verifyAdminSessionToken } from '@/lib/admin/auth';
+import { parseRangeKey, rangeLabel, resolveSinceUtc, safeTimeZone } from '@/lib/analytics/ranges';
 
 export const runtime = 'nodejs';
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   const token = (await cookies()).get('admin_token')?.value;
   if (!token || !(await verifyAdminSessionToken(token))) {
     return NextResponse.json({ ok: false, error: 'unauthorized' }, { status: 401 });
@@ -23,8 +25,9 @@ export async function GET() {
     return NextResponse.json({ ok: false, error: 'schema_failed' }, { status: 500 });
   }
 
-  const since30 = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
-  const since7 = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+  const rangeKey = parseRangeKey(request.nextUrl.searchParams.get('range'));
+  const tzResolved = safeTimeZone(request.nextUrl.searchParams.get('tz'));
+  const since = resolveSinceUtc(rangeKey, tzResolved);
 
   /** Matches client-side normalizePathname: strip query, collapse trailing slash, root = /. */
   const pathClean = sql`COALESCE(
@@ -33,17 +36,50 @@ export async function GET() {
   )`;
 
   try {
-    const visitors30 = await sql`
+    const visitorsCookie = await sql`
       SELECT COUNT(DISTINCT visitor_id)::int AS c
       FROM analytics_events
-      WHERE created_at >= ${since30}
+      WHERE event_type = 'pageview'
+        AND created_at >= ${since}
         AND ${pathClean} NOT LIKE '/admin%'
     `;
-    const visitors7 = await sql`
-      SELECT COUNT(DISTINCT visitor_id)::int AS c
+
+    const visitorsIp = await sql`
+      SELECT COUNT(DISTINCT NULLIF(meta->>'ip_hash', ''))::int AS c
       FROM analytics_events
-      WHERE created_at >= ${since7}
+      WHERE event_type = 'pageview'
+        AND created_at >= ${since}
         AND ${pathClean} NOT LIKE '/admin%'
+        AND meta ? 'ip_hash'
+    `;
+
+    const countries = await sql`
+      SELECT
+        COALESCE(NULLIF(TRIM(meta->>'country'), ''), 'Unknown') AS country,
+        COUNT(*)::int AS pageviews,
+        COUNT(DISTINCT visitor_id)::int AS visitors_by_cookie
+      FROM analytics_events
+      WHERE event_type = 'pageview'
+        AND created_at >= ${since}
+        AND ${pathClean} NOT LIKE '/admin%'
+      GROUP BY COALESCE(NULLIF(TRIM(meta->>'country'), ''), 'Unknown')
+      ORDER BY pageviews DESC
+      LIMIT 40
+    `;
+
+    const usStates = await sql`
+      SELECT
+        COALESCE(NULLIF(TRIM(meta->>'region'), ''), 'Unknown') AS region_code,
+        COUNT(*)::int AS pageviews,
+        COUNT(DISTINCT visitor_id)::int AS visitors_by_cookie
+      FROM analytics_events
+      WHERE event_type = 'pageview'
+        AND created_at >= ${since}
+        AND ${pathClean} NOT LIKE '/admin%'
+        AND TRIM(COALESCE(meta->>'country', '')) = 'US'
+      GROUP BY COALESCE(NULLIF(TRIM(meta->>'region'), ''), 'Unknown')
+      ORDER BY pageviews DESC
+      LIMIT 60
     `;
 
     const pageviews = await sql`
@@ -51,7 +87,7 @@ export async function GET() {
       FROM (
         SELECT ${pathClean} AS path_clean
         FROM analytics_events
-        WHERE event_type = 'pageview' AND created_at >= ${since30}
+        WHERE event_type = 'pageview' AND created_at >= ${since}
       ) sub
       WHERE path_clean NOT LIKE '/admin%'
       GROUP BY path_clean
@@ -70,7 +106,7 @@ export async function GET() {
           meta
         FROM analytics_events
         WHERE event_type = 'page_leave'
-          AND created_at >= ${since30}
+          AND created_at >= ${since}
           AND meta ? 'duration_ms'
           AND (meta->>'duration_ms') ~ '^[0-9]+(\\.[0-9]+)?$'
       ) sub
@@ -90,7 +126,7 @@ export async function GET() {
       FROM (
         SELECT ${pathClean} AS path_clean, meta
         FROM analytics_events
-        WHERE event_type = 'click' AND created_at >= ${since30}
+        WHERE event_type = 'click' AND created_at >= ${since}
       ) sub
       WHERE path_clean NOT LIKE '/admin%'
       GROUP BY path_clean, meta->>'label', meta->>'element', meta->>'href'
@@ -98,16 +134,28 @@ export async function GET() {
       LIMIT 100
     `;
 
-    const v30 = visitors30 as { c: number }[];
-    const v7 = visitors7 as { c: number }[];
+    const vc = visitorsCookie as { c: number }[];
+    const vi = visitorsIp as { c: number }[];
+
+    const ipHashConfigured = Boolean(
+      process.env.ANALYTICS_IP_SALT?.trim() || process.env.ADMIN_SECRET?.trim(),
+    );
 
     return NextResponse.json({
       ok: true,
-      range: { since30, since7 },
-      visitors: {
-        last30Days: v30[0]?.c ?? 0,
-        last7Days: v7[0]?.c ?? 0,
+      range: {
+        key: rangeKey,
+        label: rangeLabel(rangeKey),
+        since: since.toISOString(),
+        timeZone: tzResolved,
       },
+      visitors: {
+        byCookie: { count: vc[0]?.c ?? 0 },
+        byIpHash: { count: vi[0]?.c ?? 0 },
+        ipHashConfigured,
+      },
+      countries,
+      usStates,
       pageviews,
       timeOnPage,
       clicks,

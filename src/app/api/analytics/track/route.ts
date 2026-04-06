@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { ensureAnalyticsSchema, getSql } from '@/lib/analytics/db';
+import { enrichMetaFromRequest } from '@/lib/analytics/geo';
 
 export const runtime = 'nodejs';
 
@@ -24,7 +25,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: false, error: 'invalid_json' }, { status: 400 });
   }
 
-  const { visitorId, sessionId, eventType, path, meta } = body;
+  const { visitorId, sessionId, eventType, path, meta: clientMeta } = body;
   if (
     typeof visitorId !== 'string' ||
     typeof sessionId !== 'string' ||
@@ -38,7 +39,21 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: false, error: 'too_large' }, { status: 400 });
   }
 
-  const metaJson = JSON.stringify(meta ?? {});
+  const base =
+    clientMeta && typeof clientMeta === 'object' && !Array.isArray(clientMeta)
+      ? { ...(clientMeta as Record<string, unknown>) }
+      : {};
+  delete base.ip_hash;
+  delete base.country;
+  delete base.region;
+
+  const geo = enrichMetaFromRequest(request);
+  const merged: Record<string, unknown> = { ...base };
+  if (geo.ip_hash) merged.ip_hash = geo.ip_hash;
+  if (geo.country) merged.country = geo.country;
+  if (geo.region) merged.region = geo.region;
+
+  const metaJson = JSON.stringify(merged);
 
   try {
     await ensureAnalyticsSchema();
