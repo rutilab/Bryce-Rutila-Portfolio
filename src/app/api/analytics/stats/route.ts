@@ -26,54 +26,76 @@ export async function GET() {
   const since30 = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
   const since7 = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
 
+  /** Matches client-side normalizePathname: strip query, collapse trailing slash, root = /. */
+  const pathClean = sql`COALESCE(
+    NULLIF(TRIM(REGEXP_REPLACE(SPLIT_PART(path, '?', 1), '/+$', '')), ''),
+    '/'
+  )`;
+
   try {
     const visitors30 = await sql`
       SELECT COUNT(DISTINCT visitor_id)::int AS c
       FROM analytics_events
       WHERE created_at >= ${since30}
+        AND ${pathClean} NOT LIKE '/admin%'
     `;
     const visitors7 = await sql`
       SELECT COUNT(DISTINCT visitor_id)::int AS c
       FROM analytics_events
       WHERE created_at >= ${since7}
+        AND ${pathClean} NOT LIKE '/admin%'
     `;
 
     const pageviews = await sql`
-      SELECT path, COUNT(*)::int AS c
-      FROM analytics_events
-      WHERE event_type = 'pageview' AND created_at >= ${since30}
-      GROUP BY path
+      SELECT path_clean AS path, COUNT(*)::int AS c
+      FROM (
+        SELECT ${pathClean} AS path_clean
+        FROM analytics_events
+        WHERE event_type = 'pageview' AND created_at >= ${since30}
+      ) sub
+      WHERE path_clean NOT LIKE '/admin%'
+      GROUP BY path_clean
       ORDER BY c DESC
-      LIMIT 50
+      LIMIT 80
     `;
 
     const timeOnPage = await sql`
       SELECT
-        path,
+        path_clean AS path,
         AVG((meta->>'duration_ms')::double precision)::float AS avg_ms,
         COUNT(*)::int AS samples
-      FROM analytics_events
-      WHERE event_type = 'page_leave'
-        AND created_at >= ${since30}
-        AND meta ? 'duration_ms'
-        AND (meta->>'duration_ms') ~ '^[0-9]+(\\.[0-9]+)?$'
-      GROUP BY path
+      FROM (
+        SELECT
+          ${pathClean} AS path_clean,
+          meta
+        FROM analytics_events
+        WHERE event_type = 'page_leave'
+          AND created_at >= ${since30}
+          AND meta ? 'duration_ms'
+          AND (meta->>'duration_ms') ~ '^[0-9]+(\\.[0-9]+)?$'
+      ) sub
+      WHERE path_clean NOT LIKE '/admin%'
+      GROUP BY path_clean
       ORDER BY samples DESC
-      LIMIT 50
+      LIMIT 80
     `;
 
     const clicks = await sql`
       SELECT
-        path,
+        path_clean AS path,
         COALESCE(meta->>'label', '') AS label,
         COALESCE(meta->>'element', '') AS element,
         COALESCE(meta->>'href', '') AS href,
         COUNT(*)::int AS c
-      FROM analytics_events
-      WHERE event_type = 'click' AND created_at >= ${since30}
-      GROUP BY path, meta->>'label', meta->>'element', meta->>'href'
+      FROM (
+        SELECT ${pathClean} AS path_clean, meta
+        FROM analytics_events
+        WHERE event_type = 'click' AND created_at >= ${since30}
+      ) sub
+      WHERE path_clean NOT LIKE '/admin%'
+      GROUP BY path_clean, meta->>'label', meta->>'element', meta->>'href'
       ORDER BY c DESC
-      LIMIT 80
+      LIMIT 100
     `;
 
     const v30 = visitors30 as { c: number }[];
