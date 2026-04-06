@@ -1,6 +1,7 @@
 'use client';
 
-import { useTimeOfDay, DEFAULT_TIME_STATE } from '@/hooks/useTimeOfDay';
+import { usePathname } from 'next/navigation';
+import { useTimeOfDay } from '@/hooks/useTimeOfDay';
 import { cn } from '@/lib/utils';
 
 interface BackgroundImageProps {
@@ -8,7 +9,10 @@ interface BackgroundImageProps {
 }
 
 export function BackgroundImage({ className }: BackgroundImageProps) {
+  const pathname = usePathname();
   const { backgroundImage, period } = useTimeOfDay();
+
+  if (pathname.startsWith('/admin')) return null;
 
   return (
     <div className={cn('background-container', className)}>

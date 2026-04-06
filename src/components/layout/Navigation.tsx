@@ -18,6 +18,8 @@ const BUTTERFLY_CURSOR = `url('/cursors/butterfly-cursor.png') 0 0, auto`;
 export function Navigation() {
   const pathname = usePathname();
   const canPrimaryHover = useCanPrimaryHover();
+
+  if (pathname.startsWith('/admin')) return null;
   const [visible, setVisible] = useState(true);
   const lastScrollY = useRef(0);
 

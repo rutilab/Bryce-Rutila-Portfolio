@@ -1,5 +1,7 @@
 import type { Metadata, Viewport } from 'next';
+import { Suspense } from 'react';
 import { Geist, Geist_Mono } from 'next/font/google';
+import { AnalyticsProvider } from '@/components/analytics/AnalyticsProvider';
 import { Navigation, BackgroundImage } from '@/components/layout';
 import './globals.css';
 
@@ -77,6 +79,9 @@ export default function RootLayout({
       >
         <BackgroundImage />
         <Navigation />
+        <Suspense fallback={null}>
+          <AnalyticsProvider />
+        </Suspense>
         {children}
       </body>
     </html>
