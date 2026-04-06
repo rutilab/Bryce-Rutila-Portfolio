@@ -18,12 +18,12 @@ const BUTTERFLY_CURSOR = `url('/cursors/butterfly-cursor.png') 0 0, auto`;
 export function Navigation() {
   const pathname = usePathname();
   const canPrimaryHover = useCanPrimaryHover();
-
-  if (pathname.startsWith('/admin')) return null;
   const [visible, setVisible] = useState(true);
   const lastScrollY = useRef(0);
 
   useEffect(() => {
+    if (pathname.startsWith('/admin')) return;
+
     const handleScroll = () => {
       const currentScrollY = window.scrollY;
       if (currentScrollY < 50) {
@@ -38,7 +38,9 @@ export function Navigation() {
 
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
+  }, [pathname]);
+
+  if (pathname.startsWith('/admin')) return null;
 
   // White-background pages use a lighter nav; dark-background pages use the dark glass style
   const isLightPage = pathname === '/';

@@ -22,7 +22,11 @@ function AdminLoginForm() {
       });
       const data = (await res.json()) as { ok?: boolean; error?: string };
       if (!res.ok || !data.ok) {
-        setError(data.error === 'admin_not_configured' ? 'Server is not configured.' : 'Sign in failed.');
+        setError(
+          data.error === 'admin_not_configured'
+            ? 'Set ADMIN_SECRET (16+ chars) and ADMIN_PASSWORD in .env.local or Vercel, then restart dev or redeploy.'
+            : 'Sign in failed.',
+        );
         setLoading(false);
         return;
       }

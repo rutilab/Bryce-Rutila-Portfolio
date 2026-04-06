@@ -11,7 +11,7 @@ function isAdminLoginPath(pathname: string): boolean {
  * Visitor id cookie for analytics (set on all HTML routes).
  * Admin JWT gate for /admin (except /admin/login).
  */
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   const res = NextResponse.next();
@@ -27,14 +27,16 @@ export async function middleware(request: NextRequest) {
 
   if (pathname.startsWith('/admin') && !isAdminLoginPath(pathname)) {
     const adminSecret = process.env.ADMIN_SECRET?.trim();
+    const login = new URL('/admin/login', request.url);
+    login.searchParams.set('from', pathname);
+
     if (!adminSecret || adminSecret.length < 16) {
-      return NextResponse.rewrite(new URL('/404', request.url));
+      // Redirect (not /404 rewrite): login page explains via API if server is not configured.
+      return NextResponse.redirect(login);
     }
 
     const token = request.cookies.get('admin_token')?.value;
     if (!token) {
-      const login = new URL('/admin/login', request.url);
-      login.searchParams.set('from', pathname);
       return NextResponse.redirect(login);
     }
 
@@ -44,7 +46,6 @@ export async function middleware(request: NextRequest) {
         throw new Error('role');
       }
     } catch {
-      const login = new URL('/admin/login', request.url);
       return NextResponse.redirect(login);
     }
   }
