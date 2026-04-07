@@ -279,12 +279,15 @@ export default function Home() {
   const updateHeroPush = useCallback((progress: number) => {
     const copy = heroCopyRef.current;
     const ctas = heroCtasRef.current;
+    const panel = testimonialsRef.current;
     if (!copy || !ctas) return;
 
     const vh = window.innerHeight;
     const peek = testimonialsPeekRef.current;
-    // Top edge of the testimonials panel in viewport coordinates
-    const panelTop = vh - peek - progress;
+    // Measured top works when the panel scrolls with the hero (mobile) or is fixed (desktop)
+    const panelTop = panel
+      ? panel.getBoundingClientRect().top
+      : vh - peek - progress;
 
     // Reconstruct the un-translated CTAs bottom by undoing the current push
     const ctasNaturalBottom = ctas.getBoundingClientRect().bottom + heroPushRef.current;
@@ -1091,6 +1094,213 @@ export default function Home() {
         </div>
               </div>{/* end heroCopyRef */}
             </div>
+          {/* ── Testimonials reveal panel (inside scroll-inner on mobile so iOS overscroll moves with hero) ── */}
+          <div
+            className="home-hero-testimonials-panel"
+            ref={testimonialsRef}
+            aria-label="Kind things people have said about me"
+            style={{
+              position: isMobileViewport ? 'absolute' : 'fixed',
+              bottom: 0,
+              left: 0,
+              right: 0,
+              zIndex: 10,
+              background: 'transparent',
+              paddingTop: '24px',
+              paddingBottom: '24px',
+              opacity: chatOpen ? 0 : 1,
+              /* Let clicks pass through transparent areas so hero butterflies stay draggable */
+              pointerEvents: 'none',
+              transition: 'opacity 0.45s ease, visibility 0.45s ease',
+              visibility: chatOpen ? 'hidden' : 'visible',
+              willChange: 'transform',
+            }}
+          >
+            {/* Heading + cards — hover shows cursor-following tooltip; hit box is content-width so butterflies beside the block stay draggable */}
+            <div
+              style={{
+                pointerEvents: 'auto',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                width: 'fit-content',
+                maxWidth: '100%',
+                marginLeft: 'auto',
+                marginRight: 'auto',
+                boxSizing: 'border-box',
+              }}
+              onMouseEnter={e => {
+                setTestimonialsSectionHover(true);
+                setTestimonialsTooltipPos({ x: e.clientX, y: e.clientY });
+              }}
+              onMouseMove={e => setTestimonialsTooltipPos({ x: e.clientX, y: e.clientY })}
+              onMouseLeave={() => setTestimonialsSectionHover(false)}
+            >
+              {typeof document !== 'undefined' &&
+                showTestimonialsScrollTooltip &&
+                createPortal(
+                  <div
+                    role="tooltip"
+                    style={{
+                      position: 'fixed',
+                      left: `${testimonialsTooltipPos.x + 14}px`,
+                      top: `${testimonialsTooltipPos.y + 14}px`,
+                      zIndex: 10001,
+                      padding: '6px 12px',
+                      borderRadius: 6,
+                      background: '#89FF12',
+                      border: '2px solid #000000',
+                      fontFamily: 'Inter, sans-serif',
+                      fontSize: '14px',
+                      fontWeight: 600,
+                      lineHeight: '18px',
+                      color: '#141510',
+                      whiteSpace: 'nowrap',
+                      pointerEvents: 'none',
+                      userSelect: 'none',
+                    }}
+                  >
+                    Scroll down!
+                  </div>,
+                  document.body,
+                )}
+              <h2
+                style={{
+                  fontFamily: 'Inter, sans-serif',
+                  fontSize: '18px',
+                  fontWeight: 600,
+                  lineHeight: '28px',
+                  color: '#141510',
+                  textAlign: 'center',
+                  margin: '0 0 16px 0',
+                  userSelect: 'none',
+                }}
+              >
+                <span
+                  style={{
+                    WebkitTextStroke: '4px #ffffff',
+                    paintOrder: 'stroke fill',
+                  }}
+                >
+                  Kind things people have said about me
+                </span>
+              </h2>
+
+              {/* Cards row — wraps to single column on narrow viewports */}
+              <div
+                style={{
+                  display: 'flex',
+                  gap: '16px',
+                  maxWidth: '672px',
+                  margin: '0 auto',
+                  paddingLeft: '16px',
+                  paddingRight: '16px',
+                  boxSizing: 'border-box',
+                  flexWrap: 'wrap',
+                }}
+              >
+              {TESTIMONIALS.map(({ name, role, quote, initials, avatarSrc }) => (
+                <div
+                  key={name}
+                  style={{
+                    flex: '1 1 280px',
+                    background: '#ffffff',
+                    border: '1.5px solid rgba(0, 0, 0, 0.10)',
+                    borderRadius: '16px',
+                    padding: '20px',
+                    boxSizing: 'border-box',
+                  }}
+                >
+                  {/* Avatar + name + role — measured for initial peek height */}
+                  <div
+                    className="testimonial-card-header"
+                    style={{ display: 'flex', alignItems: 'flex-end', gap: '12px', marginBottom: '16px' }}
+                  >
+                    {avatarSrc ? (
+                      <img
+                        className="testimonial-avatar"
+                        src={avatarSrc}
+                        alt={name}
+                        style={{
+                          width: '48px',
+                          height: '48px',
+                          borderRadius: '50%',
+                          objectFit: 'cover',
+                          border: '1.5px solid rgba(0, 0, 0, 0.10)',
+                          flexShrink: 0,
+                        }}
+                      />
+                    ) : (
+                      <div
+                        className="testimonial-avatar-placeholder"
+                        aria-hidden="true"
+                        style={{
+                          width: '48px',
+                          height: '48px',
+                          borderRadius: '50%',
+                          background: '#f0f0ef',
+                          border: '1.5px solid rgba(0, 0, 0, 0.10)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          flexShrink: 0,
+                          fontFamily: 'Inter, sans-serif',
+                          fontWeight: 700,
+                          fontSize: '13px',
+                          color: '#6b6b6b',
+                          userSelect: 'none',
+                        }}
+                      >
+                        {initials}
+                      </div>
+                    )}
+                    <div>
+                      <div
+                        className="testimonial-name"
+                        style={{
+                          fontFamily: 'Inter, sans-serif',
+                          fontWeight: 700,
+                          fontSize: '16px',
+                          lineHeight: '22px',
+                          color: '#141510',
+                        }}
+                      >
+                        {name}
+                      </div>
+                      <div
+                        className="testimonial-role"
+                        style={{
+                          fontFamily: 'Inter, sans-serif',
+                          fontWeight: 400,
+                          fontSize: '14px',
+                          lineHeight: '20px',
+                          fontStyle: 'italic',
+                          color: '#6b6b6b',
+                        }}
+                      >
+                        {role}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Testimonial quote */}
+                  <p
+                    style={{
+                      fontFamily: 'Inter, sans-serif',
+                      fontWeight: 400,
+                      fontSize: '14px',
+                      lineHeight: '22px',
+                      color: '#141510',
+                      margin: 0,
+                    }}
+                  >
+                    {quote}
+                  </p>
+                </div>
+              ))}
+              </div>
+            </div>
+          </div>
           </div>
         </div>
 
@@ -1142,216 +1352,6 @@ export default function Home() {
         />
       )} */}
 
-      {/* ── Testimonials reveal panel ───────────────────────────────────────
-           position: fixed so it never disrupts the hero layout.
-           translateY is driven by wheel/touch events above; the ResizeObserver
-           sets the initial value before the first paint.
-      ── */}
-      <div
-        ref={testimonialsRef}
-        aria-label="Kind things people have said about me"
-        style={{
-          position: 'fixed',
-          bottom: 0,
-          left: 0,
-          right: 0,
-          zIndex: 2,
-          background: 'transparent',
-          paddingTop: '24px',
-          paddingBottom: '24px',
-          opacity: chatOpen ? 0 : 1,
-          /* Let clicks pass through transparent areas so hero butterflies stay draggable */
-          pointerEvents: 'none',
-          transition: 'opacity 0.45s ease, visibility 0.45s ease',
-          visibility: chatOpen ? 'hidden' : 'visible',
-          willChange: 'transform',
-        }}
-      >
-        {/* Heading + cards — hover shows cursor-following tooltip; hit box is content-width so butterflies beside the block stay draggable */}
-        <div
-          style={{
-            pointerEvents: 'auto',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            width: 'fit-content',
-            maxWidth: '100%',
-            marginLeft: 'auto',
-            marginRight: 'auto',
-            boxSizing: 'border-box',
-          }}
-          onMouseEnter={e => {
-            setTestimonialsSectionHover(true);
-            setTestimonialsTooltipPos({ x: e.clientX, y: e.clientY });
-          }}
-          onMouseMove={e => setTestimonialsTooltipPos({ x: e.clientX, y: e.clientY })}
-          onMouseLeave={() => setTestimonialsSectionHover(false)}
-        >
-          {typeof document !== 'undefined' &&
-            showTestimonialsScrollTooltip &&
-            createPortal(
-              <div
-                role="tooltip"
-                style={{
-                  position: 'fixed',
-                  left: `${testimonialsTooltipPos.x + 14}px`,
-                  top: `${testimonialsTooltipPos.y + 14}px`,
-                  zIndex: 10001,
-                  padding: '6px 12px',
-                  borderRadius: 6,
-                  background: '#89FF12',
-                  border: '2px solid #000000',
-                  fontFamily: 'Inter, sans-serif',
-                  fontSize: '14px',
-                  fontWeight: 600,
-                  lineHeight: '18px',
-                  color: '#141510',
-                  whiteSpace: 'nowrap',
-                  pointerEvents: 'none',
-                  userSelect: 'none',
-                }}
-              >
-                Scroll down!
-              </div>,
-              document.body,
-            )}
-          <h2
-            style={{
-              fontFamily: 'Inter, sans-serif',
-              fontSize: '18px',
-              fontWeight: 600,
-              lineHeight: '28px',
-              color: '#141510',
-              textAlign: 'center',
-              margin: '0 0 16px 0',
-              userSelect: 'none',
-            }}
-          >
-            <span
-              style={{
-                WebkitTextStroke: '4px #ffffff',
-                paintOrder: 'stroke fill',
-              }}
-            >
-              Kind things people have said about me
-            </span>
-          </h2>
-
-          {/* Cards row — wraps to single column on narrow viewports */}
-          <div
-            style={{
-              display: 'flex',
-              gap: '16px',
-              maxWidth: '672px',
-              margin: '0 auto',
-              paddingLeft: '16px',
-              paddingRight: '16px',
-              boxSizing: 'border-box',
-              flexWrap: 'wrap',
-            }}
-          >
-          {TESTIMONIALS.map(({ name, role, quote, initials, avatarSrc }) => (
-            <div
-              key={name}
-              style={{
-                flex: '1 1 280px',
-                background: '#ffffff',
-                border: '1.5px solid rgba(0, 0, 0, 0.10)',
-                borderRadius: '16px',
-                padding: '20px',
-                boxSizing: 'border-box',
-              }}
-            >
-              {/* Avatar + name + role — measured for initial peek height */}
-              <div
-                className="testimonial-card-header"
-                style={{ display: 'flex', alignItems: 'flex-end', gap: '12px', marginBottom: '16px' }}
-              >
-                {avatarSrc ? (
-                  <img
-                    className="testimonial-avatar"
-                    src={avatarSrc}
-                    alt={name}
-                    style={{
-                      width: '48px',
-                      height: '48px',
-                      borderRadius: '50%',
-                      objectFit: 'cover',
-                      border: '1.5px solid rgba(0, 0, 0, 0.10)',
-                      flexShrink: 0,
-                    }}
-                  />
-                ) : (
-                  <div
-                    className="testimonial-avatar-placeholder"
-                    aria-hidden="true"
-                    style={{
-                      width: '48px',
-                      height: '48px',
-                      borderRadius: '50%',
-                      background: '#f0f0ef',
-                      border: '1.5px solid rgba(0, 0, 0, 0.10)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      flexShrink: 0,
-                      fontFamily: 'Inter, sans-serif',
-                      fontWeight: 700,
-                      fontSize: '13px',
-                      color: '#6b6b6b',
-                      userSelect: 'none',
-                    }}
-                  >
-                    {initials}
-                  </div>
-                )}
-                <div>
-                  <div
-                    className="testimonial-name"
-                    style={{
-                      fontFamily: 'Inter, sans-serif',
-                      fontWeight: 700,
-                      fontSize: '16px',
-                      lineHeight: '22px',
-                      color: '#141510',
-                    }}
-                  >
-                    {name}
-                  </div>
-                  <div
-                    className="testimonial-role"
-                    style={{
-                      fontFamily: 'Inter, sans-serif',
-                      fontWeight: 400,
-                      fontSize: '14px',
-                      lineHeight: '20px',
-                      fontStyle: 'italic',
-                      color: '#6b6b6b',
-                    }}
-                  >
-                    {role}
-                  </div>
-                </div>
-              </div>
-
-              {/* Testimonial quote */}
-              <p
-                style={{
-                  fontFamily: 'Inter, sans-serif',
-                  fontWeight: 400,
-                  fontSize: '14px',
-                  lineHeight: '22px',
-                  color: '#141510',
-                  margin: 0,
-                }}
-              >
-                {quote}
-              </p>
-            </div>
-          ))}
-          </div>
-        </div>
-      </div>
     </>
   );
 }
