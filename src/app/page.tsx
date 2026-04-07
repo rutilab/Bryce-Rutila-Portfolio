@@ -263,6 +263,14 @@ export default function Home() {
   );
   /** Reset butterfly bases when crossing mobile/desktop so mobile layout stays intentional. */
   const butterflyLayoutBandRef = useRef<'mobile' | 'desktop' | null>(null);
+  /** Mobile landscape: testimonials in normal flow below hero — scroll to see; no transform reveal. */
+  const [isLandscapeMobile, setIsLandscapeMobile] = useState(
+    () =>
+      typeof window !== 'undefined'
+        ? window.matchMedia('(max-width: 767px) and (orientation: landscape)').matches
+        : false,
+  );
+  const isLandscapeMobileRef = useRef(isLandscapeMobile);
 
   // Hero copy (title + subtitle + CTAs) wrapper — translates up when testimonials approach
   const heroCopyRef = useRef<HTMLDivElement>(null);
@@ -361,6 +369,14 @@ export default function Home() {
   useEffect(() => {
     const mq = window.matchMedia('(max-width: 767px)');
     const sync = () => setIsMobileViewport(mq.matches);
+    sync();
+    mq.addEventListener('change', sync);
+    return () => mq.removeEventListener('change', sync);
+  }, []);
+
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 767px) and (orientation: landscape)');
+    const sync = () => setIsLandscapeMobile(mq.matches);
     sync();
     mq.addEventListener('change', sync);
     return () => mq.removeEventListener('change', sync);
@@ -473,6 +489,10 @@ export default function Home() {
 
   // ── Testimonials: keep position correct whenever the panel resizes ─────────
   useLayoutEffect(() => {
+    isLandscapeMobileRef.current = isLandscapeMobile;
+  }, [isLandscapeMobile]);
+
+  useLayoutEffect(() => {
     const panel = testimonialsRef.current;
     if (!panel) return;
 
@@ -483,12 +503,23 @@ export default function Home() {
       const peek = measureTestimonialsPeekPx(panel);
       testimonialsPeekRef.current = peek;
       setTestimonialsPeekPx(peek);
+
+      if (isLandscapeMobile) {
+        panel.style.transform = '';
+        panel.style.willChange = 'auto';
+        testimonialsProgressRef.current = 0;
+        setTestimonialsProgress(0);
+        heroPushRef.current = 0;
+        heroCopyRef.current?.style.setProperty('transform', '');
+        return;
+      }
+
       const budget = H - peek + TESTIMONIALS_BOTTOM_MARGIN;
-      // Clamp progress in case a resize made the budget smaller
       const clamped = Math.min(testimonialsProgressRef.current, budget);
       testimonialsProgressRef.current = clamped;
       setTestimonialsProgress(clamped);
       panel.style.transform = `translateY(${H - peek - clamped}px)`;
+      panel.style.willChange = 'transform';
       updateHeroPush(clamped);
     };
 
@@ -506,12 +537,13 @@ export default function Home() {
       ro.disconnect();
       window.removeEventListener('resize', sync);
     };
-  }, [updateHeroPush, setTestimonialsProgress]);
+  }, [updateHeroPush, setTestimonialsProgress, isLandscapeMobile]);
 
   // ── Testimonials: intercept wheel/touch to drive the reveal ────────────────
   useEffect(() => {
     /** Returns true if the event delta was consumed by the testimonials panel. */
     const updatePanel = (deltaY: number): boolean => {
+      if (isLandscapeMobileRef.current) return false;
       const panel = testimonialsRef.current;
       if (!panel) return false;
       const H = panel.offsetHeight;
@@ -536,6 +568,7 @@ export default function Home() {
     };
 
     const wouldConsume = (deltaY: number): boolean => {
+      if (isLandscapeMobileRef.current) return false;
       const panel = testimonialsRef.current;
       if (!panel) return false;
       const H = panel.offsetHeight;
@@ -770,12 +803,13 @@ export default function Home() {
             className="home-hero-scroll-inner"
             style={{
               position: 'relative',
-              height: '100%',
+              /* Landscape mobile: inner grows with hero + testimonials; portrait stays fill-height for reveal UX */
+              height: isLandscapeMobile ? 'auto' : '100%',
+              minHeight: isLandscapeMobile ? '100%' : 0,
               width: '100%',
               boxSizing: 'border-box',
               display: 'flex',
               flexDirection: 'column',
-              minHeight: 0,
             }}
           >
             <div
@@ -783,16 +817,18 @@ export default function Home() {
               style={{
                 position: 'relative',
                 isolation: 'isolate',
-                flex: '1 1 auto',
-                minHeight: 0,
+                flex: isLandscapeMobile ? '0 0 auto' : '1 1 auto',
+                minHeight: isLandscapeMobile ? 'min(100svh, 100dvh)' : 0,
                 width: '100%',
                 display: 'flex',
                 flexDirection: 'column',
                 alignItems: 'center',
-                justifyContent: 'center',
+                justifyContent: isLandscapeMobile ? 'flex-start' : 'center',
                 boxSizing: 'border-box',
-                paddingTop: HOME_HERO_TOP_PAD,
-                paddingBottom: HOME_HERO_BOTTOM_PAD,
+                paddingTop: isLandscapeMobile
+                  ? `max(12px, env(safe-area-inset-top, 0px))`
+                  : HOME_HERO_TOP_PAD,
+                paddingBottom: isLandscapeMobile ? '12px' : HOME_HERO_BOTTOM_PAD,
                 paddingLeft: 'max(20px, env(safe-area-inset-left, 0px))',
                 paddingRight: 'max(20px, env(safe-area-inset-right, 0px))',
                 pointerEvents: 'none',
@@ -1099,22 +1135,38 @@ export default function Home() {
             className="home-hero-testimonials-panel"
             ref={testimonialsRef}
             aria-label="Kind things people have said about me"
-            style={{
-              position: isMobileViewport ? 'absolute' : 'fixed',
-              bottom: 0,
-              left: 0,
-              right: 0,
-              zIndex: 10,
-              background: 'transparent',
-              paddingTop: '24px',
-              paddingBottom: '24px',
-              opacity: chatOpen ? 0 : 1,
-              /* Let clicks pass through transparent areas so hero butterflies stay draggable */
-              pointerEvents: 'none',
-              transition: 'opacity 0.45s ease, visibility 0.45s ease',
-              visibility: chatOpen ? 'hidden' : 'visible',
-              willChange: 'transform',
-            }}
+            style={
+              isLandscapeMobile
+                ? {
+                    position: 'relative',
+                    width: '100%',
+                    zIndex: 10,
+                    background: 'transparent',
+                    paddingTop: '24px',
+                    paddingBottom: '24px',
+                    opacity: chatOpen ? 0 : 1,
+                    pointerEvents: 'none',
+                    transition: 'opacity 0.45s ease, visibility 0.45s ease',
+                    visibility: chatOpen ? 'hidden' : 'visible',
+                    willChange: 'auto',
+                  }
+                : {
+                    position: isMobileViewport ? 'absolute' : 'fixed',
+                    bottom: 0,
+                    left: 0,
+                    right: 0,
+                    zIndex: 10,
+                    background: 'transparent',
+                    paddingTop: '24px',
+                    paddingBottom: '24px',
+                    opacity: chatOpen ? 0 : 1,
+                    /* Let clicks pass through transparent areas so hero butterflies stay draggable */
+                    pointerEvents: 'none',
+                    transition: 'opacity 0.45s ease, visibility 0.45s ease',
+                    visibility: chatOpen ? 'hidden' : 'visible',
+                    willChange: 'transform',
+                  }
+            }
           >
             {/* Heading + cards — hover shows cursor-following tooltip; hit box is content-width so butterflies beside the block stay draggable */}
             <div

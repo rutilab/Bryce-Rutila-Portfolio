@@ -156,6 +156,8 @@ body {
     -webkit-overflow-scrolling: touch;
     touch-action: pan-y;
     overscroll-behavior-x: none;
+    /* Contain rubber-band / scroll chaining; avoids extra slack scrolling past the hero block */
+    overscroll-behavior-y: contain;
   }
 }
 .home-hero-scroll::-webkit-scrollbar {
@@ -171,17 +173,7 @@ body {
   }
 }
 
-/* Mobile short viewports (e.g. landscape): keep hero reachable via scroll; avoid vertically centering past the fold */
-@media (max-width: 767px) and (max-height: 520px) {
-  .home-hero-main-column {
-    justify-content: flex-start !important;
-    padding-top: max(12px, env(safe-area-inset-top, 0px)) !important;
-    padding-bottom: 12px !important;
-  }
-  .home-hero-scroll-inner {
-    min-height: calc(100% + 120px);
-  }
-}
+/* Mobile landscape: layout is driven in page.tsx (hero min-height + flow testimonials). No extra inner min-height — it caused scroll slack past content. */
 
 /* ── Subtitle slam — fires once when the final phrase locks in ── */
 /*    Per-keyframe timing functions drive the slam feel:
