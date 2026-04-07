@@ -61,6 +61,16 @@ const BUTTERFLY_FIGMA = [
   { l: 1092, t: 782 },
 ] as const;
 
+/** Narrow viewports only — less extreme edges so butterflies feel less scattered (width under 768px). */
+const BUTTERFLY_FIGMA_MOBILE = [
+  { l: 28, t: 28 },
+  { l: 18, t: 330 },
+  { l: -28, t: 800 },
+  { l: 960, t: 24 },
+  { l: 1140, t: 475 },
+  { l: 1000, t: 740 },
+] as const;
+
 function rectsOverlap(a: DOMRect, b: DOMRect) {
   return !(a.right < b.left || a.left > b.right || a.bottom < b.top || a.top > b.bottom);
 }
@@ -247,6 +257,12 @@ export default function Home() {
   const [testimonialsSectionHover, setTestimonialsSectionHover] = useState(false);
   const [testimonialsTooltipPos, setTestimonialsTooltipPos] = useState({ x: 0, y: 0 });
   const touchStartYRef = useRef<number | null>(null);
+  /** Touch / narrow layout — drives overflow and touch chunk size only (max-width 767px). */
+  const [isMobileViewport, setIsMobileViewport] = useState(
+    () => (typeof window !== 'undefined' ? window.matchMedia('(max-width: 767px)').matches : false),
+  );
+  /** Reset butterfly bases when crossing mobile/desktop so mobile layout stays intentional. */
+  const butterflyLayoutBandRef = useRef<'mobile' | 'desktop' | null>(null);
 
   // Hero copy (title + subtitle + CTAs) wrapper — translates up when testimonials approach
   const heroCopyRef = useRef<HTMLDivElement>(null);
@@ -339,6 +355,14 @@ export default function Home() {
     };
   }, []);
 
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 767px)');
+    const sync = () => setIsMobileViewport(mq.matches);
+    sync();
+    mq.addEventListener('change', sync);
+    return () => mq.removeEventListener('change', sync);
+  }, []);
+
   useLayoutEffect(() => {
     const update = () => {
       const scroll = heroScrollRef.current ?? heroContainerRef.current;
@@ -347,6 +371,12 @@ export default function Home() {
       const h = scroll.clientHeight;
       if (w > 0 && h > 0) {
         setContainerSize({ width: w, height: h });
+        const band = w < 768 ? 'mobile' : 'desktop';
+        if (butterflyLayoutBandRef.current !== band) {
+          butterflyLayoutBandRef.current = band;
+          const figma = band === 'mobile' ? BUTTERFLY_FIGMA_MOBILE : BUTTERFLY_FIGMA;
+          setButterflyPos(figma.map(({ l, t }) => ({ leftFrac: l / W, topFrac: t / H })));
+        }
       }
     };
     update();
@@ -537,6 +567,7 @@ export default function Home() {
     };
 
     const handleWheel = (e: WheelEvent) => {
+      if (activeDragIndexRef.current !== null) return;
       const raw = e.deltaY;
       const clamped = Math.sign(raw) * Math.min(Math.abs(raw), 120);
       if (!wouldConsume(clamped)) return;
@@ -550,10 +581,31 @@ export default function Home() {
     };
 
     const handleTouchMove = (e: TouchEvent) => {
+      if (activeDragIndexRef.current !== null) return;
       if (touchStartYRef.current === null) return;
-      const raw = touchStartYRef.current - e.touches[0].clientY;
-      touchStartYRef.current = e.touches[0].clientY;
-      const deltaY = Math.sign(raw) * Math.min(Math.abs(raw), 48);
+      const clientY = e.touches[0].clientY;
+      const raw = touchStartYRef.current - clientY;
+      touchStartYRef.current = clientY;
+
+      const mobile = window.matchMedia('(max-width: 767px)').matches;
+      const maxTouch = mobile ? 120 : 48;
+      const deltaY = Math.sign(raw) * Math.min(Math.abs(raw), maxTouch);
+
+      if (mobile) {
+        const hero = heroScrollRef.current;
+        const target = e.target;
+        if (hero && target instanceof Node && hero.contains(target)) {
+          const sh = hero.scrollHeight;
+          const ch = hero.clientHeight;
+          if (sh > ch + 2) {
+            const atTop = hero.scrollTop <= 1;
+            const atBottom = hero.scrollTop + ch >= sh - 2;
+            if (deltaY > 0 && !atBottom) return;
+            if (deltaY < 0 && !atTop) return;
+          }
+        }
+      }
+
       if (!wouldConsume(deltaY)) return;
       e.preventDefault();
       pendingDelta += deltaY;
@@ -681,6 +733,7 @@ export default function Home() {
       {/* ── Hero page ── white background with dot grid ── */}
       <div
         ref={heroContainerRef}
+        className="home-hero-root"
         style={{
           position: 'fixed',
           inset: 0,
@@ -688,8 +741,8 @@ export default function Home() {
           background: '#ffffff',
           backgroundImage: 'radial-gradient(circle, #F0F0F0 1px, transparent 1px)',
           backgroundSize: '8px 8px',
-          /* Visible horizontally so butterflies aren’t clipped (look “shrunk”) when dragged near edges */
-          overflowX: 'visible',
+          /* Desktop: allow butterflies past edges; mobile: lock horizontal pan (handled via isMobileViewport) */
+          overflowX: isMobileViewport ? 'hidden' : 'visible',
           overflowY: 'hidden',
           transition: 'opacity 0.45s ease, visibility 0.45s ease',
           opacity: chatOpen ? 0 : 1,
@@ -723,6 +776,7 @@ export default function Home() {
             }}
           >
             <div
+              className="home-hero-main-column"
               style={{
                 position: 'relative',
                 isolation: 'isolate',

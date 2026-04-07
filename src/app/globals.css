@@ -152,7 +152,10 @@ body {
 @media (max-width: 767px) {
   .home-hero-scroll {
     overflow-y: scroll;
+    overflow-x: hidden;
     -webkit-overflow-scrolling: touch;
+    touch-action: pan-y;
+    overscroll-behavior-x: none;
   }
 }
 .home-hero-scroll::-webkit-scrollbar {
@@ -165,6 +168,18 @@ body {
 @media (max-width: 767px) {
   .home-hero-scroll-inner {
     min-height: calc(100% + 1px);
+  }
+}
+
+/* Mobile short viewports (e.g. landscape): keep hero reachable via scroll; avoid vertically centering past the fold */
+@media (max-width: 767px) and (max-height: 520px) {
+  .home-hero-main-column {
+    justify-content: flex-start !important;
+    padding-top: max(12px, env(safe-area-inset-top, 0px)) !important;
+    padding-bottom: 12px !important;
+  }
+  .home-hero-scroll-inner {
+    min-height: calc(100% + 120px);
   }
 }
 
