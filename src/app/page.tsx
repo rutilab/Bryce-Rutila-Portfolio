@@ -492,6 +492,34 @@ export default function Home() {
     isLandscapeMobileRef.current = isLandscapeMobile;
   }, [isLandscapeMobile]);
 
+  /** Portrait mobile only: clamp native scrollTop so it cannot persist past real max (testimonials stay bounded). Rubber-band unchanged. */
+  useLayoutEffect(() => {
+    const hero = heroScrollRef.current;
+    if (!hero) return;
+    const mq = window.matchMedia('(max-width: 767px)');
+    const clamp = () => {
+      if (!mq.matches || isLandscapeMobileRef.current) return;
+      const max = Math.max(0, hero.scrollHeight - hero.clientHeight);
+      if (hero.scrollTop > max + 0.5) hero.scrollTop = max;
+    };
+    hero.addEventListener('scroll', clamp, { passive: true });
+    const ro = new ResizeObserver(clamp);
+    ro.observe(hero);
+    const onWin = () => clamp();
+    window.addEventListener('resize', onWin);
+    window.addEventListener('orientationchange', onWin);
+    const onTouchEnd = () => requestAnimationFrame(clamp);
+    hero.addEventListener('touchend', onTouchEnd, { passive: true });
+    clamp();
+    return () => {
+      hero.removeEventListener('scroll', clamp);
+      hero.removeEventListener('touchend', onTouchEnd);
+      ro.disconnect();
+      window.removeEventListener('resize', onWin);
+      window.removeEventListener('orientationchange', onWin);
+    };
+  }, []);
+
   useLayoutEffect(() => {
     const panel = testimonialsRef.current;
     if (!panel) return;
@@ -818,17 +846,16 @@ export default function Home() {
                 position: 'relative',
                 isolation: 'isolate',
                 flex: isLandscapeMobile ? '0 0 auto' : '1 1 auto',
-                minHeight: isLandscapeMobile ? 'min(100svh, 100dvh)' : 0,
+                /* Stable viewport height on iOS; avoids clipping hero under dynamic UI */
+                minHeight: isLandscapeMobile ? '100svh' : 0,
                 width: '100%',
                 display: 'flex',
                 flexDirection: 'column',
                 alignItems: 'center',
                 justifyContent: isLandscapeMobile ? 'flex-start' : 'center',
                 boxSizing: 'border-box',
-                paddingTop: isLandscapeMobile
-                  ? `max(12px, env(safe-area-inset-top, 0px))`
-                  : HOME_HERO_TOP_PAD,
-                paddingBottom: isLandscapeMobile ? '12px' : HOME_HERO_BOTTOM_PAD,
+                paddingTop: HOME_HERO_TOP_PAD,
+                paddingBottom: HOME_HERO_BOTTOM_PAD,
                 paddingLeft: 'max(20px, env(safe-area-inset-left, 0px))',
                 paddingRight: 'max(20px, env(safe-area-inset-right, 0px))',
                 pointerEvents: 'none',
