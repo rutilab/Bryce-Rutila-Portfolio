@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef, useLayoutEffect, useCallback, type CSSProperties } from 'react';
+import { createPortal } from 'react-dom';
 import Link from 'next/link';
 import { ChatContainer } from '@/components/chat';
 import { CursorContrail } from '@/components/CursorContrail';
@@ -72,6 +73,78 @@ function unionRects(a: DOMRect, b: DOMRect): DOMRect {
   return new DOMRect(left, top, right - left, bottom - top);
 }
 
+// ── Testimonials ───────────────────────────────────────────────────────────
+// Cards sit below the fold; as the user scrolls they reveal upward while the
+// hero content stays fixed.  The scroll is intercepted via wheel/touch events
+// so the hero never actually scrolls — only the panel translates.
+
+/** Fallback peek height (px) if layout measurement is not ready yet. */
+const TESTIMONIALS_PEEK_FALLBACK = 300;
+/** Minimum gap below the panel when fully revealed. */
+const TESTIMONIALS_BOTTOM_MARGIN = 24;
+/**
+ * Nudge the cut slightly into the header row so rounding never reveals the 16px margin or quote below it.
+ * (Too large a floor used to force extra peek — see Math.max(peek, 160) removal.)
+ */
+const TESTIMONIALS_PEEK_EDGE_TRIM = 2;
+
+/**
+ * Peek = px from panel top through the section title + avatar/name/role row(s) that belong in the “peek” strip.
+ * Uses `.testimonial-card-header` border box: marginBottom (gap before quote) is *outside* that box, so it must not appear.
+ *
+ * When cards are **side by side**, both headers share one row — include the lower of the two header bottoms
+ * so the taller column is not clipped.
+ * When cards **stack**, the second header sits *below* the first card’s quote; including it would inflate peek
+ * and bump the first card up. In that case only the **first** card header is used so the peek matches the
+ * single-row layout position.
+ */
+function measureTestimonialsPeekPx(panel: HTMLElement): number {
+  const pr = panel.getBoundingClientRect();
+  if (pr.height <= 0) return TESTIMONIALS_PEEK_FALLBACK;
+  let maxBottom = 0;
+  const h2 = panel.querySelector('h2');
+  if (h2) {
+    maxBottom = Math.max(maxBottom, h2.getBoundingClientRect().bottom - pr.top);
+  }
+  const headers = panel.querySelectorAll('.testimonial-card-header');
+  const first = headers[0];
+  if (first) {
+    const r1 = first.getBoundingClientRect();
+    maxBottom = Math.max(maxBottom, r1.bottom - pr.top);
+    const second = headers[1];
+    if (second) {
+      const r2 = second.getBoundingClientRect();
+      const stacked = r2.top > r1.bottom + 0.5;
+      if (!stacked) {
+        maxBottom = Math.max(maxBottom, r2.bottom - pr.top);
+      }
+    }
+  }
+
+  if (maxBottom <= 0) return TESTIMONIALS_PEEK_FALLBACK;
+  const peek = Math.ceil(maxBottom) - TESTIMONIALS_PEEK_EDGE_TRIM;
+  return Math.min(Math.max(peek, 1), panel.offsetHeight);
+}
+
+const TESTIMONIALS = [
+  {
+    name: 'Mike Mrazek',
+    role: 'Co-Founder Finding Focus',
+    quote:
+      'Bryce is a deeply thoughtful designer who truly cares about creating great experiences for users. After working with him, nearly every aspect of our product has significantly improved. And beyond his considerable UX/UI skills, he is also a kind and principled person.',
+    initials: 'MM',
+    avatarSrc: '/images/testimonials/mike-mrazek.png',
+  },
+  {
+    name: 'Yaning Zhu',
+    role: 'UX Researcher Finding Focus',
+    quote:
+      "As the solo UX designer on the team, Bryce meticulously designed every aspect of the Finding Focus, ensuring a responsive, cohesive, and user-friendly experience. Bryce's dedication, expertise, and collaborative spirit make him an outstanding UX designer with excellent UX research craft.",
+    initials: 'YZ',
+    avatarSrc: '/images/testimonials/yaning-zhu.png',
+  },
+] as const;
+
 // ── Subtitle typewriter animation ──────────────────────────────────────────
 // The prefix stays static. Each suffix is typed in, highlighted, then
 // instantly deleted before the next one starts. The final phrase stays.
@@ -92,8 +165,8 @@ const HIGHLIGHT_COLORS = [
 
 type AnimPhase = 'typing' | 'highlighted' | 'pre-typing' | 'done';
 
-/** Fixed nav uses top-6 (24px) + ~48px pill; 24px gap below nav before hero copy/buttons. */
-const HOME_HERO_TOP_PAD = 'calc(24px + 48px + 24px + env(safe-area-inset-top, 0px))';
+/** Fixed nav uses top-6 (24px) + ~48px pill; 24px gap below nav before hero copy/buttons; −40px shifts hero block up. */
+const HOME_HERO_TOP_PAD = 'calc(24px + 48px + 24px - 40px + env(safe-area-inset-top, 0px))';
 const HOME_HERO_BOTTOM_PAD = 'calc(24px + env(safe-area-inset-bottom, 0px))';
 
 /** Static prefix + phrase — must match the hero subtitle JSX for height measurement. */
@@ -159,6 +232,53 @@ export default function Home() {
   const dragStartOverlapsHeroRef = useRef(false);
   const butterflyPosRef = useRef(butterflyPos);
   butterflyPosRef.current = butterflyPos;
+
+  // Testimonials panel + scroll-reveal state
+  const testimonialsRef = useRef<HTMLDivElement>(null);
+  /** Accumulated px the panel has travelled upward (0 = hidden, budget = fully revealed). */
+  const testimonialsProgressRef = useRef(0);
+  /** Mirrors ref for tooltip / UI when progress changes. */
+  const [testimonialsProgress, setTestimonialsProgress] = useState(0);
+  /** Panel height from ResizeObserver — used to compute reveal budget for tooltip. */
+  const [testimonialsPanelHeight, setTestimonialsPanelHeight] = useState(0);
+  /** Measured height from panel top through headings + avatar/name/role (not quotes). */
+  const [testimonialsPeekPx, setTestimonialsPeekPx] = useState(TESTIMONIALS_PEEK_FALLBACK);
+  const testimonialsPeekRef = useRef(TESTIMONIALS_PEEK_FALLBACK);
+  const [testimonialsSectionHover, setTestimonialsSectionHover] = useState(false);
+  const [testimonialsTooltipPos, setTestimonialsTooltipPos] = useState({ x: 0, y: 0 });
+  const touchStartYRef = useRef<number | null>(null);
+
+  // Hero copy (title + subtitle + CTAs) wrapper — translates up when testimonials approach
+  const heroCopyRef = useRef<HTMLDivElement>(null);
+  /** Current upward push applied to hero copy, in px. */
+  const heroPushRef = useRef(0);
+
+  /**
+   * Compute how much to push the hero copy upward so the testimonials heading
+   * never overlaps the CTA buttons.  Trigger window: 40 px of clearance.
+   *
+   * Uses refs throughout so the closure is never stale — safe to call from both
+   * the ResizeObserver (useLayoutEffect) and the wheel/touch handler (useEffect).
+   */
+  const updateHeroPush = useCallback((progress: number) => {
+    const copy = heroCopyRef.current;
+    const ctas = heroCtasRef.current;
+    if (!copy || !ctas) return;
+
+    const vh = window.innerHeight;
+    const peek = testimonialsPeekRef.current;
+    // Top edge of the testimonials panel in viewport coordinates
+    const panelTop = vh - peek - progress;
+
+    // Reconstruct the un-translated CTAs bottom by undoing the current push
+    const ctasNaturalBottom = ctas.getBoundingClientRect().bottom + heroPushRef.current;
+
+    const gap = panelTop - ctasNaturalBottom;          // px between panel and CTAs
+    const newPush = Math.max(0, 40 - gap);             // push only when gap < 40 px
+
+    heroPushRef.current = newPush;
+    copy.style.transform = newPush > 0 ? `translateY(${-newPush}px)` : '';
+  }, []);
 
   const getHeroExclusionRect = useCallback((): DOMRect | null => {
     const rects: DOMRect[] = [];
@@ -318,6 +438,139 @@ export default function Home() {
     return () => clearTimeout(t);
   }, [showSlam]);
 
+  // ── Testimonials: keep position correct whenever the panel resizes ─────────
+  useLayoutEffect(() => {
+    const panel = testimonialsRef.current;
+    if (!panel) return;
+
+    const sync = () => {
+      const H = panel.offsetHeight;
+      if (H <= 0) return;
+      setTestimonialsPanelHeight(H);
+      const peek = measureTestimonialsPeekPx(panel);
+      testimonialsPeekRef.current = peek;
+      setTestimonialsPeekPx(peek);
+      const budget = H - peek + TESTIMONIALS_BOTTOM_MARGIN;
+      // Clamp progress in case a resize made the budget smaller
+      const clamped = Math.min(testimonialsProgressRef.current, budget);
+      testimonialsProgressRef.current = clamped;
+      setTestimonialsProgress(clamped);
+      panel.style.transform = `translateY(${H - peek - clamped}px)`;
+      updateHeroPush(clamped);
+    };
+
+    sync();
+    // First RO tick can run before fonts / images settle — re-sync on the next frame with real metrics.
+    const raf = requestAnimationFrame(() => {
+      sync();
+    });
+    void document.fonts?.ready?.then(() => sync()).catch(() => {});
+    const ro = new ResizeObserver(sync);
+    ro.observe(panel);
+    window.addEventListener('resize', sync);
+    return () => {
+      cancelAnimationFrame(raf);
+      ro.disconnect();
+      window.removeEventListener('resize', sync);
+    };
+  }, [updateHeroPush, setTestimonialsProgress]);
+
+  // ── Testimonials: intercept wheel/touch to drive the reveal ────────────────
+  useEffect(() => {
+    /** Returns true if the event delta was consumed by the testimonials panel. */
+    const updatePanel = (deltaY: number): boolean => {
+      const panel = testimonialsRef.current;
+      if (!panel) return false;
+      const H = panel.offsetHeight;
+      const peek = measureTestimonialsPeekPx(panel);
+      testimonialsPeekRef.current = peek;
+      const budget = H - peek + TESTIMONIALS_BOTTOM_MARGIN;
+      const progress = testimonialsProgressRef.current;
+
+      if (deltaY > 0 && progress < budget) {
+        testimonialsProgressRef.current = Math.min(budget, progress + deltaY);
+        panel.style.transform = `translateY(${H - peek - testimonialsProgressRef.current}px)`;
+        updateHeroPush(testimonialsProgressRef.current);
+        return true;
+      }
+      if (deltaY < 0 && progress > 0) {
+        testimonialsProgressRef.current = Math.max(0, progress + deltaY);
+        panel.style.transform = `translateY(${H - peek - testimonialsProgressRef.current}px)`;
+        updateHeroPush(testimonialsProgressRef.current);
+        return true;
+      }
+      return false;
+    };
+
+    const wouldConsume = (deltaY: number): boolean => {
+      const panel = testimonialsRef.current;
+      if (!panel) return false;
+      const H = panel.offsetHeight;
+      const peek = measureTestimonialsPeekPx(panel);
+      testimonialsPeekRef.current = peek;
+      const budget = H - peek + TESTIMONIALS_BOTTOM_MARGIN;
+      const progress = testimonialsProgressRef.current;
+      return (deltaY > 0 && progress < budget) || (deltaY < 0 && progress > 0);
+    };
+
+    let pendingDelta = 0;
+    let rafId: number | null = null;
+    const MAX_CHUNK = 96;
+
+    const flushPending = () => {
+      rafId = null;
+      let remaining = pendingDelta;
+      pendingDelta = 0;
+      if (Math.abs(remaining) < 0.5) return;
+      while (Math.abs(remaining) > 0.5) {
+        const chunk = Math.sign(remaining) * Math.min(Math.abs(remaining), MAX_CHUNK);
+        if (!updatePanel(chunk)) break;
+        remaining -= chunk;
+      }
+      setTestimonialsProgress(testimonialsProgressRef.current);
+      setTestimonialsPeekPx(testimonialsPeekRef.current);
+    };
+
+    const scheduleFlush = () => {
+      if (rafId != null) return;
+      rafId = requestAnimationFrame(flushPending);
+    };
+
+    const handleWheel = (e: WheelEvent) => {
+      const raw = e.deltaY;
+      const clamped = Math.sign(raw) * Math.min(Math.abs(raw), 120);
+      if (!wouldConsume(clamped)) return;
+      e.preventDefault();
+      pendingDelta += clamped;
+      scheduleFlush();
+    };
+
+    const handleTouchStart = (e: TouchEvent) => {
+      touchStartYRef.current = e.touches[0].clientY;
+    };
+
+    const handleTouchMove = (e: TouchEvent) => {
+      if (touchStartYRef.current === null) return;
+      const raw = touchStartYRef.current - e.touches[0].clientY;
+      touchStartYRef.current = e.touches[0].clientY;
+      const deltaY = Math.sign(raw) * Math.min(Math.abs(raw), 48);
+      if (!wouldConsume(deltaY)) return;
+      e.preventDefault();
+      pendingDelta += deltaY;
+      scheduleFlush();
+    };
+
+    window.addEventListener('wheel', handleWheel, { passive: false });
+    window.addEventListener('touchstart', handleTouchStart, { passive: true });
+    window.addEventListener('touchmove', handleTouchMove, { passive: false });
+    return () => {
+      if (rafId != null) cancelAnimationFrame(rafId);
+      window.removeEventListener('wheel', handleWheel);
+      window.removeEventListener('touchstart', handleTouchStart);
+      window.removeEventListener('touchmove', handleTouchMove);
+    };
+  }, [updateHeroPush, setTestimonialsProgress]);
+
   const handleButterflyPointerDown = useCallback(
     (e: React.PointerEvent<HTMLImageElement>, index: number) => {
       e.preventDefault();
@@ -413,6 +666,16 @@ export default function Home() {
     setPhase('highlighted');
   };
 
+  const testimonialsBudget =
+    testimonialsPanelHeight > 0
+      ? testimonialsPanelHeight - testimonialsPeekPx + TESTIMONIALS_BOTTOM_MARGIN
+      : 0;
+  const showTestimonialsScrollTooltip =
+    canPrimaryHover &&
+    testimonialsSectionHover &&
+    testimonialsBudget > 0 &&
+    testimonialsProgress < testimonialsBudget - 0.5;
+
   return (
     <>
       {/* ── Hero page ── white background with dot grid ── */}
@@ -425,7 +688,9 @@ export default function Home() {
           background: '#ffffff',
           backgroundImage: 'radial-gradient(circle, #F0F0F0 1px, transparent 1px)',
           backgroundSize: '8px 8px',
-          overflow: 'hidden',
+          /* Visible horizontally so butterflies aren’t clipped (look “shrunk”) when dragged near edges */
+          overflowX: 'visible',
+          overflowY: 'hidden',
           transition: 'opacity 0.45s ease, visibility 0.45s ease',
           opacity: chatOpen ? 0 : 1,
           visibility: chatOpen ? 'hidden' : 'visible',
@@ -433,8 +698,8 @@ export default function Home() {
         }}
       >
         {/*
-          Single scroll surface (case-studies pattern): butterflies + hero copy move together on
-          overscroll; body scroll stays locked on mobile so the fixed nav does not rubber-band.
+          Scroll surface: on mobile, overflow scroll + inner +1px min-height preserves iOS rubber-band.
+          On desktop (see globals.css .home-hero-scroll) overflow is hidden so there is no micro-scroll.
         */}
         <div
           ref={heroScrollRef}
@@ -443,27 +708,27 @@ export default function Home() {
             position: 'absolute',
             inset: 0,
             zIndex: 2,
-            overflowY: 'scroll',
-            overflowX: 'hidden',
-            WebkitOverflowScrolling: 'touch',
           }}
         >
           <div
+            className="home-hero-scroll-inner"
             style={{
               position: 'relative',
-              /* min-height + height so % children resolve; +1px preserves iOS edge overscroll */
-              minHeight: 'calc(100% + 1px)',
               height: '100%',
               width: '100%',
               boxSizing: 'border-box',
+              display: 'flex',
+              flexDirection: 'column',
+              minHeight: 0,
             }}
           >
             <div
               style={{
                 position: 'relative',
                 isolation: 'isolate',
-                /* Must fill scrollport so margin:auto on hero recenters (100% alone failed after scroll split) */
-                minHeight: 'calc(100% + 1px)',
+                flex: '1 1 auto',
+                minHeight: 0,
+                width: '100%',
                 display: 'flex',
                 flexDirection: 'column',
                 alignItems: 'center',
@@ -497,36 +762,62 @@ export default function Home() {
                     : { left: b.style.left, top: b.style.top };
                   const dragging = draggingIndex === i;
                   return (
-                    <img
+                    <div
                       key={i}
-                      src={b.src}
-                      alt=""
-                      aria-hidden="true"
-                      className={showSlam && !dragging ? b.reactClass : undefined}
-                      onPointerDown={e => handleButterflyPointerDown(e, i)}
-                      onPointerMove={e => handleButterflyPointerMove(e, i)}
-                      onPointerUp={e => handleButterflyPointerUp(e, i)}
-                      onPointerCancel={e => handleButterflyPointerCancel(e, i)}
+                      className={`butterfly-float butterfly-float--${i}`}
                       style={{
                         position: 'absolute',
+                        pointerEvents: 'none',
                         zIndex: dragging ? 10 : 1,
-                        pointerEvents: 'auto',
-                        touchAction: 'none',
-                        cursor: dragging ? 'grabbing' : 'grab',
+                        ...posStyle,
                         transition:
                           snapRevertingIndex === i
                             ? 'left 0.26s ease-out, top 0.26s ease-out'
                             : 'none',
-                        width: b.style.width,
-                        ...posStyle,
-                        ...(showSlam && !dragging ? { animationDelay: b.reactDelay } : {}),
+                        ...(dragging ? { animationPlayState: 'paused' as const } : {}),
                       }}
-                    />
+                    >
+                      <img
+                        src={b.src}
+                        alt=""
+                        aria-hidden="true"
+                        className={showSlam ? b.reactClass : undefined}
+                        onPointerDown={e => handleButterflyPointerDown(e, i)}
+                        onPointerMove={e => handleButterflyPointerMove(e, i)}
+                        onPointerUp={e => handleButterflyPointerUp(e, i)}
+                        onPointerCancel={e => handleButterflyPointerCancel(e, i)}
+                        style={{
+                          display: 'block',
+                          /* Preflight’s max-width:100% + shrink-to-fit abs. wrapper squeezed imgs near the right edge */
+                          maxWidth: 'none',
+                          pointerEvents: 'auto',
+                          touchAction: 'none',
+                          cursor: dragging ? 'grabbing' : 'grab',
+                          width: b.style.width,
+                          height: 'auto',
+                          ...(showSlam ? { animationDelay: b.reactDelay } : {}),
+                          ...(dragging ? { animationPlayState: 'paused' as const } : {}),
+                        }}
+                      />
+                    </div>
                   );
                 })}
               </div>
 
-              {/* Headline z2 — above butterflies; pointer-events none so drags pass through gaps */}
+              {/* ── Hero copy — title + subtitle + CTAs; translates up as testimonials approach ── */}
+              <div
+                ref={heroCopyRef}
+                style={{
+                  position: 'relative',
+                  zIndex: 4,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  pointerEvents: 'none',
+                  willChange: 'transform',
+                }}
+              >
+              {/* Headline — above butterflies; pointer-events none so drags pass through gaps */}
               <div
                 style={{
                   position: 'relative',
@@ -560,7 +851,7 @@ export default function Home() {
                       pointerEvents: 'none',
                     }}
                   >
-                    Howdy I&apos;m Bryce
+                    Howdy, I&apos;m Bryce
                   </span>
                 </h1>
               </div>
@@ -636,6 +927,9 @@ export default function Home() {
                   borderRadius: '3px',
                   padding: phase === 'highlighted' ? '0 2px' : '0',
                   transition: 'background-color 0.08s ease',
+                  ...(phase === 'highlighted'
+                    ? { WebkitTextStroke: '0 transparent', paintOrder: 'fill' as const }
+                    : {}),
                 }}
               >
                 {PHRASES[phraseIndex].slice(0, charIndex)}
@@ -741,6 +1035,7 @@ export default function Home() {
 
           </div>
         </div>
+              </div>{/* end heroCopyRef */}
             </div>
           </div>
         </div>
@@ -792,6 +1087,217 @@ export default function Home() {
           disclaimerHeight={0}
         />
       )} */}
+
+      {/* ── Testimonials reveal panel ───────────────────────────────────────
+           position: fixed so it never disrupts the hero layout.
+           translateY is driven by wheel/touch events above; the ResizeObserver
+           sets the initial value before the first paint.
+      ── */}
+      <div
+        ref={testimonialsRef}
+        aria-label="Kind things people have said about me"
+        style={{
+          position: 'fixed',
+          bottom: 0,
+          left: 0,
+          right: 0,
+          zIndex: 2,
+          background: 'transparent',
+          paddingTop: '24px',
+          paddingBottom: '24px',
+          opacity: chatOpen ? 0 : 1,
+          /* Let clicks pass through transparent areas so hero butterflies stay draggable */
+          pointerEvents: 'none',
+          transition: 'opacity 0.45s ease, visibility 0.45s ease',
+          visibility: chatOpen ? 'hidden' : 'visible',
+          willChange: 'transform',
+        }}
+      >
+        {/* Heading + cards — hover shows cursor-following tooltip; hit box is content-width so butterflies beside the block stay draggable */}
+        <div
+          style={{
+            pointerEvents: 'auto',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            width: 'fit-content',
+            maxWidth: '100%',
+            marginLeft: 'auto',
+            marginRight: 'auto',
+            boxSizing: 'border-box',
+          }}
+          onMouseEnter={e => {
+            setTestimonialsSectionHover(true);
+            setTestimonialsTooltipPos({ x: e.clientX, y: e.clientY });
+          }}
+          onMouseMove={e => setTestimonialsTooltipPos({ x: e.clientX, y: e.clientY })}
+          onMouseLeave={() => setTestimonialsSectionHover(false)}
+        >
+          {typeof document !== 'undefined' &&
+            showTestimonialsScrollTooltip &&
+            createPortal(
+              <div
+                role="tooltip"
+                style={{
+                  position: 'fixed',
+                  left: `${testimonialsTooltipPos.x + 14}px`,
+                  top: `${testimonialsTooltipPos.y + 14}px`,
+                  zIndex: 10001,
+                  padding: '6px 12px',
+                  borderRadius: 6,
+                  background: '#89FF12',
+                  border: '2px solid #000000',
+                  fontFamily: 'Inter, sans-serif',
+                  fontSize: '14px',
+                  fontWeight: 600,
+                  lineHeight: '18px',
+                  color: '#141510',
+                  whiteSpace: 'nowrap',
+                  pointerEvents: 'none',
+                  userSelect: 'none',
+                }}
+              >
+                Scroll down!
+              </div>,
+              document.body,
+            )}
+          <h2
+            style={{
+              fontFamily: 'Inter, sans-serif',
+              fontSize: '18px',
+              fontWeight: 600,
+              lineHeight: '28px',
+              color: '#141510',
+              textAlign: 'center',
+              margin: '0 0 16px 0',
+              userSelect: 'none',
+            }}
+          >
+            <span
+              style={{
+                WebkitTextStroke: '4px #ffffff',
+                paintOrder: 'stroke fill',
+              }}
+            >
+              Kind things people have said about me
+            </span>
+          </h2>
+
+          {/* Cards row — wraps to single column on narrow viewports */}
+          <div
+            style={{
+              display: 'flex',
+              gap: '16px',
+              maxWidth: '672px',
+              margin: '0 auto',
+              paddingLeft: '16px',
+              paddingRight: '16px',
+              boxSizing: 'border-box',
+              flexWrap: 'wrap',
+            }}
+          >
+          {TESTIMONIALS.map(({ name, role, quote, initials, avatarSrc }) => (
+            <div
+              key={name}
+              style={{
+                flex: '1 1 280px',
+                background: '#ffffff',
+                border: '1.5px solid rgba(0, 0, 0, 0.10)',
+                borderRadius: '16px',
+                padding: '20px',
+                boxSizing: 'border-box',
+              }}
+            >
+              {/* Avatar + name + role — measured for initial peek height */}
+              <div
+                className="testimonial-card-header"
+                style={{ display: 'flex', alignItems: 'flex-end', gap: '12px', marginBottom: '16px' }}
+              >
+                {avatarSrc ? (
+                  <img
+                    className="testimonial-avatar"
+                    src={avatarSrc}
+                    alt={name}
+                    style={{
+                      width: '48px',
+                      height: '48px',
+                      borderRadius: '50%',
+                      objectFit: 'cover',
+                      border: '1.5px solid rgba(0, 0, 0, 0.10)',
+                      flexShrink: 0,
+                    }}
+                  />
+                ) : (
+                  <div
+                    className="testimonial-avatar-placeholder"
+                    aria-hidden="true"
+                    style={{
+                      width: '48px',
+                      height: '48px',
+                      borderRadius: '50%',
+                      background: '#f0f0ef',
+                      border: '1.5px solid rgba(0, 0, 0, 0.10)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      flexShrink: 0,
+                      fontFamily: 'Inter, sans-serif',
+                      fontWeight: 700,
+                      fontSize: '13px',
+                      color: '#6b6b6b',
+                      userSelect: 'none',
+                    }}
+                  >
+                    {initials}
+                  </div>
+                )}
+                <div>
+                  <div
+                    className="testimonial-name"
+                    style={{
+                      fontFamily: 'Inter, sans-serif',
+                      fontWeight: 700,
+                      fontSize: '16px',
+                      lineHeight: '22px',
+                      color: '#141510',
+                    }}
+                  >
+                    {name}
+                  </div>
+                  <div
+                    className="testimonial-role"
+                    style={{
+                      fontFamily: 'Inter, sans-serif',
+                      fontWeight: 400,
+                      fontSize: '14px',
+                      lineHeight: '20px',
+                      fontStyle: 'italic',
+                      color: '#6b6b6b',
+                    }}
+                  >
+                    {role}
+                  </div>
+                </div>
+              </div>
+
+              {/* Testimonial quote */}
+              <p
+                style={{
+                  fontFamily: 'Inter, sans-serif',
+                  fontWeight: 400,
+                  fontSize: '14px',
+                  lineHeight: '22px',
+                  color: '#141510',
+                  margin: 0,
+                }}
+              >
+                {quote}
+              </p>
+            </div>
+          ))}
+          </div>
+        </div>
+      </div>
     </>
   );
 }

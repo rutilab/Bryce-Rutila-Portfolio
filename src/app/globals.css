@@ -138,13 +138,34 @@ body {
   border-bottom-left-radius: 0;
 }
 
-/* Home hero scroll layer: WebKit rubber-band; +1px inner min-height can show a sliver of scrollbar */
+/* Home hero scroll layer
+   - Desktop (web): overflow-y hidden + min-height 100% — avoids ~1px scroll slack so
+     butterflies/hero don’t drift after testimonials settle (wheel no longer moves this layer).
+   - overflow-x visible so dragged butterflies aren’t clipped at the viewport sides (was read as “shrinking”).
+   - Mobile (≤767px): scroll + inner min-height calc(100% + 1px) keeps iOS rubber-band. */
 .home-hero-scroll {
+  overflow-x: visible;
+  overflow-y: hidden;
   scrollbar-width: none;
   -ms-overflow-style: none;
 }
+@media (max-width: 767px) {
+  .home-hero-scroll {
+    overflow-y: scroll;
+    -webkit-overflow-scrolling: touch;
+  }
+}
 .home-hero-scroll::-webkit-scrollbar {
   display: none;
+}
+
+.home-hero-scroll-inner {
+  min-height: 100%;
+}
+@media (max-width: 767px) {
+  .home-hero-scroll-inner {
+    min-height: calc(100% + 1px);
+  }
 }
 
 /* ── Subtitle slam — fires once when the final phrase locks in ── */
@@ -240,8 +261,54 @@ body {
   animation: butterfly-react-right 1150ms ease-out both;
 }
 
+/* Subtle idle float — per-index classes so React re-renders don’t reset inline `animation` */
+@keyframes butterfly-float {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+  50% {
+    transform: translate3d(0, 11px, 0);
+  }
+}
 
-/* Cursor blink — used by the landing page subtitle typewriter */
+.butterfly-float--0 {
+  animation: butterfly-float 6.4s cubic-bezier(0.42, 0, 0.58, 1) infinite;
+  animation-delay: -0.35s;
+}
+.butterfly-float--1 {
+  animation: butterfly-float 7.4s cubic-bezier(0.42, 0, 0.58, 1) infinite;
+  animation-delay: -2.9s;
+}
+.butterfly-float--2 {
+  animation: butterfly-float 5.5s cubic-bezier(0.42, 0, 0.58, 1) infinite;
+  animation-delay: -3.8s;
+}
+.butterfly-float--3 {
+  animation: butterfly-float 7.6s cubic-bezier(0.42, 0, 0.58, 1) infinite;
+  animation-delay: -1.6s;
+}
+.butterfly-float--4 {
+  animation: butterfly-float 6.1s cubic-bezier(0.42, 0, 0.58, 1) infinite;
+  animation-delay: -4.8s;
+}
+.butterfly-float--5 {
+  animation: butterfly-float 7s cubic-bezier(0.42, 0, 0.58, 1) infinite;
+  animation-delay: -0.8s;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .butterfly-float--0,
+  .butterfly-float--1,
+  .butterfly-float--2,
+  .butterfly-float--3,
+  .butterfly-float--4,
+  .butterfly-float--5 {
+    animation: none !important;
+  }
+}
+
+/* Cursor blink — used for the landing page subtitle typewriter */
 @keyframes cursor-blink {
   0%, 100% { opacity: 1; }
   50%       { opacity: 0; }
