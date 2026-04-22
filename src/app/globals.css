@@ -4,8 +4,8 @@
 @import "tailwindcss";
 
 :root {
-  --background: #0a0a0a;
-  --foreground: #ffffff;
+  --background: #ffffff;
+  --foreground: #141510;
   --font-sf-pro: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Helvetica Neue', sans-serif;
 }
 
@@ -13,6 +13,7 @@
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --font-sans: var(--font-sf-pro);
+  --font-inter: var(--font-inter);
 }
 
 body {
@@ -21,6 +22,13 @@ body {
   font-family: var(--font-sf-pro);
   min-height: 100vh;
   overflow-x: hidden;
+}
+
+/* Restore pointer cursor on interactive elements (home page sets cursor:none on body) */
+a, button, [role="button"], summary, select,
+input[type="submit"], input[type="button"], input[type="reset"],
+label[for] {
+  cursor: pointer;
 }
 
 /* Final designs device mockup grid — 1 col on mobile, 1fr 2fr on md+ */
@@ -194,19 +202,13 @@ body {
   /* SLAM — hard overshoot below baseline */
   51% {
     transform: translateY(11px) scale(0.93);
-    text-shadow:
-      0  5px 0 #89FF12,
-      0 10px 0 #FF9C12,
-      0 15px 0 #FF12FB,
-      0  0 28px rgba(137, 255,  18, 0.50);
+    text-shadow: none;
     animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1); /* hard stop / spring out */
   }
   /* First bounce */
   64% {
     transform: translateY(-7px) scale(1.03);
-    text-shadow:
-      0 3px 0 rgba(137, 255,  18, 0.45),
-      0 5px 0 rgba(255, 156,  18, 0.25);
+    text-shadow: none;
     animation-timing-function: ease-in-out;
   }
   /* Second bounce (smaller) */

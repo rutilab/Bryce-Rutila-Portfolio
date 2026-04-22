@@ -12,9 +12,6 @@ const navItems = [
   { href: '/about', label: 'About Me' },
 ];
 
-/** Matches home hero (`page.tsx`); 32×32 asset at `public/cursors/butterfly-cursor.png`. */
-const BUTTERFLY_CURSOR = `url('/cursors/butterfly-cursor.png') 0 0, auto`;
-
 export function Navigation() {
   const pathname = usePathname();
   const canPrimaryHover = useCanPrimaryHover();
@@ -59,7 +56,7 @@ export function Navigation() {
         'fixed top-6 left-1/2 -translate-x-1/2 z-[200] transition-all duration-300',
         visible ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-full pointer-events-none'
       )}
-      style={pathname === '/' ? { cursor: BUTTERFLY_CURSOR } : undefined}
+      style={undefined}
     >
       <div className="flex items-center gap-1" style={navStyle}>
         {navItems.map((item) => {

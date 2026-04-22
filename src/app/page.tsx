@@ -39,15 +39,16 @@ const HERO_SUBTITLE_TEXT_STYLE: CSSProperties = {
 };
 
 // ── Spacing constants ──────────────────────────────────────────────────────
-/** Positions hero copy below the fixed nav pill. */
-const HOME_HERO_TOP_PAD = 'calc(24px + 48px + 24px - 40px + env(safe-area-inset-top, 0px))';
-const HOME_HERO_BOTTOM_PAD = 'calc(24px + env(safe-area-inset-bottom, 0px))';
+// Equal top/bottom padding centres content in the viewport below the nav
+const HOME_HERO_TOP_PAD    = 'calc(24px + 48px + 24px + env(safe-area-inset-top, 0px))';
+const HOME_HERO_BOTTOM_PAD = 'calc(24px + 48px + 24px + env(safe-area-inset-bottom, 0px))';
 
 // ── Component ──────────────────────────────────────────────────────────────
 export default function Home() {
   // ── "View my work" hover colour cycling ───────────────────────────────
   const VMW_HOVER_COLORS = ['#89FF12', '#FF9C12', '#FF12FB'] as const;
-  const [vmwColorIndex, setVmwColorIndex] = useState(0);
+  const [vmwColorIndex,   setVmwColorIndex]   = useState(0);
+  const [rippleTrigger,   setRippleTrigger]   = useState(0);
   const canPrimaryHover = useCanPrimaryHover();
 
   // ── Typewriter state ───────────────────────────────────────────────────
@@ -56,6 +57,18 @@ export default function Home() {
   const [phase,       setPhase]       = useState<AnimPhase>('typing');
   const slamDoneRef  = useRef(false);
   const [showSlam,   setShowSlam]     = useState(false);
+
+  // ── Body styles — white bg, hide system cursor on this page ──────────
+  useEffect(() => {
+    document.body.style.background = '#ffffff';
+    document.body.style.color      = '#141510';
+    document.body.style.cursor     = 'none';
+    return () => {
+      document.body.style.background = '';
+      document.body.style.color      = '';
+      document.body.style.cursor     = '';
+    };
+  }, []);
 
   // ── Subtitle min-height (prevents CTA jump as phrases change) ─────────
   const heroContentRef          = useRef<HTMLDivElement>(null);
@@ -124,6 +137,7 @@ export default function Home() {
   // Slam unlock — separate effect so typing cleanup can't cancel it
   useEffect(() => {
     if (!showSlam) return;
+    setRippleTrigger(n => n + 1);   // fire canvas ripple wave
     const t = setTimeout(() => {
       slamDoneRef.current = true;
       setShowSlam(false);
@@ -140,7 +154,7 @@ export default function Home() {
   // ── Render ─────────────────────────────────────────────────────────────
   return (
     <>
-      <HalftoneCanvas />
+      <HalftoneCanvas rippleTrigger={rippleTrigger} />
 
       {/* Hero copy — centred over canvas */}
       <div

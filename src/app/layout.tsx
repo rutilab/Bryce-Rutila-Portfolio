@@ -1,6 +1,6 @@
 import type { Metadata, Viewport } from 'next';
 import { Suspense } from 'react';
-import { Geist, Geist_Mono } from 'next/font/google';
+import { Geist, Geist_Mono, Inter } from 'next/font/google';
 import { AnalyticsProvider } from '@/components/analytics/AnalyticsProvider';
 import { Navigation, BackgroundImage } from '@/components/layout';
 import './globals.css';
@@ -15,6 +15,14 @@ const geistMono = Geist_Mono({
   subsets: ['latin'],
 });
 
+// Loaded via next/font to avoid FOUT — CSS @import loads Inter too late
+const inter = Inter({
+  variable: '--font-inter',
+  subsets: ['latin'],
+  weight: ['400', '600', '700'],
+  display: 'block',
+});
+
 /** Default Safari / mobile browser UI tint; case-studies layout overrides to white. */
 export const viewport: Viewport = {
   themeColor: '#0a0a0a',
@@ -25,7 +33,6 @@ function resolveSiteUrl(): string {
   const fromEnv = process.env.NEXT_PUBLIC_SITE_URL?.trim();
   if (fromEnv) {
     try {
-      // Validate; invalid values would throw at metadataBase
       new URL(fromEnv);
       return fromEnv.replace(/\/$/, '');
     } catch {
@@ -75,7 +82,8 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} ${inter.variable} antialiased`}
+        style={{ background: '#ffffff', color: '#141510' }}
       >
         <BackgroundImage />
         <Navigation />
