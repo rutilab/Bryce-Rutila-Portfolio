@@ -12,7 +12,7 @@ export function BackgroundImage({ className }: BackgroundImageProps) {
   const pathname = usePathname();
   const { backgroundImage, period } = useTimeOfDay();
 
-  if (pathname.startsWith('/admin')) return null;
+  if (pathname === '/' || pathname.startsWith('/admin')) return null;
 
   return (
     <div className={cn('background-container', className)}>
