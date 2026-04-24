@@ -39,19 +39,23 @@ const WAVE_DURATION   = 2200;
 
 // ── Butterfly configs (Figma 1440×1024 frame) ─────────────────────────────
 // tf = top fraction — used for height-based visibility culling
-const CONFIGS = [
-  { url: '/butterflies/fly-1.svg', lf: 15 / 1440,   tf: -0.020, wf: 229.7 / 1440, ar: 223 / 191 },
-  { url: '/butterflies/fly-2.svg', lf: 8 / 1440,    tf:  0.352, wf: 235.8 / 1440, ar: 226 / 184 },
-  { url: '/butterflies/fly-3.svg', lf: -49 / 1440,  tf:  0.820, wf: 166.8 / 1440, ar: 217 / 206 },
+// rot = clockwise rotation in degrees applied when sampling the SVG
+type BfConfig = { url: string; lf: number; tf: number; wf: number; ar: number; rot?: number };
+
+const CONFIGS: BfConfig[] = [
+  { url: '/butterflies/fly-1.svg', lf:  160 / 1440, tf: -0.009, wf: 229.7 / 1440, ar: 223 / 191, rot: 15 },
+  { url: '/butterflies/fly-2.svg', lf:    8 / 1440, tf:  0.352, wf: 235.8 / 1440, ar: 226 / 184 },
+  { url: '/butterflies/fly-3.svg', lf:   24 / 1440, tf:  0.778, wf: 166.8 / 1440, ar: 217 / 206 },
   { url: '/butterflies/fly-4.svg', lf: 1009 / 1440, tf: -0.033, wf: 223.8 / 1440, ar: 212 / 220 },
-  { url: '/butterflies/fly-5.svg', lf: 1308 / 1440, tf:  0.480, wf: 231.4 / 1440, ar: 222 / 200 },
+  { url: '/butterflies/fly-5.svg', lf: 1213 / 1440, tf:  0.366, wf: 231.4 / 1440, ar: 222 / 200 },
   { url: '/butterflies/fly-6.svg', lf: 1092 / 1440, tf:  0.764, wf: 209 / 1440,   ar: 214 / 222 },
-] as const;
+  { url: '/butterflies/fly-6.svg', lf:  570 / 1440, tf:  0.660, wf: 229 / 1440,   ar: 214 / 222, rot: 75 },
+];
 
 // Which butterflies to show at different viewport heights
 function activeConfigs(h: number) {
   if (h >= 700) return CONFIGS;
-  if (h >= 500) return CONFIGS.filter(c => c.tf < 0.6);  // drop fly-3 & fly-6
+  if (h >= 500) return CONFIGS.filter(c => c.tf < 0.6);  // drop fly-3, fly-6, fly-7 hidden below
   return CONFIGS.filter(c => c.tf < 0.1);                // top pair only
 }
 
@@ -107,22 +111,27 @@ async function buildAlphaMap(
   const map  = new Uint8Array(cols * rows);
   const cfgs = activeConfigs(h);
 
-  await Promise.all(cfgs.map(({ url, lf, tf, wf, ar }) =>
+  await Promise.all(cfgs.map(({ url, lf, tf, wf, ar, rot = 0 }) =>
     new Promise<void>((resolve) => {
       const img  = new Image();
       img.onload = () => {
-        const bW = Math.round(wf * w), bH = Math.round(bW * ar);
-        const bX = Math.round(lf * w), bY = Math.round(tf * h);
-        const oc = document.createElement('canvas');
+        const bW  = Math.round(wf * w), bH = Math.round(bW * ar);
+        const bX  = Math.round(lf * w), bY = Math.round(tf * h);
+        const oc  = document.createElement('canvas');
         oc.width = bW; oc.height = bH;
         const ctx2 = oc.getContext('2d');
         if (!ctx2) { resolve(); return; }
         ctx2.drawImage(img, 0, 0, bW, bH);
-        const id = ctx2.getImageData(0, 0, bW, bH);
+        const id   = ctx2.getImageData(0, 0, bW, bH);
+        const cosR = Math.cos(rot * Math.PI / 180);
+        const sinR = Math.sin(rot * Math.PI / 180);
+        const cx   = bX + bW / 2, cy = bY + bH / 2;
         for (let r = 0; r < rows; r++) {
           for (let c = 0; c < cols; c++) {
-            const lx = Math.round(c * GRID + GRID / 2 - bX);
-            const ly = Math.round(r * GRID + GRID / 2 - bY);
+            const dx = c * GRID + GRID / 2 - cx;
+            const dy = r * GRID + GRID / 2 - cy;
+            const lx = Math.round(dx * cosR + dy * sinR + bW / 2);
+            const ly = Math.round(-dx * sinR + dy * cosR + bH / 2);
             if (lx >= 0 && lx < bW && ly >= 0 && ly < bH) {
               const alpha = id.data[(ly * bW + lx) * 4 + 3];
               if (alpha > 10) { const i = r * cols + c; map[i] = Math.max(map[i], alpha); }
