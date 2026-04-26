@@ -43,20 +43,17 @@ const WAVE_DURATION   = 2200;
 type BfConfig = { url: string; lf: number; tf: number; wf: number; ar: number; rot?: number };
 
 const CONFIGS: BfConfig[] = [
-  { url: '/butterflies/fly-1.svg', lf:  160 / 1440, tf: -0.009, wf: 229.7 / 1440, ar: 223 / 191, rot: 15 },
-  { url: '/butterflies/fly-2.svg', lf:    8 / 1440, tf:  0.352, wf: 235.8 / 1440, ar: 226 / 184 },
-  { url: '/butterflies/fly-3.svg', lf:   24 / 1440, tf:  0.778, wf: 166.8 / 1440, ar: 217 / 206 },
-  { url: '/butterflies/fly-4.svg', lf: 1009 / 1440, tf: -0.033, wf: 223.8 / 1440, ar: 212 / 220 },
-  { url: '/butterflies/fly-5.svg', lf: 1213 / 1440, tf:  0.366, wf: 231.4 / 1440, ar: 222 / 200 },
-  { url: '/butterflies/fly-6.svg', lf: 1092 / 1440, tf:  0.764, wf: 209 / 1440,   ar: 214 / 222 },
-  { url: '/butterflies/fly-6.svg', lf:  570 / 1440, tf:  0.660, wf: 229 / 1440,   ar: 214 / 222, rot: 75 },
+  { url: '/butterflies/new-bf-tl.svg', lf:  179.7 / 1440, tf: 122 / 1024, wf: 218 / 1440, ar: 266 / 273 },
+  { url: '/butterflies/new-bf-tr.svg', lf: 1130   / 1440, tf:  65 / 1024, wf: 267 / 1440, ar: 320 / 330 },
+  { url: '/butterflies/new-bf-bl.svg', lf:   94.5 / 1440, tf: 707 / 1024, wf: 277 / 1440, ar: 317 / 329 },
+  { url: '/butterflies/new-bf-br.svg', lf: 1042   / 1440, tf: 805 / 1024, wf: 218 / 1440, ar: 290 / 294 },
 ];
 
 // Which butterflies to show at different viewport heights
 function activeConfigs(h: number) {
   if (h >= 700) return CONFIGS;
-  if (h >= 500) return CONFIGS.filter(c => c.tf < 0.6);  // drop fly-3, fly-6, fly-7 hidden below
-  return CONFIGS.filter(c => c.tf < 0.1);                // top pair only
+  if (h >= 500) return CONFIGS.filter(c => c.tf < 0.6);  // top pair only
+  return CONFIGS.filter(c => c.tf < 0.1);                // top-right only
 }
 
 // ── Dot grid ───────────────────────────────────────────────────────────────
