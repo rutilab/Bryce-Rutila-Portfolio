@@ -1,9 +1,15 @@
-import type { NextConfig } from "next";
+import type { NextConfig } from 'next';
+import path from 'path';
+import os from 'os';
+
+// Keep build output under ~/.cache — Desktop/iCloud folders break webpack atomic renames
+// (ENOENT on *.pack.gz_, missing middleware-manifest.json).
+// A node_modules symlink at the cache root lets Node.js find react/next from server bundles.
+const cacheRoot = path.join(os.homedir(), '.cache', 'bar9000-next');
+const distDir = path.relative(process.cwd(), path.join(cacheRoot, 'dist'));
 
 const nextConfig: NextConfig = {
-  // Use a local (non-FUSE-mounted) directory for the build output
-  // This avoids EPERM errors from macOS FUSE filesystem locking
-  distDir: '.next',
+  distDir,
   async redirects() {
     return [
       {
