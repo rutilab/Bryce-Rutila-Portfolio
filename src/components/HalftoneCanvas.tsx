@@ -58,11 +58,18 @@ const WAVE_DURATION   = 2200;
 // ── Butterfly configs ─────────────────────────────────────────────────────
 type BfConfig = { url: string; lf: number; tf: number; wf: number; ar: number; rot?: number };
 
+// Positions mirror the Landing Page frame in Figma (1440×1024 design canvas).
+// The SVGs are exported from Figma with rotation already baked into the path
+// geometry, so each is rendered at its natural (rotated-bbox) dimensions with
+// no additional rotation applied. ar = svg height / svg width.
 const CONFIGS: BfConfig[] = [
-  { url: '/butterflies/fly-1.svg', lf:  179.7 / 1440, tf: 122 / 1024, wf: 218 / 1440, ar: 223 / 191, rot: 15 },
-  { url: '/butterflies/fly-4.svg', lf: 1130   / 1440, tf:  65 / 1024, wf: 267 / 1440, ar: 212 / 220 },
-  { url: '/butterflies/fly-3.svg', lf:   94.5 / 1440, tf: 707 / 1024, wf: 277 / 1440, ar: 217 / 206 },
-  { url: '/butterflies/fly-6.svg', lf: 1042   / 1440, tf: 805 / 1024, wf: 218 / 1440, ar: 214 / 222 },
+  { url: '/butterflies/fly-1.svg', lf:   34.5 / 1440, tf:   -6.0 / 1024, wf: 191 / 1440, ar: 190 / 191 },
+  { url: '/butterflies/fly-2.svg', lf:   34.0 / 1440, tf:  362.0 / 1024, wf: 184 / 1440, ar: 226 / 184 },
+  { url: '/butterflies/fly-3.svg', lf:  -33.0 / 1440, tf:  833.0 / 1024, wf: 134 / 1440, ar: 202 / 134 },
+  { url: '/butterflies/fly-4.svg', lf: 1011.0 / 1440, tf:   -7.0 / 1024, wf: 220 / 1440, ar: 158 / 220 },
+  { url: '/butterflies/fly-5.svg', lf: 1351.0 / 1440, tf:  499.0 / 1024, wf: 144 / 1440, ar: 222 / 144 },
+  { url: '/butterflies/fly-6.svg', lf: 1086.0 / 1440, tf:  771.0 / 1024, wf: 222 / 1440, ar: 214 / 222 },
+  { url: '/butterflies/fly-7.svg', lf:  515.5 / 1440, tf:  742.5 / 1024, wf: 289 / 1440, ar: 249 / 289 },
 ];
 
 function activeConfigs(h: number) {
