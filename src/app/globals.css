@@ -1,6 +1,3 @@
-@import url('https://fonts.googleapis.com/css2?family=SF+Pro+Display:wght@400;590;700&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap');
 @import "tailwindcss";
 
 :root {
@@ -485,6 +482,155 @@ label[for] {
 @keyframes v3-tag-in {
   from { opacity: 0; transform: translateY(6px); }
   to { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Landing page layout ─────────────────────────────────────────────────── */
+.howdy-heading {
+  font-family: var(--font-battambang), sans-serif;
+  font-weight: 400;
+  font-size: clamp(40px, 12vw, 100px);
+  line-height: 1.2;
+  letter-spacing: -0.07em;
+  color: #000;
+  margin: 0;
+}
+
+.bryce-svg {
+  display: block;
+  width: min(600px, 85vw);
+  height: auto;
+  user-select: none;
+  margin-top: 8px;
+  margin-bottom: 40px;
+}
+
+.subheader-text {
+  font-family: var(--font-inter), sans-serif;
+  font-weight: 500;
+  font-size: clamp(22px, 3vw, 36px);
+  line-height: 1.22;
+  letter-spacing: -0.06em;
+  color: #141510;
+  margin: 0;
+  max-width: 600px;
+  user-select: none;
+}
+
+/* ── Landing main — 40px padding, content centered at 1704px (1784px total) */
+.landing-main {
+  position: relative;
+  z-index: 1;
+  max-width: 1704px;
+  margin: 0 auto;
+  padding: 152px 40px 80px;
+  box-sizing: border-box;
+}
+@media (max-width: 799px) {
+  .landing-main {
+    padding-left: 24px;
+    padding-right: 24px;
+  }
+}
+
+/* ── Project section wrapper ──────────────────────────────────────────────── */
+.projects-section {
+  max-width: 1704px;
+  margin: 0 auto;
+}
+
+/* ── Four-stage responsive grid layout ───────────────────────────────────── */
+/*                                                                             */
+/* ≥1200px:    2-col grid, card + text SIDE-BY-SIDE within each column        */
+/* 950–1199px: 2-col grid, text BELOW card within each column (wide stacked)  */
+/* 800–949px:  1-col, card + text SIDE-BY-SIDE (single row with text right)   */
+/* ≤799px:     1-col, text BELOW card (single stacked)                         */
+
+.projects-grid {
+  display: grid;
+  gap: 40px;
+  /* ≥950px: 2 columns */
+  grid-template-columns: repeat(2, 1fr);
+}
+@media (max-width: 949px) {
+  .projects-grid {
+    grid-template-columns: 1fr;
+    gap: 32px;
+  }
+}
+
+/* ── Card pair (Link element) ────────────────────────────────────────────── */
+/* ≥1200px: side-by-side (large 2-col layout) */
+.project-card-pair {
+  display: flex;
+  flex-direction: row;
+  gap: 16px;
+  align-items: flex-start;
+  min-width: 0;
+  text-decoration: none;
+  color: inherit;
+}
+/* 950–1199px: stacked within each 2-col column */
+@media (max-width: 1199px) {
+  .project-card-pair {
+    flex-direction: column;
+  }
+}
+/* 800–949px: side-by-side again (single 1-col row) */
+@media (min-width: 800px) and (max-width: 949px) {
+  .project-card-pair {
+    flex-direction: row;
+  }
+}
+/* ≤799px: stacked again */
+@media (max-width: 799px) {
+  .project-card-pair {
+    flex-direction: column;
+  }
+}
+
+/* ── Card outer ─────────────────────────────────────────────────────────── */
+/* Side-by-side (default ≥1200px): clamped width, near-square ratio */
+.project-card-outer {
+  flex: 0 0 clamp(200px, 42%, 324px);
+  aspect-ratio: 324 / 288;
+  border-radius: 16px;
+  border: 1px solid #000;
+  box-shadow: 0px 2px 12px 0px rgba(0, 0, 0, 0.15);
+  padding: 8px;
+  box-sizing: border-box;
+  transition: transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1),
+              box-shadow 0.2s ease,
+              background-color 0.2s ease;
+}
+/* Stacked states: full-width, wider 4:3 ratio */
+@media (max-width: 1199px) {
+  .project-card-outer {
+    flex: 0 0 auto;
+    width: 100%;
+    aspect-ratio: 4 / 3;
+  }
+}
+/* 800–949px: back to side-by-side sizing */
+@media (min-width: 800px) and (max-width: 949px) {
+  .project-card-outer {
+    flex: 0 0 clamp(200px, 42%, 324px);
+    width: auto;
+    aspect-ratio: 324 / 288;
+  }
+}
+/* ≤799px: stacked again */
+@media (max-width: 799px) {
+  .project-card-outer {
+    flex: 0 0 auto;
+    width: 100%;
+    aspect-ratio: 4 / 3;
+  }
+}
+
+/* ── Card text: fills remaining space ──────────────────────────────────── */
+.project-card-text {
+  flex: 1;
+  min-width: 0;
 }
 
 /* Hide scrollbar utility */
