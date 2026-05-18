@@ -41,6 +41,8 @@ const assets = {
   anim10DayCourse: '/case-studies/landing-page/anim-10-day-course.gif',
   animFocusCoach: '/case-studies/landing-page/anim-focus-coach.gif',
   animTeacherInterface: '/case-studies/landing-page/anim-teacher-interface.gif',
+  animTestimonialCards: '/case-studies/landing-page/anim-testimonial-cards.gif',
+  animFinalCta: '/case-studies/landing-page/anim-final-cta.gif',
 };
 
 // ── Text scale ───────────────────────────────────────────────────────────────
@@ -68,7 +70,7 @@ function Section({
   children,
 }: {
   eyebrow?: string;
-  heading: string;
+  heading?: string;
   body?: string;
   children?: ReactNode;
 }) {
@@ -77,9 +79,11 @@ function Section({
       <div className="flex flex-col gap-4">
         <div className="max-w-[720px]">
           {eyebrow && <Eyebrow label={eyebrow} />}
-          <h2 className="text-[22px] md:text-[30px] font-semibold leading-[125%] tracking-[-0.5px] text-[#1a1a1a] mt-4">
-            {heading}
-          </h2>
+          {heading && (
+            <h2 className="text-[22px] md:text-[30px] font-semibold leading-[125%] tracking-[-0.5px] text-[#1a1a1a] mt-4">
+              {heading}
+            </h2>
+          )}
         </div>
         {body && (
           <p className="text-[15px] md:text-[18px] font-normal leading-[180%] text-[#555] max-w-[920px] whitespace-pre-line">
@@ -1052,6 +1056,379 @@ function Divider({ label, id }: { label?: string; id?: string }) {
   );
 }
 
+// ── parseGifDuration: sum frame delays from GIF binary to get exact loop ms ──
+async function parseGifDuration(src: string): Promise<number> {
+  const res = await fetch(src);
+  const buf = await res.arrayBuffer();
+  const d = new Uint8Array(buf);
+  const packed = d[10];
+  const hasGct = (packed >> 7) & 1;
+  const gctBytes = hasGct ? 3 * (1 << ((packed & 7) + 1)) : 0;
+  let i = 13 + gctBytes;
+  let totalMs = 0;
+  while (i < d.length) {
+    if (d[i] === 0x3B) break;
+    if (d[i] === 0x21 && d[i + 1] === 0xF9) {
+      totalMs += (d[i + 4] | (d[i + 5] << 8)) * 10;
+      i += 8;
+    } else if (d[i] === 0x21) {
+      i += 2;
+      while (i < d.length && d[i] !== 0) i += d[i] + 1;
+      i++;
+    } else if (d[i] === 0x2C) {
+      const lct = (d[i + 9] >> 7) & 1;
+      const lctBytes = lct ? 3 * (1 << ((d[i + 9] & 7) + 1)) : 0;
+      i += 10 + lctBytes + 1;
+      while (i < d.length && d[i] !== 0) i += d[i] + 1;
+      i++;
+    } else { i++; }
+  }
+  return Math.max(totalMs, 50);
+}
+
+// ── ImageViewer: manual image carousel — same chrome as AnimationViewer, no GIF logic ──
+function ImageViewer({ items }: { items: { src: string; alt: string; label: string }[] }) {
+  const [current, setCurrent] = useState(0);
+  const item = items[current];
+
+  return (
+    <div>
+      <div
+        className="rounded-[24px] overflow-hidden relative h-[500px] md:h-[380px]"
+        style={{ background: 'rgba(220,232,248,0.45)' }}
+      >
+        <div className="absolute inset-0 flex items-center justify-center p-8">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={item.src}
+            alt={item.alt}
+            className="max-h-full max-w-full w-auto h-auto block"
+          />
+        </div>
+
+        <button
+          type="button"
+          onClick={() => setCurrent(c => c - 1)}
+          style={{
+            visibility: current > 0 ? 'visible' : 'hidden',
+            position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)',
+            width: 32, height: 32, borderRadius: '50%', background: 'white',
+            border: '1px solid rgba(0,0,0,0.08)', boxShadow: '0 1px 4px rgba(0,0,0,0.1)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            color: '#555', cursor: 'pointer', zIndex: 2,
+          }}
+        >
+          <svg width="13" height="13" viewBox="0 0 14 14" fill="none">
+            <path d="M9 11L4 7l5-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </button>
+        <button
+          type="button"
+          onClick={() => setCurrent(c => c + 1)}
+          style={{
+            visibility: current < items.length - 1 ? 'visible' : 'hidden',
+            position: 'absolute', right: 16, top: '50%', transform: 'translateY(-50%)',
+            width: 32, height: 32, borderRadius: '50%', background: 'white',
+            border: '1px solid rgba(0,0,0,0.08)', boxShadow: '0 1px 4px rgba(0,0,0,0.1)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            color: '#555', cursor: 'pointer', zIndex: 2,
+          }}
+        >
+          <svg width="13" height="13" viewBox="0 0 14 14" fill="none">
+            <path d="M5 3l5 4-5 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </button>
+      </div>
+
+      <div className="mt-3 flex flex-col items-center gap-2 px-2">
+        <p className="text-[13px] text-[#999] text-center">{item.label}</p>
+        {items.length > 1 && (
+          <div className="flex items-center gap-1.5">
+            {items.map((_, i) => (
+              <button
+                key={i}
+                type="button"
+                onClick={() => setCurrent(i)}
+                style={{
+                  height: 5, borderRadius: 3,
+                  width: i === current ? 20 : 5,
+                  transition: 'width 0.25s',
+                  background: i === current ? EYEBROW_ICON_COLOR : 'rgba(0,0,0,0.12)',
+                  border: 'none', cursor: 'pointer', padding: 0, flexShrink: 0,
+                }}
+              />
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ── AnimationViewer: one-shot GIF slideshow — parses exact duration, freezes on canvas ──
+function AnimationViewer({
+  items,
+}: {
+  items: { src: string; alt: string; label: string }[];
+}) {
+  const [current, setCurrent] = useState(0);
+  const [phase, setPhase] = useState<'idle' | 'playing' | 'ended'>('idle');
+  const [durations, setDurations] = useState<(number | null)[]>(() => items.map(() => null));
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const imgRef = useRef<HTMLImageElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const durationsRef = useRef<(number | null)[]>(items.map(() => null));
+  const currentRef = useRef(0);
+  const hasStartedRef = useRef(false);
+  const waitingForDurRef = useRef(false);
+  useEffect(() => { durationsRef.current = durations; }, [durations]);
+
+  useEffect(() => {
+    items.forEach((item, idx) => {
+      parseGifDuration(item.src).then(ms => {
+        durationsRef.current[idx] = ms;
+        setDurations(prev => { const n = [...prev]; n[idx] = ms; return n; });
+      }).catch(() => {});
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // If duration arrived after GIF already started playing, start the freeze timer now
+  useEffect(() => {
+    if (!waitingForDurRef.current) return;
+    const dur = durationsRef.current[currentRef.current];
+    if (dur === null) return;
+    waitingForDurRef.current = false;
+    if (timerRef.current) clearTimeout(timerRef.current);
+    timerRef.current = setTimeout(freezeCurrentGif, dur);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [durations]);
+
+  // Start only once, when the component first enters the viewport
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const obs = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting && !hasStartedRef.current) {
+        hasStartedRef.current = true;
+        beginGif(0);
+      }
+    }, { threshold: 0.4 });
+    obs.observe(el);
+    return () => obs.disconnect();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  function freezeCurrentGif() {
+    const img = imgRef.current;
+    const canvas = canvasRef.current;
+    if (img && canvas) {
+      canvas.width = img.naturalWidth || img.offsetWidth;
+      canvas.height = img.naturalHeight || img.offsetHeight;
+      canvas.getContext('2d')?.drawImage(img, 0, 0);
+    }
+    setPhase('ended');
+  }
+
+  // Imperatively controls img.src — never uses React key remounting.
+  // Clearing src to '' then resetting it forces the browser to restart the GIF from frame 1.
+  function beginGif(idx: number) {
+    if (timerRef.current) clearTimeout(timerRef.current);
+    waitingForDurRef.current = false;
+    currentRef.current = idx;
+    const img = imgRef.current;
+    if (!img) return;
+    img.src = '';
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      const imgEl = imgRef.current;
+      if (!imgEl) return;
+      imgEl.src = items[idx].src;
+      setPhase('playing');
+      const dur = durationsRef.current[idx];
+      if (dur !== null) {
+        if (timerRef.current) clearTimeout(timerRef.current);
+        // Fire 150 ms before the loop restarts so drawImage captures the last frame, not frame 1
+        timerRef.current = setTimeout(freezeCurrentGif, dur);
+      } else {
+        waitingForDurRef.current = true;
+      }
+    }));
+  }
+
+  function replay() { beginGif(current); }
+
+  function goTo(idx: number) {
+    if (idx === current) return;
+    setCurrent(idx);
+    beginGif(idx);
+  }
+
+  const item = items[current];
+
+  return (
+    <div ref={containerRef}>
+      <div
+        className="rounded-[24px] overflow-hidden relative h-[500px] md:h-[380px]"
+        style={{ background: 'rgba(220,232,248,0.45)' }}
+      >
+        <div className="absolute inset-0 flex items-center justify-center p-8">
+          {/* img src is controlled imperatively — never via JSX src prop */}
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            ref={imgRef}
+            alt={item.alt}
+            className="max-h-full max-w-full w-auto h-auto block"
+            style={{ display: phase === 'playing' ? 'block' : 'none' }}
+          />
+          <canvas
+            ref={canvasRef}
+            className="max-h-full max-w-full w-auto h-auto block"
+            style={{ display: phase === 'ended' ? 'block' : 'none' }}
+          />
+        </div>
+
+        {phase === 'ended' && (
+          <button
+            type="button"
+            onClick={replay}
+            style={{
+              position: 'absolute', bottom: 12, right: 12, zIndex: 2,
+              display: 'flex', alignItems: 'center', gap: 7,
+              padding: '8px 16px',
+              background: 'rgba(255,255,255,0.95)',
+              border: 'none', borderRadius: 100,
+              cursor: 'pointer',
+              fontSize: 12, fontWeight: 600, color: '#1a1a1a',
+              boxShadow: '0 2px 12px rgba(0,0,0,0.15)',
+            }}
+          >
+            <svg width="13" height="13" viewBox="0 0 14 14" fill="none">
+              <path d="M12 7a5 5 0 1 1-1.4-3.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+              <path d="M10.5 3H12.5V1" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+            Replay
+          </button>
+        )}
+
+        <button
+          type="button"
+          onClick={() => goTo(current - 1)}
+          style={{
+            visibility: current > 0 ? 'visible' : 'hidden',
+            position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)',
+            width: 32, height: 32, borderRadius: '50%', background: 'white',
+            border: '1px solid rgba(0,0,0,0.08)', boxShadow: '0 1px 4px rgba(0,0,0,0.1)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            color: '#555', cursor: 'pointer', zIndex: 2,
+          }}
+        >
+          <svg width="13" height="13" viewBox="0 0 14 14" fill="none">
+            <path d="M9 11L4 7l5-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </button>
+        <button
+          type="button"
+          onClick={() => goTo(current + 1)}
+          style={{
+            visibility: current < items.length - 1 ? 'visible' : 'hidden',
+            position: 'absolute', right: 16, top: '50%', transform: 'translateY(-50%)',
+            width: 32, height: 32, borderRadius: '50%', background: 'white',
+            border: '1px solid rgba(0,0,0,0.08)', boxShadow: '0 1px 4px rgba(0,0,0,0.1)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            color: '#555', cursor: 'pointer', zIndex: 2,
+          }}
+        >
+          <svg width="13" height="13" viewBox="0 0 14 14" fill="none">
+            <path d="M5 3l5 4-5 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </button>
+      </div>
+
+      <div className="mt-3 flex flex-col items-center gap-2 px-2">
+        <p className="text-[13px] text-[#999] text-center">{item.label}</p>
+        {items.length > 1 && (
+          <div className="flex items-center gap-1.5">
+            {items.map((_, i) => (
+              <button
+                key={i}
+                type="button"
+                onClick={() => goTo(i)}
+                style={{
+                  height: 5, borderRadius: 3,
+                  width: i === current ? 20 : 5,
+                  transition: 'width 0.25s',
+                  background: i === current ? EYEBROW_ICON_COLOR : 'rgba(0,0,0,0.12)',
+                  border: 'none', cursor: 'pointer', padding: 0, flexShrink: 0,
+                }}
+              />
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ── FullPagePreview: hover zooms out to show full page; click still opens scrollable lightbox ──
+function FullPagePreview({ src, alt, caption }: { src: string; alt: string; caption?: string }) {
+  const [contained, setContained] = useState(false);
+  const [opacity, setOpacity] = useState(1);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  function transition(toContained: boolean) {
+    if (timerRef.current) clearTimeout(timerRef.current);
+    setOpacity(0);
+    timerRef.current = setTimeout(() => {
+      setContained(toContained);
+      setOpacity(1);
+    }, 140);
+  }
+
+  return (
+    <div
+      className="group"
+      style={{ borderRadius: 12, overflow: 'hidden', height: 500, position: 'relative', cursor: 'zoom-in' }}
+      onMouseEnter={() => transition(true)}
+      onMouseLeave={() => transition(false)}
+    >
+      <ExpandableImage
+        src={src}
+        alt={alt}
+        style={{
+          width: '100%',
+          height: '100%',
+          objectFit: contained ? 'contain' : 'cover',
+          objectPosition: 'top',
+          display: 'block',
+          opacity,
+          transition: 'opacity 0.14s ease',
+        }}
+        scrollable
+        caption={caption}
+      />
+      {/* Click affordance tag — visible on hover only */}
+      <div
+        className="pointer-events-none opacity-0 transition-opacity duration-200 group-hover:opacity-100"
+        style={{
+          position: 'absolute', bottom: 12, left: 12,
+          background: 'rgba(0,0,0,0.62)', backdropFilter: 'blur(8px)',
+          color: 'white', fontSize: 12, fontWeight: 500, letterSpacing: '0.02em',
+          padding: '5px 12px', borderRadius: 20,
+          display: 'flex', alignItems: 'center', gap: 6,
+          whiteSpace: 'nowrap',
+        }}
+      >
+        <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+          <circle cx="5" cy="5" r="3.5" stroke="white" strokeWidth="1.3"/>
+          <path d="M7.5 7.5l2.5 2.5" stroke="white" strokeWidth="1.3" strokeLinecap="round"/>
+        </svg>
+        View full landing page design
+      </div>
+    </div>
+  );
+}
+
 // ── Page ──────────────────────────────────────────────────────────────────────
 export default function LandingPageCaseStudy() {
   return (
@@ -1082,7 +1459,7 @@ export default function LandingPageCaseStudy() {
 
           {/* Description */}
           <p className="text-[15px] md:text-[18px] font-normal leading-[170%] text-[#555] max-w-[800px] mb-10">
-            I led the redesign of Finding Focus&apos;s landing page, shifting its messaging towards the audience most responsible for bringing the product into classrooms: teachers. My goal was to make Finding Focus feel clearer, more credible, and more worth signing up for.
+            Redesigning Finding Focus&apos;s landing page to make Finding Focus feel clearer, more credible, and more worth signing up for.
           </p>
 
           {/* Hero image — new design */}
@@ -1134,36 +1511,11 @@ export default function LandingPageCaseStudy() {
             subcaption="Click the image above to view the full landing page design"
           >
             <div className="p-6 sm:p-10">
-              <div
-                className="group"
-                style={{ borderRadius: 12, overflow: 'hidden', height: 500, position: 'relative', cursor: 'zoom-in' }}
-              >
-                <ExpandableImage
-                  src={assets.oldFullPage}
-                  alt="Original Finding Focus landing page — full page screenshot"
-                  style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'top', display: 'block' }}
-                  scrollable
-                  caption="The original landing page — a student-first design that wasn't speaking to our primary audience"
-                />
-                {/* Click affordance tag — visible on hover only */}
-                <div
-                  className="pointer-events-none opacity-0 transition-opacity duration-200 group-hover:opacity-100"
-                  style={{
-                    position: 'absolute', bottom: 12, left: 12,
-                    background: 'rgba(0,0,0,0.62)', backdropFilter: 'blur(8px)',
-                    color: 'white', fontSize: 12, fontWeight: 500, letterSpacing: '0.02em',
-                    padding: '5px 12px', borderRadius: 20,
-                    display: 'flex', alignItems: 'center', gap: 6,
-                    whiteSpace: 'nowrap',
-                  }}
-                >
-                  <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
-                    <circle cx="5" cy="5" r="3.5" stroke="white" strokeWidth="1.3"/>
-                    <path d="M7.5 7.5l2.5 2.5" stroke="white" strokeWidth="1.3" strokeLinecap="round"/>
-                  </svg>
-                  View full landing page design
-                </div>
-              </div>
+              <FullPagePreview
+                src={assets.oldFullPage}
+                alt="Original Finding Focus landing page — full page screenshot"
+                caption="The original landing page — a student-first design that wasn't speaking to our primary audience"
+              />
             </div>
           </VisualCard>
 
@@ -1181,7 +1533,7 @@ export default function LandingPageCaseStudy() {
                       Align With Audience
                     </p>
                     <p className="text-[15px] font-normal leading-[175%] text-[#555]">
-                      Update the landing page to speak to Teachers since they are the ones who actually drive adoption of Finding Focus — not students.
+                      Update the landing page to speak directly to teachers since they are the user group responsible for driving adoption of Finding Focus.
                     </p>
                   </div>
                 </div>
@@ -1192,7 +1544,7 @@ export default function LandingPageCaseStudy() {
                       Update Visual Design
                     </p>
                     <p className="text-[15px] font-normal leading-[175%] text-[#555]">
-                      Modernize the design of the landing page to help make a good first impression and to help communicate that the product they are signing up for is polished.
+                      Modernize the design of the landing page to help make a good first impression and to communicate the quality and maturity of the product experience.
                     </p>
                   </div>
                 </div>
@@ -1352,13 +1704,13 @@ One activity we did as a team to help answer these questions was to imagine ours
               heading="I wanted trust signals to appear before teachers had to go looking for them."
               body="I placed credibility signals directly below the hero so teachers could quickly see Finding Focus&apos;s legitimacy. By mentioning the university backing, educator involvement, and US DOE funding - the page is able to build trust early instead of making users question the legitimacy or search for it later."
             />
-            <VisualCard caption="Trust signals placed early: university backing, educator involvement, and US DOE funding">
+            <VisualCard caption="Three trust signals along with custom icons I created to add visual intrigue">
               <div className="p-4 sm:p-8">
                 <ExpandableImage
                   src={assets.socialProofStrip}
                   alt="Why Teachers Choose Finding Focus — social proof strip"
                   style={{ width: '100%', height: 'auto', display: 'block', borderRadius: 12 }}
-                  caption="Trust signals placed early: university backing, educator involvement, and US DOE funding"
+                  caption="Three trust signals along with custom icons I created to add visual intrigue"
                 />
               </div>
             </VisualCard>
@@ -1373,29 +1725,11 @@ One activity we did as a team to help answer these questions was to imagine ours
               heading="Teachers needed to quickly understand what Finding Focus actually includes."
               body="One of the biggest problems with the original landing page was that it described Finding Focus without really going over the full product offering. I decided to show off the different offerings Finding Focus has by creating abstracted versions of the interface. These assets helped make the product easier to understand at a glance by showing the core parts of the platform in a way that felt clear, cohesive with the rest of the page, and easy to scan."
           />
-          <IdeationViewer
-            imageScaleMultiplier={1.2}
-            items={[
-            {
-              src: assets.tenDayCourse,
-              alt: '10-Day Course section — stacked 3D card design',
-              label: '10-day course',
-              caption: '',
-            },
-            {
-              src: assets.focusCoach,
-              alt: 'Focus Coach section — layered UI on teal gradient',
-              label: 'Focus coach',
-              caption: '',
-            },
-            {
-              src: assets.teacherInterface,
-              alt: 'Teacher interface section — bar graph on purple gradient',
-              label: 'Teacher interface',
-              caption: '',
-            },
-          ]}
-          />
+          <ImageViewer items={[
+            { src: assets.tenDayCourse,      alt: '10-Day Course section — stacked 3D card design',          label: '10-day course' },
+            { src: assets.focusCoach,        alt: 'Focus Coach section — layered UI on teal gradient',        label: 'Focus coach' },
+            { src: assets.teacherInterface,  alt: 'Teacher interface section — bar graph on purple gradient', label: 'Teacher interface' },
+          ]} />
         </div>
       </section>
 
@@ -1407,12 +1741,13 @@ One activity we did as a team to help answer these questions was to imagine ours
             heading="Finding Focus’s research is a genuine differentiator. The page needed to show it off."
             body="Finding Focus is grounded in research, and we really wanted to highlight that. Creating a research section helped us surface our measured outcomes in a way that demonstrate our value and would be relevant to teachers."
           />
-          <VisualCard>
+          <VisualCard caption="I designed glassmorphic cards to show off Finding Focus's most impressive outcomes">
             <div className="p-4 sm:p-8">
               <ExpandableImage
                 src={assets.researchSection}
                 alt="Backed by rigorous research section"
                 style={{ width: '100%', height: 'auto', display: 'block', borderRadius: 12 }}
+                caption="I designed glassmorphic cards to show off Finding Focus's most impressive outcomes"
               />
             </div>
           </VisualCard>
@@ -1508,43 +1843,18 @@ One activity we did as a team to help answer these questions was to imagine ours
         <div className="flex flex-col gap-10">
           <Section
             eyebrow="Full Design"
-            heading="Here’s the full landing page, shown as one continuous experience."
-            body="The complete landing page — all sections, from hero to footer."
+            heading="The full landing page came together to form one cohesive narrative."
           />
           <VisualCard
             caption="The complete landing page — all sections, from hero to footer."
             subcaption="Click the image above to view the full landing page design"
           >
             <div className="p-6 sm:p-10">
-              <div
-                className="group"
-                style={{ borderRadius: 12, overflow: 'hidden', height: 500, position: 'relative', cursor: 'zoom-in' }}
-              >
-                <ExpandableImage
-                  src={assets.newFullPage}
-                  alt="Redesigned Finding Focus landing page — full page screenshot"
-                  style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'top', display: 'block' }}
-                  scrollable
-                  caption="The complete landing page — all sections, from hero to footer."
-                />
-                <div
-                  className="pointer-events-none opacity-0 transition-opacity duration-200 group-hover:opacity-100"
-                  style={{
-                    position: 'absolute', bottom: 12, left: 12,
-                    background: 'rgba(0,0,0,0.62)', backdropFilter: 'blur(8px)',
-                    color: 'white', fontSize: 12, fontWeight: 500, letterSpacing: '0.02em',
-                    padding: '5px 12px', borderRadius: 20,
-                    display: 'flex', alignItems: 'center', gap: 6,
-                    whiteSpace: 'nowrap',
-                  }}
-                >
-                  <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
-                    <circle cx="5" cy="5" r="3.5" stroke="white" strokeWidth="1.3"/>
-                    <path d="M7.5 7.5l2.5 2.5" stroke="white" strokeWidth="1.3" strokeLinecap="round"/>
-                  </svg>
-                  View full landing page design
-                </div>
-              </div>
+              <FullPagePreview
+                src={assets.newFullPage}
+                alt="Redesigned Finding Focus landing page — full page screenshot"
+                caption="The complete landing page — all sections, from hero to footer."
+              />
             </div>
           </VisualCard>
         </div>
@@ -1556,47 +1866,28 @@ One activity we did as a team to help answer these questions was to imagine ours
       <section className="max-w-[1200px] mx-auto px-5 sm:px-10 md:px-20 pb-14 md:pb-28">
         <div className="flex flex-col gap-12">
           <Section
-            eyebrow="Context"
             heading="Motion helped bring the page to life and add a bit of playfulness."
-            body="Animating different assets gave me another way to make the page feel more engaging and delightful. Rather than using motion everywhere, I focused on a few places where it could support the content, improve the experience, or create a strong brand moment."
+            body="Animating different assets provided an extra opportunity to make the page feel more engaging and delightful. Rather than using motion everywhere, I focused on a few places where it could support the content, improve the experience, & create a strong brand moment."
           />
 
-          <Section
-            eyebrow="Product Highlights"
-            heading="Animations took the product highlights to another level."
-            body="The product overview section was already quite attractive, but animating the different assets really helped elevate the overall experience. Because I created each asset from scratch as an SVG, I was able to use Claude Code to animate them on scroll. The goal was to make the section feel like a standout moment."
-          >
-            <IdeationViewer items={[
-              { src: assets.anim10DayCourse,     alt: '10-Day Course card animation', label: '10-day course card animation', caption: '' },
-              { src: assets.animFocusCoach,       alt: 'Focus Coach animation',         label: 'Focus coach animation',         caption: '' },
-              { src: assets.animTeacherInterface, alt: 'Teacher Interface animation',   label: 'Teacher interface animation',   caption: '' },
+          <Section eyebrow="Product Overview" body="These product overview assets use CSS keyframes animation to animate on scroll.">
+            <AnimationViewer items={[
+              { src: assets.anim10DayCourse,     alt: '10-Day Course card animation', label: '10-day course card animation' },
+              { src: assets.animFocusCoach,       alt: 'Focus Coach animation',         label: 'Focus coach animation' },
+              { src: assets.animTeacherInterface, alt: 'Teacher Interface animation',   label: 'Teacher interface animation' },
             ]} />
           </Section>
 
-          <Section
-            eyebrow="Testimonial Cards"
-            heading="The testimonial cards needed a transition that felt both useful and delightful."
-            body="We wanted to show three testimonial cards at once, then bring in three new ones with each click rather than swapping them out one at a time. I used animation to make that transition feel more intentional and engaging, while also helping the section stand out. I prototyped the interaction in Claude Code, then shared it with my SWE so it could be implemented in the final page."
-          >
-            <div className="rounded-[24px] border border-[#e8e8e8] bg-[#fafafa] p-8">
-              <p className="text-[15px] font-semibold text-[#1a1a1a] mb-2">Filler container</p>
-              <p className="text-[14px] font-normal leading-[170%] text-[#666]">
-                Add the animated testimonial card carousel here.
-              </p>
-            </div>
+          <Section eyebrow="Testimonial Cards" body="These testimonial cards animate (as if on a wheel) when users click an arrow to view more.">
+            <AnimationViewer items={[
+              { src: assets.animTestimonialCards, alt: 'Testimonial cards carousel animation', label: 'Testimonial card carousel animation' },
+            ]} />
           </Section>
 
-          <Section
-            eyebrow="Logo"
-            heading="Using animation helped reinforce the brand in a more memorable way."
-            body="For the final CTA, I reused a pulsing animation of the Finding Focus logo to create a stronger brand moment at the point of conversion. Because the animation was built as a Lottie, it felt polished and high quality while adding a bit more life to the end of the page."
-          >
-            <div className="rounded-[24px] border border-[#e8e8e8] bg-[#fafafa] p-8">
-              <p className="text-[15px] font-semibold text-[#1a1a1a] mb-2">Filler container</p>
-              <p className="text-[14px] font-normal leading-[170%] text-[#666]">
-                Add the Lottie animation for the final CTA logo here.
-              </p>
-            </div>
+          <Section eyebrow="Final CTA" body="This final CTA section reuses a lottie that was created of Finding Focus's logo.">
+            <AnimationViewer items={[
+              { src: assets.animFinalCta, alt: 'Final CTA section animation', label: 'Final CTA animation' },
+            ]} />
           </Section>
         </div>
       </section>
@@ -1609,19 +1900,11 @@ One activity we did as a team to help answer these questions was to imagine ours
 
           <Section eyebrow="Reflections" heading="" />
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            <div className="bg-[rgba(220,232,248,0.45)] rounded-[24px] p-8">
-              <h4 className="text-[18px] font-semibold text-[#1a1a1a] mb-3">This project pushed me beyond product design in a really valuable way.</h4>
-              <p className="text-[16px] font-normal leading-[175%] text-[#555]">
-                I’m a product designer by nature, but as the sole designer at a small startup, I’ve had to wear a lot of different hats. This project was a good example of that. Redesigning the landing page meant stepping into more traditional marketing and brand design work, while still relying on the same kind of strategic thinking I use in product design.
-              </p>
-            </div>
-            <div className="bg-[rgba(220,232,248,0.45)] rounded-[24px] p-8">
-              <h4 className="text-[18px] font-semibold text-[#1a1a1a] mb-3">It also became an opportunity to shape the Finding Focus brand.</h4>
-              <p className="text-[16px] font-normal leading-[175%] text-[#555]">
-                Because Finding Focus didn’t yet have many strong brand signals beyond the logo, this project gave me the chance to define more of the company’s visual identity. That made the work feel bigger than a landing page refresh. It became a chance to create a more cohesive, recognizable brand experience.
-              </p>
-            </div>
+          <div className="bg-[rgba(220,232,248,0.45)] rounded-[24px] p-8">
+            <h4 className="text-[18px] font-semibold text-[#1a1a1a] mb-3">This project pushed me beyond product design in a really valuable way.</h4>
+            <p className="text-[16px] font-normal leading-[175%] text-[#555]">
+              I’m a product designer by nature, but as the sole designer at a small startup, I’ve had to wear a lot of different hats. This project was a good example of that. Redesigning the landing page meant stepping into more traditional marketing and brand design work, while still relying on the same kind of strategic thinking I use in product design.
+            </p>
           </div>
 
         </div>
