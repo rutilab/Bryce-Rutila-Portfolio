@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect, useLayoutEffect, CSSProperties } from 'react';
 import Link from 'next/link';
 import HalftoneCanvas from '@/components/HalftoneCanvas';
+import HalftoneFly from '@/components/HalftoneFly';
 import { AIAssistantThumbnail } from '@/components/AIAssistantThumbnail';
 
 // ── Subheader typewriter ───────────────────────────────────────────────────
@@ -75,6 +76,7 @@ function Tag({ label, hovered, cardColor }: { label: string; hovered: boolean; c
         fontFamily: "var(--font-ibm-plex-mono), monospace",
         fontSize: '14px',
         lineHeight: '24px',
+        letterSpacing: '-0.012em',
         color: hovered ? '#141510' : '#c800c2',
         backgroundColor: hovered ? highlightBg : 'transparent',
         border: `1px ${hovered ? 'solid' : 'dashed'} ${hovered ? cardColor : '#c800c2'}`,
@@ -102,22 +104,27 @@ function ClockIcon() {
 
 // ── Project card ───────────────────────────────────────────────────────────
 function ProjectCard({ title, description, tags, readTime, cardColor, href, thumbnailContent }: Project) {
+  const hoverCount = useRef(0);
   const [hovered, setHovered] = useState(false);
   const highlightBg = `${cardColor}61`;   // ≈38% opacity, matches subheader highlight
+
+  const enter = () => { hoverCount.current++; setHovered(true); };
+  const leave = () => { hoverCount.current--; if (hoverCount.current <= 0) { hoverCount.current = 0; setHovered(false); } };
 
   return (
     <Link
       href={href}
-      data-cursor-passthrough
       className="project-card-pair"
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-      style={{ textDecoration: 'none' }}
+      style={{ textDecoration: 'none', pointerEvents: 'none' }}
     >
       {/* Outer card — white by default, fills with card color on hover */}
       <div
         className="project-card-outer"
+        onMouseEnter={enter}
+        onMouseLeave={leave}
         style={{
+          pointerEvents: 'auto',
+          cursor: 'pointer',
           backgroundColor: hovered ? cardColor : '#ffffff',
           transform: hovered ? 'scale(1.025)' : 'scale(1)',
           boxShadow: hovered
@@ -140,39 +147,43 @@ function ProjectCard({ title, description, tags, readTime, cardColor, href, thum
 
       {/* Text */}
       <div className="project-card-text">
-        <h3 style={{
-          fontFamily: "var(--font-battambang), sans-serif",
-          fontWeight: 700,
-          fontSize: '20px',
-          lineHeight: '28px',
-          color: '#000',
-          margin: '0 0 8px 0',
-        }}>
-          <span style={{
-            backgroundColor: hovered ? highlightBg : 'transparent',
-            borderRadius: '3px',
-            padding: hovered ? '0 2px' : '0',
-            transition: 'background-color 0.18s ease, padding 0.18s ease',
+        <div onMouseEnter={enter} onMouseLeave={leave} style={{ cursor: 'pointer', pointerEvents: 'auto' }}>
+          <h3 style={{
+            fontFamily: "var(--font-battambang), sans-serif",
+            fontWeight: 700,
+            fontSize: '20px',
+            lineHeight: '28px',
+            letterSpacing: '-0.04em',
+            color: '#000',
+            margin: '0 0 8px 0',
           }}>
-            {title}
-          </span>
-        </h3>
-        <p style={{
-          fontFamily: "var(--font-inter), sans-serif",
-          fontWeight: 400,
-          fontSize: '16px',
-          lineHeight: '24px',
-          color: '#141510',
-          margin: '0 0 16px 0',
-        }}>
-          <span style={{
-            backgroundColor: hovered ? highlightBg : 'transparent',
-            borderRadius: '3px',
-            transition: 'background-color 0.18s ease',
+            <span style={{
+              backgroundColor: hovered ? highlightBg : 'transparent',
+              borderRadius: '3px',
+              padding: '0 2px',
+              transition: 'background-color 0.18s ease',
+            }}>
+              {title}
+            </span>
+          </h3>
+          <p style={{
+            fontFamily: "var(--font-inter), sans-serif",
+            fontWeight: 400,
+            fontSize: '16px',
+            lineHeight: '24px',
+            letterSpacing: '-0.03em',
+            color: '#141510',
+            margin: '0 0 16px 0',
           }}>
-            {description}
-          </span>
-        </p>
+            <span style={{
+              backgroundColor: hovered ? highlightBg : 'transparent',
+              borderRadius: '3px',
+              transition: 'background-color 0.18s ease',
+            }}>
+              {description}
+            </span>
+          </p>
+        </div>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '16px' }}>
           {tags.map(tag => (
             <Tag key={tag} label={tag} hovered={hovered} cardColor={cardColor} />
@@ -228,10 +239,88 @@ export default function Home() {
     };
   }, [isDragging]);
 
+  // ── Draggable BR Flies ────────────────────────────────────────────────
+  const [flyOffsets, setFlyOffsets] = useState([
+    { x: 0, y: 0 }, { x: 0, y: 0 }, { x: 0, y: 0 },
+  ]);
+  const [flyDragging, setFlyDragging] = useState<number | null>(null);
+  const flyDragStart = useRef({ mx: 0, my: 0, ox: 0, oy: 0 });
+  const [collectedFlies, setCollectedFlies] = useState<Set<number>>(new Set());
+  const [overNet, setOverNet] = useState(false);
+  const [confetti, setConfetti] = useState<{ x: number; y: number; id: number } | null>(null);
+  const netRef = useRef<HTMLDivElement>(null);
+  const flyMousePos = useRef({ x: 0, y: 0 });
+  const confettiId = useRef(0);
+  const flyAlphaMaps = useRef<Map<string, { data: Uint8Array; w: number; h: number }>>(new Map());
+
+  const flyHitTest = (imgEl: HTMLImageElement, e: React.MouseEvent) => {
+    const src = imgEl.src;
+    const rect = imgEl.getBoundingClientRect();
+    const x = Math.round(((e.clientX - rect.left) / rect.width) * 100);
+    const y = Math.round(((e.clientY - rect.top) / rect.height) * 100);
+    let map = flyAlphaMaps.current.get(src);
+    if (!map) {
+      const oc = document.createElement('canvas');
+      oc.width = 100; oc.height = 100;
+      const ctx = oc.getContext('2d');
+      if (!ctx) return true;
+      ctx.drawImage(imgEl, 0, 0, 100, 100);
+      const id = ctx.getImageData(0, 0, 100, 100);
+      const alpha = new Uint8Array(10000);
+      for (let i = 0; i < 10000; i++) alpha[i] = id.data[i * 4 + 3];
+      map = { data: alpha, w: 100, h: 100 };
+      flyAlphaMaps.current.set(src, map);
+    }
+    if (x < 0 || x >= 100 || y < 0 || y >= 100) return false;
+    return map.data[y * 100 + x] > 20;
+  };
+
+  const isOverNet = (mx: number, my: number) => {
+    const netEl = netRef.current;
+    if (!netEl) return false;
+    const rect = netEl.getBoundingClientRect();
+    return mx >= rect.left && mx <= rect.right && my >= rect.top && my <= rect.bottom;
+  };
+
+  useEffect(() => {
+    if (flyDragging === null) { setOverNet(false); return; }
+    const idx = flyDragging;
+    const onMove = (e: MouseEvent) => {
+      flyMousePos.current = { x: e.clientX, y: e.clientY };
+      setOverNet(isOverNet(e.clientX, e.clientY));
+      setFlyOffsets(prev => prev.map((o, i) =>
+        i === idx
+          ? { x: flyDragStart.current.ox + e.clientX - flyDragStart.current.mx,
+              y: flyDragStart.current.oy + e.clientY - flyDragStart.current.my }
+          : o
+      ));
+    };
+    const onUp = () => {
+      const mx = flyMousePos.current.x;
+      const my = flyMousePos.current.y;
+      if (isOverNet(mx, my)) {
+        setCollectedFlies(prev => new Set(prev).add(idx));
+        confettiId.current += 1;
+        setConfetti({ x: mx, y: my, id: confettiId.current });
+        setTimeout(() => setConfetti(null), 1000);
+      }
+      setFlyDragging(null);
+      setOverNet(false);
+      setFlyOffsets(prev => prev.map((o, i) => i === idx ? { x: 0, y: 0 } : o));
+    };
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('mouseup', onUp);
+    return () => {
+      window.removeEventListener('mousemove', onMove);
+      window.removeEventListener('mouseup', onUp);
+    };
+  }, [flyDragging]);
+
   // ── Typewriter / cycling subheader ────────────────────────────────────
   const [phraseIndex, setPhraseIndex] = useState(0);
   const [charIndex,   setCharIndex]   = useState(0);
   const [phase,       setPhase]       = useState<AnimPhase>('typing');
+  const initialDone = useRef(false);
 
   // Min-height lock — prevents content below from jumping as phrases change
   const subtitleWrapRef    = useRef<HTMLDivElement>(null);
@@ -266,13 +355,15 @@ export default function Home() {
       if (charIndex < phrase.length) {
         const t = setTimeout(() => setCharIndex(c => c + 1), 45);
         return () => clearTimeout(t);
+      } else if (initialDone.current) {
+        const t = setTimeout(() => setPhase('done'), 600);
+        return () => clearTimeout(t);
+      } else if (phraseIndex === PHRASES.length - 1) {
+        initialDone.current = true;
+        setPhase('done');
       } else {
-        if (phraseIndex === PHRASES.length - 1) {
-          setPhase('done');
-        } else {
-          const t = setTimeout(() => setPhase('highlighted'), 600);
-          return () => clearTimeout(t);
-        }
+        const t = setTimeout(() => setPhase('highlighted'), 600);
+        return () => clearTimeout(t);
       }
     }
 
@@ -291,7 +382,7 @@ export default function Home() {
     }
   }, [phase, charIndex, phraseIndex]);
 
-  // Click to cycle after final phrase
+  // Click to cycle one phrase at a time (with highlight transition)
   const handleSubtitleClick = () => {
     if (phase !== 'done') return;
     setPhase('highlighted');
@@ -314,6 +405,89 @@ export default function Home() {
       <HalftoneCanvas />
 
       <main className="landing-main">
+        {/* ── Butterfly Net (visible during drag) ─────────────────────── */}
+        {flyDragging !== null && (() => {
+          const flyColors = ['#12B4FF', '#31E300', '#FF12F7'];
+          const c = flyColors[flyDragging] || '#12B4FF';
+          return (
+            <div
+              ref={netRef}
+              className={`butterfly-net-wrap${overNet ? ' in-zone' : ''}`}
+              style={{
+                '--net-glow': `${c}b3`,
+                '--net-glow-soft': `${c}59`,
+              } as React.CSSProperties}
+            >
+              <img
+                src="/butterflies/butterfly-net.png"
+                alt=""
+                draggable={false}
+                className="butterfly-net"
+              />
+            </div>
+          );
+        })()}
+
+        {/* ── Collection confetti ──────────────────────────────────────── */}
+        {confetti && (
+          <div key={confetti.id} className="confetti-container" style={{ left: confetti.x, top: confetti.y }}>
+            {Array.from({ length: 16 }, (_, i) => {
+              const angle = (i / 16) * Math.PI * 2 + Math.random() * 0.5;
+              const dist = 40 + Math.random() * 60;
+              const colors = ['#12B4FF', '#31E300', '#FF12F7', '#FFD700', '#FF6B35'];
+              return (
+                <span
+                  key={i}
+                  className="confetti-piece"
+                  style={{
+                    backgroundColor: colors[i % colors.length],
+                    '--cx': `${Math.cos(angle) * dist}px`,
+                    '--cy': `${Math.sin(angle) * dist - 30}px`,
+                    '--cr': `${Math.random() * 720 - 360}deg`,
+                    animationDelay: `${Math.random() * 0.1}s`,
+                  } as React.CSSProperties}
+                />
+              );
+            })}
+          </div>
+        )}
+
+        {/* ── BR Flies ─────────────────────────────────────────────────── */}
+        <div className="br-flies-container">
+          {[
+            { src: '/butterflies/updated-br-fly-1.svg', cls: 'br-fly br-fly-1' },
+            { src: '/butterflies/updated-br-fly-2.svg', cls: 'br-fly br-fly-2' },
+            { src: '/butterflies/updated-br-fly-3.svg', cls: 'br-fly br-fly-3' },
+          ].map((fly, i) => (
+            <div key={i} className={`${fly.cls}${collectedFlies.has(i) ? ' br-fly-collected' : ''}`}>
+              <HalftoneFly src={fly.src} collected={collectedFlies.has(i)} />
+              {!collectedFlies.has(i) && (
+                <img
+                  src={fly.src}
+                  alt=""
+                  draggable={false}
+                  onMouseDown={e => {
+                    if (!flyHitTest(e.currentTarget, e)) return;
+                    e.preventDefault();
+                    flyDragStart.current = { mx: e.clientX, my: e.clientY, ox: flyOffsets[i].x, oy: flyOffsets[i].y };
+                    setFlyDragging(i);
+                  }}
+                  onMouseMove={e => {
+                    if (flyDragging === i) return;
+                    const hit = flyHitTest(e.currentTarget, e);
+                    e.currentTarget.style.cursor = hit ? 'grab' : 'default';
+                  }}
+                  style={{
+                    cursor: flyDragging === i ? 'grabbing' : 'default',
+                    transform: `translate(${flyOffsets[i].x}px, ${flyOffsets[i].y}px)`,
+                    transition: flyDragging === i ? 'none' : 'transform 0.7s cubic-bezier(0.34, 1.56, 0.64, 1)',
+                  }}
+                />
+              )}
+            </div>
+          ))}
+        </div>
+
         {/* ── Hero ──────────────────────────────────────────────────────── */}
         <section style={{ marginBottom: '64px' }}>
 
@@ -333,6 +507,8 @@ export default function Home() {
               cursor: isDragging ? 'grabbing' : 'grab',
               transform: `translate(${dragOffset.x}px, ${dragOffset.y}px)`,
               transition: isDragging ? 'none' : 'transform 0.7s cubic-bezier(0.34, 1.56, 0.64, 1)',
+              position: 'relative',
+              zIndex: isDragging ? 50 : undefined,
             }}
           />
 
@@ -368,7 +544,7 @@ export default function Home() {
                       ? HIGHLIGHT_COLORS[phraseIndex % HIGHLIGHT_COLORS.length]
                       : 'transparent',
                   borderRadius: '3px',
-                  padding: phase === 'highlighted' ? '0 2px' : '0',
+                  padding: '0 2px',
                   transition: 'background-color 0.08s ease',
                 }}
               >

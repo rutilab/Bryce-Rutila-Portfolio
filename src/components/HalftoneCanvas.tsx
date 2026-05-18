@@ -8,7 +8,7 @@ const R_BG     = 0.9;
 const COLOR_BG = '#D8D8D8';
 
 // ── Cursor radial glow ─────────────────────────────────────────────────────
-const HIGHLIGHT_R        = 56;
+const HIGHLIGHT_R        = 48;
 const HIGHLIGHT_EXTRA_BG = 2.5;
 const COLOR_HIGHLIGHT    = '#141510';
 
@@ -83,7 +83,7 @@ export default function HalftoneCanvas({ rippleTrigger = 0 }: Props) {
     let alive = true;
     let grid: Grid | null = null;
     let rafId = 0;
-    const mouse = { x: -9999, y: -9999, overClickable: false };
+    const mouse = { x: -9999, y: -9999, overClickable: false, inHalftone: false };
 
     const resize = () => {
       const dpr = window.devicePixelRatio || 1;
@@ -160,7 +160,7 @@ export default function HalftoneCanvas({ rippleTrigger = 0 }: Props) {
           const dotX = g.gx[i] + g.ox[i];
           const dotY = g.gy[i] + g.oy[i];
           const hdx  = dotX - mouse.x, hdy = dotY - mouse.y;
-          if (!mouse.overClickable && hdx * hdx + hdy * hdy < HR2) continue;
+          if (!mouse.overClickable && !mouse.inHalftone && hdx * hdx + hdy * hdy < HR2) continue;
 
           const r  = g.br[i] * dpr;
           const cx = dotX * dpr, cy = dotY * dpr;
@@ -170,7 +170,7 @@ export default function HalftoneCanvas({ rippleTrigger = 0 }: Props) {
         ctx.fill();
 
         // ── Pass 2: Highlight zone ───────────────────────────────────────
-        if (!mouse.overClickable && mouse.x > -999) {
+        if (!mouse.overClickable && !mouse.inHalftone && mouse.x > -999) {
           ctx.fillStyle = COLOR_HIGHLIGHT;
           ctx.beginPath();
           for (let i = 0; i < g.n; i++) {
@@ -208,12 +208,36 @@ export default function HalftoneCanvas({ rippleTrigger = 0 }: Props) {
     init();
 
     // ── Events ─────────────────────────────────────────────────────────────
-    const onMove  = (e: MouseEvent) => { mouse.x = e.clientX; mouse.y = e.clientY; };
-    const onLeave = () => { mouse.x = -9999; mouse.y = -9999; mouse.overClickable = false; };
+    const onMove  = (e: MouseEvent) => {
+      mouse.x = e.clientX; mouse.y = e.clientY;
+
+      const el = e.target as Element | null;
+      if (el?.closest('a, button, [role="button"], select, input, label, .bryce-svg')) {
+        mouse.overClickable = true;
+      } else {
+        const cs = el ? getComputedStyle(el).cursor : '';
+        mouse.overClickable = cs === 'pointer' || cs === 'grab' || cs === 'grabbing';
+      }
+
+      const els = document.querySelectorAll('.br-fly-collected');
+      let hit = false;
+      for (let i = 0; i < els.length; i++) {
+        const r = els[i].getBoundingClientRect();
+        if (e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom) {
+          hit = true; break;
+        }
+      }
+      mouse.inHalftone = hit;
+    };
+    const onLeave = () => { mouse.x = -9999; mouse.y = -9999; mouse.overClickable = false; mouse.inHalftone = false; };
     const onOver  = (e: MouseEvent) => {
       const el = e.target as Element | null;
-      const passthrough = !!el?.closest('[data-cursor-passthrough]');
-      mouse.overClickable = !passthrough && !!el?.closest('a, button, [role="button"], select, input, label');
+      if (el?.closest('a, button, [role="button"], select, input, label, .bryce-svg')) {
+        mouse.overClickable = true;
+      } else {
+        const cs = el ? getComputedStyle(el).cursor : '';
+        mouse.overClickable = cs === 'pointer' || cs === 'grab' || cs === 'grabbing';
+      }
     };
 
     let resizeTimer: ReturnType<typeof setTimeout>;

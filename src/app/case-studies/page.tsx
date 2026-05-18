@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { ChatContainer } from '@/components/chat';
 import { useCanPrimaryHover } from '@/hooks/useCanPrimaryHover';
+import HalftoneCanvas from '@/components/HalftoneCanvas';
 
 // ── SVG path constants ────────────────────────────────────────────────────────
 
@@ -259,14 +260,13 @@ export default function CaseStudies() {
 
   return (
     <>
+      <HalftoneCanvas />
       {/* Fixed background layer */}
       <div style={{
         position: 'fixed',
         inset: 0,
         zIndex: 1,
-        background: '#ffffff',
-        backgroundImage: 'radial-gradient(circle, #F0F0F0 1px, transparent 1px)',
-        backgroundSize: '8px 8px',
+        background: 'transparent',
         transition: 'opacity 0.45s ease, visibility 0.45s ease',
         opacity: chatOpen ? 0 : 1,
         visibility: chatOpen ? 'hidden' : 'visible',

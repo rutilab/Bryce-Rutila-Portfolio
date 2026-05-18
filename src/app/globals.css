@@ -484,6 +484,125 @@ label[for] {
   to { opacity: 1; transform: translateY(0); }
 }
 
+/* ── Butterfly net ──────────────────────────────────────────────────────── */
+.butterfly-net-wrap {
+  position: fixed;
+  top: 16px;
+  left: 48px;
+  z-index: 100;
+  pointer-events: none;
+  transform-origin: bottom center;
+  animation: net-swing 1.2s ease-in-out infinite;
+  transition: filter 0.2s ease;
+}
+.butterfly-net-wrap.in-zone {
+  filter: drop-shadow(0 0 18px var(--net-glow)) drop-shadow(0 0 40px var(--net-glow-soft));
+  animation-play-state: paused;
+}
+.butterfly-net {
+  width: 280px;
+  height: auto;
+  display: block;
+  pointer-events: auto;
+}
+@keyframes net-swing {
+  0%   { transform: rotate(-20deg); }
+  50%  { transform: rotate(40deg); }
+  100% { transform: rotate(-20deg); }
+}
+
+/* ── Collection confetti ───────────────────────────────────────────────── */
+.confetti-container {
+  position: fixed;
+  pointer-events: none;
+  z-index: 101;
+}
+.confetti-piece {
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  border-radius: 1px;
+  opacity: 0;
+  animation: confetti-burst 0.9s ease-out forwards;
+}
+@keyframes confetti-burst {
+  0% { opacity: 1; transform: translate(0, 0) rotate(0deg) scale(1); }
+  100% { opacity: 0; transform: translate(var(--cx), var(--cy)) rotate(var(--cr)) scale(0.3); }
+}
+
+/* ── BR Fly positioning ─────────────────────────────────────────────────── */
+.br-flies-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  overflow: visible;
+  z-index: 2;
+}
+
+.br-fly {
+  position: absolute;
+  user-select: none;
+  pointer-events: none;
+}
+
+.br-fly img {
+  width: 100%;
+  height: auto;
+  display: block;
+  pointer-events: auto;
+  position: relative;
+  z-index: 1;
+}
+
+.br-fly-collected.br-fly-1 { aspect-ratio: 378 / 351; }
+.br-fly-collected.br-fly-2 { aspect-ratio: 227 / 240; }
+.br-fly-collected.br-fly-3 { aspect-ratio: 209 / 201; }
+
+/* Fly 1 (blue) — 20% smaller default, slides right via hero buffer */
+.br-fly-1 {
+  width: var(--fly-w);
+  left: max(calc(var(--hero-w) + 80px), calc(100% - 207px - var(--fly-w)));
+  top: 174px;
+}
+/* Fly 2 (green) — anchored top-right, scales from Figma size */
+.br-fly-2 {
+  width: clamp(160px, 23vw, 253px);
+  right: 11px;
+  top: -71px;
+}
+/* Fly 3 (pink) — anchored right, lower */
+.br-fly-3 {
+  width: clamp(113px, 16vw, 176px);
+  right: -30px;
+  top: 434px;
+}
+@media (max-width: 1199px) {
+  .br-fly-1 {
+    left: max(calc(var(--hero-w) + 80px), calc(100% - 276px - var(--fly-w)));
+  }
+  .br-fly-2 { width: clamp(136px, 18.2vw, 218px); }
+  .br-fly-3 { width: clamp(96px, 12.7vw, 152px); }
+}
+
+/* ≤799px — hide blue, switch to 2-fly mobile layout */
+@media (max-width: 799px) {
+  .br-fly-1 { display: none; }
+  .br-fly-2 {
+    width: 120px;
+    right: auto;
+    left: -25px;
+    top: -36px;
+  }
+  .br-fly-3 {
+    width: 90px;
+    right: -27px;
+    top: 109px;
+  }
+}
+
 /* ── Landing page layout ─────────────────────────────────────────────────── */
 .howdy-heading {
   font-family: var(--font-battambang), sans-serif;
@@ -497,7 +616,7 @@ label[for] {
 
 .bryce-svg {
   display: block;
-  width: min(600px, 85vw);
+  width: var(--hero-w);
   height: auto;
   user-select: none;
   margin-top: 8px;
@@ -524,6 +643,18 @@ label[for] {
   margin: 0 auto;
   padding: 152px 40px 80px;
   box-sizing: border-box;
+  --fly-w: clamp(213px, 32.3vw, 355px);
+  --hero-w: min(600px, 85vw);
+}
+@media (max-width: 1199px) {
+  .landing-main {
+    --fly-w: clamp(181px, 20.3vw, 243px);
+  }
+}
+@media (min-width: 800px) {
+  .landing-main {
+    --hero-w: min(600px, 85vw, calc(100vw - 120px - 0.75 * var(--fly-w)));
+  }
 }
 @media (max-width: 799px) {
   .landing-main {
@@ -550,6 +681,7 @@ label[for] {
   gap: 40px;
   /* ≥950px: 2 columns */
   grid-template-columns: repeat(2, 1fr);
+  align-items: start;
 }
 @media (max-width: 949px) {
   .projects-grid {
