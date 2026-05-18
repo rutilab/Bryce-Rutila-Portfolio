@@ -2,11 +2,12 @@ import type { NextConfig } from 'next';
 import path from 'path';
 import os from 'os';
 
-// Keep build output under ~/.cache — Desktop/iCloud folders break webpack atomic renames
+// Keep build output under ~/.cache locally — Desktop/iCloud folders break webpack atomic renames
 // (ENOENT on *.pack.gz_, missing middleware-manifest.json).
-// A node_modules symlink at the cache root lets Node.js find react/next from server bundles.
+// On Vercel (or any CI), use the default .next directory.
+const isVercel = !!process.env.VERCEL;
 const cacheRoot = path.join(os.homedir(), '.cache', 'bar9000-next');
-const distDir = path.relative(process.cwd(), path.join(cacheRoot, 'dist'));
+const distDir = isVercel ? '.next' : path.relative(process.cwd(), path.join(cacheRoot, 'dist'));
 
 const nextConfig: NextConfig = {
   distDir,
