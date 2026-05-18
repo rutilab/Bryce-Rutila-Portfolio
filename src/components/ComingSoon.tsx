@@ -1,16 +1,17 @@
 'use client';
 
 import Link from 'next/link';
+import HalftoneCanvas from '@/components/HalftoneCanvas';
 
 export default function ComingSoon({ label }: { label: string }) {
   return (
+    <>
+    <HalftoneCanvas />
     <div
       style={{
         position: 'fixed',
         inset: 0,
-        background: '#ffffff',
-        backgroundImage: 'radial-gradient(circle, #F0F0F0 1px, transparent 1px)',
-        backgroundSize: '8px 8px',
+        background: 'transparent',
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
@@ -18,6 +19,7 @@ export default function ComingSoon({ label }: { label: string }) {
         fontFamily: 'Inter, sans-serif',
         padding: '40px 20px',
         boxSizing: 'border-box',
+        zIndex: 1,
       }}
     >
       <div
@@ -103,5 +105,6 @@ export default function ComingSoon({ label }: { label: string }) {
         </Link>
       </div>
     </div>
+    </>
   );
 }

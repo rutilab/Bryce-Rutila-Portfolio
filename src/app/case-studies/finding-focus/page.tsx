@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { ChatContainer } from '@/components/chat';
+import HalftoneCanvas from '@/components/HalftoneCanvas';
 
 export default function FindingFocus() {
   const [chatOpen, setChatOpen] = useState(false);
@@ -17,15 +18,14 @@ export default function FindingFocus() {
 
   return (
     <>
-      {/* ── Finding Focus page ── white background with dot grid ── */}
+      <HalftoneCanvas />
+      {/* ── Finding Focus page ── */}
       <div
         style={{
           position: 'fixed',
           inset: 0,
           zIndex: 1,
-          background: '#ffffff',
-          backgroundImage: 'radial-gradient(circle, #F0F0F0 1px, transparent 1px)',
-          backgroundSize: '8px 8px',
+          background: 'transparent',
           transition: 'opacity 0.45s ease, visibility 0.45s ease',
           opacity: chatOpen ? 0 : 1,
           visibility: chatOpen ? 'hidden' : 'visible',

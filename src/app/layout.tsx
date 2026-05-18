@@ -1,6 +1,6 @@
 import type { Metadata, Viewport } from 'next';
 import { Suspense } from 'react';
-import { Geist, Geist_Mono, Inter } from 'next/font/google';
+import { Geist, Geist_Mono, Inter, Battambang, IBM_Plex_Mono } from 'next/font/google';
 import { AnalyticsProvider } from '@/components/analytics/AnalyticsProvider';
 import { Navigation, BackgroundImage } from '@/components/layout';
 import './globals.css';
@@ -15,11 +15,25 @@ const geistMono = Geist_Mono({
   subsets: ['latin'],
 });
 
-// Loaded via next/font to avoid FOUT — CSS @import loads Inter too late
+// Loaded via next/font to avoid FOUT — CSS @import loads fonts too late
 const inter = Inter({
   variable: '--font-inter',
   subsets: ['latin'],
-  weight: ['400', '600', '700'],
+  weight: ['400', '500', '600', '700'],
+  display: 'block',
+});
+
+const battambang = Battambang({
+  variable: '--font-battambang',
+  subsets: ['latin'],
+  weight: ['400', '700'],
+  display: 'block',
+});
+
+const ibmPlexMono = IBM_Plex_Mono({
+  variable: '--font-ibm-plex-mono',
+  subsets: ['latin'],
+  weight: ['400'],
   display: 'block',
 });
 
@@ -82,7 +96,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} ${inter.variable} antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} ${inter.variable} ${battambang.variable} ${ibmPlexMono.variable} antialiased`}
         style={{ background: '#ffffff', color: '#141510' }}
       >
         <BackgroundImage />

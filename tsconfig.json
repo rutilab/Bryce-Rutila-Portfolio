@@ -36,7 +36,9 @@
     ".next/dev/types/**/*.ts",
     "**/*.mts",
     "../../nextjs-dist/types/**/*.ts",
-    "../../nextjs-dist/dev/types/**/*.ts"
+    "../../nextjs-dist/dev/types/**/*.ts",
+    "../../.cache/bar9000-next/dist/types/**/*.ts",
+    "../../.cache/bar9000-next/dist/dev/types/**/*.ts"
   ],
   "exclude": [
     "node_modules"

@@ -3,7 +3,8 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "predev": "mkdir -p ~/.cache/bar9000-next && ln -sfn \"$(pwd)/node_modules\" ~/.cache/bar9000-next/node_modules",
+    "dev": "next dev --webpack",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",

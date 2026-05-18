@@ -8,7 +8,7 @@ import { useCanPrimaryHover } from '@/hooks/useCanPrimaryHover';
 
 const navItems = [
   { href: '/', label: 'Home' },
-  { href: '/case-studies', label: 'Case Studies' },
+  { href: '/case-studies', label: 'Projects' },
   { href: '/about', label: 'About Me' },
 ];
 
@@ -39,7 +39,6 @@ export function Navigation() {
 
   if (pathname.startsWith('/admin')) return null;
 
-  // White-background pages use a lighter nav; dark-background pages use the dark glass style
   const isLightPage = pathname === '/';
 
   const navStyle = {
@@ -56,7 +55,6 @@ export function Navigation() {
         'fixed top-6 left-1/2 -translate-x-1/2 z-[200] transition-all duration-300',
         visible ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-full pointer-events-none'
       )}
-      style={undefined}
     >
       <div className="flex items-center gap-1" style={navStyle}>
         {navItems.map((item) => {
