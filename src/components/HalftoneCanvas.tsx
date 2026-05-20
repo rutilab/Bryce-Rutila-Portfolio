@@ -77,7 +77,7 @@ export default function HalftoneCanvas({ rippleTrigger = 0 }: Props) {
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-    const ctx = canvas.getContext('2d');
+    const ctx = canvas.getContext('2d', { alpha: false });
     if (!ctx) return;
 
     let alive = true;
@@ -107,7 +107,7 @@ export default function HalftoneCanvas({ rippleTrigger = 0 }: Props) {
         && waveRadius >= 0
         && ts - ripple.time < WAVE_DURATION;
 
-      ctx.fillStyle = '#ffffff';
+      ctx.fillStyle = '#fcfcfc';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
       if (g) {

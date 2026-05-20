@@ -7,6 +7,9 @@ import HalftoneFly from '@/components/HalftoneFly';
 import { AIAssistantThumbnail } from '@/components/AIAssistantThumbnail';
 import Loader from '@/components/Loader';
 
+// Module-level flag: resets on real page reload (module re-imported), persists across SPA remounts
+let _loaderHasRun = false;
+
 // ── Subheader typewriter ───────────────────────────────────────────────────
 const PHRASES = [
   'turns user research into product strategy.',
@@ -126,7 +129,7 @@ function ProjectCard({ title, description, tags, readTime, cardColor, href, thum
         style={{
           pointerEvents: 'auto',
           cursor: 'pointer',
-          backgroundColor: hovered ? cardColor : '#ffffff',
+          backgroundColor: hovered ? cardColor : '#fcfcfc',
           transform: hovered ? 'scale(1.025)' : 'scale(1)',
           boxShadow: hovered
             ? '0px 6px 24px 0px rgba(0, 0, 0, 0.28)'
@@ -137,7 +140,7 @@ function ProjectCard({ title, description, tags, readTime, cardColor, href, thum
           position: 'relative',
           width: '100%',
           height: '100%',
-          backgroundColor: '#fff',
+          backgroundColor: '#fcfcfc',
           borderRadius: '12px',
           border: '1px solid #000',
           overflow: 'hidden',
@@ -222,14 +225,13 @@ export default function Home() {
   const heroSvgRef = useRef<SVGSVGElement>(null);
 
   useEffect(() => {
-    const navEntry = (performance.getEntriesByType('navigation') as PerformanceNavigationTiming[])[0];
-    const isReload = navEntry?.type === 'reload';
-    const hasShown = !!sessionStorage.getItem('bryce-loader-shown');
-    const should   = !hasShown || isReload;
-    if (!hasShown) sessionStorage.setItem('bryce-loader-shown', '1');
-    setLoaderState(should ? 'showing' : 'done');
-    // If no loader, allow animations immediately
-    if (!should) setAnimReady(true);
+    if (_loaderHasRun) {
+      setLoaderState('done');
+      setAnimReady(true);
+      return;
+    }
+    _loaderHasRun = true;
+    setLoaderState('showing');
   }, []);
 
   // Delay idle letter animations 3.5s after loader ends
@@ -429,7 +431,7 @@ export default function Home() {
     <>
       {/* White screen blocks flash during SSR→hydration before loader mounts */}
       {loaderState !== 'done' && (
-        <div aria-hidden="true" style={{ position: 'fixed', inset: 0, zIndex: 9998, background: '#ffffff', pointerEvents: 'none' }} />
+        <div aria-hidden="true" style={{ position: 'fixed', inset: 0, zIndex: 9998, background: '#fcfcfc', pointerEvents: 'none' }} />
       )}
       {loaderState === 'showing' && (
         <Loader heroRef={heroSvgRef} onComplete={() => setLoaderState('done')} />

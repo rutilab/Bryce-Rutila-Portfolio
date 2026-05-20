@@ -4,7 +4,7 @@ import { useEffect, useRef, type CSSProperties, type ReactNode } from 'react';
 
 /** Same dot grid as Finding Focus hub + case studies index */
 const DOT_BG: CSSProperties = {
-  background: '#ffffff',
+  background: '#fcfcfc',
   backgroundImage: 'radial-gradient(circle, #F0F0F0 1px, transparent 1px)',
   backgroundSize: '8px 8px',
 };

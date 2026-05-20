@@ -1432,12 +1432,12 @@ function FullPagePreview({ src, alt, caption }: { src: string; alt: string; capt
 // ── Page ──────────────────────────────────────────────────────────────────────
 export default function LandingPageCaseStudy() {
   return (
-    <div className="min-h-screen bg-white text-[#444444] min-[600px]:pr-[100px]">
+    <div className="min-h-screen bg-[#fcfcfc] text-[#444444] min-[600px]:pr-[100px]">
 
       <SectionNav />
 
       {/* ── HERO ── */}
-      <header id="section-intro" className="relative bg-gradient-to-b from-[rgba(0,110,254,0.12)] to-white to-[87%] min-[600px]:-mr-[100px]">
+      <header id="section-intro" className="relative bg-gradient-to-b from-[rgba(0,110,254,0.12)] to-[#fcfcfc] to-[87%] min-[600px]:-mr-[100px]">
         <div className="max-w-[1200px] mx-auto px-6 pt-[80px] pb-0">
 
           {/* Company branding */}

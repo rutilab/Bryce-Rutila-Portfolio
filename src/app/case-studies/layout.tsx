@@ -5,7 +5,7 @@ import { CaseStudyRouteChrome } from './CaseStudyRouteChrome';
 
 /** Light browser chrome + edge-to-edge on notched phones; pairs with CaseStudyRouteChrome. */
 export const viewport: Viewport = {
-  themeColor: '#ffffff',
+  themeColor: '#fcfcfc',
   viewportFit: 'cover',
 };
 

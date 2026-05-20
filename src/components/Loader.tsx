@@ -20,7 +20,7 @@ const CFG = {
   collapseEase:          'cubic-bezier(0.77, 0, 0.18, 1)',
   letterFadeOutDuration: 100,   // fast crossfade — happens after full collapse
   wordFadeInDuration:    140,
-  holdDuration:          900,
+  holdDuration:          675,
   flipDuration:          680,
   flipEase:              'cubic-bezier(0.34, 1.56, 0.64, 1)',
   sliceExitDuration:     420,
@@ -136,12 +136,17 @@ export default function Loader({ heroRef, onComplete }: LoaderProps) {
     }
 
     async function runFinale() {
-      const vw      = window.innerWidth;
-      const wordPxW = Math.min(Math.max(280, vw * 0.80), 820, vw * 0.92);
+      const vw       = window.innerWidth;
+      const wordPxW  = Math.min(Math.max(280, vw * 0.80), 820, vw * 0.92);
       const wordLeft = (vw - wordPxW) / 2;
 
-      // Collapse each letter to its exact position in the combined BRYCE block,
-      // simultaneously resizing to match its proportional width in that block
+      // The crossfade (individual → combined) fires 40% into the collapse.
+      // Using CSS transition-delay means it triggers automatically mid-motion,
+      // masking the switch so it's invisible to the eye.
+      const crossfadeDelay = Math.round(CFG.collapseDuration * 0.40);
+      const crossfadeDur   = 260;
+
+      // Step 2: collapse each letter to its BRYCE block position + resize
       LETTERS.forEach(l => {
         const wrap      = wrapRefs.current[l];
         const letterSvg = wrap?.querySelector<HTMLElement>('.letter-svg');
@@ -151,32 +156,24 @@ export default function Loader({ heroRef, onComplete }: LoaderProps) {
         const txPx        = finalX - vw / 2;
         const targetWidth = LETTER_WIDTH_FRAC[l] * wordPxW;
 
-        wrap.style.transition = `transform ${CFG.collapseDuration}ms ${CFG.collapseEase}`;
+        // transform starts immediately; opacity fades out after crossfadeDelay
+        wrap.style.transition = `transform ${CFG.collapseDuration}ms ${CFG.collapseEase}, opacity ${crossfadeDur}ms ease ${crossfadeDelay}ms`;
         wrap.style.setProperty('--tx', `${txPx}px`);
+        wrap.style.opacity = '0';
 
         letterSvg.style.transition = `width ${CFG.collapseDuration}ms ${CFG.collapseEase}`;
         letterSvg.style.width = `${targetWidth}px`;
       });
 
-      // Wait for the full collapse to settle before crossfading
-      await wait(CFG.collapseDuration + 60);
-
-      // Fade out individual letters, fade in combined word SVG
-      LETTERS.forEach(l => {
-        const wrap = wrapRefs.current[l];
-        if (wrap) {
-          wrap.style.transition = `opacity ${CFG.letterFadeOutDuration}ms ease`;
-          wrap.style.opacity = '0';
-        }
-      });
-
+      // Step 3: combined BRYCE block fades in at the same mid-collapse moment
       const wordWrap = wordWrapRef.current;
       if (wordWrap) {
-        wordWrap.style.transition = `opacity ${CFG.wordFadeInDuration}ms ease`;
+        wordWrap.style.transition = `opacity ${crossfadeDur}ms ease ${crossfadeDelay}ms`;
         wordWrap.style.opacity = '1';
       }
 
-      await wait(Math.max(CFG.letterFadeOutDuration, CFG.wordFadeInDuration));
+      // Wait for collapse + crossfade to both fully settle
+      await wait(CFG.collapseDuration + crossfadeDelay + crossfadeDur + 60);
       await wait(CFG.holdDuration);
 
       // FLIP: animate word SVG to hero position
@@ -299,7 +296,7 @@ export default function Loader({ heroRef, onComplete }: LoaderProps) {
           inset: 0,
           zIndex: 9999,
           overflow: 'hidden',
-          background: '#ffffff',
+          background: '#fcfcfc',
         }}
       >
         {/* Color slices */}

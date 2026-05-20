@@ -22,7 +22,7 @@
 
 /* Colors — Light Mode */
 :root {
-  --cs-background: rgb(255, 255, 255);
+  --cs-background: #fcfcfc;
   --cs-tile: rgb(245, 245, 245);
   --cs-tile-hover: rgb(240, 240, 240);
   --cs-border: rgb(220, 220, 220);

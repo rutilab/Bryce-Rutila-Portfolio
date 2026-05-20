@@ -56,7 +56,7 @@ export default function FindingFocus() {
             {/* ── Info card ── */}
             <div
               style={{
-                background: '#ffffff',
+                background: '#fcfcfc',
                 border: '2px solid #d8d8d8',
                 borderRadius: '16px',
                 padding: '24px',
@@ -203,7 +203,7 @@ export default function FindingFocus() {
               >
                 <div
                   style={{
-                    background: '#ffffff',
+                    background: '#fcfcfc',
                     border: '2px solid #d8d8d8',
                     borderRadius: '16px',
                     overflow: 'hidden',
@@ -310,7 +310,7 @@ export default function FindingFocus() {
               >
                 <div
                   style={{
-                    background: '#ffffff',
+                    background: '#fcfcfc',
                     border: '2px solid #d8d8d8',
                     borderRadius: '16px',
                     overflow: 'hidden',

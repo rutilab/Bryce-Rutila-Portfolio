@@ -1724,18 +1724,18 @@ export default function FindingFocusAiAssistantCaseStudy() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-white text-[#444444] min-[600px]:pr-[100px]">
+    <div className="min-h-screen bg-[#fcfcfc] text-[#444444] min-[600px]:pr-[100px]">
 
       {/* Fixed white bar — DOM-controlled (no React state) to stay in sync with scroll */}
       <div ref={ideationMaskRef} style={{
         display: 'none', position: 'fixed', top: 0, left: 0, right: 0, height: 48,
-        background: 'white', zIndex: 50, pointerEvents: 'none',
+        background: '#fcfcfc', zIndex: 50, pointerEvents: 'none',
       }} />
 
       <SectionNav />
 
       {/* ── HERO ── */}
-      <header id="section-intro" className="relative bg-gradient-to-b from-[rgba(0,110,254,0.12)] to-white to-[87%] min-[600px]:-mr-[100px]">
+      <header id="section-intro" className="relative bg-gradient-to-b from-[rgba(0,110,254,0.12)] to-[#fcfcfc] to-[87%] min-[600px]:-mr-[100px]">
         <div className="max-w-[1200px] mx-auto px-6 pt-[80px] pb-0">
 
           {/* Company branding */}
@@ -2033,7 +2033,7 @@ export default function FindingFocusAiAssistantCaseStudy() {
         {/* Sticky "Ideation" eyebrow */}
         <div style={{
           position: 'sticky', top: 48, zIndex: 20, pointerEvents: 'none',
-          background: 'white',
+          background: '#fcfcfc',
         }}>
           <div className="max-w-[1200px] mx-auto px-5 sm:px-10 md:px-20" style={{ paddingTop: 0, paddingBottom: 16 }}>
             <Eyebrow label="UX Considerations" />
