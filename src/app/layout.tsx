@@ -97,7 +97,7 @@ export default function RootLayout({
     <html lang="en">
       <body
         className={`${geistSans.variable} ${geistMono.variable} ${inter.variable} ${battambang.variable} ${ibmPlexMono.variable} antialiased`}
-        style={{ background: '#fcfcfc', color: '#141510' }}
+        style={{ background: '#faf7f2', color: '#141510' }}
       >
         <BackgroundImage />
         <Navigation />

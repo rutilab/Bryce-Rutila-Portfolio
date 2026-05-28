@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect, useLayoutEffect, CSSProperties } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import HalftoneCanvas from '@/components/HalftoneCanvas';
 import HalftoneFly from '@/components/HalftoneFly';
@@ -10,27 +10,23 @@ import Loader from '@/components/Loader';
 // Module-level flag: resets on real page reload (module re-imported), persists across SPA remounts
 let _loaderHasRun = false;
 
-// ── Subheader typewriter ───────────────────────────────────────────────────
-const PHRASES = [
-  'turns user research into product strategy.',
-  'designs for edge cases, not just the happy path.',
-  'connects product decisions to user outcomes.',
-  'translates ambiguity into clear product direction.',   // final
-] as const;
-
-const HIGHLIGHT_COLORS = [
-  'rgba(137, 255,  18, 0.38)',
-  'rgba(255, 156,  18, 0.38)',
-  'rgba(255,  18, 251, 0.38)',
-];
-
-type AnimPhase = 'typing' | 'highlighted' | 'pre-typing' | 'done';
-
-const SUBHEADER_PREFIX = 'A product designer who ';
+// ── Blend a hex color at given opacity onto a solid background ─────────────
+function solidHighlight(hex: string, alpha: number, bg = '#faf7f2'): string {
+  const parse = (h: string) => [
+    parseInt(h.slice(1, 3), 16),
+    parseInt(h.slice(3, 5), 16),
+    parseInt(h.slice(5, 7), 16),
+  ];
+  const [fr, fg, fb] = parse(hex);
+  const [br, bg_g, bb] = parse(bg);
+  const blend = (f: number, b: number) => Math.round(b * (1 - alpha) + f * alpha);
+  return `#${[blend(fr, br), blend(fg, bg_g), blend(fb, bb)].map(v => v.toString(16).padStart(2, '0')).join('')}`;
+}
 
 // ── Project data ───────────────────────────────────────────────────────────
 interface Project {
   title: string;
+  eyebrow?: string;
   description: string;
   tags: string[];
   readTime: string;
@@ -41,7 +37,8 @@ interface Project {
 
 const PROJECTS: Project[] = [
   {
-    title: 'Finding Focus AI Assistant',
+    title: 'AI Chat Assistant',
+    eyebrow: 'FINDING FOCUS',
     description:
       "Leveraging Open AI's Chat Completions API to create an AI Assistant that ultimately helped reduce support ticket volume by 12%",
     tags: ['AI', 'UX DESIGN', 'UX RESEARCH'],
@@ -51,7 +48,8 @@ const PROJECTS: Project[] = [
     thumbnailContent: <AIAssistantThumbnail />,
   },
   {
-    title: 'Finding Focus Landing Page',
+    title: 'Landing Page Redesign',
+    eyebrow: 'FINDING FOCUS',
     description:
       "Redesigning the Finding Focus marketing site to improve conversion and communicate value across teacher and student personas",
     tags: ['UX DESIGN', 'VISUAL DESIGN', 'MARKETING'],
@@ -72,8 +70,7 @@ const PROJECTS: Project[] = [
 
 // ── Tag chip ───────────────────────────────────────────────────────────────
 function Tag({ label, hovered, cardColor }: { label: string; hovered: boolean; cardColor: string }) {
-  // highlight bg matches the heading/description highlight (≈38% opacity)
-  const highlightBg = `${cardColor}61`;
+  const highlightBg = solidHighlight(cardColor, 0.38);
   return (
     <span
       style={{
@@ -81,9 +78,9 @@ function Tag({ label, hovered, cardColor }: { label: string; hovered: boolean; c
         fontSize: '14px',
         lineHeight: '24px',
         letterSpacing: '-0.012em',
-        color: hovered ? '#141510' : '#c800c2',
+        color: '#141510',
         backgroundColor: hovered ? highlightBg : 'transparent',
-        border: `1px ${hovered ? 'solid' : 'dashed'} ${hovered ? cardColor : '#c800c2'}`,
+        border: `1px ${hovered ? 'solid' : 'dashed'} ${hovered ? cardColor : '#141510'}`,
         borderRadius: '4px',
         padding: '4px 8px',
         whiteSpace: 'nowrap',
@@ -107,10 +104,10 @@ function ClockIcon() {
 }
 
 // ── Project card ───────────────────────────────────────────────────────────
-function ProjectCard({ title, description, tags, readTime, cardColor, href, thumbnailContent }: Project) {
+function ProjectCard({ title, eyebrow, description, tags, readTime, cardColor, href, thumbnailContent }: Project) {
   const hoverCount = useRef(0);
   const [hovered, setHovered] = useState(false);
-  const highlightBg = `${cardColor}61`;   // ≈38% opacity, matches subheader highlight
+  const highlightBg = solidHighlight(cardColor, 0.38);
 
   const enter = () => { hoverCount.current++; setHovered(true); };
   const leave = () => { hoverCount.current--; if (hoverCount.current <= 0) { hoverCount.current = 0; setHovered(false); } };
@@ -129,7 +126,7 @@ function ProjectCard({ title, description, tags, readTime, cardColor, href, thum
         style={{
           pointerEvents: 'auto',
           cursor: 'pointer',
-          backgroundColor: hovered ? cardColor : '#fcfcfc',
+          backgroundColor: hovered ? cardColor : '#ffffff',
           transform: hovered ? 'scale(1.025)' : 'scale(1)',
           boxShadow: hovered
             ? '0px 6px 24px 0px rgba(0, 0, 0, 0.28)'
@@ -140,7 +137,7 @@ function ProjectCard({ title, description, tags, readTime, cardColor, href, thum
           position: 'relative',
           width: '100%',
           height: '100%',
-          backgroundColor: '#fcfcfc',
+          backgroundColor: '#ffffff',
           borderRadius: '12px',
           border: '1px solid #000',
           overflow: 'hidden',
@@ -152,6 +149,26 @@ function ProjectCard({ title, description, tags, readTime, cardColor, href, thum
       {/* Text */}
       <div className="project-card-text">
         <div onMouseEnter={enter} onMouseLeave={leave} style={{ cursor: 'pointer', pointerEvents: 'auto' }}>
+          {eyebrow && (
+            <p style={{
+              fontFamily: "var(--font-battambang), sans-serif",
+              fontWeight: 400,
+              fontSize: '14px',
+              lineHeight: 'normal',
+              letterSpacing: '-0.168px',
+              color: '#141510',
+              margin: '0 0 2px 0',
+            }}>
+              <span style={{
+                backgroundColor: hovered ? highlightBg : 'transparent',
+                borderRadius: '3px',
+                padding: '0 2px',
+                transition: 'background-color 0.18s ease',
+              }}>
+                {eyebrow}
+              </span>
+            </p>
+          )}
           <h3 style={{
             fontFamily: "var(--font-battambang), sans-serif",
             fontWeight: 700,
@@ -343,95 +360,11 @@ export default function Home() {
     };
   }, [flyDragging]);
 
-  // ── Typewriter / cycling subheader ────────────────────────────────────
-  const [phraseIndex, setPhraseIndex] = useState(0);
-  const [charIndex,   setCharIndex]   = useState(0);
-  const [phase,       setPhase]       = useState<AnimPhase>('typing');
-  const initialDone = useRef(false);
-
-  // Min-height lock — prevents content below from jumping as phrases change
-  const subtitleWrapRef    = useRef<HTMLDivElement>(null);
-  const subtitleMeasureRef = useRef<HTMLDivElement>(null);
-  const [subtitleMinH, setSubtitleMinH] = useState<number | null>(null);
-
-  useLayoutEffect(() => {
-    const wrap    = subtitleWrapRef.current;
-    const measure = subtitleMeasureRef.current;
-    if (!wrap || !measure) return;
-
-    const run = () => {
-      if (wrap.clientWidth < 16) return;
-      let maxH = 0;
-      for (const phrase of PHRASES) {
-        measure.textContent = SUBHEADER_PREFIX + phrase;
-        maxH = Math.max(maxH, measure.offsetHeight);
-      }
-      setSubtitleMinH(maxH);
-    };
-
-    run();
-    const ro = new ResizeObserver(run);
-    ro.observe(wrap);
-    return () => ro.disconnect();
-  }, []);
-
-  useEffect(() => {
-    const phrase = PHRASES[phraseIndex];
-
-    if (phase === 'typing') {
-      if (charIndex < phrase.length) {
-        const t = setTimeout(() => setCharIndex(c => c + 1), 45);
-        return () => clearTimeout(t);
-      } else if (initialDone.current) {
-        const t = setTimeout(() => setPhase('done'), 600);
-        return () => clearTimeout(t);
-      } else if (phraseIndex === PHRASES.length - 1) {
-        initialDone.current = true;
-        setPhase('done');
-      } else {
-        const t = setTimeout(() => setPhase('highlighted'), 600);
-        return () => clearTimeout(t);
-      }
-    }
-
-    if (phase === 'highlighted') {
-      const t = setTimeout(() => {
-        setCharIndex(0);
-        setPhraseIndex(i => (i + 1) % PHRASES.length);
-        setPhase('pre-typing');
-      }, 700);
-      return () => clearTimeout(t);
-    }
-
-    if (phase === 'pre-typing') {
-      const t = setTimeout(() => setPhase('typing'), 200);
-      return () => clearTimeout(t);
-    }
-  }, [phase, charIndex, phraseIndex]);
-
-  // Click to cycle one phrase at a time (with highlight transition)
-  const handleSubtitleClick = () => {
-    if (phase !== 'done') return;
-    setPhase('highlighted');
-  };
-
-  const subtitleStyle: CSSProperties = {
-    fontFamily: "var(--font-inter), sans-serif",
-    fontWeight: 500,
-    fontSize: 'clamp(22px, 3vw, 36px)',
-    lineHeight: 1.22,
-    letterSpacing: '-0.06em',
-    color: '#141510',
-    margin: 0,
-    maxWidth: '600px',
-    userSelect: 'none',
-  };
-
   return (
     <>
       {/* White screen blocks flash during SSR→hydration before loader mounts */}
       {loaderState !== 'done' && (
-        <div aria-hidden="true" style={{ position: 'fixed', inset: 0, zIndex: 9998, background: '#fcfcfc', pointerEvents: 'none' }} />
+        <div aria-hidden="true" style={{ position: 'fixed', inset: 0, zIndex: 9998, background: '#faf7f2', pointerEvents: 'none' }} />
       )}
       {loaderState === 'showing' && (
         <Loader heroRef={heroSvgRef} onComplete={() => setLoaderState('done')} />
@@ -640,61 +573,9 @@ export default function Home() {
             </g>
           </svg>
 
-          {/* Animated subheader — wrapper locks height so content below doesn't jump */}
-          <div
-            ref={subtitleWrapRef}
-            style={{ position: 'relative', minHeight: subtitleMinH ?? undefined, maxWidth: '600px' }}
-          >
-            {/* Hidden measurement div */}
-            <div
-              ref={subtitleMeasureRef}
-              aria-hidden
-              style={{
-                ...subtitleStyle,
-                position: 'absolute',
-                visibility: 'hidden',
-                pointerEvents: 'none',
-                top: 0,
-                left: 0,
-              }}
-            />
-
-            <p
-              className="subheader-text"
-              onClick={handleSubtitleClick}
-              style={{ cursor: phase === 'done' ? 'pointer' : 'default' }}
-            >
-              {SUBHEADER_PREFIX}
-              <span
-                style={{
-                  backgroundColor:
-                    phase === 'highlighted'
-                      ? HIGHLIGHT_COLORS[phraseIndex % HIGHLIGHT_COLORS.length]
-                      : 'transparent',
-                  borderRadius: '3px',
-                  padding: '0 2px',
-                  transition: 'background-color 0.08s ease',
-                }}
-              >
-                {PHRASES[phraseIndex].slice(0, charIndex)}
-              </span>
-              {(phase === 'typing' || phase === 'pre-typing') && (
-                <span
-                  aria-hidden="true"
-                  className="cursor-blink"
-                  style={{
-                    display: 'inline-block',
-                    width: '2px',
-                    height: '1em',
-                    background: '#141510',
-                    borderRadius: '1px',
-                    marginLeft: '1px',
-                    verticalAlign: 'text-bottom',
-                  }}
-                />
-              )}
-            </p>
-          </div>
+          <p className="subheader-text">
+            A product designer who loves bringing ideas to life.
+          </p>
         </section>
 
         {/* ── Featured Projects ──────────────────────────────────────────── */}
@@ -705,7 +586,7 @@ export default function Home() {
               <span style={{ fontFamily: "var(--font-ibm-plex-mono), monospace", fontSize: '15px', lineHeight: '1', color: '#141510' }}>✳</span>
               <span style={{ fontFamily: "var(--font-ibm-plex-mono), monospace", fontSize: '14px', lineHeight: '24px', color: '#141510' }}>FEATURED PROJECTS</span>
             </div>
-            <div style={{ borderBottom: '1px dashed rgba(0,0,0,0.3)' }} />
+            <div style={{ borderBottom: '1px dashed #141510' }} />
           </div>
 
           <div className="projects-grid">
