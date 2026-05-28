@@ -776,7 +776,7 @@ label[for] {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 0;
+  gap: 16px;
   margin: 0;
   padding: 0;
   line-height: 120px;
@@ -794,7 +794,6 @@ label[for] {
 .endorsements-tiles {
   display: inline-block;
   line-height: 0;
-  margin-left: 16px;
   vertical-align: middle;
   cursor: default;
 }
@@ -804,6 +803,7 @@ label[for] {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: 24px;
+  align-items: start;
 }
 
 /* Endorser name — LinkedIn link + tooltip */
@@ -858,7 +858,8 @@ label[for] {
   font-size: 14px;
   line-height: 20px;
   color: #0066cc;
-  text-decoration: underline;
+  text-decoration: none;
+  border-bottom: 1px solid #0066cc;
   cursor: pointer !important; /* override body cursor: none */
 }
 
@@ -872,6 +873,7 @@ label[for] {
   flex-direction: column;
   gap: 16px;
   box-sizing: border-box;
+  cursor: default;
 }
 
 /* Responsive: 1 column below 950px */

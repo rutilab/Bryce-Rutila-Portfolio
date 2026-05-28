@@ -98,6 +98,9 @@ export default function HalftoneCanvas({ rippleTrigger = 0 }: Props) {
     // ── Frame ──────────────────────────────────────────────────────────────
     const frame = (ts: number) => {
       if (!alive) return;
+      if (document.body.dataset.modalOpen) {
+        mouse.overClickable = false; mouse.inHalftone = false;
+      }
       const dpr       = window.devicePixelRatio || 1;
       const g         = grid;
       const HR2       = HIGHLIGHT_R * HIGHLIGHT_R;
@@ -214,6 +217,11 @@ export default function HalftoneCanvas({ rippleTrigger = 0 }: Props) {
 
     // ── Events ─────────────────────────────────────────────────────────────
     const onMove  = (e: MouseEvent) => {
+      if (document.body.dataset.modalOpen) {
+        mouse.x = e.clientX; mouse.y = e.clientY;
+        mouse.overClickable = false; mouse.inHalftone = false;
+        return;
+      }
       mouse.x = e.clientX; mouse.y = e.clientY;
 
       const el = e.target as Element | null;
@@ -236,6 +244,7 @@ export default function HalftoneCanvas({ rippleTrigger = 0 }: Props) {
     };
     const onLeave = () => { mouse.x = -9999; mouse.y = -9999; mouse.overClickable = false; mouse.inHalftone = false; };
     const onOver  = (e: MouseEvent) => {
+      if (document.body.dataset.modalOpen) return;
       const el = e.target as Element | null;
       if (el?.closest('a, button, [role="button"], select, input, label, .bryce-svg')) {
         mouse.overClickable = true;

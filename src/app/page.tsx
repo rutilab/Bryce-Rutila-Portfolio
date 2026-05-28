@@ -191,6 +191,7 @@ interface Endorsement {
   role: string;
   company: string;
   quote: string;
+  fullQuote?: string[];
   initials: string;
   avatarColor: string;
   avatarImg?: string;
@@ -226,12 +227,18 @@ const ENDORSEMENTS: Endorsement[] = [
     avatarColor: '#12b4ff',
     avatarImg: '/endorsements/yanting-zhu.png',
     linkedIn: 'https://www.linkedin.com/in/yaningzhuyolo/',
+    fullQuote: [
+      "It was my pleasure to work closely with Bryce at UT's Applied Psychology Lab for the Finding Focus product. As a solo UX designer on our team, Bryce's contributions were instrumental in shaping the success of our projects.",
+      "I had the opportunity to collaborate with Bryce on several projects. When I took notes for him during focus groups and user interviews, his active listening and insightful follow-up questions demonstrated his exceptional interviewing skills.",
+      "As the solo UX designer on the team, Bryce meticulously designed every aspect of the Finding Focus, ensuring a responsive, cohesive, and user-friendly experience. This required a deep understanding of technical aspects and UX design principles. Also, he skillfully navigated differing opinions from the product manager and software engineer, always advocating for the users. His ability to balance these dynamics with product thinking was impressive and critical to our success. When we encountered challenges while designing the teacher resources page, Bryce's creativity and determination led to a successful outcome.",
+      "Bryce's dedication, expertise, and collaborative spirit make him an outstanding UX designer with excellent UX research craft. I highly recommend him for any future endeavors and am confident that he will continue to excel and make significant contributions in his field.",
+    ],
     // #FF12F7 pink at 0.35 alpha blended onto #faf7f2
     highlightColor: '#fca7f4',
     highlightPhrases: [
-      'solo UX designer',
-      'designed every aspect',
-      'outstanding UX designer with excellent UX research craft',
+      'meticulously designed every aspect of Finding Focus',
+      'responsive, cohesive, and user-friendly experience',
+      'dedication, expertise, and collaborative spirit',
     ],
   },
 ];
@@ -277,99 +284,158 @@ function renderHighlightedQuote(
 }
 
 // ── Endorsement card ───────────────────────────────────────────────────────
-function EndorsementCard({ name, role, company, quote, initials, avatarColor, avatarImg, linkedIn, highlightPhrases, highlightColor }: Endorsement) {
+function EndorsementCard({ name, role, company, quote, fullQuote, initials, avatarColor, avatarImg, linkedIn, highlightPhrases, highlightColor }: Endorsement) {
   const [hovered, setHovered] = useState(false);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [buttonHovered, setButtonHovered] = useState(false);
+
+  useEffect(() => {
+    if (!modalOpen) return;
+    document.body.style.overflow = 'hidden';
+    document.body.dataset.modalOpen = 'true';
+    const preventScroll = (e: Event) => e.preventDefault();
+    window.addEventListener('wheel', preventScroll, { passive: false });
+    window.addEventListener('touchmove', preventScroll, { passive: false });
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setModalOpen(false); };
+    window.addEventListener('keydown', onKey);
+    return () => {
+      document.body.style.overflow = '';
+      delete document.body.dataset.modalOpen;
+      window.removeEventListener('wheel', preventScroll);
+      window.removeEventListener('touchmove', preventScroll);
+      window.removeEventListener('keydown', onKey);
+    };
+  }, [modalOpen]);
+
+  const avatarEl = (
+    <div style={{
+      width: '40px', height: '40px', borderRadius: '50%',
+      backgroundColor: avatarImg ? 'transparent' : avatarColor,
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      flexShrink: 0, overflow: 'hidden',
+    }}>
+      {avatarImg ? (
+        <img src={avatarImg} alt={name} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+      ) : (
+        <span style={{ fontFamily: "var(--font-inter), sans-serif", fontWeight: 600, fontSize: '13px', color: '#fff', letterSpacing: '0.01em' }}>{initials}</span>
+      )}
+    </div>
+  );
+
+  const nameRowEl = (
+    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+      {avatarEl}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '1px', minWidth: 0 }}>
+        <span className="endorsement-name-wrap">
+          <a href={linkedIn} target="_blank" rel="noopener noreferrer" className="endorsement-name-link" style={{ cursor: 'pointer' }}>{name}</a>
+        </span>
+        <span style={{ fontFamily: "var(--font-inter), sans-serif", fontWeight: 400, fontStyle: 'italic', fontSize: '12px', lineHeight: '18px', color: '#383b2e' }}>{role} · {company}</span>
+      </div>
+    </div>
+  );
 
   return (
-    <div
-      className="endorsement-card"
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-      style={{ position: 'relative' }}
-    >
-      {/* Hover emoji — pops in at top-right */}
-      <div style={{
-        position: 'absolute',
-        top: 16,
-        right: 16,
-        width: 40,
-        height: 40,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        fontSize: 26,
-        lineHeight: 1,
-        transform: hovered ? 'scale(1) rotate(0deg)' : 'scale(0) rotate(-20deg)',
-        opacity: hovered ? 1 : 0,
-        transition: 'transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.2s ease',
-        pointerEvents: 'none',
-        userSelect: 'none',
-      }}>🙌</div>
-
-      {/* Avatar + name row */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-        {/* Avatar circle */}
+    <>
+      <div
+        className="endorsement-card"
+        onMouseEnter={() => setHovered(true)}
+        onMouseLeave={() => setHovered(false)}
+        style={{ position: 'relative', paddingBottom: fullQuote && hovered ? '52px' : '24px', transition: 'padding-bottom 0.2s ease' }}
+      >
+        {/* Hover emoji — pops in at top-right */}
         <div style={{
-          width: '40px',
-          height: '40px',
-          borderRadius: '50%',
-          backgroundColor: avatarImg ? 'transparent' : avatarColor,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          flexShrink: 0,
-          overflow: 'hidden',
-        }}>
-          {avatarImg ? (
-            <img
-              src={avatarImg}
-              alt={name}
-              style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
-            />
-          ) : (
-            <span style={{
-              fontFamily: "var(--font-inter), sans-serif",
-              fontWeight: 600,
-              fontSize: '13px',
-              color: '#fff',
-              letterSpacing: '0.01em',
-            }}>{initials}</span>
-          )}
-        </div>
-        {/* Name + role */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1px', minWidth: 0 }}>
-          <span className="endorsement-name-wrap">
-            <a
-              href={linkedIn}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="endorsement-name-link"
-              style={{ cursor: 'pointer' }}
-            >{name}</a>
-          </span>
-          <span style={{
-            fontFamily: "var(--font-inter), sans-serif",
-            fontWeight: 400,
-            fontStyle: 'italic',
-            fontSize: '12px',
-            lineHeight: '18px',
-            color: '#383b2e',
-          }}>{role} · {company}</span>
-        </div>
+          position: 'absolute', top: 16, right: 16,
+          width: 40, height: 40,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          fontSize: 26, lineHeight: 1,
+          transform: hovered ? 'scale(1) rotate(0deg)' : 'scale(0) rotate(-20deg)',
+          opacity: hovered ? 1 : 0,
+          transition: 'transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.2s ease',
+          pointerEvents: 'none', userSelect: 'none',
+        }}>🙌</div>
+
+        {nameRowEl}
+
+        {/* Quote with animated highlights */}
+        <p style={{ fontFamily: "var(--font-inter), sans-serif", fontWeight: 400, fontSize: '14px', lineHeight: '20px', color: '#374133', margin: 0 }}>
+          {renderHighlightedQuote(quote, highlightPhrases, highlightColor, hovered)}
+        </p>
+
+        {/* View full quote button — appears on hover */}
+        {fullQuote && (
+          <button
+            onClick={e => { e.stopPropagation(); setModalOpen(true); }}
+            onMouseEnter={() => setButtonHovered(true)}
+            onMouseLeave={() => setButtonHovered(false)}
+            style={{
+              position: 'absolute', bottom: 16, right: 16,
+              opacity: hovered ? 1 : 0,
+              transform: hovered ? 'translateY(0)' : 'translateY(4px)',
+              transition: 'opacity 0.2s ease, transform 0.2s ease, background-color 0.15s ease, border-color 0.15s ease',
+              fontFamily: "var(--font-ibm-plex-mono), monospace",
+              fontSize: '11px',
+              color: '#141510',
+              backgroundColor: buttonHovered ? highlightColor : 'transparent',
+              border: '1px solid #141510',
+              borderRadius: '20px',
+              padding: '5px 12px',
+              cursor: 'pointer',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            View full quote
+          </button>
+        )}
       </div>
 
-      {/* Quote with animated highlights */}
-      <p style={{
-        fontFamily: "var(--font-inter), sans-serif",
-        fontWeight: 400,
-        fontSize: '14px',
-        lineHeight: '20px',
-        color: '#374133',
-        margin: 0,
-      }}>
-        {renderHighlightedQuote(quote, highlightPhrases, highlightColor, hovered)}
-      </p>
-    </div>
+      {/* Full quote modal */}
+      {modalOpen && fullQuote && (
+        <div
+          style={{
+            position: 'fixed', inset: 0, zIndex: 300,
+            background: 'rgba(20, 21, 16, 0.55)',
+            backdropFilter: 'blur(4px)',
+            WebkitBackdropFilter: 'blur(4px)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            padding: '24px',
+          }}
+          onClick={() => setModalOpen(false)}
+        >
+          <div
+            className="endorsement-card"
+            onClick={e => e.stopPropagation()}
+            style={{ position: 'relative', maxWidth: '560px', width: '100%' }}
+          >
+            {/* Close button */}
+            <button
+              onClick={() => setModalOpen(false)}
+              style={{
+                position: 'absolute', top: 14, right: 14,
+                width: 28, height: 28,
+                background: 'transparent',
+                border: '1px solid #141510',
+                borderRadius: '50%',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                cursor: 'pointer',
+                fontSize: '13px',
+                color: '#141510',
+                padding: 0, flexShrink: 0,
+              }}
+            >✕</button>
+
+            {nameRowEl}
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              {fullQuote.map((para, i) => (
+                <p key={i} style={{ fontFamily: "var(--font-inter), sans-serif", fontWeight: 400, fontSize: '14px', lineHeight: '20px', color: '#374133', margin: 0 }}>
+                  {renderHighlightedQuote(para, highlightPhrases, highlightColor, false)}
+                </p>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 }
 
@@ -908,9 +974,11 @@ export default function Home() {
           {/* Heading */}
           <div className="endorsements-heading-wrap">
             <h2 className="endorsements-heading">
-              <span className="endorsements-heading-text">In their own </span>
-              <ScrabbleTiles />
-              <span className="endorsements-heading-text">.</span>
+              <span className="endorsements-heading-text">In their own</span>
+              <span style={{ display: 'inline-flex', alignItems: 'center', flexWrap: 'nowrap' }}>
+                <ScrabbleTiles />
+                <span className="endorsements-heading-text">.</span>
+              </span>
             </h2>
           </div>
 
