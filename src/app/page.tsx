@@ -38,7 +38,7 @@ interface Project {
 const PROJECTS: Project[] = [
   {
     title: 'AI Chat Assistant',
-    eyebrow: 'FINDING FOCUS',
+    eyebrow: 'FINDING FOCUS • 2024',
     description:
       "Leveraging Open AI's Chat Completions API to create an AI Assistant that ultimately helped reduce support ticket volume by 12%",
     tags: ['AI', 'UX DESIGN', 'UX RESEARCH'],
@@ -49,7 +49,7 @@ const PROJECTS: Project[] = [
   },
   {
     title: 'Landing Page Redesign',
-    eyebrow: 'FINDING FOCUS',
+    eyebrow: 'FINDING FOCUS • 2026',
     description:
       "Redesigning the Finding Focus marketing site to improve conversion and communicate value across teacher and student personas",
     tags: ['UX DESIGN', 'VISUAL DESIGN', 'MARKETING'],
@@ -67,6 +67,311 @@ const PROJECTS: Project[] = [
     ),
   },
 ];
+
+// ── Scrabble tiles with shuffle animation ──────────────────────────────────
+const SCRABBLE_LETTERS = ['W', 'O', 'R', 'D', 'S'] as const;
+const TILE_W = 64;
+const TILE_GAP = 3;
+const TILE_STRIDE = TILE_W + TILE_GAP;
+// slots[i] = which visual slot letter[i] occupies
+const WORDS_SLOTS = [0, 1, 2, 3, 4];          // W-O-R-D-S in order
+const SWORD_SLOTS = [1, 2, 3, 4, 0];           // S-W-O-R-D (S steals slot 0)
+
+function fisher_yates(): number[] {
+  const arr = [0, 1, 2, 3, 4];
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+type TilePhase = 'init' | 'reveal' | 'hover' | 'return';
+
+function ScrabbleTiles() {
+  const [slots, setSlots]         = useState<number[]>(WORDS_SLOTS);
+  const [rotations, setRotations] = useState<number[]>([0, 0, 0, 0, 0]);
+  const [phase, setPhase]         = useState<TilePhase>('init');
+  const [revealed, setRevealed]   = useState(false);
+  const hoverCount  = useRef(0);
+  const containerRef = useRef<HTMLSpanElement>(null);
+  const totalW = SCRABBLE_LETTERS.length * TILE_W + (SCRABBLE_LETTERS.length - 1) * TILE_GAP;
+
+  // On mount: jump instantly to a random scramble (below the fold — no flash)
+  useEffect(() => {
+    setSlots(fisher_yates());
+    setRotations([...Array(5)].map(() => (Math.random() - 0.5) * 18));
+  }, []);
+
+  // When the tiles scroll into view → cascade into correct W-O-R-D-S order
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el || revealed) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setRevealed(true);
+          setPhase('reveal');
+          setSlots(WORDS_SLOTS);
+          setRotations([0, 0, 0, 0, 0]);
+        }
+      },
+      { threshold: 0.6 },
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [revealed]);
+
+  const onEnter = () => {
+    if (!revealed) return;
+    hoverCount.current += 1;
+    setPhase('hover');
+    // Exactly the 3rd hover: spell SWORD; all others (including beyond 3) are random
+    const newSlots = hoverCount.current === 3 ? [...SWORD_SLOTS] : fisher_yates();
+    setSlots(newSlots);
+    setRotations([...Array(5)].map(() => (Math.random() - 0.5) * 24));
+  };
+
+  const onLeave = () => {
+    setPhase('return');
+    setSlots(WORDS_SLOTS);
+    setRotations([0, 0, 0, 0, 0]);
+  };
+
+  return (
+    <span
+      ref={containerRef}
+      className="endorsements-tiles"
+      style={{ position: 'relative', display: 'inline-block', width: totalW, height: TILE_W }}
+      onMouseEnter={onEnter}
+      onMouseLeave={onLeave}
+    >
+      {SCRABBLE_LETTERS.map((letter, i) => {
+        const homeX   = i * TILE_STRIDE;
+        const targetX = slots[i] * TILE_STRIDE;
+        const dx = targetX - homeX;
+
+        let transition: string;
+        if (phase === 'init') {
+          transition = 'none';                                                               // instant scramble on mount
+        } else if (phase === 'reveal') {
+          transition = `transform 0.65s cubic-bezier(0.34, 1.56, 0.64, 1) ${i * 70}ms`;    // W first → S last
+        } else if (phase === 'hover') {
+          transition = `transform 0.55s cubic-bezier(0.34, 1.56, 0.64, 1) ${i * 45}ms`;    // cascade left → right
+        } else {
+          transition = `transform 0.38s cubic-bezier(0.34, 1.56, 0.64, 1) ${(4 - i) * 30}ms`; // snap back right → left
+        }
+
+        return (
+          <img
+            key={letter}
+            src={`/scrabble-tiles/${letter}.svg`}
+            alt={letter}
+            draggable={false}
+            style={{
+              position: 'absolute',
+              top: 0,
+              left: homeX,
+              width: TILE_W,
+              height: TILE_W,
+              transform: `translateX(${dx}px) rotate(${rotations[i]}deg)`,
+              transition,
+              willChange: 'transform',
+            }}
+          />
+        );
+      })}
+    </span>
+  );
+}
+
+// ── Endorsement data ───────────────────────────────────────────────────────
+interface Endorsement {
+  name: string;
+  role: string;
+  company: string;
+  quote: string;
+  initials: string;
+  avatarColor: string;
+  avatarImg?: string;
+  linkedIn: string;
+  highlightPhrases: string[];
+  highlightColor: string; // pre-blended opaque hex — no stacking artifacts
+}
+
+const ENDORSEMENTS: Endorsement[] = [
+  {
+    name: 'Mike Mrazek',
+    role: 'Co-Founder',
+    company: 'Finding Focus',
+    quote: 'Bryce is a deeply thoughtful designer who truly cares about creating great experiences for users. After working with him, nearly every aspect of our product has significantly improved. And beyond his considerable UX/UI skills, he is also a kind and principled person.',
+    initials: 'MM',
+    avatarColor: '#ff9c12',
+    avatarImg: '/endorsements/mike-mrozak.png',
+    linkedIn: 'https://www.linkedin.com/in/michael-mrazek-32209b61/',
+    // #FFF712 yellow at 0.35 alpha blended onto #faf7f2
+    highlightColor: '#fcf7a4',
+    highlightPhrases: [
+      'deeply thoughtful designer',
+      'nearly every aspect of our product has significantly improved',
+      'kind and principled person',
+    ],
+  },
+  {
+    name: 'Yaning Zhu',
+    role: 'UX Researcher',
+    company: 'Finding Focus',
+    quote: "As the solo UX designer on the team, Bryce meticulously designed every aspect of Finding Focus, ensuring a responsive, cohesive, and user-friendly experience. Bryce's dedication, expertise, and collaborative spirit make him an outstanding UX designer with excellent UX research craft.",
+    initials: 'YZ',
+    avatarColor: '#12b4ff',
+    avatarImg: '/endorsements/yanting-zhu.png',
+    linkedIn: 'https://www.linkedin.com/in/yaningzhuyolo/',
+    // #FF12F7 pink at 0.35 alpha blended onto #faf7f2
+    highlightColor: '#fca7f4',
+    highlightPhrases: [
+      'solo UX designer',
+      'designed every aspect',
+      'outstanding UX designer with excellent UX research craft',
+    ],
+  },
+];
+
+// ── Highlighted quote renderer ─────────────────────────────────────────────
+function renderHighlightedQuote(
+  text: string,
+  phrases: string[],
+  color: string,
+  active: boolean,
+): React.ReactNode {
+  type Seg = { text: string; hi: boolean };
+  let segs: Seg[] = [{ text, hi: false }];
+
+  for (const phrase of phrases) {
+    const next: Seg[] = [];
+    for (const seg of segs) {
+      if (seg.hi) { next.push(seg); continue; }
+      const idx = seg.text.indexOf(phrase);
+      if (idx === -1) { next.push(seg); continue; }
+      if (idx > 0) next.push({ text: seg.text.slice(0, idx), hi: false });
+      next.push({ text: phrase, hi: true });
+      const tail = seg.text.slice(idx + phrase.length);
+      if (tail) next.push({ text: tail, hi: false });
+    }
+    segs = next;
+  }
+
+  return (
+    <>
+      {segs.map((seg, i) =>
+        seg.hi ? (
+          <span key={i} style={{
+            backgroundColor: active ? color : 'transparent',
+            borderRadius: '3px',
+            padding: '0 2px',
+            transition: 'background-color 0.2s ease',
+          }}>{seg.text}</span>
+        ) : seg.text
+      )}
+    </>
+  );
+}
+
+// ── Endorsement card ───────────────────────────────────────────────────────
+function EndorsementCard({ name, role, company, quote, initials, avatarColor, avatarImg, linkedIn, highlightPhrases, highlightColor }: Endorsement) {
+  const [hovered, setHovered] = useState(false);
+
+  return (
+    <div
+      className="endorsement-card"
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={{ position: 'relative' }}
+    >
+      {/* Hover emoji — pops in at top-right */}
+      <div style={{
+        position: 'absolute',
+        top: 16,
+        right: 16,
+        width: 40,
+        height: 40,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        fontSize: 26,
+        lineHeight: 1,
+        transform: hovered ? 'scale(1) rotate(0deg)' : 'scale(0) rotate(-20deg)',
+        opacity: hovered ? 1 : 0,
+        transition: 'transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.2s ease',
+        pointerEvents: 'none',
+        userSelect: 'none',
+      }}>🙌</div>
+
+      {/* Avatar + name row */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+        {/* Avatar circle */}
+        <div style={{
+          width: '40px',
+          height: '40px',
+          borderRadius: '50%',
+          backgroundColor: avatarImg ? 'transparent' : avatarColor,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          flexShrink: 0,
+          overflow: 'hidden',
+        }}>
+          {avatarImg ? (
+            <img
+              src={avatarImg}
+              alt={name}
+              style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+            />
+          ) : (
+            <span style={{
+              fontFamily: "var(--font-inter), sans-serif",
+              fontWeight: 600,
+              fontSize: '13px',
+              color: '#fff',
+              letterSpacing: '0.01em',
+            }}>{initials}</span>
+          )}
+        </div>
+        {/* Name + role */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1px', minWidth: 0 }}>
+          <span className="endorsement-name-wrap">
+            <a
+              href={linkedIn}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="endorsement-name-link"
+              style={{ cursor: 'pointer' }}
+            >{name}</a>
+          </span>
+          <span style={{
+            fontFamily: "var(--font-inter), sans-serif",
+            fontWeight: 400,
+            fontStyle: 'italic',
+            fontSize: '12px',
+            lineHeight: '18px',
+            color: '#383b2e',
+          }}>{role} · {company}</span>
+        </div>
+      </div>
+
+      {/* Quote with animated highlights */}
+      <p style={{
+        fontFamily: "var(--font-inter), sans-serif",
+        fontWeight: 400,
+        fontSize: '14px',
+        lineHeight: '20px',
+        color: '#374133',
+        margin: 0,
+      }}>
+        {renderHighlightedQuote(quote, highlightPhrases, highlightColor, hovered)}
+      </p>
+    </div>
+  );
+}
 
 // ── Tag chip ───────────────────────────────────────────────────────────────
 function Tag({ label, hovered, cardColor }: { label: string; hovered: boolean; cardColor: string }) {
@@ -126,7 +431,7 @@ function ProjectCard({ title, eyebrow, description, tags, readTime, cardColor, h
         style={{
           pointerEvents: 'auto',
           cursor: 'pointer',
-          backgroundColor: hovered ? cardColor : '#ffffff',
+          backgroundColor: hovered ? cardColor : '#fdfbf9',
           transform: hovered ? 'scale(1.025)' : 'scale(1)',
           boxShadow: hovered
             ? '0px 6px 24px 0px rgba(0, 0, 0, 0.28)'
@@ -139,7 +444,7 @@ function ProjectCard({ title, eyebrow, description, tags, readTime, cardColor, h
           height: '100%',
           backgroundColor: '#ffffff',
           borderRadius: '12px',
-          border: '1px solid #000',
+          border: '2px solid #000',
           overflow: 'hidden',
         }}>
           {thumbnailContent}
@@ -583,7 +888,10 @@ export default function Home() {
 
           <div style={{ marginBottom: '24px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '5px', marginBottom: '4px' }}>
-              <span style={{ fontFamily: "var(--font-ibm-plex-mono), monospace", fontSize: '15px', lineHeight: '1', color: '#141510' }}>✳</span>
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ flexShrink: 0 }}>
+                <path d="M8 0L9.16938 5.17688L13.6569 2.34315L10.8231 6.83062L16 8L10.8231 9.16938L13.6569 13.6569L9.16938 10.8231L8 16L6.83062 10.8231L2.34315 13.6569L5.17688 9.16938L0 8L5.17688 6.83062L2.34315 2.34315L6.83062 5.17688L8 0Z" fill="#141510"/>
+                <path d="M8 4L8.58469 6.58844L10.8284 5.17157L9.41156 7.41531L12 8L9.41156 8.58469L10.8284 10.8284L8.58469 9.41156L8 12L7.41531 9.41156L5.17157 10.8284L6.58844 8.58469L4 8L6.58844 7.41531L5.17157 5.17157L7.41531 6.58844L8 4Z" fill="#FAF7F2"/>
+              </svg>
               <span style={{ fontFamily: "var(--font-ibm-plex-mono), monospace", fontSize: '14px', lineHeight: '24px', color: '#141510' }}>FEATURED PROJECTS</span>
             </div>
             <div style={{ borderBottom: '1px dashed #141510' }} />
@@ -592,6 +900,37 @@ export default function Home() {
           <div className="projects-grid">
             {PROJECTS.map((p, i) => <ProjectCard key={i} {...p} />)}
           </div>
+        </section>
+
+        {/* ── In their own words / Endorsements ─────────────────────────── */}
+        <section className="endorsements-section">
+
+          {/* Heading */}
+          <div className="endorsements-heading-wrap">
+            <h2 className="endorsements-heading">
+              <span className="endorsements-heading-text">In their own </span>
+              <ScrabbleTiles />
+              <span className="endorsements-heading-text">.</span>
+            </h2>
+          </div>
+
+          {/* Divider */}
+          <div style={{ marginBottom: '24px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '5px', marginBottom: '4px' }}>
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ flexShrink: 0 }}>
+                <path d="M8 0L10.1607 5.83927L16 8L10.1607 10.1607L8 16L5.83927 10.1607L0 8L5.83927 5.83927L8 0Z" fill="#141510"/>
+                <path d="M8 4L9.08036 6.91964L12 8L9.08036 9.08036L8 12L6.91964 9.08036L4 8L6.91964 6.91964L8 4Z" fill="#FAF7F2"/>
+              </svg>
+              <span style={{ fontFamily: "var(--font-ibm-plex-mono), monospace", fontSize: '14px', lineHeight: '24px', color: '#141510' }}>ENDORSEMENTS</span>
+            </div>
+            <div style={{ borderBottom: '1px dashed #141510' }} />
+          </div>
+
+          {/* Cards */}
+          <div className="endorsements-grid">
+            {ENDORSEMENTS.map((e, i) => <EndorsementCard key={i} {...e} />)}
+          </div>
+
         </section>
       </main>
     </>
