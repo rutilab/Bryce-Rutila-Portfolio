@@ -13,12 +13,24 @@
   --font-inter: var(--font-inter);
 }
 
+html {
+  overflow-x: hidden;
+  scrollbar-width: none;
+}
+html::-webkit-scrollbar {
+  display: none;
+}
+
 body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-sf-pro);
   min-height: 100vh;
   overflow-x: hidden;
+  scrollbar-width: none;
+}
+body::-webkit-scrollbar {
+  display: none;
 }
 
 /* Restore pointer cursor on interactive elements (home page sets cursor:none on body) */
@@ -669,12 +681,11 @@ label[for] {
   margin: 0 auto;
 }
 
-/* ── Four-stage responsive grid layout ───────────────────────────────────── */
+/* ── Three-stage responsive grid layout ─────────────────────────────────── */
 /*                                                                             */
-/* ≥1200px:    2-col grid, card + text SIDE-BY-SIDE within each column        */
-/* 950–1199px: 2-col grid, text BELOW card within each column (wide stacked)  */
-/* 800–949px:  1-col, card + text SIDE-BY-SIDE (single row with text right)   */
-/* ≤799px:     1-col, text BELOW card (single stacked)                         */
+/* ≥950px:    2-col grid, text BELOW card within each column (stacked)         */
+/* 800–949px: 1-col, card + text SIDE-BY-SIDE (single row with text right)    */
+/* ≤799px:    1-col, text BELOW card (single stacked)                          */
 
 .projects-grid {
   display: grid;
@@ -691,29 +702,23 @@ label[for] {
 }
 
 /* ── Card pair (Link element) ────────────────────────────────────────────── */
-/* ≥1200px: side-by-side (large 2-col layout) */
+/* ≥950px: stacked (text below card) */
 .project-card-pair {
   display: flex;
-  flex-direction: row;
+  flex-direction: column;
   gap: 16px;
   align-items: flex-start;
   min-width: 0;
   text-decoration: none;
   color: inherit;
 }
-/* 950–1199px: stacked within each 2-col column */
-@media (max-width: 1199px) {
-  .project-card-pair {
-    flex-direction: column;
-  }
-}
-/* 800–949px: side-by-side again (single 1-col row) */
+/* 800–949px: side-by-side (text right of card) */
 @media (min-width: 800px) and (max-width: 949px) {
   .project-card-pair {
     flex-direction: row;
   }
 }
-/* ≤799px: stacked again */
+/* ≤799px: stacked */
 @media (max-width: 799px) {
   .project-card-pair {
     flex-direction: column;
@@ -721,10 +726,11 @@ label[for] {
 }
 
 /* ── Card outer ─────────────────────────────────────────────────────────── */
-/* Side-by-side (default ≥1200px): clamped width, near-square ratio */
+/* Default (≥950px + ≤799px): full-width, 4:3 ratio */
 .project-card-outer {
-  flex: 0 0 clamp(200px, 42%, 324px);
-  aspect-ratio: 324 / 288;
+  flex: 0 0 auto;
+  width: 100%;
+  aspect-ratio: 4 / 3;
   border-radius: 16px;
   border: 1px solid #000;
   box-shadow: 0px 2px 12px 0px rgba(0, 0, 0, 0.15);
@@ -734,28 +740,12 @@ label[for] {
               box-shadow 0.2s ease,
               background-color 0.2s ease;
 }
-/* Stacked states: full-width, wider 4:3 ratio */
-@media (max-width: 1199px) {
-  .project-card-outer {
-    flex: 0 0 auto;
-    width: 100%;
-    aspect-ratio: 4 / 3;
-  }
-}
-/* 800–949px: back to side-by-side sizing */
+/* 800–949px: side-by-side sizing, clamped width, near-square ratio */
 @media (min-width: 800px) and (max-width: 949px) {
   .project-card-outer {
     flex: 0 0 clamp(200px, 42%, 324px);
     width: auto;
     aspect-ratio: 324 / 288;
-  }
-}
-/* ≤799px: stacked again */
-@media (max-width: 799px) {
-  .project-card-outer {
-    flex: 0 0 auto;
-    width: 100%;
-    aspect-ratio: 4 / 3;
   }
 }
 
