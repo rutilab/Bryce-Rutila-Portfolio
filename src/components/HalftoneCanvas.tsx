@@ -50,7 +50,8 @@ function makeGrid(cols: number, rows: number): Grid {
     for (let c = 0; c < cols; c++) {
       const i = r * cols + c;
       g.gx[i] = c * GRID + GRID / 2;
-      g.gy[i] = r * GRID + GRID / 2;
+      // Start one row above the viewport so scroll-offset never reveals a gap
+      g.gy[i] = (r - 1) * GRID + GRID / 2;
       g.ph[i] = Math.random() * Math.PI * 2;
       g.br[i] = R_BG;
     }
@@ -97,9 +98,11 @@ export default function HalftoneCanvas({ rippleTrigger = 0 }: Props) {
     // ── Frame ──────────────────────────────────────────────────────────────
     const frame = (ts: number) => {
       if (!alive) return;
-      const dpr = window.devicePixelRatio || 1;
-      const g   = grid;
-      const HR2 = HIGHLIGHT_R * HIGHLIGHT_R;
+      const dpr       = window.devicePixelRatio || 1;
+      const g         = grid;
+      const HR2       = HIGHLIGHT_R * HIGHLIGHT_R;
+      // Offset dots by scroll position (mod GRID) so they scroll with the page
+      const scrollOff = (window.scrollY % GRID) * dpr;
 
       const ripple      = rippleRef.current;
       const waveRadius  = ripple ? WAVE_SPEED * (ts - ripple.time) / 1000 : -1;
@@ -107,7 +110,7 @@ export default function HalftoneCanvas({ rippleTrigger = 0 }: Props) {
         && waveRadius >= 0
         && ts - ripple.time < WAVE_DURATION;
 
-      ctx.fillStyle = '#fcfcfc';
+      ctx.fillStyle = '#faf7f2';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
       if (g) {
@@ -163,7 +166,7 @@ export default function HalftoneCanvas({ rippleTrigger = 0 }: Props) {
           if (!mouse.overClickable && !mouse.inHalftone && hdx * hdx + hdy * hdy < HR2) continue;
 
           const r  = g.br[i] * dpr;
-          const cx = dotX * dpr, cy = dotY * dpr;
+          const cx = dotX * dpr, cy = dotY * dpr - scrollOff;
           ctx.moveTo(cx + r, cy);
           ctx.arc(cx, cy, r, 0, Math.PI * 2);
         }
@@ -184,7 +187,7 @@ export default function HalftoneCanvas({ rippleTrigger = 0 }: Props) {
             const tf    = 1 - d2 / HR2;
             const extra = HIGHLIGHT_EXTRA_BG * tf * tf;
             const r     = (g.br[i] + extra) * dpr;
-            const cx    = dotX * dpr, cy = dotY * dpr;
+            const cx    = dotX * dpr, cy = dotY * dpr - scrollOff;
             ctx.moveTo(cx + r, cy);
             ctx.arc(cx, cy, r, 0, Math.PI * 2);
           }
@@ -198,7 +201,9 @@ export default function HalftoneCanvas({ rippleTrigger = 0 }: Props) {
     // ── Init ───────────────────────────────────────────────────────────────
     const init = (isResize = false) => {
       const w = window.innerWidth, h = window.innerHeight;
-      const cols = Math.ceil(w / GRID), rows = Math.ceil(h / GRID);
+      const cols = Math.ceil(w / GRID);
+      // +2 rows: one above viewport (for scroll offset) + one below for safety
+      const rows = Math.ceil(h / GRID) + 2;
       if (!grid || isResize) {
         grid = makeGrid(cols, rows);
       }

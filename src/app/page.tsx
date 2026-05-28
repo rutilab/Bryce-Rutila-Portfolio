@@ -10,6 +10,19 @@ import Loader from '@/components/Loader';
 // Module-level flag: resets on real page reload (module re-imported), persists across SPA remounts
 let _loaderHasRun = false;
 
+// ── Blend a hex color at given opacity onto a solid background ─────────────
+function solidHighlight(hex: string, alpha: number, bg = '#faf7f2'): string {
+  const parse = (h: string) => [
+    parseInt(h.slice(1, 3), 16),
+    parseInt(h.slice(3, 5), 16),
+    parseInt(h.slice(5, 7), 16),
+  ];
+  const [fr, fg, fb] = parse(hex);
+  const [br, bg_g, bb] = parse(bg);
+  const blend = (f: number, b: number) => Math.round(b * (1 - alpha) + f * alpha);
+  return `#${[blend(fr, br), blend(fg, bg_g), blend(fb, bb)].map(v => v.toString(16).padStart(2, '0')).join('')}`;
+}
+
 // ── Project data ───────────────────────────────────────────────────────────
 interface Project {
   title: string;
@@ -57,8 +70,7 @@ const PROJECTS: Project[] = [
 
 // ── Tag chip ───────────────────────────────────────────────────────────────
 function Tag({ label, hovered, cardColor }: { label: string; hovered: boolean; cardColor: string }) {
-  // highlight bg matches the heading/description highlight (≈38% opacity)
-  const highlightBg = `${cardColor}61`;
+  const highlightBg = solidHighlight(cardColor, 0.38);
   return (
     <span
       style={{
@@ -95,7 +107,7 @@ function ClockIcon() {
 function ProjectCard({ title, eyebrow, description, tags, readTime, cardColor, href, thumbnailContent }: Project) {
   const hoverCount = useRef(0);
   const [hovered, setHovered] = useState(false);
-  const highlightBg = `${cardColor}61`;   // ≈38% opacity, matches subheader highlight
+  const highlightBg = solidHighlight(cardColor, 0.38);
 
   const enter = () => { hoverCount.current++; setHovered(true); };
   const leave = () => { hoverCount.current--; if (hoverCount.current <= 0) { hoverCount.current = 0; setHovered(false); } };
@@ -114,7 +126,7 @@ function ProjectCard({ title, eyebrow, description, tags, readTime, cardColor, h
         style={{
           pointerEvents: 'auto',
           cursor: 'pointer',
-          backgroundColor: hovered ? cardColor : '#fcfcfc',
+          backgroundColor: hovered ? cardColor : '#ffffff',
           transform: hovered ? 'scale(1.025)' : 'scale(1)',
           boxShadow: hovered
             ? '0px 6px 24px 0px rgba(0, 0, 0, 0.28)'
@@ -125,7 +137,7 @@ function ProjectCard({ title, eyebrow, description, tags, readTime, cardColor, h
           position: 'relative',
           width: '100%',
           height: '100%',
-          backgroundColor: '#fcfcfc',
+          backgroundColor: '#ffffff',
           borderRadius: '12px',
           border: '1px solid #000',
           overflow: 'hidden',
@@ -145,7 +157,7 @@ function ProjectCard({ title, eyebrow, description, tags, readTime, cardColor, h
               lineHeight: 'normal',
               letterSpacing: '-0.168px',
               color: '#141510',
-              margin: '0',
+              margin: '0 0 2px 0',
             }}>
               <span style={{
                 backgroundColor: hovered ? highlightBg : 'transparent',
@@ -352,7 +364,7 @@ export default function Home() {
     <>
       {/* White screen blocks flash during SSR→hydration before loader mounts */}
       {loaderState !== 'done' && (
-        <div aria-hidden="true" style={{ position: 'fixed', inset: 0, zIndex: 9998, background: '#fcfcfc', pointerEvents: 'none' }} />
+        <div aria-hidden="true" style={{ position: 'fixed', inset: 0, zIndex: 9998, background: '#faf7f2', pointerEvents: 'none' }} />
       )}
       {loaderState === 'showing' && (
         <Loader heroRef={heroSvgRef} onComplete={() => setLoaderState('done')} />

@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 :root {
-  --background: #fcfcfc;
+  --background: #faf7f2;
   --foreground: #141510;
   --font-sf-pro: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Helvetica Neue', sans-serif;
 }
@@ -500,7 +500,7 @@ label[for] {
 .butterfly-net-wrap {
   position: fixed;
   top: 16px;
-  left: 48px;
+  left: max(48px, calc(50vw - 600px + 48px));
   z-index: 100;
   pointer-events: none;
   transform-origin: bottom center;
@@ -543,11 +543,14 @@ label[for] {
 }
 
 /* ── BR Fly positioning ─────────────────────────────────────────────────── */
+/*   Container spans the full viewport by offsetting left by the centering    */
+/*   margin and stretching to 100vw — flies stay viewport-anchored at any     */
+/*   content width without breaking scroll or fixed-positioning stacking.     */
 .br-flies-container {
   position: absolute;
   top: 0;
-  left: 0;
-  width: 100%;
+  left: calc((100% - 100vw) / 2);
+  width: 100vw;
   height: 100%;
   pointer-events: none;
   overflow: visible;
@@ -647,19 +650,21 @@ label[for] {
   user-select: none;
 }
 
-/* ── Landing main — 40px padding, content centered at 1704px (1784px total) */
+/* ── Landing main — no horizontal padding at ≥1200px, 40px below, 24px mobile */
 .landing-main {
   position: relative;
   z-index: 1;
-  max-width: 1704px;
+  max-width: 1200px;
   margin: 0 auto;
-  padding: 152px 40px 80px;
+  padding: 152px 0 80px;
   box-sizing: border-box;
   --fly-w: clamp(213px, 32.3vw, 355px);
   --hero-w: min(600px, 85vw);
 }
 @media (max-width: 1199px) {
   .landing-main {
+    padding-left: 40px;
+    padding-right: 40px;
     --fly-w: clamp(181px, 20.3vw, 243px);
   }
 }
@@ -677,7 +682,7 @@ label[for] {
 
 /* ── Project section wrapper ──────────────────────────────────────────────── */
 .projects-section {
-  max-width: 1704px;
+  max-width: 1200px;
   margin: 0 auto;
 }
 

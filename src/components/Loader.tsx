@@ -296,7 +296,7 @@ export default function Loader({ heroRef, onComplete }: LoaderProps) {
           inset: 0,
           zIndex: 9999,
           overflow: 'hidden',
-          background: '#fcfcfc',
+          background: '#faf7f2',
         }}
       >
         {/* Color slices */}
