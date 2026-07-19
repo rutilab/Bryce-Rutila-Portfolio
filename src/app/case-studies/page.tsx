@@ -100,6 +100,35 @@ const AI_ASSISTANT_THUMBNAIL = (
   </>
 );
 
+// Placeholder — swap for final asset: milestone achievement screen with summit illustration
+const ACHIEVEMENTS_THUMBNAIL = (
+  <div style={{
+    width: '100%',
+    height: '100%',
+    borderRadius: '5px',
+    border: '1.5px dashed #31e300',
+    background: 'rgba(49, 227, 0, 0.1)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: '6px',
+    boxSizing: 'border-box',
+  }}>
+    <span style={{
+      fontFamily: 'Inter, sans-serif',
+      fontSize: '6.5px',
+      fontWeight: 500,
+      color: '#1e8a00',
+      lineHeight: '9px',
+      textAlign: 'center',
+      letterSpacing: '0.04em',
+      textTransform: 'uppercase',
+    }}>
+      Placeholder · Milestone screen
+    </span>
+  </div>
+);
+
 const LANDING_PAGE_THUMBNAIL = (
   <img src="/case-studies/landing-page/header-and-hero.png" alt="" style={{
     position: 'absolute', inset: '8px',
@@ -314,6 +343,13 @@ export default function CaseStudies() {
                 thumbnailContent: LANDING_PAGE_THUMBNAIL,
                 rotation: 9,
                 leftPct: '51%',
+              },
+              {
+                title: 'Focus Coach Achievements',
+                subtitle: 'Session completion redesign',
+                thumbnailContent: ACHIEVEMENTS_THUMBNAIL,
+                rotation: 2,
+                leftPct: '28.5%',
               },
             ]}
           />

@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="412px" height="170px" viewBox="0 0 412 170" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <title>Completion Screen Content</title>
+    <g id="Page-1" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g id="Completion-1" transform="translate(-195, -259)">
+            <g id="Group" transform="translate(197, 60)">
+                <g id="Completion-Screen-Content" transform="translate(-136, 19)">
+                    <g id="Week-Multi-Copy-2" transform="translate(185, 182)">
+                        <g id="Group">
+                            <rect id="Rectangle-2" stroke="#D8D8D8" stroke-width="2" fill="#FFFFFF" x="-50" y="-1" width="410" height="168" rx="16"></rect>
+                            <text id="Complete-a-session-e" font-family="Montserrat-SemiBold, Montserrat" font-size="16" font-weight="500" fill="#666666">
+                                <tspan x="15.432" y="127">Complete a session every day this </tspan>
+                                <tspan x="63.68" y="146">week to earn a streak!</tspan>
+                            </text>
+                            <polyline id="Line" stroke="#D8D8D8" stroke-width="2" stroke-linecap="square" points="-48.5 96 254 96 259 85 264 96 359 96"></polyline>
+                        </g>
+                        <g id="Group" transform="translate(19, 15)">
+                            <g transform="translate(12, 1)">
+                                <g>
+                                    <text id="M" font-family="Montserrat-Bold, Montserrat" font-size="14" font-weight="bold" fill="#76BFFE">
+                                        <tspan x="13.315" y="14">M</tspan>
+                                    </text>
+                                    <g transform="translate(0, 24)">
+                                        <circle id="Oval-2" fill="#76BFFE" cx="20" cy="20" r="20"></circle>
+                                        <g id="Graphic" transform="translate(8, 8)" stroke="#FFFFFF" stroke-linecap="round" stroke-linejoin="round" stroke-width="4">
+                                            <polyline id="Path" points="20 6 9 17 4 12"></polyline>
+                                        </g>
+                                    </g>
+                                </g>
+                                <g id="Group-Copy" transform="translate(52, 0)">
+                                    <text id="Tu" font-family="Montserrat-Bold, Montserrat" font-size="14" font-weight="bold" fill="#ABABAB">
+                                        <tspan x="10.865" y="14">Tu</tspan>
+                                    </text>
+                                    <g id="Group" transform="translate(0, 24)" fill="#E5E5E5">
+                                        <circle id="Oval-2" cx="20" cy="20" r="20"></circle>
+                                    </g>
+                                </g>
+                                <g id="Group-Copy-2" transform="translate(104, 0)">
+                                    <text id="W" font-family="Montserrat-Bold, Montserrat" font-size="14" font-weight="bold" fill="#ABABAB">
+                                        <tspan x="11.859" y="14">W</tspan>
+                                    </text>
+                                    <g id="Group" transform="translate(0, 24)" fill="#E5E5E5">
+                                        <circle id="Oval-2" cx="20" cy="20" r="20"></circle>
+                                    </g>
+                                </g>
+                                <g id="Group-Copy-3" transform="translate(156, 0)">
+                                    <text id="Th" font-family="Montserrat-Bold, Montserrat" font-size="14" font-weight="bold" fill="#ABABAB">
+                                        <tspan x="10.837" y="14">Th</tspan>
+                                    </text>
+                                    <g id="Group" transform="translate(0, 24)" fill="#E5E5E5">
+                                        <circle id="Oval-2" cx="20" cy="20" r="20"></circle>
+                                    </g>
+                                </g>
+                                <g id="Group-Copy-4" transform="translate(208, 0)">
+                                    <text id="F" font-family="Montserrat-Bold, Montserrat" font-size="14" font-weight="bold" fill="#ABABAB">
+                                        <tspan x="15.527" y="14">F</tspan>
+                                    </text>
+                                    <g id="Group" transform="translate(0, 24)">
+                                        <circle id="Oval-2" fill="#E5E5E5" cx="20" cy="20" r="20"></circle>
+                                        <g id="Graphic" transform="translate(8, 8)" stroke="#000000" stroke-linecap="round" stroke-linejoin="round" stroke-opacity="0.250983392" stroke-width="2">
+                                            <path d="M12,3 C12.6666667,5.66666667 14,7.83333333 16,9.5 C18,11.1666667 19,13 19,15 C19,18.8659932 15.8659932,22 12,22 C8.13400679,22 5,18.8659932 5,15 C5,13.9181489 5.35088936,12.8654809 6,12 C6,13.3807119 7.11928813,14.5 8.5,14.5 C9.88071187,14.5 11,13.3807119 11,12 C11,10 9.5,9 9.5,7 C9.5,5.66666667 10.3333333,4.33333333 12,3" id="Path"></path>
+                                        </g>
+                                    </g>
+                                </g>
+                            </g>
+                        </g>
+                    </g>
+                </g>
+            </g>
+        </g>
+    </g>
+</svg>

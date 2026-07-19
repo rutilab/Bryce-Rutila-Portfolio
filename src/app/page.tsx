@@ -37,6 +37,41 @@ interface Project {
 
 const PROJECTS: Project[] = [
   {
+    title: 'Focus Coach Achievements',
+    eyebrow: 'FINDING FOCUS • 2026',
+    description:
+      "Redesigning the session completion flow around celebration — milestones, personal bests, and focus streaks that make finishing a session feel earned",
+    tags: ['UX DESIGN', 'GAMIFICATION', 'ANIMATION'],
+    readTime: '10 MIN READ',
+    cardColor: '#31e300',
+    href: '/case-studies/focus-coach-achievements',
+    thumbnailContent: (
+      // Placeholder — swap for final asset: milestone achievement screen with summit illustration
+      <div style={{
+        position: 'absolute', inset: '8px',
+        borderRadius: '5px',
+        border: '2px dashed #31e300',
+        backgroundColor: 'rgba(49, 227, 0, 0.07)',
+        display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+        gap: '6px', padding: '12px', textAlign: 'center',
+      }}>
+        <span style={{
+          fontFamily: "var(--font-ibm-plex-mono), monospace",
+          fontSize: '10px', letterSpacing: '0.08em',
+          color: '#1e8a00', textTransform: 'uppercase',
+        }}>
+          Placeholder · Image
+        </span>
+        <span style={{
+          fontFamily: "var(--font-inter), sans-serif",
+          fontSize: '11px', lineHeight: '15px', color: '#557a4a',
+        }}>
+          Milestone achievement screen with summit illustration
+        </span>
+      </div>
+    ),
+  },
+  {
     title: 'AI Chat Assistant',
     eyebrow: 'FINDING FOCUS • 2024',
     description:

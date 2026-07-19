@@ -196,7 +196,125 @@ export default function FindingFocus() {
               }}
             >
 
-              {/* Card 1 — Finding Focus AI Assistant */}
+              {/* Card 1 — Focus Coach Achievements */}
+              <Link
+                href="/case-studies/focus-coach-achievements"
+                style={{ flex: 1, textDecoration: 'none' }}
+              >
+                <div
+                  style={{
+                    background: '#fcfcfc',
+                    border: '2px solid #d8d8d8',
+                    borderRadius: '16px',
+                    overflow: 'hidden',
+                    cursor: 'pointer',
+                    transition: 'transform 0.2s ease, border-color 0.2s ease',
+                  }}
+                  onMouseEnter={e => {
+                    e.currentTarget.style.transform = 'scale(1.01)';
+                    e.currentTarget.style.borderColor = '#bbbbbb';
+                  }}
+                  onMouseLeave={e => {
+                    e.currentTarget.style.transform = 'scale(1)';
+                    e.currentTarget.style.borderColor = '#d8d8d8';
+                  }}
+                >
+                  {/* Thumbnail — placeholder until final asset is added */}
+                  <div
+                    style={{
+                      width: '100%',
+                      height: '200px',
+                      padding: '16px',
+                      boxSizing: 'border-box',
+                      background: 'rgba(220, 232, 248, 0.45)',
+                      overflow: 'hidden',
+                    }}
+                  >
+                    {/* Placeholder — swap for final asset: milestone achievement screen */}
+                    <div
+                      style={{
+                        width: '100%',
+                        height: '100%',
+                        borderRadius: '8px',
+                        border: '2px dashed #a9c2e8',
+                        background: 'rgba(255,255,255,0.6)',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '6px',
+                        padding: '12px',
+                        boxSizing: 'border-box',
+                        textAlign: 'center',
+                      }}
+                    >
+                      <span
+                        style={{
+                          fontFamily: 'Inter, sans-serif',
+                          fontSize: '10px',
+                          fontWeight: 600,
+                          letterSpacing: '0.08em',
+                          color: '#4fa0e6',
+                          textTransform: 'uppercase',
+                        }}
+                      >
+                        Placeholder · Image
+                      </span>
+                      <span
+                        style={{
+                          fontFamily: 'Inter, sans-serif',
+                          fontSize: '11px',
+                          fontWeight: 400,
+                          color: '#7a8aa0',
+                          lineHeight: '15px',
+                        }}
+                      >
+                        Milestone achievement screen with summit illustration
+                      </span>
+                    </div>
+                  </div>
+                  {/* Text */}
+                  <div style={{ padding: '20px 24px 24px' }}>
+                    <div
+                      style={{
+                        fontFamily: 'Inter, sans-serif',
+                        fontSize: '11px',
+                        fontWeight: 500,
+                        color: '#aaaaaa',
+                        letterSpacing: '0.08em',
+                        marginBottom: '8px',
+                      }}
+                    >
+                      CASE STUDY
+                    </div>
+                    <div
+                      style={{
+                        fontFamily: 'Inter, sans-serif',
+                        fontSize: '18px',
+                        fontWeight: 600,
+                        color: '#141510',
+                        lineHeight: '26px',
+                        marginBottom: '6px',
+                      }}
+                    >
+                      Focus Coach Achievements
+                    </div>
+                    <div
+                      style={{
+                        fontFamily: 'Inter, sans-serif',
+                        fontSize: '13px',
+                        fontWeight: 400,
+                        color: '#666666',
+                        lineHeight: '19px',
+                      }}
+                    >
+                      A redesigned session completion flow with milestones, personal bests, and focus streaks.
+                    </div>
+                  </div>
+                </div>
+              </Link>
+
+              {/* Card 2 — Finding Focus AI Assistant */}
               <Link
                 href="/case-studies/finding-focus-ai-assistant"
                 style={{ flex: 1, textDecoration: 'none' }}
@@ -303,7 +421,7 @@ export default function FindingFocus() {
                 </div>
               </Link>
 
-              {/* Card 2 — Finding Focus Landing Page */}
+              {/* Card 3 — Finding Focus Landing Page */}
               <Link
                 href="/case-studies/finding-focus-landing-page"
                 style={{ flex: 1, textDecoration: 'none' }}

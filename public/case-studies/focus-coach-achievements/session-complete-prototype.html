@@ -1,0 +1,1926 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Session Complete</title>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    /* ═══════════════════════════════════════
+       FLOW CHOOSER (shown first)
+    ═══════════════════════════════════════ */
+    .chooser-screen {
+      position: fixed; inset: 0; z-index: 300;
+      background: rgb(2,1,1);
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      gap: 40px; padding: 32px;
+      transition: opacity 0.35s ease;
+    }
+    .chooser-screen.hidden { opacity: 0; pointer-events: none; }
+    .chooser-head { display: flex; flex-direction: column; align-items: center; }
+    .chooser-title { font-size: 30px; font-weight: 700; color: #fff; text-align: center; }
+    .chooser-sub { margin-top: 10px; font-size: 15px; font-weight: 500; color: rgb(150,150,150); text-align: center; }
+    .chooser-row { display: flex; gap: 20px; flex-wrap: wrap; justify-content: center; }
+    .chooser-card {
+      width: 220px; padding: 32px 24px; border-radius: 16px;
+      background: linear-gradient(215deg, rgb(26,26,26) 0%, rgb(9,9,9) 100%);
+      border: 1px solid rgb(38,39,41); cursor: pointer;
+      display: flex; flex-direction: column; align-items: center; gap: 12px; text-align: center;
+      transition: border-color 0.2s ease, transform 0.2s ease;
+    }
+    .chooser-card:hover { border-color: rgba(118,191,254,0.7); transform: translateY(-4px); }
+    .chooser-card-emoji { font-size: 42px; line-height: 1; }
+    .chooser-card-title { font-size: 18px; font-weight: 600; color: #fff; }
+    .chooser-card-desc  { font-size: 13px; font-weight: 500; color: rgb(150,150,150); line-height: 1.4; }
+
+    /* ═══════════════════════════════════════
+       SESSION PLAYER
+    ═══════════════════════════════════════ */
+    .session-view {
+      position: fixed; inset: 0; z-index: 200;
+      background: rgb(2,1,1);
+      display: flex; align-items: center; justify-content: center;
+      opacity: 0; pointer-events: none;
+      transition: opacity 0.3s ease;
+      user-select: none;
+    }
+    .session-view.visible { opacity: 1; pointer-events: auto; }
+
+    .music-selector {
+      position: absolute; top: 40px; left: 50%; transform: translateX(-50%);
+      width: max-content; height: 64px;
+      background: linear-gradient(215deg, rgba(140,140,140,0.2) 0%, rgba(43,43,43,0.2) 100%);
+      backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+      border-radius: 12px; border: 1px solid rgb(38,39,41);
+      display: flex; flex-direction: row; align-items: center; padding: 0 16px; cursor: default;
+    }
+    .music-selector .headphones-icon { flex-shrink: 0; width: 22px; height: 22px; margin-bottom: 2px; fill: #fff; }
+    .music-selector .music-name { font-size: 15px; font-weight: 500; color: #fff; white-space: nowrap; margin: 0 4px 0 8px; }
+    .music-selector .arrow-icon { flex-shrink: 0; width: 24px; height: 24px; margin-right: -4px; fill: rgb(160,160,160); }
+
+    .timer-container { display: flex; align-items: center; justify-content: center; position: relative; width: 190px; height: 190px; }
+    .timer-text { font-size: 36px; font-weight: 500; color: #fff; position: absolute; z-index: 1; text-align: center; }
+
+    .control-bar {
+      position: absolute; bottom: 0; left: 0; right: 0; width: 100%;
+      display: flex; flex-direction: row; align-items: center; justify-content: center;
+      gap: 24px; padding-top: 24px; padding-bottom: 40px;
+      background-color: rgba(5,3,3,0.8); backdrop-filter: blur(2px); -webkit-backdrop-filter: blur(2px);
+    }
+    .session-btn {
+      width: 114px; height: 48px; border-radius: 50px;
+      background-image: linear-gradient(215deg, rgb(26,26,26) 0%, rgb(9,9,9) 100%);
+      border: 1px solid rgb(38,39,41);
+      display: flex; flex-direction: row; align-items: center; justify-content: center; gap: 4px;
+      cursor: pointer; font-family: 'Montserrat', sans-serif; font-size: 16px; font-weight: 500; color: #fff;
+      transition: border 250ms, opacity 100ms; outline: none;
+    }
+    .session-btn svg { width: 24px; height: 24px; flex-shrink: 0; fill: #fff; }
+    .session-btn:hover { border-color: rgba(255,255,255,0.35); }
+    .session-btn.is-paused { background-image: none; background-color: #fff; color: #1A1A1A; border-color: #fff; }
+    .session-btn.is-paused svg { fill: #1A1A1A; }
+    .session-btn.is-paused:hover { border-color: rgba(0,0,0,0.2); }
+
+    /* ═══════════════════════════════════════
+       COMPLETION OVERLAY (centered like the timer)
+    ═══════════════════════════════════════ */
+    .complete-overlay {
+      position: fixed; inset: 0; z-index: 150;
+      background: #f2f2f2;
+      display: flex; align-items: center; justify-content: center;
+      overflow-y: auto;
+      opacity: 0; pointer-events: none;
+      transition: opacity 0.3s ease;
+    }
+    .complete-overlay.visible { opacity: 1; pointer-events: auto; }
+    .complete-overlay #sessionContent { max-width: 860px; padding: 180px 32px 90px; }
+
+    body {
+      font-family: 'Montserrat', sans-serif;
+      background: #f2f2f2;
+      min-height: 100vh;
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+    }
+
+    .screen {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      width: 100%;
+      max-width: 860px;
+      min-height: 100vh;
+      padding: 52px 32px 90px;
+      position: relative;
+    }
+
+    /* ── SESSION CONTENT ── */
+    #sessionContent {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      width: 100%;
+      transition: opacity 0.4s ease, transform 0.4s cubic-bezier(0.4, 0, 1, 1);
+    }
+    #sessionContent.exit {
+      opacity: 0;
+      transform: translateY(-70px);
+      pointer-events: none;
+    }
+
+    /* ── WEEK CONTENT ── */
+    #weekContent {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      gap: 32px;
+      width: 100%;
+      padding-bottom: 140px;
+    }
+
+    /* ── HERO ── */
+    .hero {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 24px;
+    }
+
+    .circle {
+      /* Starts as a 190px blue RING — identical to the timer circle — so the timer
+         seamlessly becomes the completion checkmark in the same spot. */
+      width: 190px; height: 190px;
+      border-radius: 50%;
+      background: transparent;
+      border: 5px solid #76BFFE;
+      box-shadow: none;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+      opacity: 1; transform: scale(1);
+      transition: background 0.6s ease, border-color 0.6s ease, box-shadow 0.65s ease,
+                  width 0.7s cubic-bezier(0.34,1.42,0.64,1), height 0.7s cubic-bezier(0.34,1.42,0.64,1);
+    }
+    .circle.fill  { background: #76BFFE; border-color: #76BFFE; box-shadow: 0 0 80px 12px rgba(118,191,254,0.38); }
+    .circle.small { width: 128px; height: 128px; box-shadow: 0 0 36px 6px rgba(118,191,254,0.32); border-width: 0; }
+
+    .check-svg { width: 52%; height: 52%; overflow: visible; }
+    .check-path {
+      fill: none; stroke: #fff; stroke-width: 8;
+      stroke-linecap: round; stroke-linejoin: round;
+      stroke-dasharray: 100; stroke-dashoffset: 100;
+      transition: stroke-dashoffset 0.56s cubic-bezier(0.4,0,0.2,1);
+    }
+    .check-path.drawn { stroke-dashoffset: 0; }
+
+    .session-title {
+      font-size: 56px; font-weight: 700; color: #0d0d0d; white-space: nowrap;
+      opacity: 0; transform: translateY(10px);
+      transition: opacity 0.5s ease, transform 0.5s ease, font-size 0.7s cubic-bezier(0.34,1.42,0.64,1);
+    }
+    .session-title.show  { opacity: 1; transform: translateY(0); }
+    .session-title.small { font-size: 48px; }
+
+    /* ── STATS ── */
+    .stats-cloak {
+      overflow: hidden; max-height: 0; opacity: 0;
+      width: 100%; display: flex; justify-content: center;
+      transition: max-height 0.55s ease, opacity 0.45s ease;
+    }
+    .stats-cloak.show { max-height: 90px; opacity: 1; }
+
+    .stats { display: flex; align-items: center; gap: 12px; padding: 18px 0 4px; }
+
+    .stat { display: flex; align-items: baseline; gap: 6px; opacity: 0; transform: translateY(16px) scale(0.80); }
+    .stat.pop { animation: statIn 0.58s cubic-bezier(0.34,1.62,0.64,1) forwards; }
+    @keyframes statIn { to { opacity: 1; transform: translateY(0) scale(1); } }
+
+    .stat-n { font-size: 32px; font-weight: 800; color: #76BFFE; line-height: 1; }
+    .stat-l { font-size: 16px; font-weight: 600; color: #5B5B5B; text-transform: uppercase; letter-spacing: 0.4px; }
+
+    .stat-pipe { width: 1px; height: 29px; background: #5B5B5B; flex-shrink: 0; opacity: 0; transition: opacity 0.28s ease; }
+    .stat-pipe.show { opacity: 1; }
+
+    /* ── DIVIDER ── */
+    .divider {
+      height: 1px; background: #d8d8d8; width: 570px; max-width: 100%; margin-top: 40px;
+      transform: scaleX(0); transform-origin: center;
+      transition: transform 0.7s cubic-bezier(0.4,0,0.2,1);
+    }
+    .divider.show { transform: scaleX(1); }
+
+    /* ── REFLECTION ── */
+    .refl-cloak {
+      overflow: hidden; max-height: 0; opacity: 0;
+      width: 100%; display: flex; justify-content: center;
+      transition: max-height 0.75s ease, opacity 0.55s ease;
+    }
+    .refl-cloak.show { max-height: 480px; opacity: 1; }
+
+    .reflection { display: flex; flex-direction: column; align-items: center; gap: 24px; padding-top: 40px; width: 100%; }
+    .question { font-size: 24px; font-weight: 500; color: #111; text-align: center; }
+
+    /* ── FOCUS BUTTONS ── */
+    .btn-row { display: flex; gap: 12px; padding: 12px 14px; flex-wrap: wrap; justify-content: center; }
+    @media (max-width: 780px) {
+      .btn-row { width: 100%; padding: 12px 0; }
+      .fbtn { width: auto; flex: 1 1 calc(50% - 6px); max-width: 346px; }
+    }
+    .fbtn {
+      position: relative; width: 160px;
+      background: #fff; border: 1.5px solid #d8d8d8; border-radius: 10px;
+      box-shadow: 0 2px 0 0 #d8d8d8; cursor: pointer;
+      font-family: 'Montserrat', sans-serif; font-size: 16px; font-weight: 600; color: #222;
+      display: flex; align-items: center; justify-content: center; text-align: center;
+      padding: 32px 14px; line-height: 1.35;
+      opacity: 0; transform: translateY(20px) scale(0.84); outline: none;
+    }
+    .fbtn.pop { animation: btnPop 0.58s cubic-bezier(0.34,1.62,0.64,1) forwards; }
+    @keyframes btnPop { to { opacity: 1; transform: translateY(0) scale(1); } }
+    .fbtn.entered {
+      opacity: 1; transform: scale(1);
+      transition: transform 0.2s cubic-bezier(0.34,1.5,0.64,1), border-color 0.18s ease, box-shadow 0.18s ease;
+    }
+    .fbtn.entered:hover:not(.confirming) { transform: scale(1.045); border-color: #b5b5b5; box-shadow: 0 3px 0 0 #c0c0c0, 0 5px 16px rgba(0,0,0,0.07); }
+    .fbtn.entered.confirming { transform: scale(1) !important; border-color: #76BFFE; box-shadow: 0 2px 0 0 #5aabf0; cursor: default; }
+    /* Fill-up confirmation: blue rises from the bottom over the hold (badge stays overhanging) */
+    .fbtn::after {
+      content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 0;
+      background: #76BFFE; border-radius: 8.5px;
+      transition: height 0.7s linear; z-index: 0; pointer-events: none;
+    }
+    .fbtn.confirming::after { height: 100%; }
+    .btn-label   { position: relative; z-index: 1; pointer-events: none; transition: color 0.2s ease; }
+    .fbtn.confirming .btn-label { color: #fff; }
+    .btn-confirm { display: none; }
+    /* Number badge overhangs the top-right corner (Session Player + Complete style) */
+    .badge {
+      position: absolute; top: -8px; right: -8px; width: 36px; height: 36px; border-radius: 50%;
+      background: #fff; border: 1.5px solid #d8d8d8;
+      font-size: 16px; font-weight: 600; color: #000;
+      display: flex; align-items: center; justify-content: center; line-height: 1; z-index: 3;
+      font-family: 'Montserrat', sans-serif;
+    }
+
+    /* ── SKIP ── */
+    .skip-btn {
+      background: none; border: none; font-family: 'Montserrat', sans-serif;
+      font-size: 14px; font-weight: 500; color: #5B5B5B; cursor: pointer; padding: 2px 0;
+    }
+    .skip-btn:hover { text-decoration: underline; }
+
+  
+  /* ── PERSONAL BEST: SESSION → PB PAGE ── */
+  function transitionToPersonalBest() {
+    currentPhase = 'personalbest';
+    $('sessionContent').classList.add('exit');
+    setTimeout(() => {
+      $('sessionContent').style.display = 'none';
+      $('completeOverlay').style.display = 'none';
+      $('pbContent').style.display = 'flex';
+      animatePersonalBestIn();
+    }, 430);
+  }
+
+  async function animatePersonalBestIn() {
+    const wrap    = $('pbContent').querySelector('.pb-rocket-wrap');
+    const label   = $('pbContent').querySelector('.pb-label');
+    const title   = $('pbContent').querySelector('.pb-title');
+    const compare = $('pbContent').querySelector('.pb-compare');
+
+    await wait(120);
+    wrap.classList.add('pb-entering');
+    await wait(820);
+    wrap.classList.remove('pb-entering');
+    wrap.classList.add('pb-visible');
+
+    label.classList.add('pb-show');
+    await wait(110); title.classList.add('pb-show');
+    await wait(160); compare.classList.add('pb-show');
+    await wait(400); $('finishBtn').classList.add('show');
+  }
+
+  /* ── CONTINUE BUTTON ── */
+    /* Exact spec from Sketch "Button/SML/Blue" (color variable "UI/Active button") */
+    .finish-btn {
+      position: fixed; bottom: 40px; left: 50%;
+      transform: translateX(-50%) translateY(120px);
+      width: 408px; max-width: calc(100vw - 64px);
+      background: #76BFFE; border: none; border-radius: 13px;
+      font-family: 'Montserrat', sans-serif; font-size: 14px; font-weight: 600;
+      letter-spacing: normal; color: #fff; padding: 16px 32px;
+      cursor: pointer; text-transform: uppercase;
+      opacity: 0;
+      transition: opacity 0.45s ease, transform 0.5s cubic-bezier(0.34,1.4,0.64,1), background 0.2s ease;
+      box-shadow: 0 4px 0 0 #10A5FC; z-index: 100;
+    }
+    .finish-btn.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+    .finish-btn:hover { background: #5AABF0; }
+
+    /* ═══════════════════════════════════════
+       WEEK SCREEN — FLAME CALENDAR
+    ═══════════════════════════════════════ */
+
+    /* Flaming calendar animation */
+    #fcFlame-peaks {
+      transform-box: fill-box; transform-origin: bottom center;
+      animation: fc-peaks-sway 0.9s cubic-bezier(0.45,0.05,0.55,0.95) infinite,
+                 fc-peaks-grow 0.75s ease-in-out infinite,
+                 fc-peaks-flicker 0.35s ease-in-out infinite;
+    }
+    #fcFlame-yellow {
+      transform-box: fill-box; transform-origin: bottom center;
+      animation: fc-yellow-sway 0.7s cubic-bezier(0.45,0.05,0.55,0.95) infinite,
+                 fc-yellow-grow 0.6s ease-in-out infinite,
+                 fc-yellow-flicker 0.28s ease-in-out infinite;
+      animation-delay: -0.18s;
+    }
+    @keyframes fc-peaks-sway    { 0%{transform:rotate(-5deg) scaleX(1)}20%{transform:rotate(4deg) scaleX(1.04)}45%{transform:rotate(-3deg) scaleX(0.96)}70%{transform:rotate(4deg) scaleX(1.03)}100%{transform:rotate(-5deg) scaleX(1)} }
+    @keyframes fc-peaks-grow    { 0%{transform:scaleY(1)}25%{transform:scaleY(0.91)}60%{transform:scaleY(1.09)}100%{transform:scaleY(1)} }
+    @keyframes fc-peaks-flicker { 0%,100%{opacity:1}40%{opacity:0.82}70%{opacity:0.95} }
+    @keyframes fc-yellow-sway    { 0%{transform:rotate(4deg) scaleX(0.95)}30%{transform:rotate(-5deg) scaleX(1.05)}60%{transform:rotate(2deg) scaleX(0.97)}85%{transform:rotate(-3deg) scaleX(1.03)}100%{transform:rotate(4deg) scaleX(0.95)} }
+    @keyframes fc-yellow-grow    { 0%{transform:scaleY(1)}35%{transform:scaleY(1.1)}70%{transform:scaleY(0.88)}100%{transform:scaleY(1)} }
+    @keyframes fc-yellow-flicker { 0%,100%{opacity:1}35%{opacity:0.78}65%{opacity:0.93} }
+
+    .fc-ember { position:absolute; opacity:0; pointer-events:none; will-change:transform,opacity; }
+    .fc-ember-rect { border-radius:2px; } .fc-ember-circle { border-radius:50%; }
+    #fce1  { width:5px;height:3px;background:#CC3300;left:58px;top:42px;  animation:fc-fly-lc 2.2s ease-out infinite 0s; }
+    #fce2  { width:4px;height:4px;background:#FF6A00;left:72px;top:32px;  animation:fc-fly-ur 2.2s ease-out infinite .18s; }
+    #fce3  { width:6px;height:3px;background:#E85000;left:85px;top:38px;  animation:fc-fly-rc 2.2s ease-out infinite .37s; }
+    #fce4  { width:3px;height:5px;background:#FF8C00;left:48px;top:46px;  animation:fc-fly-lf 2.2s ease-out infinite .55s; }
+    #fce5  { width:4px;height:3px;background:#CC4400;left:78px;top:40px;  animation:fc-fly-ul 2.2s ease-out infinite .73s; }
+    #fce6  { width:5px;height:5px;background:#FF5500;left:94px;top:44px;  animation:fc-fly-rf 2.2s ease-out infinite .92s; }
+    #fce7  { width:3px;height:4px;background:#FF7700;left:63px;top:36px;  animation:fc-fly-ur 2.2s ease-out infinite 1.1s; }
+    #fce8  { width:6px;height:3px;background:#BB2200;left:42px;top:50px;  animation:fc-fly-lc 2.2s ease-out infinite 1.28s; }
+    #fce9  { width:4px;height:4px;background:#FF6A00;left:80px;top:34px;  animation:fc-fly-rc 2.2s ease-out infinite 1.47s; }
+    #fce10 { width:5px;height:3px;background:#E86000;left:68px;top:44px;  animation:fc-fly-ul 2.2s ease-out infinite 1.65s; }
+    #fce11 { width:3px;height:3px;background:#FF8C00;left:54px;top:38px;  animation:fc-fly-lf 2.2s ease-out infinite 1.83s; }
+    #fce12 { width:4px;height:5px;background:#CC3300;left:88px;top:40px;  animation:fc-fly-rf 2.2s ease-out infinite 2.02s; }
+    @keyframes fc-fly-lc { 0%{transform:translate(0,0) rotate(0);opacity:0}8%{opacity:.9}50%{transform:translate(-18px,-42px) rotate(-25deg);opacity:.85}100%{transform:translate(-30px,-78px) rotate(-55deg);opacity:0} }
+    @keyframes fc-fly-ur { 0%{transform:translate(0,0) rotate(0);opacity:0}8%{opacity:.9}50%{transform:translate(12px,-48px) rotate(20deg);opacity:.85}100%{transform:translate(22px,-85px) rotate(45deg);opacity:0} }
+    @keyframes fc-fly-rc { 0%{transform:translate(0,0) rotate(0);opacity:0}8%{opacity:.95}45%{transform:translate(20px,-38px) rotate(30deg);opacity:.8}100%{transform:translate(36px,-72px) rotate(70deg);opacity:0} }
+    @keyframes fc-fly-lf { 0%{transform:translate(0,0) rotate(0);opacity:0}8%{opacity:.85}50%{transform:translate(-24px,-35px) rotate(-40deg);opacity:.75}100%{transform:translate(-48px,-65px) rotate(-80deg);opacity:0} }
+    @keyframes fc-fly-ul { 0%{transform:translate(0,0) rotate(0);opacity:0}8%{opacity:.9}50%{transform:translate(-10px,-50px) rotate(-15deg);opacity:.85}100%{transform:translate(-18px,-88px) rotate(-35deg);opacity:0} }
+    @keyframes fc-fly-rf { 0%{transform:translate(0,0) rotate(0);opacity:0}8%{opacity:.9}45%{transform:translate(28px,-32px) rotate(35deg);opacity:.8}100%{transform:translate(52px,-60px) rotate(75deg);opacity:0} }
+
+    /* Calendar entrance (same keyframe as mountain) */
+    @keyframes mountainIn {
+      0%   { opacity: 0; transform: scale(0.82) translateY(20px); }
+      55%  { opacity: 1; }
+      75%  { transform: scale(1.05) translateY(-5px); }
+      90%  { transform: scale(0.97) translateY(2px); }
+      100% { opacity: 1; transform: scale(1) translateY(0px); }
+    }
+
+    #calendarWrap {
+      display: flex; align-items: center; justify-content: center;
+      opacity: 0;
+    }
+    #calendarWrap.cal-entering {
+      animation: mountainIn 0.78s cubic-bezier(0.34,1.1,0.64,1) forwards;
+    }
+    #calendarWrap.cal-visible { opacity: 1; }
+
+    /* ── STREAK TITLE ── */
+    .streak-title {
+      font-size: 20px; font-weight: 600; color: #000; text-align: center;
+      opacity: 0; transform: translateY(8px);
+      transition: opacity 0.4s ease, transform 0.4s cubic-bezier(0.34,1.2,0.64,1);
+    }
+    .streak-title.show { opacity: 1; transform: translateY(0); }
+
+    /* ── WEEK CARD ── */
+    .week-card {
+      width: 408px; background: #fff; border: 2px solid #d8d8d8;
+      border-radius: 16px 16px 0 0; overflow: hidden;
+      height: 96px; position: relative;
+      opacity: 0; transform: translateY(16px);
+      transition:
+        height        0.55s cubic-bezier(0.4,0,0.2,1),
+        border-radius 0.55s ease,
+        opacity       0.45s ease,
+        transform     0.45s cubic-bezier(0.34,1.2,0.64,1);
+    }
+    .week-card.in       { opacity: 1; transform: translateY(0); }
+    .week-card.expanded { height: 180px; border-radius: 16px; }
+
+    .week-card-top { height: 96px; display: flex; align-items: center; justify-content: center; }
+    .days-row { display: flex; align-items: center; gap: 12px; }
+    .day-col  { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+    .day-lbl  { font-size: 14px; font-weight: 700; transition: color 0.3s ease; }
+    .lbl-done    { color: #76BFFE; }
+    .lbl-pending { color: #C0C0C0; }
+    .lbl-orange  { color: #FF6A00; }
+    .day-circ {
+      width: 40px; height: 40px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0; transition: background 0.3s ease;
+    }
+    .circ-done    { background: #76BFFE; }
+    .circ-pending { background: #D8D8D8; }
+    .circ-orange  { background: #FF6A00; }
+
+    .week-card-bottom { display: flex; flex-direction: column; align-items: stretch; }
+    .week-ekg { width: 100%; height: 12px; flex-shrink: 0; display: block; }
+    .week-ekg svg { display: block; }
+    .week-msg-wrap { display: flex; align-items: center; justify-content: center; padding: 16px 0; }
+    .week-msg { font-size: 14px; font-weight: 600; color: #666; text-align: center; width: 249px; line-height: 1.4; }
+
+    /* ── FLAME ICON (F circle) ── */
+    .flame-icon-wrap { display: flex; align-items: center; justify-content: center; width: 24px; height: 24px; }
+    #flamePath {
+      fill: none; fill-opacity: 0; stroke: #ffffff; stroke-width: 1.5; stroke-opacity: 0.8;
+      transition: fill 0.15s ease, fill-opacity 0.15s ease, stroke-opacity 0.15s ease;
+    }
+
+    @keyframes flame-pop-kf  { 0%   { transform: scale(1) translateY(0px); }     100% { transform: scale(1.35) translateY(-8px); } }
+    @keyframes flame-spin-kf { 0%   { transform: scale(1.35) translateY(-8px) perspective(120px) rotateY(0deg); }   100% { transform: scale(1.35) translateY(-8px) perspective(120px) rotateY(720deg); } }
+    @keyframes flame-slam-kf { 0%   { transform: scale(1.35) translateY(-8px); } 50% { transform: scale(0.88) translateY(3px); } 78% { transform: scale(1.07) translateY(-1px); } 100% { transform: scale(1.0) translateY(0px); } }
+
+    @keyframes circle-impact-kf {
+      0%   { transform: scale(1);    }
+      30%  { transform: scale(1.42); }
+      100% { transform: scale(1);    }
+    }
+
+    .flame-pop  { animation: flame-pop-kf  0.22s cubic-bezier(0.34,1.8,0.64,1) forwards; }
+    .flame-spin { animation: flame-spin-kf 0.70s cubic-bezier(0.45,0.05,0.55,0.95) forwards; }
+    .flame-slam { animation: flame-slam-kf 0.28s cubic-bezier(0.34,1.5,0.64,1) forwards; }
+
+    /* ═══════════════════════════════════════
+       FLOW TOGGLE
+    ═══════════════════════════════════════ */
+    .flow-toggle {
+      position: fixed; bottom: 104px; right: 24px;
+      display: flex; background: #e8e8e8; border-radius: 100px;
+      padding: 4px; gap: 2px; z-index: 200;
+      transition: opacity 0.3s ease;
+    }
+    .flow-toggle.hidden { opacity: 0; pointer-events: none; }
+    .toggle-btn {
+      font-family: 'Montserrat', sans-serif; font-size: 12px; font-weight: 600;
+      letter-spacing: 0.3px; color: #666; background: none; border: none;
+      border-radius: 100px; padding: 8px 18px; cursor: pointer;
+      transition: background 0.22s ease, color 0.22s ease; white-space: nowrap;
+    }
+    .toggle-btn.active { background: #fff; color: #111; box-shadow: 0 1px 4px rgba(0,0,0,0.12); }
+
+    /* ═══════════════════════════════════════
+       MILESTONE PAGE
+    ═══════════════════════════════════════ */
+    #milestoneContent {
+      display: none; flex-direction: column; align-items: center; justify-content: center;
+      width: 100%; flex: 1; padding-bottom: 100px; min-height: calc(100vh - 180px);
+    }
+
+    .ms-mountain-wrap {
+      display: flex; align-items: center; justify-content: center;
+      opacity: 0;
+    }
+    .ms-mountain-wrap.ms-entering { animation: mountainIn 0.624s cubic-bezier(0.34,1.1,0.64,1) forwards; }
+    .ms-mountain-wrap.ms-bouncing { opacity: 1; }
+
+    .ms-label {
+      margin-top: 32px; font-size: 16px; font-weight: 500; letter-spacing: 0.5px;
+      color: #4FA0E6; text-transform: uppercase; text-align: center;
+      opacity: 0; transform: translateY(10px);
+      transition: opacity 0.45s ease, transform 0.45s cubic-bezier(0.34,1.2,0.64,1);
+    }
+    .ms-label.ms-show { opacity: 1; transform: translateY(0); }
+
+    .ms-title {
+      margin-top: 4px; font-size: 20px; font-weight: 700; color: #000; text-align: center;
+      opacity: 0; transform: translateY(10px);
+      transition: opacity 0.45s ease, transform 0.45s cubic-bezier(0.34,1.2,0.64,1);
+    }
+    .ms-title.ms-show { opacity: 1; transform: translateY(0); }
+
+    .ms-progress-wrap {
+      margin-top: 24px;
+      position: relative;
+      opacity: 0; transform: translateY(10px);
+      transition: opacity 0.55s ease, transform 0.55s cubic-bezier(0.34,1.2,0.64,1);
+    }
+    .ms-progress-wrap.ms-show { opacity: 1; transform: translateY(0); }
+
+    .ms-progress-meter {
+      position: relative;
+      width: 400px; height: 47px;
+    }
+
+    .ms-track {
+      position: absolute;
+      top: 4px; left: 0;
+      width: 400px; height: 16px;
+      background: #E5E5E5;
+      border-radius: 8px;
+    }
+
+    .ms-track-fill {
+      position: absolute;
+      top: 0; left: 0;
+      height: 100%;
+      width: 200px;
+      background: #76BFFE;
+      border-radius: 8px;
+      transition: width 1.1s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .ms-track-highlight {
+      position: absolute;
+      top: 2px; left: 4px;
+      height: 2px;
+      width: 188px;
+      background: #9ED2FF;
+      border-radius: 1px;
+      transition: width 1.1s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .ms-node {
+      position: absolute;
+      top: 0;
+      width: 24px; height: 24px;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      transform: translateX(-12px);
+      box-sizing: border-box;
+      z-index: 2;
+    }
+    .ms-node-done {
+      background: #4FA0E6;
+    }
+    .ms-node-next {
+      background: #f2f2f2;
+      border: none;
+    }
+    .ms-node-next-ring {
+      position: absolute;
+      width: 100%; height: 100%;
+      border-radius: 50%;
+      border: 1px dashed #76BFFE;
+      box-sizing: border-box;
+      transition: opacity 0.4s ease;
+    }
+    .ms-node-future {
+      background: #f2f2f2;
+      border: 1px solid #E5E5E5;
+    }
+    .ms-node-label {
+      position: absolute;
+      top: 30px;
+      font-family: 'Montserrat', sans-serif;
+      font-size: 14px; font-weight: 600;
+      letter-spacing: 0.33px;
+      text-align: center;
+      white-space: nowrap;
+    }
+    .ms-node-label-done { color: #4FA0E6; }
+    .ms-node-label-future { color: #D8D8D8; }
+
+    .ms-node svg { display: none; }
+    .ms-node-done svg { display: block; }
+
+    @keyframes msNodePop {
+      0%   { transform: translateX(-12px) scale(1); }
+      40%  { transform: translateX(-12px) scale(1.3); }
+      70%  { transform: translateX(-12px) scale(0.92); }
+      100% { transform: translateX(-12px) scale(1); }
+    }
+    .ms-node.ms-node-pop { animation: msNodePop 0.45s cubic-bezier(0.34,1.5,0.64,1) forwards; }
+
+    @keyframes msCheckDraw {
+      0%   { stroke-dashoffset: 20; }
+      100% { stroke-dashoffset: 0; }
+    }
+    .ms-node .ms-check-path {
+      stroke-dasharray: 20;
+      stroke-dashoffset: 20;
+    }
+    .ms-node.ms-check-drawn .ms-check-path {
+      animation: msCheckDraw 0.35s ease forwards;
+    }
+
+    /* ═══════════════════════════════════════
+       REVIEW CONTENT (after all flows)
+    ═══════════════════════════════════════ */
+    #reviewContent {
+      display: none; flex-direction: column; align-items: center;
+      justify-content: center;
+      gap: 32px; width: 100%; flex: 1;
+    }
+
+    /* All Time Stats card */
+    .rv-stats-card {
+      width: 408px; background: #fff; border: 2px solid #d8d8d8; border-radius: 16px;
+      display: flex; flex-direction: column; align-items: center;
+      padding: 16px 0 20px; gap: 10px;
+      opacity: 0; transform: translateY(16px);
+      transition: opacity 0.5s ease, transform 0.55s cubic-bezier(0.34,1.2,0.64,1);
+    }
+    .rv-stats-card.in { opacity: 1; transform: translateY(0); }
+
+    .rv-stats-header {
+      font-size: 12px; font-weight: 500; color: #000;
+      letter-spacing: 0.5px; text-transform: uppercase; text-align: center;
+    }
+    .rv-stats-row { display: flex; align-items: center; justify-content: center; width: 100%; }
+    .rv-stat { display: flex; align-items: baseline; gap: 6px; padding: 0 12px; }
+    .rv-stat-ticker { display: inline-flex; overflow: hidden; height: 1.05em;
+                      align-items: flex-start; font-size: 24px; font-weight: 800;
+                      color: #76BFFE; line-height: 1.05; }
+    .rv-odo-col   { position: relative; overflow: hidden; height: 1.05em; }
+    .rv-odo-strip { display: flex; flex-direction: column;
+                    transition: transform 1.4s cubic-bezier(0.22,1,0.36,1); }
+    .rv-odo-digit { display: block; height: 1.05em; line-height: 1.05; text-align: center; }
+    .rv-stat-l { font-size: 12px; font-weight: 600; color: #5B5B5B; letter-spacing: 0.29px;
+                 text-transform: uppercase; white-space: nowrap; }
+    .rv-divider { width: 2px; height: 21px; background: #d8d8d8; flex-shrink: 0; }
+
+    /* Week card in review (milestone flow) */
+    .rv-week-section, .rv-quote-section { width: 100%; display: flex; flex-direction: column; align-items: center; }
+
+    .rv-week-card {
+      width: 408px; background: #fff; border: 2px solid #d8d8d8;
+      border-radius: 16px 16px 0 0; overflow: hidden; height: 96px; position: relative;
+      opacity: 0; transform: translateY(20px);
+      transition:
+        height        0.55s cubic-bezier(0.4,0,0.2,1),
+        border-radius 0.55s ease,
+        opacity       0.45s ease,
+        transform     0.45s cubic-bezier(0.34,1.2,0.64,1);
+    }
+    .rv-week-card.in       { opacity: 1; transform: translateY(0); }
+    .rv-week-card.expanded { height: 180px; border-radius: 16px; }
+
+    .rv-week-card-top    { height: 96px; display: flex; align-items: center; justify-content: center; }
+    .rv-week-card-bottom { display: flex; flex-direction: column; align-items: stretch; }
+
+    .rv-m-check {
+      fill: none; stroke: #fff; stroke-width: 4;
+      stroke-linecap: round; stroke-linejoin: round;
+      stroke-dasharray: 40; stroke-dashoffset: 40;
+      transition: stroke-dashoffset 0.45s cubic-bezier(0.4,0,0.2,1);
+    }
+    .rv-m-check.drawn { stroke-dashoffset: 0; }
+
+    /* Quote card in review (streak flow) */
+    .rv-quote-card {
+      width: 408px; background: #fff; border: 2px solid #d8d8d8; border-radius: 16px;
+      overflow: hidden; display: flex; flex-direction: column; align-items: center;
+      padding: 16px 0;
+      opacity: 0; transform: translateY(28px) scale(0.96);
+      transition: opacity 0.6s ease, transform 0.7s cubic-bezier(0.34,1.55,0.64,1);
+    }
+    .rv-quote-card.in { opacity: 1; transform: translateY(0) scale(1); }
+
+    .rv-quote-icon { width: 16px; height: 16px; flex-shrink: 0; }
+    .rv-quote-icon.top    { margin-bottom: 12px; }
+    .rv-quote-icon.bottom { margin-top: 12px; transform: rotate(180deg); }
+    .rv-quote-text {
+      width: 296px; font-size: 16px; font-weight: 600;
+      letter-spacing: 0.43px; line-height: 24px; color: #666; text-align: center;
+    }
+
+
+    /* ═══════════════════════════════════════
+       PERSONAL BEST PAGE
+    ═══════════════════════════════════════ */
+
+    /* Rocket SVG animations */
+    @keyframes drift-down-small {
+      0%   { transform: translate(60px, -200px); opacity: 0; }
+      8%   { opacity: 1; }
+      88%  { opacity: 1; }
+      100% { transform: translate(60px, 900px); opacity: 0; }
+    }
+    @keyframes drift-down-large {
+      0%   { transform: translate(-80px, -200px); opacity: 0; }
+      8%   { opacity: 1; }
+      88%  { opacity: 1; }
+      100% { transform: translate(-80px, 900px); opacity: 0; }
+    }
+    @keyframes drift-down-top {
+      0%   { transform: translateY(-400px); opacity: 0; }
+      10%  { opacity: 1; }
+      80%  { opacity: 1; }
+      100% { transform: translateY(700px); opacity: 0; }
+    }
+    @keyframes flicker-outer {
+      0%   { transform: scaleY(1) scaleX(1); opacity: 0.95; }
+      25%  { transform: scaleY(1.09) scaleX(0.96); opacity: 1; }
+      50%  { transform: scaleY(0.93) scaleX(1.04); opacity: 0.87; }
+      75%  { transform: scaleY(1.06) scaleX(0.97); opacity: 0.97; }
+      100% { transform: scaleY(0.96) scaleX(1.03); opacity: 0.91; }
+    }
+    @keyframes flicker-inner {
+      0%   { transform: scaleY(0.96) scaleX(1.03); opacity: 0.88; }
+      33%  { transform: scaleY(1.12) scaleX(0.94); opacity: 1; }
+      66%  { transform: scaleY(0.91) scaleX(1.06); opacity: 0.83; }
+      100% { transform: scaleY(1.07) scaleX(0.96); opacity: 0.94; }
+    }
+
+    #asteroid-small {
+      animation: drift-down-small 8s linear infinite;
+    }
+    #asteroid-large {
+      animation: drift-down-large 11s linear infinite;
+    }
+    #asteroid-top {
+      animation: drift-down-top 9s linear infinite;
+    }
+    #flame-outer {
+      animation: flicker-outer 0.18s ease-in-out infinite alternate;
+      transform-origin: 362px 620px;
+    }
+    #flame-inner {
+      animation: flicker-inner 0.14s ease-in-out infinite alternate;
+      transform-origin: 362px 620px;
+    }
+
+    #pbContent {
+      display: none; flex-direction: column; align-items: center; justify-content: center;
+      width: 100%; flex: 1; padding-bottom: 100px; min-height: calc(100vh - 180px);
+    }
+
+    .pb-rocket-wrap {
+      display: flex; align-items: center; justify-content: center;
+      opacity: 0;
+      flex-shrink: 0;
+    }
+    .pb-rocket-wrap.pb-entering { animation: mountainIn 0.78s cubic-bezier(0.34,1.1,0.64,1) forwards; }
+    .pb-rocket-wrap.pb-visible  { opacity: 1; }
+
+    /* ── Rocket flame animations ── */
+    .pb-flame-outer {
+      transform-origin: 197px 393px;
+      animation: pbFlameWobble 1.6s ease-in-out infinite alternate,
+                 pbFlameFlicker 0.35s ease-in-out infinite alternate;
+      filter: drop-shadow(0 8px 18px rgba(254,122,10,0.7));
+    }
+    .pb-flame-mid {
+      transform-origin: 197px 393px;
+      animation: pbFlameMidWobble 1.3s ease-in-out infinite alternate,
+                 pbFlameFlickerMid 0.4s ease-in-out infinite alternate;
+      filter: drop-shadow(0 4px 10px rgba(254,206,1,0.55));
+    }
+    .pb-flame-inner {
+      transform-origin: 197px 393px;
+      animation: pbFlameInnerWobble 1s ease-in-out infinite alternate,
+                 pbFlameFlickerInner 0.28s ease-in-out infinite alternate;
+      filter: drop-shadow(0 2px 6px rgba(254,241,132,0.6));
+    }
+    @keyframes pbFlameWobble {
+      0%   { transform: scaleX(1)    scaleY(1)    skewX(0deg); }
+      25%  { transform: scaleX(1.06) scaleY(0.97) skewX(1.5deg); }
+      50%  { transform: scaleX(0.96) scaleY(1.04) skewX(-1deg); }
+      75%  { transform: scaleX(1.04) scaleY(0.98) skewX(2deg); }
+      100% { transform: scaleX(1.02) scaleY(1.02) skewX(-0.5deg); }
+    }
+    @keyframes pbFlameFlicker {
+      0% { opacity: 1; } 40% { opacity: 0.88; } 70% { opacity: 0.95; } 100% { opacity: 0.82; }
+    }
+    @keyframes pbFlameMidWobble {
+      0%   { transform: scaleX(1)    scaleY(1)    skewX(0deg); }
+      30%  { transform: scaleX(0.94) scaleY(1.06) skewX(-2deg); }
+      65%  { transform: scaleX(1.07) scaleY(0.95) skewX(1.5deg); }
+      100% { transform: scaleX(0.97) scaleY(1.03) skewX(-1deg); }
+    }
+    @keyframes pbFlameFlickerMid {
+      0% { opacity: 1; } 35% { opacity: 0.84; } 70% { opacity: 0.93; } 100% { opacity: 0.78; }
+    }
+    @keyframes pbFlameInnerWobble {
+      0%   { transform: scaleX(1)    scaleY(1)    skewX(0deg); }
+      20%  { transform: scaleX(1.08) scaleY(0.93) skewX(2.5deg); }
+      55%  { transform: scaleX(0.93) scaleY(1.08) skewX(-2deg); }
+      80%  { transform: scaleX(1.05) scaleY(0.97) skewX(1deg); }
+      100% { transform: scaleX(0.97) scaleY(1.05) skewX(-1.5deg); }
+    }
+    @keyframes pbFlameFlickerInner {
+      0% { opacity: 1; } 30% { opacity: 0.75; } 60% { opacity: 0.92; } 100% { opacity: 0.68; }
+    }
+
+    .pb-label {
+      margin-top: 32px; font-size: 16px; font-weight: 500; letter-spacing: 0.5px;
+      color: #4FA0E6; text-transform: uppercase; text-align: center;
+      opacity: 0; transform: translateY(10px);
+      transition: opacity 0.45s ease, transform 0.45s cubic-bezier(0.34,1.2,0.64,1);
+    }
+    .pb-label.pb-show { opacity: 1; transform: translateY(0); }
+
+    .pb-title {
+      margin-top: 4px; font-size: 20px; font-weight: 700; color: #000; text-align: center;
+      opacity: 0; transform: translateY(10px);
+      transition: opacity 0.45s ease, transform 0.45s cubic-bezier(0.34,1.2,0.64,1);
+    }
+    .pb-title.pb-show { opacity: 1; transform: translateY(0); }
+
+    .pb-compare {
+      margin-top: 24px; display: flex; align-items: center; gap: 12px;
+      opacity: 0; transform: translateY(10px);
+      transition: opacity 0.5s ease, transform 0.5s cubic-bezier(0.34,1.3,0.64,1);
+    }
+    .pb-compare.pb-show { opacity: 1; transform: translateY(0); }
+
+    .pb-box {
+      width: 132px; background: #EEEEEE; border-radius: 8px;
+      padding: 12px 0; display: flex; flex-direction: column;
+      align-items: center; gap: 8px;
+      box-shadow: 0 0 0 2px #666666;
+    }
+    .pb-box.pb-new { background: #F1F7FB; box-shadow: 0 0 0 2px #4FA0E6; }
+
+    .pb-box-label {
+      font-size: 14px; font-weight: 400; color: #666666; text-align: center;
+      font-family: 'Montserrat', sans-serif;
+    }
+    .pb-box-value {
+      font-size: 16px; font-weight: 700; color: #666666; text-align: center;
+      font-family: 'Montserrat', sans-serif;
+    }
+    .pb-box.pb-new .pb-box-label { color: #4FA0E6; }
+    .pb-box.pb-new .pb-box-value { color: #4FA0E6; }
+
+  </style>
+</head>
+<body>
+
+<!-- ══ FLOW CHOOSER (shown first) ══ -->
+<div class="chooser-screen" id="chooserScreen">
+  <div class="chooser-head">
+    <h1 class="chooser-title">Preview a completion flow</h1>
+    <p class="chooser-sub">Pick which follow-on experience plays after the session.</p>
+  </div>
+  <div class="chooser-row">
+    <div class="chooser-card" data-flow="streak">
+      <span class="chooser-card-emoji">🔥</span>
+      <span class="chooser-card-title">Focus Streak</span>
+      <span class="chooser-card-desc">Completed a session every day this week</span>
+    </div>
+    <div class="chooser-card" data-flow="milestone">
+      <span class="chooser-card-emoji">⛰️</span>
+      <span class="chooser-card-title">Milestone Reached</span>
+      <span class="chooser-card-desc">Hit the next session milestone</span>
+    </div>
+    <div class="chooser-card" data-flow="personalbest">
+      <span class="chooser-card-emoji">🚀</span>
+      <span class="chooser-card-title">Personal Best</span>
+      <span class="chooser-card-desc">Your longest focus session yet</span>
+    </div>
+  </div>
+</div>
+
+<!-- ══ SESSION PLAYER ══ -->
+<div class="session-view" id="sessionView">
+  <div class="music-selector">
+    <svg class="headphones-icon" focusable="false" aria-hidden="true" viewBox="0 0 24 24">
+      <path d="M12 3c-4.97 0-9 4.03-9 9v7c0 1.1.9 2 2 2h4v-8H5v-1c0-3.87 3.13-7 7-7s7 3.13 7 7v1h-4v8h4c1.1 0 2-.9 2-2v-7c0-4.97-4.03-9-9-9z"/>
+    </svg>
+    <p class="music-name">Wandering Breeze</p>
+    <svg class="arrow-icon" focusable="false" aria-hidden="true" viewBox="0 0 24 24">
+      <path d="M7 10l5 5 5-5z"/>
+    </svg>
+  </div>
+
+  <div class="timer-container">
+    <svg viewBox="0 0 190 190" width="190" height="190" xmlns="http://www.w3.org/2000/svg">
+      <path d="m 95,3 a 92,92 0 1,0 0,184 a 92,92 0 1,0 0,-184" fill="none" stroke="#76BFFE" stroke-width="5"/>
+      <path id="overlayArc" d="m 95,3 a 92,92 0 1,0 0,184 a 92,92 0 1,0 0,-184"
+            fill="none" stroke="#39393d" stroke-linecap="square" stroke-width="6"
+            stroke-dasharray="578.0530482605219" stroke-dashoffset="0"/>
+    </svg>
+    <span class="timer-text" id="timerText">00:05</span>
+  </div>
+
+  <div class="control-bar">
+    <div class="session-btn" id="pausePlayBtn" onclick="togglePause()" tabindex="0">
+      <svg focusable="false" aria-hidden="true" viewBox="0 0 24 24">
+        <path id="ppIconPath" d="M8 19c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2s-2 .9-2 2v10c0 1.1.9 2 2 2zm6-12v10c0 1.1.9 2 2 2s2-.9 2-2V7c0-1.1-.9-2-2-2s-2 .9-2 2z"/>
+      </svg>
+      <span id="ppLabel">Pause</span>
+    </div>
+    <div class="session-btn" onclick="finishSession()" tabindex="0">
+      <svg focusable="false" aria-hidden="true" viewBox="0 0 24 24">
+        <path d="M9 16.17 5.53 12.7a.9959.9959 0 0 0-1.41 0c-.39.39-.39 1.02 0 1.41l4.18 4.18c.39.39 1.02.39 1.41 0L20.29 7.71c.39-.39.39-1.02 0-1.41a.9959.9959 0 0 0-1.41 0L9 16.17z"/>
+      </svg>
+      <span>Finish</span>
+    </div>
+  </div>
+</div>
+
+<!-- ══ COMPLETION OVERLAY (session-complete lives here, centered like the timer) ══ -->
+<div class="complete-overlay" id="completeOverlay">
+
+  <!-- ── SESSION CONTENT ── -->
+  <div id="sessionContent">
+    <div class="hero">
+      <div class="circle" id="circle">
+        <svg class="check-svg" viewBox="0 0 100 100">
+          <path id="ckPath" class="check-path" pathLength="100" d="M 21 52 L 41 70 L 79 32"/>
+        </svg>
+      </div>
+      <h1 class="session-title" id="sTitle">Session Complete</h1>
+    </div>
+
+    <div class="stats-cloak" id="statsCloak">
+      <div class="stats">
+        <div class="stat" id="st1"><span class="stat-n" id="statMin">25</span><span class="stat-l">Min</span></div>
+        <div class="stat-pipe" id="pp1"></div>
+        <div class="stat" id="st2"><span class="stat-n">5</span><span class="stat-l">Check-Ins</span></div>
+      </div>
+    </div>
+
+    <div class="divider" id="div1"></div>
+
+    <div class="refl-cloak" id="reflCloak">
+      <div class="reflection">
+        <p class="question">During that session, how focused were you?</p>
+        <div class="btn-row">
+          <button class="fbtn" id="fb1"><span class="badge">1</span><span class="btn-label">Really Distracted</span><span class="btn-confirm">confirming in 3</span></button>
+          <button class="fbtn" id="fb2"><span class="badge">2</span><span class="btn-label">Pretty Distracted</span><span class="btn-confirm">confirming in 3</span></button>
+          <button class="fbtn" id="fb3"><span class="badge">3</span><span class="btn-label">Mostly Focused</span><span class="btn-confirm">confirming in 3</span></button>
+          <button class="fbtn" id="fb4"><span class="badge">4</span><span class="btn-label">Fully Locked In</span><span class="btn-confirm">confirming in 3</span></button>
+        </div>
+        <button class="skip-btn" id="skipBtn">skip &amp; discard</button>
+      </div>
+    </div>
+  </div><!-- /sessionContent -->
+</div><!-- /completeOverlay -->
+
+<div class="screen" id="screen">
+
+  <!-- ── WEEK CONTENT (streak flow) ── -->
+  <div id="weekContent">
+
+    <div id="calendarWrap">
+      <div style="position:relative; width:210px; height:254px; display:flex; align-items:center; justify-content:center;">
+        <div style="position:relative; width:145px; height:174px; transform:scale(1.46); transform-origin:center center;">
+          <div class="fc-ember fc-ember-rect"   id="fce1"></div>
+          <div class="fc-ember fc-ember-circle" id="fce2"></div>
+          <div class="fc-ember fc-ember-rect"   id="fce3"></div>
+          <div class="fc-ember fc-ember-rect"   id="fce4"></div>
+          <div class="fc-ember fc-ember-rect"   id="fce5"></div>
+          <div class="fc-ember fc-ember-circle" id="fce6"></div>
+          <div class="fc-ember fc-ember-rect"   id="fce7"></div>
+          <div class="fc-ember fc-ember-rect"   id="fce8"></div>
+          <div class="fc-ember fc-ember-circle" id="fce9"></div>
+          <div class="fc-ember fc-ember-rect"   id="fce10"></div>
+          <div class="fc-ember fc-ember-circle" id="fce11"></div>
+          <div class="fc-ember fc-ember-rect"   id="fce12"></div>
+          <svg width="145" height="174" viewBox="0 0 145 174" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" style="position:absolute;top:0;left:0;">
+            <title>Flame Calendar</title>
+            <g stroke="none" fill="none" transform="translate(-19, -5)" fill-rule="evenodd" stroke-width="1">
+              <g transform="translate(19.72, 5)">
+                <g transform="translate(69.7411, 89.8845) rotate(-9) translate(-69.7411, -89.8845)translate(-2.3581, 3.205)">
+                  <!-- Base orange flame body -->
+                  <path d="M65.2061293,0.00366588935 C71.5792603,-0.163851093 71.8064116,5.44348473 73.0403503,9.90738603 C74.8263579,16.3691034 76.6107015,26.6022293 80.7260492,31.9071657 C82.4338437,34.0776176 84.8434771,35.5921941 87.5439141,36.1940768 C99.8953657,38.8603335 97.5053132,18.2809535 107.470987,20.7734182 C117.436661,23.2658829 124.461519,43.1632585 125.311464,44.7988004 C131.002725,55.9680915 134.897039,48.6532233 142.078512,56.279808 C144.49189,58.8421846 144.424077,63.0869631 143.904875,66.5152147 L133.02325,135.157795 L129.820251,155.456512 C129.470787,157.665986 128.620843,163.887182 128.050468,165.748316 C127.32658,168.039485 125.882131,170.039126 123.931376,171.451564 C119.48487,174.667079 113.647583,173.019511 108.641936,172.224548 L94.8385469,170.049908 C88.0755977,168.794223 80.5671266,167.778644 73.6985064,166.688836 L32.3617685,160.142936 L17.3461991,157.786246 C14.0390687,157.266638 7.95045916,156.655798 5.27502549,155.029794 C2.73850768,153.456871 0.936408049,150.939696 0.269097254,148.037687 C-0.246651257,145.779694 0.0762188261,144.166131 0.428521217,141.935092 C1.22161596,136.913183 2.01580902,131.890858 2.81091317,126.869363 L8.20590028,92.8377348 L13.2479917,60.9865525 C14.1191541,55.487748 14.9866554,50.0080192 15.9097381,44.5029944 C16.7183715,39.0943852 20.7657819,35.5909085 26.2263558,35.1328407 C35.3575436,34.3666988 42.3420692,24.8215041 47.7287982,18.2668544 L56.0763975,8.13470581 C58.8671125,4.7482965 60.7454784,0.975229165 65.2061293,0.00366588935 Z" fill="#FF6A00" fill-rule="nonzero"/>
+                  <!-- White body -->
+                  <path d="M39.3060226,49.6812426 C40.4241807,48.0585562 131.904551,63.0525437 133.308645,67.9687072 C134.163998,70.9714857 132.697916,75.3377687 132.410857,78.4678575 C131.648277,83.2492463 130.962663,88.0364408 130.101902,92.7481615 C128.273459,105.759925 125.922486,119.283418 123.860236,132.300988 L121.251325,148.828918 C120.720889,152.199113 120.197942,160.952413 116.963741,162.368584 C101.434669,169.162468 111.229683,141.388106 105.169767,138.19914 C97.3784376,134.099036 92.302857,146.726848 89.5404319,148.848823 C88.1030556,149.95356 85.3314778,152.434243 83.5454702,153.476776 C77.1814917,157.469008 75.0585015,157.589268 67.8441621,156.211249 C63.6909558,155.416287 61.172323,155.602483 56.8468812,153.874465 C49.4935884,150.935963 45.3836491,139.555595 38.9102137,137.677044 C28.9407725,134.037704 30.6295116,144.278512 26.5280176,147.158957 C23.575967,149.233242 20.8780262,148.602911 17.5760129,148.267426 C8.18064739,147.317783 10.1889804,140.999549 11.2462736,134.375273 L13.3489201,121.222099 L20.5992043,75.3891904 C21.5208309,70.6119485 22.4786519,64.3161076 23.0958708,59.5139842 C24.7932229,46.3089743 27.4083326,47.8325495 39.3060226,49.6812426 Z" fill="#FEFEFE" fill-rule="nonzero"/>
+                  <!-- Animated flame peaks -->
+                  <path id="fcFlame-peaks" d="M65.2061293,0.00366588931 C71.5792603,-0.163851093 71.8064116,5.44348473 73.0403503,9.90738603 C74.8263579,16.3691034 76.6107015,26.6022293 80.7260492,31.9071657 C82.4338437,34.0776176 84.8434771,35.5921941 87.5439141,36.1940768 C99.8953657,38.8603335 98.4801871,17.5577626 107.470987,20.7734182 C116.461787,23.9890737 118.846506,42.4555728 120.26198,43.9822124 C129.869595,54.3443748 134.897039,48.6532233 142.078512,56.279808 C144.49189,58.8421846 144.424077,63.0869631 143.904875,66.5152147 C57.9593952,55.5104177 15.2943497,48.1730109 15.9097381,44.5029944 C16.7183715,39.0943852 20.7657819,35.5909085 26.2263558,35.1328407 C35.3575436,34.3666988 42.3420692,24.8215041 47.7287982,18.2668544 L56.0763975,8.13470581 C58.8671125,4.7482965 60.7454784,0.975229165 65.2061293,0.00366588931 Z" fill="#FF6A00" fill-rule="nonzero"/>
+                  <!-- Animated yellow inner flame -->
+                  <path id="fcFlame-yellow" d="M32.4765507,57.2341648 C33.5241552,55.6114784 41.3282378,46.3736661 42.5100427,44.8306004 C45.9685369,40.3153188 49.5283732,35.8619507 52.936976,31.3034583 C54.4890693,29.2278048 56.1058656,26.7606413 58.6967155,26.2316613 C60.2265916,25.933996 61.8044102,26.2945699 63.0844389,27.2342186 C68.5241713,31.2916396 63.7903257,43.4492642 75.4481758,48.9389455 C78.2163744,50.2423197 81.1724456,50.7129942 84.1737311,50.2132913 C85.3383857,50.0192159 86.5732003,49.7044653 87.6540528,49.1943952 C89.1511875,48.4885909 90.5847885,47.3249676 91.9587536,46.3728367 C98.1620413,37.4457863 102.385793,33.1637251 104.630007,33.526653 C112.204233,34.7515349 111.661998,43.7358157 112.506645,48.9198697 C113.253458,53.5105006 119.405741,68.7450433 120.239864,73.0831273 C118.395438,72.8139928 33.6038257,57.4141408 32.4765507,57.2341648 Z" fill="#FFB830" fill-rule="nonzero"/>
+                  <!-- Blue band -->
+                  <path d="M39.3060226,49.6812426 C40.4241807,48.0585562 131.904551,63.0525437 133.308645,67.9687072 C134.163998,70.9714857 132.697916,75.3377687 132.410857,78.4678575 C131.648277,83.2492463 130.962663,88.0364408 130.101902,92.7481615 C120.49249,90.9637456 110.515725,89.7325276 100.849734,88.1139881 C74.1627935,83.645691 47.2732477,79.9163736 20.5992043,75.3891904 C21.5208309,70.6119485 22.4786519,64.3161076 23.0958708,59.5139842 C24.7932229,46.3089743 27.4083326,47.8325495 39.3060226,49.6812426 Z" fill="#76BFFE" fill-rule="nonzero"/>
+                  <!-- Left ring -->
+                  <g transform="translate(28.2066, 38.493)">
+                    <path d="M3.54754314,10.0169889 C4.16201632,6.57173494 3.97022747,3.2036135 6.98767766,1.12352275 C8.42130972,0.139045982 10.1956686,-0.219330101 11.9001348,0.131374196 C13.5213955,0.445461265 14.947539,1.3972189 15.8561439,2.77233472 C17.633415,5.49146452 16.6220512,8.88778496 16.1124171,11.9793074 C15.7454805,14.1755117 14.9575237,18.3269847 14.7844561,20.4261512 C14.4312484,22.8906607 14.0493348,25.1598506 11.9700275,26.8260796 C10.6990623,27.8540989 9.06324074,28.3231146 7.43865188,28.1248922 C5.71255221,27.9167173 4.14495917,27.0193257 3.09448879,25.6375748 C1.17868041,23.1150086 1.84515707,21.1120504 2.22374244,18.2444611 C2.49208042,17.5519269 3.38945255,11.0989181 3.54754314,10.0169889 Z" fill="#D8D8D8" fill-rule="nonzero"/>
+                    <path d="M9.36598176,10.0138416 C10.1287119,10.0157823 10.7547554,10.6178014 10.7865256,11.379872 L11.0213382,17.0123155 C11.0588568,17.9122743 10.3597109,18.6722499 9.45975213,18.7097686 C9.43573769,18.7107697 9.41170406,18.7112399 9.38766884,18.7111787 C8.47781661,18.7088637 7.74211236,17.969406 7.74442741,17.0595538 C7.74447513,17.0408005 7.74484305,17.0220494 7.74553102,17.0033087 L7.95221268,11.3731977 C7.98011524,10.613118 8.60539254,10.0119063 9.36598176,10.0138416 Z" fill="#FEFEFE" transform="translate(9.3877, 14.3629) rotate(7) translate(-9.3877, -14.3629)"/>
+                    <path d="M14.7844561,20.4261512 C16.1207376,20.8084965 15.7475606,24.4515581 15.4646617,25.5135821 C14.9421307,27.5036849 13.6295627,29.1956248 11.8294101,30.2004214 C9.93107489,31.2649335 7.68161216,31.5183098 5.59273619,30.9029082 C3.55087137,30.2953857 1.84224488,28.8895827 0.85584278,27.0056408 C-0.430515415,24.5552309 -0.485847123,19.6104538 2.22374244,18.2444611 C1.84515707,21.1120504 1.17868041,23.1150086 3.09448879,25.6375748 C4.14495917,27.0193257 5.71255221,27.9167173 7.43865188,28.1248922 C9.06324074,28.3226999 10.6990623,27.8540989 11.9700275,26.8260796 C14.0493348,25.1598506 14.4316645,22.8906607 14.7844561,20.4261512 Z" fill="#3A73A4" fill-rule="nonzero"/>
+                  </g>
+                  <!-- Right ring -->
+                  <g transform="translate(110.7245, 51.6388)">
+                    <path d="M3.61549667,9.92996602 C4.07437542,6.84010234 4.16590155,3.18916155 6.80227021,1.22725777 C8.18805907,0.215411385 9.92497545,-0.195547534 11.6177929,0.0872718228 C13.3160187,0.371335253 14.8299441,1.32429549 15.8192584,2.73217191 C17.7005365,5.40775914 16.6600508,8.84803684 16.1079818,11.9254598 C15.7293964,14.4637843 14.9946912,18.2723077 14.7642117,20.6961774 C14.3968591,23.0943363 14.1243608,25.1259081 12.0658549,26.7817699 C10.7366458,27.8529171 9.02344304,28.3339588 7.32688136,28.1129284 C5.65236916,27.9022653 4.1367796,27.0135822 3.1383127,25.655054 C1.46380049,23.4153072 1.78164579,21.3671477 2.17687227,18.8640719 C2.39986322,18.1914429 3.44908552,11.0048455 3.61549667,9.92996602 Z" fill="#D8D8D8" fill-rule="nonzero"/>
+                    <path d="M9.32292123,10.2056687 C10.0856513,10.2076094 10.7116949,10.8096286 10.7434651,11.5716992 L10.9782777,17.2041426 C11.0157963,18.1041014 10.3166504,18.8640771 9.41669161,18.9015957 C9.39267717,18.9025969 9.36864353,18.903067 9.34460831,18.9030059 C8.43475608,18.9006908 7.69905184,18.1612331 7.70136689,17.2513809 C7.7014146,17.2326276 7.70178253,17.2138765 7.7024705,17.1951358 L7.90915215,11.5650249 C7.93705472,10.8049452 8.56233202,10.2037335 9.32292123,10.2056687 Z" fill="#FEFEFE" transform="translate(9.3446, 14.5548) rotate(7) translate(-9.3446, -14.5548)"/>
+                    <path d="M14.7642117,20.6961774 L15.2230905,20.7616986 C16.1554089,21.7329052 15.6765608,25.2789292 15.1482054,26.525076 C14.3161497,28.4521458 12.7348277,29.9587187 10.7657678,30.6993571 C8.73638381,31.4897584 6.46944791,31.421749 4.49123535,30.5106726 C0.787339165,28.8029745 -0.863875478,24.6042267 0.443700139,20.8147791 C0.737831848,19.9650769 1.14387506,18.8043564 2.04499144,18.4833855 L2.17687227,18.8640719 C1.78164579,21.3671477 1.46380049,23.4153072 3.1383127,25.655054 C4.1367796,27.0135822 5.65236916,27.9022653 7.32688136,28.1129284 C9.02344304,28.3339588 10.7366458,27.8529171 12.0658549,26.7817699 C14.1243608,25.1259081 14.3968591,23.0943363 14.7642117,20.6961774 Z" fill="#3A73A4" fill-rule="nonzero"/>
+                  </g>
+                </g>
+              </g>
+            </g>
+          </svg>
+        </div>
+      </div>
+    </div>
+
+    <p class="streak-title" id="streakTitle">You completed a focus streak!</p>
+
+    <div class="week-card" id="weekCard">
+      <div class="week-card-top">
+        <div class="days-row">
+          <div class="day-col"><span class="day-lbl lbl-done" id="lbl-m">M</span><div class="day-circ circ-done" id="dc-m"><svg width="24" height="24" viewBox="0 0 24 24" fill="none"><polyline stroke="#fff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" points="20 6 9 17 4 12"/></svg></div></div>
+          <div class="day-col"><span class="day-lbl lbl-done" id="lbl-tu">Tu</span><div class="day-circ circ-done" id="dc-tu"><svg width="24" height="24" viewBox="0 0 24 24" fill="none"><polyline stroke="#fff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" points="20 6 9 17 4 12"/></svg></div></div>
+          <div class="day-col"><span class="day-lbl lbl-done" id="lbl-w">W</span><div class="day-circ circ-done" id="dc-w"><svg width="24" height="24" viewBox="0 0 24 24" fill="none"><polyline stroke="#fff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" points="20 6 9 17 4 12"/></svg></div></div>
+          <div class="day-col"><span class="day-lbl lbl-done" id="lbl-th">Th</span><div class="day-circ circ-done" id="dc-th"><svg width="24" height="24" viewBox="0 0 24 24" fill="none"><polyline stroke="#fff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" points="20 6 9 17 4 12"/></svg></div></div>
+          <div class="day-col">
+            <span class="day-lbl lbl-pending" id="lbl-f">F</span>
+            <div class="day-circ circ-pending" id="dc-f">
+              <div class="flame-icon-wrap" id="flameIconWrap">
+                <svg id="flameSvg" width="24" height="24" viewBox="0 0 24 24">
+                  <path id="flamePath" d="M12,3 C12.6666667,5.66666667 14,7.83333333 16,9.5 C18,11.1666667 19,13 19,15 C19,18.8659932 15.8659932,22 12,22 C8.13400679,22 5,18.8659932 5,15 C5,13.9181489 5.35088936,12.8654809 6,12 C6,13.3807119 7.11928813,14.5 8.5,14.5 C9.88071187,14.5 11,13.3807119 11,12 C11,10 9.5,9 9.5,7 C9.5,5.66666667 10.3333333,4.33333333 12,3"/>
+                </svg>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="week-card-bottom" id="weekCardBottom">
+        <div class="week-ekg">
+          <svg width="100%" height="12" viewBox="0 0 404 12" fill="none" preserveAspectRatio="none">
+            <path d="M 0 11 L 291 11 L 306 1 L 321 11 L 404 11" stroke="#d8d8d8" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <div class="week-msg-wrap">
+          <p class="week-msg">Nice job completing a session every day this week!</p>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /weekContent -->
+
+  <!-- ── MILESTONE CONTENT ── -->
+  <div id="milestoneContent">
+    <div class="ms-mountain-wrap">
+      <svg width="264px" height="210px" viewBox="0 0 220 175" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <style>
+      @keyframes floatCloud1 {
+        0%   { transform: translateX(0px); }
+        50%  { transform: translateX(6px); }
+        100% { transform: translateX(0px); }
+      }
+      @keyframes floatCloud2 {
+        0%   { transform: translateX(0px); }
+        50%  { transform: translateX(-8px); }
+        100% { transform: translateX(0px); }
+      }
+      @keyframes waveFlag {
+        0%   { d: path("M139.35587,26.7926337 C139.504907,22.9509696 139.129975,15.9658085 138.863647,12.0654984 L139.150693,12.4089966 C144.284115,12.6376463 148.61521,12.7029249 153.765339,12.2924027 C163.873121,11.4863689 153.030848,21.4111622 150.579089,23.5950287 C152.481149,24.9330658 156.558947,27.7110724 157.283414,30.1550061 C157.404715,31.7939532 156.283596,32.5099234 154.949949,32.6010342 C153.690487,32.6869088 152.427348,32.8949626 151.282504,33.0230762 C145.424281,33.678655 138.594311,34.3604151 132.737759,34.1450306 C131.464262,34.2965329 130.593431,32.8858864 130.019004,31.9081035 C129.938136,30.1742057 130.144315,28.5439856 130.099538,26.8257966 C131.077634,26.6442732 137.782293,26.8146259 139.35587,26.7926337 Z"); }
+        25%  { d: path("M139.35587,26.7926337 C139.504907,22.9509696 139.129975,15.9658085 138.863647,12.0654984 L139.150693,12.4089966 C145.5,13.2 150,11.8 154.5,11.0 C164.873121,10.4863689 155.030848,20.8 151.5,23.2 C153.7,24.7 157.5,27.2 158.5,29.8 C158.7,31.5 157.5,32.5 155.8,32.8 C154.4,33.0 153.0,33.2 151.6,33.4 C145.4,34.0 138.3,34.5 132.737759,34.1450306 C131.464262,34.2965329 130.593431,32.8858864 130.019004,31.9081035 C129.938136,30.1742057 130.144315,28.5439856 130.099538,26.8257966 C131.077634,26.6442732 137.782293,26.8146259 139.35587,26.7926337 Z"); }
+        50%  { d: path("M139.35587,26.7926337 C139.504907,22.9509696 139.129975,15.9658085 138.863647,12.0654984 L139.150693,12.4089966 C146.2,13.8 151.5,11.5 156,10.5 C165.873121,9.5 156.8,20.5 152.5,23.0 C154.8,24.6 158.3,27.0 159.3,29.5 C159.5,31.2 158.2,32.3 156.4,32.7 C155.0,33.0 153.5,33.3 152.0,33.5 C145.6,34.2 138.1,34.7 132.737759,34.1450306 C131.464262,34.2965329 130.593431,32.8858864 130.019004,31.9081035 C129.938136,30.1742057 130.144315,28.5439856 130.099538,26.8257966 C131.077634,26.6442732 137.782293,26.8146259 139.35587,26.7926337 Z"); }
+        75%  { d: path("M139.35587,26.7926337 C139.504907,22.9509696 139.129975,15.9658085 138.863647,12.0654984 L139.150693,12.4089966 C145.5,13.2 150,11.8 154.5,11.0 C164.873121,10.4863689 155.030848,20.8 151.5,23.2 C153.7,24.7 157.5,27.2 158.5,29.8 C158.7,31.5 157.5,32.5 155.8,32.8 C154.4,33.0 153.0,33.2 151.6,33.4 C145.4,34.0 138.3,34.5 132.737759,34.1450306 C131.464262,34.2965329 130.593431,32.8858864 130.019004,31.9081035 C129.938136,30.1742057 130.144315,28.5439856 130.099538,26.8257966 C131.077634,26.6442732 137.782293,26.8146259 139.35587,26.7926337 Z"); }
+        100% { d: path("M139.35587,26.7926337 C139.504907,22.9509696 139.129975,15.9658085 138.863647,12.0654984 L139.150693,12.4089966 C144.284115,12.6376463 148.61521,12.7029249 153.765339,12.2924027 C163.873121,11.4863689 153.030848,21.4111622 150.579089,23.5950287 C152.481149,24.9330658 156.558947,27.7110724 157.283414,30.1550061 C157.404715,31.7939532 156.283596,32.5099234 154.949949,32.6010342 C153.690487,32.6869088 152.427348,32.8949626 151.282504,33.0230762 C145.424281,33.678655 138.594311,34.3604151 132.737759,34.1450306 C131.464262,34.2965329 130.593431,32.8858864 130.019004,31.9081035 C129.938136,30.1742057 130.144315,28.5439856 130.099538,26.8257966 C131.077634,26.6442732 137.782293,26.8146259 139.35587,26.7926337 Z"); }
+      }
+      @keyframes waveFlagDark {
+        0%   { d: path("M138.733578,12.0654984 L139.016412,12.409452 C140.958717,15.7668448 142.600736,20.0110366 141.786476,24.0829021 C141.035764,27.8363308 137.405672,30.3611041 134.682363,32.5531093 C134.114061,33.0106655 133.0331,33.5867179 132.697584,34.1743053 C131.442775,34.3260084 130.584723,32.9134916 130.018725,31.9344123 C129.939044,30.1982155 130.142198,28.565834 130.098077,26.8453669 C131.061821,26.6636028 137.668093,26.8341814 139.218578,26.81216 C139.365428,22.9654024 138.995998,15.9709798 138.733578,12.0654984 Z"); }
+        25%  { d: path("M138.733578,12.0654984 L139.016412,12.409452 C141.5,16.0 143.5,20.3 142.5,24.2 C141.6,28.0 137.8,30.5 134.9,32.7 C134.3,33.2 133.1,33.8 132.7,34.2 C131.3,34.4 130.4,32.9 129.9,31.9 C129.8,30.1 130.0,28.5 130.0,26.8 C131.1,26.6 137.8,26.8 139.4,26.8 C139.5,22.9 139.1,15.9 138.733578,12.0654984 Z"); }
+        50%  { d: path("M138.733578,12.0654984 L139.016412,12.409452 C142.2,16.2 144.3,20.5 143.2,24.5 C142.2,28.2 138.3,30.8 135.2,33.0 C134.5,33.5 133.2,34.1 132.8,34.5 C131.4,34.6 130.3,33.1 129.8,32.0 C129.7,30.2 129.9,28.5 129.9,26.8 C131.0,26.6 137.7,26.8 139.3,26.8 C139.5,22.9 139.0,15.9 138.733578,12.0654984 Z"); }
+        75%  { d: path("M138.733578,12.0654984 L139.016412,12.409452 C141.5,16.0 143.5,20.3 142.5,24.2 C141.6,28.0 137.8,30.5 134.9,32.7 C134.3,33.2 133.1,33.8 132.7,34.2 C131.3,34.4 130.4,32.9 129.9,31.9 C129.8,30.1 130.0,28.5 130.0,26.8 C131.1,26.6 137.8,26.8 139.4,26.8 C139.5,22.9 139.1,15.9 138.733578,12.0654984 Z"); }
+        100% { d: path("M138.733578,12.0654984 L139.016412,12.409452 C140.958717,15.7668448 142.600736,20.0110366 141.786476,24.0829021 C141.035764,27.8363308 137.405672,30.3611041 134.682363,32.5531093 C134.114061,33.0106655 133.0331,33.5867179 132.697584,34.1743053 C131.442775,34.3260084 130.584723,32.9134916 130.018725,31.9344123 C129.939044,30.1982155 130.142198,28.565834 130.098077,26.8453669 C131.061821,26.6636028 137.668093,26.8341814 139.218578,26.81216 C139.365428,22.9654024 138.995998,15.9709798 138.733578,12.0654984 Z"); }
+      }
+
+      .cloud-left  { animation: floatCloud1 4.5s ease-in-out infinite; transform-origin: 22px 73px; }
+      .cloud-right { animation: floatCloud2 5.85s ease-in-out infinite; transform-origin: 183px 53px; }
+      .flag-main   { animation: waveFlag 1.8s ease-in-out infinite; }
+      .flag-dark   { animation: waveFlagDark 1.8s ease-in-out infinite; }
+    </style>
+  </defs>
+
+  <g id="Page-1" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+    <g id="Full-Screen-Copy-52" transform="translate(-291, -134)">
+      <g id="Group" transform="translate(274, 134)">
+        <g transform="translate(17, 0)" fill-rule="nonzero" id="Path">
+
+          <!-- Mountain body -->
+          <path d="M115.207212,43.2719167 C123.091314,42.7640399 130.830436,47.5106548 135.143163,54.0775634 C136.711209,56.4649977 137.66986,59.152541 138.98839,61.6757307 C140.762767,65.4331229 143.245592,69.7421506 144.693336,73.5495036 C146.737109,77.9222743 149.111285,83.5719727 151.305864,87.7307736 C155.420143,85.5001127 159.394584,84.1969988 164.088783,85.5655785 C167.900763,86.6767743 171.848127,90.1133841 173.637585,93.6399233 C174.2744,94.8947992 175.953838,98.0567973 175.999765,99.3192535 C176.348677,99.6441706 179.71612,107.588273 180.156202,108.617809 C183.221689,115.723949 186.325564,122.812861 189.468511,129.884545 L192.163494,135.954258 C192.597064,136.931766 193.467629,138.755506 193.689726,139.689944 C194.98632,141.886838 198.880902,152.32312 199.64933,153.066329 L200.191891,152.830307 C201.783587,151.638141 205.22472,150.884251 207.173896,151.236732 C215.403482,152.724184 219.426935,162.555769 220,169.95616 C218.874777,171.626572 216.9304,173.410687 215.3932,174.759282 C213.806988,174.844388 211.752591,174.860927 210.158839,174.770997 L189.450689,174.886424 L152.846491,174.859204 C139.322221,174.679001 125.310228,174.834396 111.767449,174.857137 C105.820527,175.056635 98.7946513,174.872642 92.7606722,174.866095 L58.4593604,174.869885 L38.7523607,174.853691 C36.3819546,174.856103 30.6790646,175.017355 28.5173886,174.781334 L28.1249486,174.765484 C25.9032927,174.894349 9.25331484,175.009086 8.01179922,174.649024 C6.71218877,173.285613 5.14253163,171.322328 4,169.819027 C4.06824,166.070248 7.00310848,162.080969 9.82093045,159.798625 C13.3196101,156.965334 16.8980802,156.045023 21.3297388,156.532915 C21.7177231,156.349266 23.1860313,153.752686 23.9160726,152.896807 C23.9109314,152.542258 23.930125,152.475759 24.087101,152.140849 C26.7711163,146.412592 29.3512808,140.663317 31.91705,134.881653 L36.7877616,124.032248 C37.5260286,122.380098 38.2889731,120.414056 39.075224,118.828406 C39.6503457,117.291338 40.3423425,116.030604 40.9603069,114.59587 C43.176479,109.449913 45.59624,106.616967 50.1166689,103.31439 C53.9903429,100.484889 58.6307316,99.364735 63.3948503,99.395056 C64.1413431,99.3998798 67.3905406,100.026629 68.337195,100.183402 C69.4158052,97.9541193 70.298024,95.6710858 71.2532469,93.3859849 C72.594055,90.2439711 73.9520002,87.1095377 75.3274253,83.9826844 C76.1558335,82.0838317 77.095633,79.7618633 77.9967027,77.9277872 C79.5088819,74.3016712 81.2702349,70.5384215 82.9195111,66.9598542 C85.3142519,61.7635927 87.8807066,55.9512635 91.1011138,51.2349696 C95.639708,45.6410895 102.211793,43.2650256 109.234241,43.2953466 C109.248293,45.4343554 109.171519,48.2717809 109.338777,50.3287851 L109.375793,50.9755183 C110.874948,50.122051 112.200333,49.5307915 113.937694,49.3402516 C114.26844,49.2778868 114.600215,49.2196567 114.932332,49.1648722 C115.322373,48.6993759 115.205155,44.2149687 115.207212,43.2719167 Z" fill="#2F97D1"/>
+          <path d="M39.1113979,118.936781 C39.6871127,117.402681 40.3798232,116.144382 40.998425,114.712418 C43.2168826,109.576399 45.6391392,106.748924 50.1642301,103.452724 C54.0418991,100.628688 58.6870736,99.5106964 63.4561056,99.540362 C64.2033683,99.5457734 67.4559168,100.171312 68.4035475,100.327783 C75.1656232,101.729828 81.9729875,104.820724 87.8416417,108.441902 C89.8216477,109.664092 92.5478872,111.158988 92.067553,113.870572 C95.9133142,116.220382 100.916338,120.009379 104.560015,122.844764 C106.040474,124.373017 110.012151,127.025108 111.007129,128.227353 C112.788826,127.279932 115.227551,126.069778 117.141682,125.460746 C124.669205,123.065198 132.692158,123.364384 139.795271,126.856945 C140.877738,129.320584 141.474039,132.27977 142.369176,134.844512 C144.524847,141.019427 146.326786,147.295103 148.134558,153.578687 C148.243663,153.958 148.561712,154.73485 148.5648,155.093185 L148.666357,155.202543 C149.17654,157.308878 153.050778,173.507541 152.732728,174.603523 L152.714201,174.703596 L153,174.859379 C139.461782,174.679523 125.435338,174.834618 111.878592,174.857315 C105.925537,175.056428 98.8924153,174.87279 92.8522132,174.866257 L58.5155257,174.870039 L38.7882016,174.853876 C36.4153509,174.856284 30.7065794,175.017225 28.542674,174.781659 L28.1498293,174.76584 C25.9258821,174.894456 9.25873271,175.008971 8.01593669,174.649605 C6.71498592,173.288826 5.14370995,171.329333 4,169.828934 C4.06831038,166.087395 7.00620566,162.10582 9.82693371,159.827883 C13.3292216,157.000063 16.9113823,156.081529 21.3476113,156.56848 C21.7359958,156.385186 23.2058184,153.79362 23.9366125,152.939393 C23.931466,152.585529 23.9506794,152.519158 24.1078173,152.184895 C26.7946007,146.4677 29.3774261,140.729527 31.9458415,134.959028 L36.8215764,124.130574 C37.5606048,122.481614 38.3243361,120.51937 39.1113979,118.936781 Z" fill="#62A537"/>
+          <path d="M39.0622689,118.951971 C39.6371781,117.41667 40.3289193,116.157386 40.9466555,114.7243 C43.162009,109.584259 45.5808763,106.754569 50.0996355,103.455788 C53.9718788,100.62954 58.6105536,99.5106732 63.3729126,99.540362 C64.1191297,99.5457776 67.3671271,100.171806 68.3134318,100.328399 C75.0660458,101.731543 81.8638851,104.82486 87.7243276,108.448873 C89.7015632,109.67202 92.423988,111.168087 91.9443259,113.881795 C89.2647281,119.130247 81.0350976,118.422996 76.3995063,116.816798 C75.9527354,117.820371 75.5186412,118.849412 74.983818,119.806867 C76.7188242,121.371078 81.3033657,140.523969 81.8556623,144.037162 C78.456914,146.007139 75.0358956,147.937536 71.5926073,149.828012 C69.5968705,150.920722 66.2885727,152.589902 64.5628171,153.838861 C63.2745819,154.959793 57.9818536,157.777093 56.207104,158.794432 L35.6542699,170.715129 C34.0443185,171.667766 32.4271721,172.608014 30.8028308,173.536215 C30.2529325,173.851122 28.9468812,174.525677 28.508333,174.840585 L28.116038,174.824753 C25.8952026,174.953469 9.25137451,175.068075 8.01031745,174.708427 C6.71118702,173.346583 5.14210963,171.385554 4,169.883981 C4.0682148,166.139512 7.00199927,162.154818 9.81878047,159.875097 C13.3161679,157.045063 16.8933162,156.12581 21.323338,156.613141 C21.711179,156.429704 23.1789449,153.836108 23.9087165,152.981213 C23.9035772,152.627071 23.9227637,152.560648 24.0796817,152.226124 C26.7627057,146.504451 29.3419172,140.761784 31.9067387,134.986766 L36.7756513,124.149832 C37.5136456,122.499581 38.2763083,120.535799 39.0622689,118.951971 Z" fill="#3BABE5"/>
+          <path d="M49.2139043,148.488876 C51.0515031,145.975888 55.0673037,140.80686 58.5216444,143.561804 C61.3147947,145.789373 63.6265458,150.699333 65,153.957354 C63.7024654,155.071994 58.3715307,157.873481 56.5839698,158.88511 L35.8827716,170.738897 C34.2611984,171.686187 32.6323784,172.621157 30.9963115,173.544149 C30.4424437,173.857289 29.1269645,174.528058 28.6852506,174.841197 L28.2901237,174.825455 C26.0532568,174.953448 9.28928244,175.067411 8.0392666,174.709781 C6.73075818,173.355581 5.15035414,171.40556 4,169.912414 C4.06870722,166.188962 7.02366971,162.226634 9.86078431,159.959709 C13.3834182,157.145559 16.9863888,156.231466 21.4483894,156.716062 C21.8390301,156.533654 23.3173914,153.954616 24.0524309,153.104519 C31.4159397,145.685335 39.7812419,142.556677 49.2139043,148.488876 Z" fill="#35722E"/>
+          <path d="M24.5322462,151.915959 C31.6927379,144.099748 39.8274028,140.803664 49,147.053316 C47.7828708,149.43975 46.6623871,151.110866 45.7345232,153.788619 C45.3576729,154.875656 44.7667259,157.857707 44.4556482,158.494786 C39.1871264,156.262304 35.197815,160.188257 32.6491256,164.895145 C29.9242596,160.672466 26.8832822,157.033506 22,155.720769 C22.3798705,155.528599 23.8174723,152.811548 24.5322462,151.915959 Z" fill="#62A537"/>
+          <path d="M7,174.947703 C7.69881908,174.876171 27.1733551,174.883853 28,174.972914 C25.6803844,175.000811 8.29625786,175.02565 7,174.947703 Z" fill="#2A6229"/>
+          <path d="M39,118.034128 C39.5755855,116.491897 40.2681404,115.226929 40.8866032,113.787375 C43.1045625,108.624134 45.526275,105.781672 50.0503495,102.468002 C53.9271476,99.6289977 58.5712787,98.505081 63.3392395,98.5355038 C64.0863344,98.5403438 67.3381523,99.1691979 68.2855701,99.3264978 C75.046127,100.735974 81.8519623,103.843253 87.7192983,107.483623 C89.6988596,108.712291 92.4244867,110.215111 91.9442604,112.941067 C89.2615107,118.213208 81.0221999,117.502765 76.381156,115.889317 C75.9338595,116.89742 75.4992548,117.931105 74.9638025,118.892882 C70.4249782,125.831019 61.1051583,127.24499 56.9831018,119.154242 C53.1934305,121.405878 48.3472614,123.253029 43.9370691,121.791349 C41.8185852,121.08955 40.4379347,119.66417 39,118.034128 Z" fill="#EAF2F7"/>
+          <path d="M63.2889988,103.587978 C63.745427,103.573096 64.2018553,103.564641 64.6586319,103.562195 C67.2344898,103.555508 70.0570281,103.98506 71.9001619,105.798985 C74.2091313,108.071887 72.6098904,111.673693 69.6281249,112.374166 C68.4208548,112.657602 67.8243623,112.661323 66.6209249,112.519604 C65.9031828,112.439106 64.2638737,112.559177 63.4147779,112.586912 C59.3560508,112.718483 55.0245121,109.82121 57.9686484,105.598414 C59.0619856,104.029368 61.4016158,103.773666 63.2889988,103.587978 Z" fill="#FDFDFD"/>
+          <path d="M111,174.947651 C115.935405,167.764765 124.654012,159.8285 132.64128,156.092749 C137.954795,153.60767 142.91473,153.042895 148.470039,155.058713 L148.573765,155.168761 C149.094849,157.288397 153.051863,173.589353 152.727018,174.692256 L152.708095,174.792961 L153,174.949727 C139.172527,174.768736 124.846396,174.924811 111,174.947651 Z" fill="#35722E"/>
+          <path d="M152.981685,174.985323 L127.548743,174.993467 L120.317848,174.992361 C119.210151,174.991959 117.040543,175.00322 116,174.954455 C118.233709,174.878845 122.267002,174.914337 124.670969,174.914136 C130.426178,174.907299 136.181726,174.91494 141.936595,174.936859 C143.752459,174.938569 152.035428,174.882364 153,174.956064 L152.981685,174.985323 Z" fill="#2A6229"/>
+          <path d="M91.4930615,113.616777 C95.454028,116.047491 100.606924,119.966942 104.359754,122.899949 C105.884561,124.48082 109.975216,127.224223 111,128.46786 C101.212253,133.905218 90.6764147,139.236924 81.0876176,144.785981 C80.5179791,141.154673 75.7894847,121.357852 74,119.741052 C74.5516164,118.751407 74.999341,117.687769 75.4601404,116.650456 C80.2412874,118.310655 88.7293252,119.041684 91.4930615,113.616777 Z" fill="#298CC6"/>
+          <path d="M79.8264053,158.881562 C81.8894028,158.757244 83.2976422,159.223524 84.9237096,160.696885 C85.6778279,161.38046 87.8236255,164.293404 86.6621942,165.239196 C85.6873817,166.032812 82.4998946,165.865314 81.2419693,165.877502 C78.1207223,165.862528 69.9913404,166.636295 76.3905178,160.357012 C77.2318946,159.531359 78.6831264,159.044533 79.8264053,158.881562 Z" fill="#35722E"/>
+          <path d="M125.852759,142.78488 C130.195065,142.554199 131.568123,146.43445 130.79624,149.71641 L126.99563,149.736765 C126.337328,149.743549 122.202695,150.058114 122.094826,149.360212 C121.651254,146.485335 122.740695,143.865811 125.852759,142.78488 Z" fill="#35722E"/>
+          <path d="M132.136775,132.726652 C132.53325,132.719456 133.117476,132.679883 133.449703,132.950424 C135.515633,134.633749 136.545935,139.006295 137,141.590824 C136.092868,141.685441 135.398455,141.706308 134.490324,141.735448 C132.888113,141.799486 131.600485,141.771424 130.007928,141.668533 C129.96332,138.889732 130.037222,134.64778 132.136775,132.726652 Z" fill="#35722E"/>
+          <path d="M139,126.687733 C143.095663,128.408599 147.603553,131.156801 151.485327,133.347968 C152.862297,134.125468 155.267242,135.712604 156.603437,136.323545 C157.583383,137.062343 160.128617,138.468062 161.285133,139.135675 C163.014205,134.270255 167.294386,129.761794 172.503718,128.808061 L173.424231,128.888576 C180.192286,129.741406 186.450326,134.111645 191.653093,138.232048 C192.231869,138.6906 192.87457,139.2504 193.475115,139.651244 C194.782285,141.854505 198.708635,152.321032 199.483331,153.066395 L200.030318,152.82969 C201.634997,151.634068 205.104199,150.877993 207.069274,151.231496 C215.365989,152.723259 219.42226,162.583336 220,170.005175 C218.865598,171.680428 216.905361,173.469713 215.355623,174.822217 C213.756472,174.907569 211.685317,174.924156 210.078565,174.833966 L189.2015,174.949727 L152.298724,174.922428 L152.010891,174.765892 L152.02955,174.665335 C152.349864,173.56405 148.448048,157.287009 147.934233,155.170482 L147.831953,155.060595 C147.828843,154.700527 147.50853,153.919917 147.398649,153.53877 C145.578008,147.224781 143.763242,140.918741 141.592227,134.713948 C140.690718,132.136796 140.090173,129.163292 139,126.687733 Z" fill="#4B8C33"/>
+          <path d="M172.273065,129.704108 L173.198049,129.783059 C179.99897,130.619328 186.287401,134.904699 191.515433,138.945086 C192.09702,139.394733 192.742842,139.943662 193.346304,140.336722 C194.659822,142.497197 198.605239,152.76047 199.383697,153.491358 L199.93334,153.259249 C201.545812,152.086846 205.031861,151.345453 207.006479,151.692092 C215.343485,153.154885 219.419455,162.823485 220,170.101196 C218.86009,171.743916 216.890333,173.498454 215.333069,174.824693 C213.726152,174.908388 211.644939,174.924653 210.030384,174.836214 L189.051935,174.949727 C189.164781,170.633182 188.516528,167.075988 184.166952,165.201837 C184.377365,163.618754 182.582258,157.660844 182.084003,155.900206 C181.794425,154.877572 181.273253,153.522193 181.324294,152.436195 L180.002095,151.517925 C175.705643,148.71229 171.356414,145.983911 166.957186,143.334482 C165.242286,142.302361 162.714553,140.697592 161,139.831165 C162.737469,135.060229 167.038435,130.63932 172.273065,129.704108 Z" fill="#235424"/>
+          <path d="M182.003403,152.829647 C191.153643,159.013361 200.279162,165.16678 208.067752,172.969833 C208.516443,173.419612 209.702679,174.403067 210,174.838198 L189.54005,174.949727 C189.650106,170.708619 189.017876,167.213592 184.775803,165.372194 C184.981015,163.816777 183.230276,157.962989 182.744335,156.23312 C182.461914,155.228358 181.953624,153.896665 182.003403,152.829647 Z" fill="#35722E"/>
+          <path d="M172.595662,129.704108 L173.547115,129.784167 L173.087818,129.932603 C173.120676,130.457971 173.373896,130.939014 173.5064,131.360614 C174.257848,133.750711 181.366964,150.191734 180.985168,151.557553 C180.829449,151.658916 180.714089,151.746191 180.545871,151.824188 C176.126469,148.979162 171.65278,146.212477 167.127661,143.525851 C165.363686,142.479239 162.763618,140.851939 161,139.973348 C162.78719,135.135428 167.211235,130.65245 172.595662,129.704108 Z" fill="#2A6229"/>
+          <path d="M199.856867,152.829647 C200.491156,153.74741 198.79866,154.378827 199.020133,153.162099 L199.856867,152.829647 Z" fill="#0A2E0E"/>
+          <path d="M114.821852,43.2717392 C122.623607,42.7662849 130.281895,47.4902593 134.549577,54.025845 C136.101245,56.4018916 137.049883,59.0766158 138.354641,61.5877703 C140.110485,65.3272404 142.567378,69.6157149 144,73.4049075 C142.171575,74.5694412 140.482546,75.0625506 138.280025,74.6428247 C137.515213,74.4970865 136.383428,73.8445224 135.655246,73.8760704 C135.330668,74.2765932 135.31778,74.3585495 135.123779,74.8506302 C134.952163,75.1712542 134.79547,75.484677 134.589598,75.7847262 C132.471868,77.8610665 129.941715,78.4556783 127.109709,77.5510729 C124.089806,76.5861147 122.129108,74.2556755 120.215553,71.843623 C119.89267,72.753715 119.572501,73.9453389 119.287265,74.8880077 C118.382041,77.1721536 117.620282,78.9745062 115.894623,80.7744584 C106.251217,90.8334788 95.835537,86.9606154 92.5636366,73.9196204 C90.9000447,76.8076367 88.3688752,79.2162601 85.1169854,80.0910321 C82.0061871,80.9277407 80.0977199,80.0536545 78,77.7623075 C79.4963848,74.1534873 81.2393408,70.4081876 82.8713906,66.8466895 C85.2411188,61.6752132 87.7807674,55.8906078 90.967538,51.1968098 C95.4587275,45.6296114 101.962168,43.2648809 108.911268,43.2950573 C108.925174,45.4238634 108.849201,48.2477549 109.014712,50.2949476 L109.051342,50.938596 C110.534839,50.0891996 111.84638,49.5007603 113.565595,49.3111292 C113.892886,49.2490619 114.221196,49.1911095 114.549844,49.1365863 C114.935811,48.6733104 114.819817,44.210293 114.821852,43.2717392 Z" fill="#EAF2F7"/>
+          <path d="M116.279604,43.2723937 C124.226347,42.7580067 132.026957,47.565466 136.37395,54.2165523 C137.954454,56.6345898 138.920721,59.3565832 140.249727,61.9121163 C142.038202,65.7176725 144.540754,70.0819354 146,73.9380928 C144.137596,75.1232068 142.417177,75.6250308 140.173725,75.1978872 C139.3947,75.0495734 138.241882,74.3854768 137.500167,74.4175824 C137.169557,74.8251835 137.156429,74.9085881 136.958823,75.4093651 C136.504881,74.3722158 136.03263,72.986093 135.555887,71.8540229 L129.288107,56.9235399 C128.250329,54.4664173 126.905432,50.8105707 125.410602,48.6933484 C124.330332,46.9739558 120.759601,46.5939237 119.16735,47.6150202 C116.954298,49.0342955 117.855963,49.6104508 115,49.4185153 C115.333374,49.3553511 115.667785,49.2963746 116.002541,49.2408878 C116.395681,48.7694246 116.277531,44.2275342 116.279604,43.2723937 Z" fill="#CDDCEA"/>
+          <path d="M92,50.2729101 C96.4703764,45.3143033 102.943679,43.2080789 109.860575,43.2349565 C109.874416,45.1310471 109.798796,47.6462382 109.96354,49.4696372 L110,50.0429236 C109.818376,50.1150043 109.511506,50.2832946 109.385247,50.2142681 C108.729309,49.8556968 107.897485,49.0350146 107.303325,48.5793176 C104.754853,46.6548222 101.248636,46.1426212 98.1603556,47.24338 C96.4686885,47.8417114 92.647499,50.1763952 92,50.2729101 Z" fill="#CDDCEA"/>
+          <path d="M92.3665265,75.4093651 C95.6715598,88.4010736 106.192714,92.2593002 115.933774,82.2382963 C117.676908,80.4451467 118.446381,78.6496059 119.360772,76.3740926 C119.866788,76.62279 119.941474,76.5876034 120.157995,77.2769873 C120.889097,79.6057929 121.49104,82.0527981 122.113539,84.4147406 L125.313395,96.4833989 C125.810161,98.3698101 126.355232,100.853027 127,102.64276 C124.743656,104.34094 122.662037,106.225985 120.542389,108.091215 C116.266436,111.890684 112.077502,115.786488 107.978672,119.775213 C106.693933,121.032023 105.385898,122.454859 104.1039,123.671359 C100.46552,120.854724 95.4697702,117.090783 91.6296004,114.756512 C92.1092362,112.062859 89.3869604,110.577848 87.4098331,109.36374 C81.5497114,105.766509 74.7522443,102.696052 68,101.303278 C69.0781528,99.093014 69.9599974,96.8294573 70.9148153,94.563851 C72.2550548,91.4486422 73.6124241,88.340949 74.9872658,85.2407714 C75.8153228,83.358118 76.7547238,81.0559586 77.6554113,79.2375294 C79.7743737,81.5202166 81.7021671,82.3909993 84.8444668,81.5574529 C88.1292868,80.685987 90.6860882,78.2864666 92.3665265,75.4093651 Z" fill="#3BABE5"/>
+          <path d="M85.1217352,90.5110651 C91.067636,90.1144737 93.7979529,95.779393 87.0410907,97.484555 C85.0590089,97.6475378 83.0841647,97.4240703 81.579423,95.8485701 C80.837047,95.0709611 81.0021344,94.1542736 81.0479728,93.1354501 C82.2049627,91.2310868 83.0345351,90.8895474 85.1217352,90.5110651 Z" fill="#FDFDFD"/>
+          <path d="M175.832738,98.5349038 C176.17134,98.8585946 179.439283,106.772715 179.866361,107.798365 C182.84127,114.877686 185.853432,121.939845 188.903513,128.98484 L191.518865,135.031645 C191.939623,136.005464 192.784465,137.82232 193,138.753232 C192.421915,138.355054 191.803251,137.798979 191.246121,137.343478 C186.237935,133.250488 180.213944,128.909323 173.699012,128.062167 L172.812926,127.982188 C167.798421,128.929576 163.678318,133.408042 162.013912,138.241093 C160.900649,137.577922 158.450607,136.181555 157.50731,135.447672 C157.448105,134.59468 155.836585,130.268619 155.545879,129.106353 C153.103819,119.340707 149.71048,109.7563 147,100.105645 C148.703322,101.009439 150.181131,101.790348 152.054751,102.266445 C155.781038,103.212803 160.808182,102.550661 162.790901,98.7192325 C163.471431,99.2045971 164.196865,99.7431665 164.899348,100.182535 C168.369521,101.712429 173.479819,102.304889 175.832738,98.5349038 Z" fill="#298CC6"/>
+          <path d="M175.434711,98.5349038 C175.781163,98.8585946 179.124875,106.772715 179.561854,107.798365 C182.605738,114.877686 185.687737,121.939845 188.808535,128.98484 L191.484525,135.031645 C191.915038,136.005464 192.779468,137.82232 193,138.753232 C192.408512,138.355054 191.775504,137.798979 191.205457,137.343478 C186.081155,133.250488 179.917496,128.909323 173.251514,128.062167 L172.344883,127.982188 L172.494627,127.859645 C173.029961,126.133065 165.206868,105.161469 164.25123,101.790691 C164.066092,101.136444 163.794852,100.814127 164.247827,100.182535 C167.798457,101.712429 173.027238,102.304889 175.434711,98.5349038 Z" fill="#1F7AB2"/>
+          <path d="M151.166154,88.1374776 C155.30375,85.9487373 159.300714,84.6701126 164.021516,86.0129728 C167.8551,87.103286 171.824834,90.4753119 173.624433,93.9355772 C174.264857,95.1668704 175.953812,98.2694453 176,99.5081763 C173.5617,103.221327 168.265964,102.637798 164.669868,101.130968 C163.941894,100.698224 163.190137,100.167773 162.484912,99.6897261 C160.430246,103.463393 155.220681,104.115552 151.359178,103.183461 C149.417569,102.714542 147.886134,101.945407 146.121004,101.055238 C146.099978,101.04949 143.225307,101.803412 142.755157,101.880495 C138.886071,102.517103 131.153414,100.469342 135.084199,95.2527431 C136.349881,93.5731537 139.069099,92.9182896 141.179259,92.7181453 C142.676225,92.6637142 143.855046,92.7049601 145.331676,92.9662972 C146.959277,90.5605085 148.68339,89.6091468 151.166154,88.1374776 Z" fill="#EAF2F7"/>
+          <path d="M157.643188,87.5242144 C164.423196,86.8433346 166.75728,93.4147438 159.757873,94.4913789 C158.089451,94.5213751 156.486813,94.628458 154.981251,93.8237233 C153.034048,92.783535 152.310069,90.7647635 153.779717,89.0898186 C154.837949,87.8838453 156.043394,87.7193505 157.643188,87.5242144 Z" fill="#FDFDFD"/>
+          <path d="M136.535726,75.7801846 C136.730288,75.311741 136.743213,75.2337214 137.06873,74.8524377 C137.799018,74.822405 138.934076,75.4436234 139.701099,75.582361 C141.90999,75.9819255 143.603903,75.5125025 145.437616,74.4039069 C147.46589,78.546777 149.822063,83.8994396 152,87.8395895 C149.549948,89.2605897 147.848551,90.1791963 146.242395,92.5021546 C144.785221,92.2498152 143.621931,92.2099893 142.144688,92.2625464 C142.084823,92.2429599 142.020876,92.2315345 141.964413,92.2037869 C141.286167,91.8704901 137.801739,78.887582 136.840154,77.1512393 C136.628925,76.7693026 136.401369,76.7699555 136,76.6694115 C136.206467,76.3837751 136.363613,76.0854075 136.535726,75.7801846 Z" fill="#1F7AB2"/>
+
+          <!-- Right cloud (animated) -->
+          <g class="cloud-right">
+            <path d="M170.367252,45.7811398 C172.411859,42.4792027 174.142756,40.1384038 177.916545,38.4503404 C186.30709,34.6979426 194.361271,39.8336608 196.481388,48.1315867 C200.719564,48.2473624 207.037013,48.2523527 207.876548,53.4735719 C208.025852,55.2501305 208.274006,57.0792539 206.984843,58.5530656 C205.792813,59.8794962 203.402575,60.8306536 201.61024,60.9317911 C199.961031,61.0249439 198.192035,60.8176788 196.537678,60.8376401 C186.244965,60.9574081 175.906604,61.7212618 165.620069,61.0788395 C163.959191,60.9750406 161.51438,61.1353967 160.096163,60.8758993 C157.609821,60.4211136 153.888203,58.5573906 154.085216,55.6679877 C154.106496,55.3582544 154.048491,54.6805671 154.001125,54.3871355 C153.981904,53.1874595 154.209121,51.9961006 154.669733,50.8825909 C157.346222,44.26674 164.189153,43.3531764 170.367252,45.7811398 Z" fill="#EAF2F7"/>
+            <path d="M207.876546,54.2947429 C208.025853,55.8856814 208.274012,57.5236926 206.984821,58.8435162 C205.792767,60.0313573 203.402479,60.8831351 201.610107,60.9737054 C199.960863,61.0571254 198.191831,60.8715159 196.537439,60.8893916 C186.244512,60.9966459 175.905935,61.6806898 165.619186,61.1053898 C163.958273,61.0124361 161.513411,61.1560376 160.095165,60.9236534 C157.608771,60.516385 153.887076,58.8473892 154.084093,56.2598797 C154.105373,55.9825082 154.047366,55.3756277 154,55.1128547 C154.133862,55.0940852 154.669994,55.024072 154.776054,55.0896163 C155.912848,55.7724686 157.388414,56.8038972 158.806661,56.9930819 C160.574664,57.2287434 162.736357,57.1170201 164.530102,57.1098699 L177.370518,57.0097659 L195.595259,57.096761 C198.675106,57.1042092 206.93162,57.9384092 207.876546,54.2947429 Z" fill="#CDDCEA"/>
+            <path d="M178.911664,42.2464521 C179.783025,42.1744384 180.509105,42.3231234 181.226939,42.7935412 C186.14202,46.0126607 183.833724,50.434158 179.64853,52.4856525 C178.601438,52.9990636 177.571159,53.8965476 176.353728,54.2945934 C173.004367,54.3189563 169.712738,51.3620956 171.506528,47.2282948 C172.509211,44.9166911 176.691868,42.9716049 178.911664,42.2464521 Z" fill="#FDFDFD"/>
+          </g>
+
+          <!-- Left cloud (animated) -->
+          <g class="cloud-left">
+            <path d="M13.7324591,66.65661 C14.2085838,65.8046295 14.6453946,65.0539812 15.2002823,64.2562601 C18.8972825,58.9424315 26.2152893,57.3908281 30.8836555,62.2436314 C32.7274271,64.1603179 33.4323092,65.6713167 34.3226155,68.2639102 C34.9896697,68.2790022 35.6648298,68.2940942 36.3315463,68.3239189 C40.8388062,68.5255052 45.0870127,68.2290548 45.9445573,74.0405607 C46.4778629,79.7967291 43.1091548,81.5836962 38.1932186,81.4334947 C37.3748528,81.4087006 36.5200102,81.3756419 35.6986047,81.3609092 C33.2600572,81.3422239 30.8215097,81.3371932 28.3829622,81.3468952 C21.8117183,81.3195859 15.1833611,81.660953 8.62816034,81.0270881 C6.07133313,80.7802258 3.73326593,81.0853002 1.52070624,79.3069571 C0.123675197,78.1843983 -0.0853914119,76.3859325 0.0253564735,74.6625675 C0.138536151,74.1102714 0.288294042,73.567318 0.473549349,73.03766 C2.32674414,67.8025255 8.71205719,64.6317639 13.7324591,66.65661 Z" fill="#EAF2F7"/>
+            <path d="M45.9445573,74.4039069 C46.4778629,79.877502 43.1091548,81.5767459 38.1932186,81.4339178 C37.3748528,81.4103409 36.5200102,81.3789051 35.6986047,81.3648956 C33.2600572,81.3471276 30.8215097,81.3423438 28.3829622,81.3515696 C21.8117183,81.3256008 15.1833611,81.6502101 8.62816034,81.047462 C6.07133313,80.8127183 3.73326593,81.1028164 1.52070624,79.4117731 C0.123675197,78.3443213 -0.0853914119,76.6341432 0.0253564735,74.9953791 C0.74705846,75.2742014 2.20424259,76.994972 3.62569288,77.1295994 C6.68735347,77.4190142 10.1225982,77.0906463 13.2267814,77.1087561 L32.3974464,77.3113806 C34.7292652,77.3182144 39.4915256,77.4569422 41.5703705,77.0510098 C42.7450614,76.8326674 43.8346395,76.28049 44.7107604,75.4590578 C45.1852976,75.0069967 45.3528211,74.726466 45.9445573,74.4039069 Z" fill="#CDDCEA"/>
+            <path d="M19.8686414,62.3390653 C22.3611672,62.2895907 24.5363195,65.0441638 23.8824414,67.5782838 C23.3669232,69.5758223 18.8027587,71.8905804 17.0809482,72.3911474 C13.7587763,72.4904604 11.7860734,68.5546803 13.8319874,65.8433975 C14.6968897,64.6971138 18.1150594,62.7679667 19.4200825,62.4467454 L19.8686414,62.3390653 Z" fill="#FDFDFD"/>
+          </g>
+
+          <!-- Flagpole (original paths, unchanged) -->
+          <path d="M110.020524,5.09573591 C110.106523,3.02132638 110.372307,2.93841912 111.412084,1.25957244 C113.631132,-2.3228887 116.013374,2.63674103 116.17894,4.97952344 L116.245301,5.07777888 C121.882305,5.09980165 127.158384,5.51857312 132.340337,7.98681756 C134.573605,9.05034801 137.416993,10.4628547 138.466927,12.909754 C138.736774,16.6952989 139.11666,23.4749244 138.965654,27.203549 C137.371284,27.2248941 130.578033,27.0595539 129.587012,27.2357361 C127.299571,27.3793923 125.093728,27.3329751 122.810012,27.3726161 C120.588594,27.4109018 118.386475,27.5047527 116.159979,27.5223709 C116.044185,32.5801545 115.975454,37.6389544 115.953784,42.6977544 C115.951753,43.6250825 116.067547,48.0347189 115.682244,48.4924537 C115.354161,48.5463248 115.026416,48.603584 114.699687,48.664909 C112.98343,48.8522719 111.674144,49.4336731 110.193199,50.2729101 L110.156633,49.6369602 C110.252112,47.901227 110.163404,45.3001683 110.139704,43.5125969 L110.059122,34.2477865 C109.996485,24.5306622 109.983619,14.813199 110.020524,5.09573591 Z" fill="#76BFFE"/>
+          <path d="M109.022545,5.09573591 C109.117011,3.02132638 109.408965,2.93841912 110.551117,1.25957244 C112.988652,-2.3228887 115.605449,2.63674103 115.787316,4.97952344 L115.860212,5.07777888 C116.107907,12.104737 115.994845,20.4584823 115.766489,27.5223709 C115.639294,32.5801545 115.563795,37.6389544 115.539992,42.6977544 C115.537761,43.6250825 115.664956,48.0347189 115.241716,48.4924537 C114.88133,48.5463248 114.521316,48.603584 114.162417,48.664909 C112.277177,48.8522719 110.83898,49.4336731 109.212221,50.2729101 L109.172055,49.6369602 C109.276935,47.901227 109.179493,45.3001683 109.153459,43.5125969 L109.064943,34.2477865 C108.996139,24.5306622 108.982006,14.813199 109.022545,5.09573591 Z" fill="#4FA0E6"/>
+          <path d="M110,5.02729101 C110.083787,2.98074453 110.342735,2.89895086 111.355764,1.24265412 C113.51773,-2.29168813 115.838694,2.60132486 116,4.91263948 C115.555666,5.011915 110.670955,5.02628823 110,5.02729101 Z" fill="#2C2B2C"/>
+
+          <!-- Flag body (animated, original paths) -->
+          <path class="flag-main" d="M139.35587,26.7926337 C139.504907,22.9509696 139.129975,15.9658085 138.863647,12.0654984 L139.150693,12.4089966 C144.284115,12.6376463 148.61521,12.7029249 153.765339,12.2924027 C163.873121,11.4863689 153.030848,21.4111622 150.579089,23.5950287 C152.481149,24.9330658 156.558947,27.7110724 157.283414,30.1550061 C157.404715,31.7939532 156.283596,32.5099234 154.949949,32.6010342 C153.690487,32.6869088 152.427348,32.8949626 151.282504,33.0230762 C145.424281,33.678655 138.594311,34.3604151 132.737759,34.1450306 C131.464262,34.2965329 130.593431,32.8858864 130.019004,31.9081035 C129.938136,30.1742057 130.144315,28.5439856 130.099538,26.8257966 C131.077634,26.6442732 137.782293,26.8146259 139.35587,26.7926337 Z" fill="#76BFFE"/>
+          <path class="flag-dark" d="M138.733578,12.0654984 L139.016412,12.409452 C140.958717,15.7668448 142.600736,20.0110366 141.786476,24.0829021 C141.035764,27.8363308 137.405672,30.3611041 134.682363,32.5531093 C134.114061,33.0106655 133.0331,33.5867179 132.697584,34.1743053 C131.442775,34.3260084 130.584723,32.9134916 130.018725,31.9344123 C129.939044,30.1982155 130.142198,28.565834 130.098077,26.8453669 C131.061821,26.6636028 137.668093,26.8341814 139.218578,26.81216 C139.365428,22.9654024 138.995998,15.9709798 138.733578,12.0654984 Z" fill="#4FA0E6"/>
+
+        </g>
+      </g>
+    </g>
+  </g>
+</svg>
+    </div>
+    <p class="ms-label">Milestone</p>
+    <p class="ms-title">25 Sessions Completed</p>
+    <div class="ms-progress-wrap">
+      <div class="ms-progress-meter">
+        <div class="ms-track">
+          <div class="ms-track-fill"></div>
+          <div class="ms-track-highlight"></div>
+        </div>
+        <div class="ms-node ms-node-done ms-check-drawn" style="left:12px;">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><polyline class="ms-check-path" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" points="3.5 8.5 6.5 11.5 12.5 4.5"/></svg>
+          <span class="ms-node-label ms-node-label-done">1</span>
+        </div>
+        <div class="ms-node ms-node-done ms-check-drawn" style="left:106px;">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><polyline class="ms-check-path" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" points="3.5 8.5 6.5 11.5 12.5 4.5"/></svg>
+          <span class="ms-node-label ms-node-label-done">5</span>
+        </div>
+        <div class="ms-node ms-node-done ms-check-drawn" id="msNode0" style="left:200px;">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><polyline class="ms-check-path" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" points="3.5 8.5 6.5 11.5 12.5 4.5"/></svg>
+          <span class="ms-node-label ms-node-label-done">10</span>
+        </div>
+        <div class="ms-node ms-node-next" id="msNode1" style="left:294px;">
+          <div class="ms-node-next-ring"></div>
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style="display:none;"><polyline class="ms-check-path" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" points="3.5 8.5 6.5 11.5 12.5 4.5"/></svg>
+          <span class="ms-node-label ms-node-label-done">25</span>
+        </div>
+        <div class="ms-node ms-node-future" id="msNode2" style="left:388px;">
+          <div class="ms-node-next-ring" style="display:none; opacity:0;"></div>
+          <span class="ms-node-label ms-node-label-future">50</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ── PERSONAL BEST CONTENT ── -->
+  <div id="pbContent">
+    <div class="pb-rocket-wrap">
+      <svg width="432" height="624" viewBox="0 0 432 624" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:196px;height:auto;display:block;">
+      <!-- Body white -->
+      <path d="M172.38 107.52C188.314 82.5917 223.728 37.6455 253.299 31.0454C262.755 28.8564 272.693 30.6063 280.833 35.8942C304.765 51.2415 322.707 106.579 328.417 133.748L329.101 137.057C330.126 140.712 330.63 145.037 331.193 148.816C336.802 186.597 334.665 224.604 327.37 261.974C320.664 291.044 313.499 314.224 300.237 341.141C294.269 351.601 290.076 359.316 282.834 369.019C279.032 374 273.261 380.918 267.448 383.487C267.594 393.449 271.237 401.74 270.042 413.47C269.95 420.024 266.057 422.54 259.806 421.735C253.344 417.124 248.889 414.101 241.701 410.49C236.596 407.616 231.231 405.592 225.738 403.624C209.713 398.148 188.901 393.87 172.001 393.148C165.694 392.932 159.888 392.858 153.556 393.497C145.265 394.305 140.638 395.257 132.677 397.444C126.553 395.475 124.485 391.282 126.853 385.221C129.978 374.474 136.435 367.867 140.588 358.937C137.108 356.551 132.825 344.399 131.846 340.19C124.277 340.986 116.448 342.514 108.973 343.979C100.64 345.774 70.9531 353.298 64.5311 352.226C60.5768 351.605 57.0614 349.362 54.8323 346.037C47.8551 335.822 48.8831 307.448 50.9922 295.655C53.4493 281.916 64.2477 272.702 74.5771 264.277C88.9844 252.526 103.73 241.316 119.298 231.125C122.941 228.572 125.4 226.863 129.279 224.756C135.778 185.186 150.345 141.245 172.38 107.52Z" fill="#FDFEFE"/>
+      <!-- Wing blue -->
+      <path d="M241.11 318.49C258.887 321.625 266.967 326.348 282.602 331.313L282.408 331.528C288.458 333.854 294.64 337.774 300.236 341.141C294.269 351.601 290.076 359.316 282.833 369.02C279.032 374 273.261 380.918 267.448 383.487C267.594 393.449 271.237 401.741 270.041 413.47C269.95 420.024 266.056 422.54 259.806 421.735C253.344 417.124 248.889 414.101 241.7 410.49C236.595 407.616 231.23 405.593 225.738 403.624C209.713 398.148 188.901 393.87 172 393.148C165.693 392.932 159.888 392.858 153.556 393.497C145.265 394.305 140.638 395.257 132.677 397.444C126.553 395.475 124.485 391.282 126.853 385.221C129.978 374.474 136.434 367.867 140.588 358.937C137.108 356.551 132.825 344.399 131.846 340.19C137.984 339.572 143.102 339.451 149.221 339.519C163.1 340.326 171.384 341.482 185.223 343.77C186.801 352.549 189.004 363.183 197.006 368.228C213.425 378.581 224.476 365.342 231.392 352.779C236.984 341.355 238.832 330.867 241.11 318.49Z" fill="#0472EF"/>
+      <!-- Wing dark blue -->
+      <path d="M241.11 318.49C258.887 321.625 266.967 326.348 282.602 331.313L282.408 331.528C288.458 333.854 294.64 337.774 300.236 341.141C294.269 351.601 290.076 359.316 282.833 369.02C279.032 374 273.261 380.918 267.448 383.487C261.108 378.29 240.355 372.249 231.828 370.915C224.155 375.646 221.213 380.102 212.054 380.501C195.594 381.217 189.632 371.796 182.491 361.646C180.432 358.719 145.413 357.949 140.588 358.937C137.108 356.551 132.825 344.399 131.846 340.19C137.984 339.572 143.102 339.451 149.221 339.519C163.1 340.326 171.384 341.482 185.223 343.77C186.801 352.549 189.004 363.183 197.006 368.228C213.425 378.581 224.476 365.342 231.392 352.779C236.984 341.355 238.832 330.867 241.11 318.49Z" fill="#004A9D"/>
+      <!-- Wing light -->
+      <path d="M241.109 318.49C258.887 321.626 266.967 326.348 282.602 331.313L282.408 331.528C288.458 333.854 294.64 337.774 300.236 341.141C294.269 351.601 290.076 359.316 282.833 369.02C279.357 366.574 268.618 362.946 264.211 360.943C251.456 357.288 244.682 355.447 231.391 352.779C236.984 341.355 238.832 330.867 241.109 318.49Z" fill="#67C2FE"/>
+      <path d="M282.408 331.528C288.458 333.853 294.64 337.774 300.236 341.141C294.269 351.601 290.076 359.316 282.833 369.019C279.357 366.574 268.618 362.946 264.211 360.943L264.748 360.721C264.289 360.218 263.825 359.719 263.36 359.224L263.679 358.063C269.322 352.691 280.29 338.829 282.408 331.528Z" fill="#46A1FD"/>
+      <!-- Bottom base dark -->
+      <path d="M126.853 385.221C129.803 385.122 133.31 383.774 136.244 383.073C140.867 381.967 145.311 380.771 150.095 380.638C180.141 378.391 209.6 382.732 237.474 394.25C246.607 398.024 257.145 403.199 264.614 409.782C266.208 411.185 267.776 412.542 269.439 413.88L270.042 413.47C269.95 420.024 266.057 422.54 259.807 421.735C253.344 417.124 248.889 414.1 241.701 410.49C236.596 407.616 231.231 405.592 225.738 403.623C209.713 398.148 188.901 393.869 172.001 393.148C165.694 392.932 159.888 392.858 153.556 393.497C145.265 394.305 140.638 395.257 132.677 397.444C126.553 395.474 124.485 391.282 126.853 385.221Z" fill="#004A9D"/>
+      <!-- Nose cap red -->
+      <path d="M172.38 107.52C188.314 82.5916 223.728 37.6454 253.299 31.0453C262.755 28.8563 272.693 30.6062 280.833 35.8941C304.765 51.2414 322.707 106.579 328.417 133.748L329.101 137.057C323.808 133.013 317.732 129.735 311.865 126.585C271.571 106.506 216.496 96.8785 172.38 107.52Z" fill="#FE3034"/>
+      <!-- Nose highlight -->
+      <path d="M250.581 40.0715C266.208 41.802 247.567 60.5142 243.672 65.1148C237.972 71.8452 231.293 81.9692 221.817 82.8094C209.328 79.2765 220.767 64.5644 225.73 59.2518C232.599 51.9005 239.775 40.9034 250.581 40.0715Z" fill="#FF9284"/>
+      <!-- Left fin red -->
+      <path d="M119.298 231.124C122.941 228.572 125.4 226.863 129.279 224.756C125.887 249.951 122.631 282.086 126.428 307.313C127.335 318.956 129.241 328.849 131.846 340.189C124.277 340.986 116.448 342.514 108.973 343.978C100.64 345.774 70.9531 353.297 64.531 352.226C60.5767 351.605 57.0613 349.361 54.8322 346.036C47.855 335.821 48.883 307.448 50.9922 295.655C53.4492 281.915 64.2476 272.702 74.5771 264.277C88.9844 252.526 103.729 241.316 119.298 231.124Z" fill="#FE3034"/>
+      <path d="M119.298 231.125C122.941 228.572 125.4 226.863 129.279 224.756C125.887 249.951 122.631 282.086 126.427 307.313C127.335 318.956 129.241 328.849 131.846 340.19C124.277 340.986 116.448 342.514 108.973 343.978C109.066 338.654 108.44 331.827 108.304 326.278C108.042 314.708 108.315 303.132 109.122 291.587C110.131 278.319 112.019 265.133 114.775 252.116C116.176 245.222 118.132 237.946 119.298 231.125Z" fill="#D51A30"/>
+      <!-- Thruster red -->
+      <path d="M188.188 307.938C191.294 292.356 198.301 271.199 212.217 261.87C221.081 255.927 231.545 258.383 236.6 267.967C244.437 282.823 243.115 302.355 241.109 318.489C238.832 330.866 236.984 341.354 231.392 352.779C224.476 365.342 213.425 378.581 197.006 368.228C189.004 363.182 186.801 352.549 185.223 343.769C184.229 330.324 185.711 320.831 188.188 307.938Z" fill="#FE3034"/>
+      <!-- Thruster highlight -->
+      <path d="M216.669 267.624C227.286 268.911 223.532 282.489 220.845 289.332C219.131 293.701 216.198 296.622 211.804 298.217C199.412 296.544 205.541 272.683 216.669 267.624Z" fill="#FF9284"/>
+      <!-- Body right sheen -->
+      <path d="M311.865 126.585C317.731 129.735 323.808 133.013 329.101 137.057C330.125 140.712 330.63 145.037 331.193 148.816C336.802 186.597 334.664 224.604 327.369 261.974C320.664 291.044 313.499 314.225 300.236 341.141C294.64 337.774 288.458 333.854 282.408 331.528L282.602 331.313C285.112 330.383 291.302 314.539 292.666 311.2C308.559 271.445 316.383 228.925 315.689 186.117C315.541 175.554 314.944 165.001 313.895 154.488C313.115 146.877 311.645 136.491 310.451 128.647C311.002 127.842 311.47 127.154 311.865 126.585Z" fill="#E4EFFD"/>
+      <!-- Window panel blue -->
+      <path d="M144.468 305.423C154.306 303.942 178.279 306.07 188.188 307.938C185.711 320.831 184.229 330.324 185.223 343.769C171.384 341.482 163.1 340.326 149.221 339.519C143.102 339.451 137.984 339.571 131.845 340.19C129.241 328.849 127.335 318.956 126.427 307.313C132.853 306.292 137.969 305.401 144.468 305.423Z" fill="#67C2FE"/>
+      <path d="M126.427 307.314C132.853 306.293 137.969 305.401 144.468 305.423C142.278 309.518 141.757 303.367 142.166 311.992C142.474 318.476 149.565 334.223 149.221 339.519C143.102 339.451 137.984 339.571 131.846 340.19C129.241 328.849 127.335 318.956 126.427 307.314Z" fill="#46A1FD"/>
+      <!-- Porthole ring -->
+      <path d="M188.84 165.531C197.388 143.102 219.697 128.991 243.625 130.877C267.553 132.762 287.38 150.195 292.308 173.686C296.634 194.316 288.584 215.583 271.675 228.172C254.766 240.761 232.085 242.379 213.562 232.317C195.039 222.256 184.049 202.348 185.406 181.312C185.754 175.91 186.911 170.59 188.84 165.531Z" fill="#67C2FE"/>
+      <path d="M187.874 175.337C187.022 186.483 189.952 197.592 196.19 206.868C204.175 218.891 216.653 227.203 230.826 229.939C259.347 235.564 290.434 218.198 292.414 187.199C292.66 183.318 291.458 177.189 292.308 173.686C296.634 194.317 288.584 215.583 271.675 228.172C254.766 240.761 232.085 242.379 213.562 232.317C195.038 222.256 184.049 202.348 185.405 181.312C185.754 175.91 186.911 170.59 188.839 165.531C190.161 168.277 187.813 171.874 187.874 175.337Z" fill="#46A1FD"/>
+      <!-- Porthole blue -->
+      <path d="M243.58 141.942C264.866 143.932 280.578 162.694 278.803 183.999C277.023 205.303 258.42 221.203 237.103 219.641C223.116 218.615 210.761 210.159 204.741 197.495C198.722 184.832 199.966 169.912 208.001 158.42C216.034 146.928 229.621 140.637 243.58 141.942Z" fill="#0472EF"/>
+      <!-- Porthole highlight -->
+      <path d="M232.024 150.992C244.071 154.247 239.917 169.374 227.404 171.086C213.52 168.395 218.233 151.559 232.024 150.992Z" fill="#FDFEFE"/>
+      <!-- Right fin red -->
+      <path d="M327.37 261.974C330.433 266.757 333.644 271.44 337.001 276.018C350.674 294.584 365.55 320.995 374.25 342.34C379.358 354.862 362.632 410.666 342.764 405.504C332.459 402.826 314.677 388.671 304.395 382.712C299.074 378.577 288.867 372.679 282.833 369.02C290.076 359.316 294.269 351.601 300.236 341.141C313.499 314.225 320.664 291.044 327.37 261.974Z" fill="#FE3034"/>
+      <path d="M327.37 261.974C330.433 266.757 333.644 271.44 337.001 276.018C334.185 278.596 332.175 298.42 331.023 303.736C326.75 323.549 321.239 341.661 313.77 360.486C311.326 366.646 306.215 377.23 304.395 382.712C299.074 378.577 288.867 372.679 282.833 369.02C290.076 359.316 294.269 351.601 300.236 341.141C313.499 314.225 320.664 291.044 327.37 261.974Z" fill="#D51A30"/>
+      <!-- Flame outer – orange -->
+      <path class="pb-flame-outer"
+        d="M172.001 393.148C188.901 393.869 209.713 398.148 225.738 403.623C231.231 405.592 236.596 407.615 241.701 410.489C248.889 414.1 253.344 417.124 259.807 421.735C261.835 425.81 263.538 433.016 264.759 437.613C271.24 462.01 273.158 491.266 267.002 515.826C265.138 522.382 262.009 531.053 255.493 534.237C244.088 539.814 239.418 531.088 235.639 522.258C233.072 538.505 229.761 561.529 210.533 565.345C202.682 562.266 201.442 560.185 197.999 552.336C194.832 568.239 174.492 609.68 152.332 585.941C144.256 577.284 141.974 551.839 143.538 540.119C130.423 557.291 117.418 548.198 116.772 529.471C116.368 517.761 117.595 510.268 120.792 499.105C116.123 504.92 108.092 512.655 100.147 506.667C89.0911 498.34 93.0044 478.919 95.8886 467.463C102.669 440.528 116.419 419.344 132.677 397.443C140.638 395.257 145.265 394.305 153.556 393.497C159.888 392.858 165.694 392.932 172.001 393.148Z"
+        fill="#FE7A0A"/>
+      <!-- Flame mid – yellow -->
+      <path class="pb-flame-mid"
+        d="M172 393.148C188.901 393.869 209.713 398.148 225.738 403.623C231.23 405.592 236.595 407.615 241.7 410.489C241.585 415.365 243.117 422.717 243.287 427.803C243.726 440.992 242.884 456.317 239.591 469.055C237.167 477.474 234.031 490.369 225.952 495.148C218.307 499.674 212.762 488.744 209.772 483.466C207.372 494.838 200.095 508.201 191.554 516.231C184.437 522.92 173.801 525.365 167.177 516.448C155.636 500.896 157.035 478.33 158.446 459.977C153.882 463.832 142.029 472.759 138.019 463.508C136.402 459.777 136.698 453.591 136.989 449.503C138.014 435.114 141.731 421.047 147.323 407.77C149.322 402.992 151.688 398.297 153.556 393.497C159.888 392.858 165.694 392.932 172 393.148Z"
+        fill="#FECE01"/>
+      <!-- Flame inner – light yellow core -->
+      <path class="pb-flame-inner"
+        d="M172.001 393.148C188.901 393.869 209.713 398.148 225.738 403.623C224.193 424.528 219.183 450.117 201.083 463.395C191.16 470.671 178.679 466.994 172.862 456.43C161.94 436.582 166.783 413.847 172.001 393.148Z"
+        fill="#FEF184"/>
+      </svg>
+    </div>
+    <p class="pb-label">Personal Best</p>
+    <p class="pb-title">Longest Session</p>
+    <div class="pb-compare">
+      <div class="pb-box">
+        <span class="pb-box-label">Previous</span>
+        <span class="pb-box-value">35 min</span>
+      </div>
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M2 8H14M9 3L14 8L9 13" stroke="#000000" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <div class="pb-box pb-new">
+        <span class="pb-box-label">New Best</span>
+        <span class="pb-box-value">40 min</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── REVIEW CONTENT (after all flows) ── -->
+  <div id="reviewContent">
+
+    <div class="rv-stats-card" id="rvStatsCard">
+      <p class="rv-stats-header">All Time Stats</p>
+      <div class="rv-stats-row">
+        <div class="rv-stat">
+          <div class="rv-stat-ticker" id="rvOdo1"></div>
+          <span class="rv-stat-l">Sessions</span>
+        </div>
+        <div class="rv-divider"></div>
+        <div class="rv-stat">
+          <div class="rv-stat-ticker" id="rvOdo2"></div>
+          <span class="rv-stat-l">Min</span>
+        </div>
+        <div class="rv-divider"></div>
+        <div class="rv-stat">
+          <div class="rv-stat-ticker" id="rvOdo3"></div>
+          <span class="rv-stat-l">Check-ins</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Week section: milestone flow only -->
+    <div class="rv-week-section" id="rvWeekSection" style="display:none;">
+      <div class="rv-week-card" id="rvWeekCard">
+        <div class="rv-week-card-top">
+          <div class="days-row">
+            <div class="day-col">
+              <span class="day-lbl lbl-pending" id="rv-lbl-m">M</span>
+              <div class="day-circ circ-pending" id="rv-dc-m">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                  <polyline class="rv-m-check" id="rvMCheck" points="20 6 9 17 4 12"/>
+                </svg>
+              </div>
+            </div>
+            <div class="day-col"><span class="day-lbl lbl-pending">Tu</span><div class="day-circ" style="background:#E5E5E5;width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;"></div></div>
+            <div class="day-col"><span class="day-lbl lbl-pending">W</span><div class="day-circ" style="background:#E5E5E5;width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;"></div></div>
+            <div class="day-col"><span class="day-lbl lbl-pending">Th</span><div class="day-circ" style="background:#E5E5E5;width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;"></div></div>
+            <div class="day-col">
+              <span class="day-lbl lbl-pending">F</span>
+              <div class="day-circ circ-pending" style="width:40px;height:40px;">
+                <div class="flame-icon-wrap">
+                  <svg width="24" height="24" viewBox="0 0 24 24">
+                    <path d="M12,3 C12.6666667,5.66666667 14,7.83333333 16,9.5 C18,11.1666667 19,13 19,15 C19,18.8659932 15.8659932,22 12,22 C8.13400679,22 5,18.8659932 5,15 C5,13.9181489 5.35088936,12.8654809 6,12 C6,13.3807119 7.11928813,14.5 8.5,14.5 C9.88071187,14.5 11,13.3807119 11,12 C11,10 9.5,9 9.5,7 C9.5,5.66666667 10.3333333,4.33333333 12,3" fill="none" stroke="#ffffff" stroke-width="1.5" stroke-opacity="0.8"/>
+                  </svg>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="rv-week-card-bottom" id="rvWeekCardBottom">
+          <div class="week-ekg">
+            <svg width="100%" height="12" viewBox="0 0 404 12" fill="none" preserveAspectRatio="none">
+              <path d="M 0 11 L 291 11 L 306 1 L 321 11 L 404 11" stroke="#d8d8d8" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+          <div class="week-msg-wrap">
+            <p class="week-msg">Complete a session every day this week to earn a streak!</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Quote section: streak flow only -->
+    <div class="rv-quote-section" id="rvQuoteSection" style="display:none;">
+      <div class="rv-quote-card" id="rvQuoteCard">
+        <svg class="rv-quote-icon top" width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><g transform="translate(2,2)" fill="#000"><path d="M8.66666667,0 C7.930287,0 7.33333333,0.596953667 7.33333333,1.33333333 L7.33333333,5.33333333 C7.33333333,6.069713 7.930287,6.66666667 8.66666667,6.66666667 C9.0348565,6.66666667 9.33333333,6.9651435 9.33333333,7.33333333 L9.33333333,8 C9.33333333,8.73637967 8.73637967,9.33333333 8,9.33333333 C7.63181017,9.33333333 7.33333333,9.63181017 7.33333333,10 L7.33333333,11.3333333 C7.33333333,11.7015232 7.63181017,12 8,12 C10.209139,12 12,10.209139 12,8 L12,1.33333333 C12,0.596953667 11.4030463,0 10.6666667,0 L8.66666667,0 Z"/><path d="M1.33333333,0 C0.596953667,0 0,0.596953667 0,1.33333333 L0,5.33333333 C0,6.069713 0.596953667,6.66666667 1.33333333,6.66666667 C1.70152317,6.66666667 2,6.9651435 2,7.33333333 L2,8 C2,8.73637967 1.40304633,9.33333333 0.666666667,9.33333333 C0.298476833,9.33333333 0,9.63181017 0,10 L0,11.3333333 C0,11.7015232 0.298476833,12 0.666666667,12 C2.87580567,12 4.66666667,10.209139 4.66666667,8 L4.66666667,1.33333333 C4.66666667,0.596953667 4.069713,0 3.33333333,0 L1.33333333,0 Z"/></g></svg>
+        <p class="rv-quote-text">The harder you try to prevent a thought, the more likely it is to pop into your head</p>
+        <svg class="rv-quote-icon bottom" width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><g transform="translate(2,2)" fill="#000"><path d="M8.66666667,0 C7.930287,0 7.33333333,0.596953667 7.33333333,1.33333333 L7.33333333,5.33333333 C7.33333333,6.069713 7.930287,6.66666667 8.66666667,6.66666667 C9.0348565,6.66666667 9.33333333,6.9651435 9.33333333,7.33333333 L9.33333333,8 C9.33333333,8.73637967 8.73637967,9.33333333 8,9.33333333 C7.63181017,9.33333333 7.33333333,9.63181017 7.33333333,10 L7.33333333,11.3333333 C7.33333333,11.7015232 7.63181017,12 8,12 C10.209139,12 12,10.209139 12,8 L12,1.33333333 C12,0.596953667 11.4030463,0 10.6666667,0 L8.66666667,0 Z"/><path d="M1.33333333,0 C0.596953667,0 0,0.596953667 0,1.33333333 L0,5.33333333 C0,6.069713 0.596953667,6.66666667 1.33333333,6.66666667 C1.70152317,6.66666667 2,6.9651435 2,7.33333333 L2,8 C2,8.73637967 1.40304633,9.33333333 0.666666667,9.33333333 C0.298476833,9.33333333 0,9.63181017 0,10 L0,11.3333333 C0,11.7015232 0.298476833,12 0.666666667,12 C2.87580567,12 4.66666667,10.209139 4.66666667,8 L4.66666667,1.33333333 C4.66666667,0.596953667 4.069713,0 3.33333333,0 L1.33333333,0 Z"/></g></svg>
+      </div>
+    </div>
+
+  </div><!-- /reviewContent -->
+
+</div><!-- /screen -->
+
+<button class="finish-btn" id="finishBtn">Continue</button>
+
+<script>
+  const $    = id => document.getElementById(id);
+  const wait = ms  => new Promise(r => setTimeout(r, ms));
+
+  let flowMode     = 'streak';
+  let currentPhase = 'session';
+
+  /* ── INITIAL SETUP ── */
+  $('weekContent').style.display      = 'none';
+  $('milestoneContent').style.display = 'none';
+  $('reviewContent').style.display    = 'none';
+  $('pbContent').style.display       = 'none';
+
+  /* ── FLOW CHOOSER → SESSION PLAYER ── */
+  document.querySelectorAll('.chooser-card').forEach(card => {
+    card.addEventListener('click', () => {
+      flowMode = card.dataset.flow;               // 'streak' | 'milestone' | 'personalbest'
+      $('chooserScreen').classList.add('hidden');
+      setTimeout(startSessionPlayer, 260);
+    });
+  });
+
+  /* ── SESSION PLAYER (plays only the final 5 seconds) ── */
+  const TOTAL_SECONDS = 25 * 60;                  // nominal session length — drives ring + Min stat
+  const CIRCUMFERENCE = 578.0530482605219;
+  let timeRemaining = 5;
+  let isPaused = false, finished = false, playerInterval = null;
+
+  function fmtTime(secs) {
+    const m = Math.floor(secs / 60), s = secs % 60;
+    return `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+  }
+  function updateTimer() {
+    $('timerText').textContent = fmtTime(timeRemaining);
+    const elapsed = TOTAL_SECONDS - timeRemaining;
+    $('overlayArc').setAttribute('stroke-dashoffset', (elapsed / TOTAL_SECONDS) * CIRCUMFERENCE);
+  }
+  function startSessionPlayer() {
+    updateTimer();
+    $('sessionView').classList.add('visible');
+    playerInterval = setInterval(playerTick, 1000);
+  }
+  function playerTick() {
+    if (isPaused || finished) return;
+    if (timeRemaining > 0) { timeRemaining--; updateTimer(); }
+    else finishSession();
+  }
+  function togglePause() {
+    isPaused = !isPaused;
+    const btn = $('pausePlayBtn');
+    if (isPaused) {
+      btn.classList.add('is-paused');
+      $('ppIconPath').setAttribute('d', 'M8 5v14l11-7z');
+      $('ppLabel').textContent = 'Play';
+    } else {
+      btn.classList.remove('is-paused');
+      $('ppIconPath').setAttribute('d', 'M8 19c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2s-2 .9-2 2v10c0 1.1.9 2 2 2zm6-12v10c0 1.1.9 2 2 2s2-.9 2-2V7c0-1.1-.9-2-2-2s-2 .9-2 2z');
+      $('ppLabel').textContent = 'Pause';
+    }
+  }
+  function finishSession() {
+    if (finished) return;
+    finished = true;
+    clearInterval(playerInterval);
+    // Min stat reflects the full nominal session (only the last 5 s were played).
+    $('statMin').textContent = Math.max(1, Math.round((TOTAL_SECONDS - timeRemaining) / 60));
+    // Snappy, smooth handoff: the timer ring is already full — crossfade straight to the
+    // completion circle (a matching full ring) and flood it. No extra sweep.
+    $('sessionView').classList.remove('visible');
+    $('completeOverlay').classList.add('visible');
+    animateIn();
+  }
+
+  function resetFlow() {
+    /* hide all secondary screens */
+    $('weekContent').style.display      = 'none';
+    $('milestoneContent').style.display = 'none';
+    $('reviewContent').style.display    = 'none';
+  $('pbContent').style.display       = 'none';
+    $('finishBtn').classList.remove('show');
+
+    /* reset session screen */
+    const sc = $('sessionContent');
+    sc.style.display = 'flex';
+    sc.classList.remove('exit');
+    sc.style.opacity = sc.style.transform = '';
+
+    $('circle').classList.remove('show','small');
+    $('ckPath').classList.remove('drawn');
+    $('sTitle').classList.remove('show','small');
+    $('statsCloak').classList.remove('show');
+    $('st1').classList.remove('pop');
+    $('pp1').classList.remove('show');
+    $('st2').classList.remove('pop');
+    $('div1').classList.remove('show');
+    $('reflCloak').classList.remove('show');
+    document.querySelectorAll('.fbtn').forEach(b => b.classList.remove('pop','entered','confirming'));
+    cancelConfirmation();
+
+    /* reset streak week screen */
+    const calWrap = $('calendarWrap');
+    calWrap.classList.remove('cal-entering','cal-visible');
+    calWrap.style.opacity = '';
+    $('streakTitle').classList.remove('show');
+    ['dc-m','dc-tu','dc-w','dc-th'].forEach(id => {
+      const el = $(id);
+      el.classList.remove('circ-orange');
+      el.classList.add('circ-done');
+      el.style.animation = '';
+    });
+    $('dc-f').classList.remove('circ-orange'); $('dc-f').classList.add('circ-pending'); $('dc-f').style.animation = '';
+    ['lbl-m','lbl-tu','lbl-w','lbl-th'].forEach(id => { $(id).classList.remove('lbl-orange'); $(id).classList.add('lbl-done'); });
+    $('lbl-f').classList.remove('lbl-orange'); $('lbl-f').classList.add('lbl-pending');
+    const fw = $('flameIconWrap'); const fp = $('flamePath');
+    fw.classList.remove('flame-pop','flame-spin','flame-slam');
+    fw.style.transform = '';
+    fp.style.fill = fp.style.fillOpacity = fp.style.strokeOpacity = '';
+    $('weekCard').classList.remove('in','expanded');
+
+    /* reset personal best screen */
+    $('pbContent').style.display = 'none';
+    const pbWrap = $('pbContent').querySelector('.pb-rocket-wrap');
+    if (pbWrap) { pbWrap.classList.remove('pb-entering','pb-visible'); }
+    ['pb-label','pb-title','pb-compare'].forEach(cls => {
+      const el = $('pbContent').querySelector('.' + cls);
+      if (el) el.classList.remove('pb-show');
+    });
+
+    /* reset milestone screen */
+    const msWrap = $('milestoneContent').querySelector('.ms-mountain-wrap');
+    msWrap.classList.remove('ms-entering','ms-bouncing');
+    ['ms-label','ms-title','ms-progress-wrap'].forEach(cls => {
+      const el = $('milestoneContent').querySelector('.' + cls);
+      if (el) el.classList.remove('ms-show');
+    });
+    const msFill = $('milestoneContent').querySelector('.ms-track-fill');
+    const msHL   = $('milestoneContent').querySelector('.ms-track-highlight');
+    if (msFill) { msFill.style.transition = 'none'; msFill.style.width = '200px'; msFill.getBoundingClientRect(); msFill.style.transition = ''; }
+    if (msHL)   { msHL.style.transition   = 'none'; msHL.style.width   = '188px'; msHL.getBoundingClientRect();   msHL.style.transition   = ''; }
+    /* Reset node 25 back to "next" state */
+    const msNode1 = $('msNode1');
+    msNode1.classList.remove('ms-node-done','ms-node-pop','ms-check-drawn');
+    msNode1.classList.add('ms-node-next');
+    const msNode1Ring = msNode1.querySelector('.ms-node-next-ring');
+    if (msNode1Ring) msNode1Ring.style.display = '';
+    const msNode1Svg = msNode1.querySelector('svg');
+    if (msNode1Svg) msNode1Svg.style.display = 'none';
+    /* Reset node 50 back to future state */
+    const msNode2 = $('msNode2');
+    msNode2.classList.remove('ms-node-next');
+    msNode2.classList.add('ms-node-future');
+    const msNode2Label = msNode2.querySelector('.ms-node-label');
+    msNode2Label.classList.remove('ms-node-label-done');
+    msNode2Label.classList.add('ms-node-label-future');
+    const msNode2Ring = msNode2.querySelector('.ms-node-next-ring');
+    if (msNode2Ring) { msNode2Ring.style.display = 'none'; msNode2Ring.style.opacity = '0'; }
+
+    /* reset review screen */
+    $('rvStatsCard').classList.remove('in');
+    ['rvOdo1','rvOdo2','rvOdo3'].forEach(id => { $(id).innerHTML = ''; });
+    $('rvWeekCard').classList.remove('in','expanded');
+    $('rvMCheck').classList.remove('drawn');
+    const rvDcM = $('rv-dc-m');
+    rvDcM.classList.remove('circ-done'); rvDcM.classList.add('circ-pending');
+    $('rv-lbl-m').classList.remove('lbl-done'); $('rv-lbl-m').classList.add('lbl-pending');
+    $('rvQuoteCard').classList.remove('in');
+    $('rvWeekSection').style.display = 'none';
+    $('rvQuoteSection').style.display = 'none';
+
+    /* show toggle again */
+    $('flowToggle').classList.remove('hidden');
+    $('screen').style.opacity = $('screen').style.transition = '';
+
+    currentPhase = 'session';
+    wait(80).then(animateIn);
+  }
+
+  /* ── SESSION ENTRY ANIMATION ── */
+  function popBtn(btn) {
+    btn.classList.add('pop');
+    setTimeout(() => { btn.classList.remove('pop'); btn.classList.add('entered'); }, 620);
+  }
+
+  async function animateIn() {
+    // Circle arrives as a full blue ring in the timer's exact spot — flood it, then draw the check.
+    await wait(220); $('circle').classList.add('fill');
+    await wait(660); $('ckPath').classList.add('drawn');
+    await wait(360); $('sTitle').classList.add('show');
+    await wait(820); $('circle').classList.add('small'); $('sTitle').classList.add('small');
+    await wait(340); $('statsCloak').classList.add('show');
+    await wait(90);  $('st1').classList.add('pop');
+    await wait(210); $('pp1').classList.add('show'); $('st2').classList.add('pop');
+    await wait(500); $('div1').classList.add('show');
+    await wait(420); $('reflCloak').classList.add('show');
+    await wait(580);
+    popBtn($('fb1')); await wait(160);
+    popBtn($('fb2')); await wait(160);
+    popBtn($('fb3')); await wait(160);
+    popBtn($('fb4'));
+  }
+
+  /* ── CONFIRMATION (fill-up hold → advance) ── */
+  let activeConfirmBtn = null, activeListener = null;
+
+  function cancelConfirmation() {
+    if (activeConfirmBtn && activeListener) {
+      activeConfirmBtn.removeEventListener('transitionend', activeListener);
+      activeConfirmBtn.classList.remove('confirming');
+      activeConfirmBtn = activeListener = null;
+    }
+  }
+
+  function startConfirmation(btn) {
+    cancelConfirmation();
+    btn.classList.add('confirming');
+    activeConfirmBtn = btn;
+    activeListener = function(e) {
+      if (e.pseudoElement === '::after' && e.propertyName === 'height') {
+        btn.removeEventListener('transitionend', activeListener);
+        activeConfirmBtn = activeListener = null;
+        transitionFromSession();
+      }
+    };
+    btn.addEventListener('transitionend', activeListener);
+  }
+
+  function transitionFromSession() {
+    cancelConfirmation();
+    if (flowMode === 'streak')        transitionToWeek();
+    else if (flowMode === 'milestone') transitionToMilestone();
+    else                               transitionToPersonalBest();
+  }
+
+  /* ── STREAK: SESSION → WEEK SCREEN ── */
+  function transitionToWeek() {
+    currentPhase = 'week';
+    $('sessionContent').classList.add('exit');
+    setTimeout(() => {
+      $('sessionContent').style.display = 'none';
+      $('completeOverlay').style.display = 'none';
+      $('weekContent').style.display = 'flex';
+      animateWeekIn();
+    }, 430);
+  }
+
+  async function animateWeekIn() {
+    const calWrap = $('calendarWrap');
+
+    /* 1. Calendar entrance (like mountain) */
+    await wait(200);
+    calWrap.classList.add('cal-entering');
+    await wait(820);
+    calWrap.classList.remove('cal-entering');
+    calWrap.classList.add('cal-visible');
+
+    /* 2. Streak title */
+    await wait(80);
+    $('streakTitle').classList.add('show');
+
+    /* 3. Week card slides in */
+    await wait(220);
+    $('weekCard').classList.add('in');
+    await wait(500);
+
+    /* 4. Friday flame animation */
+    await animateFriday();
+
+    /* 5. Continue button */
+    await wait(200);
+    $('finishBtn').classList.add('show');
+  }
+
+  async function animateFriday() {
+    const flameWrap = $('flameIconWrap');
+    const fp        = $('flamePath');
+
+    /* Flame turns orange as it pops */
+    fp.style.fill         = '#FF6A00';
+    fp.style.fillOpacity  = '1';
+    fp.style.strokeOpacity = '0';
+
+    flameWrap.classList.add('flame-pop');
+    await wait(220);
+
+    flameWrap.classList.remove('flame-pop');
+    flameWrap.classList.add('flame-spin');
+    await wait(700);
+
+    flameWrap.classList.remove('flame-spin');
+    flameWrap.classList.add('flame-slam');
+
+    await wait(140);
+    triggerImpact();
+
+    /* Turn flame white when F circle fires (index 4 × 112ms stagger) */
+    setTimeout(() => {
+      fp.style.fill         = '#ffffff';
+      fp.style.fillOpacity  = '1';
+      fp.style.strokeOpacity = '0';
+    }, 4 * 112);
+
+    await wait(140);
+    flameWrap.classList.remove('flame-slam');
+    flameWrap.style.transform = 'none';
+
+    await wait(380);
+    $('weekCard').classList.add('expanded');
+  }
+
+  function triggerImpact() {
+    const STAGGER = 112;
+    const circIds = ['dc-m','dc-tu','dc-w','dc-th','dc-f'];
+    const lblIds  = ['lbl-m','lbl-tu','lbl-w','lbl-th','lbl-f'];
+
+    circIds.forEach((id, i) => {
+      const el = $(id);
+      el.classList.remove('circ-done','circ-pending');
+      el.classList.add('circ-orange');
+      el.style.animation = `circle-impact-kf 0.45s cubic-bezier(0.34,1.0,0.64,1) ${i * STAGGER}ms forwards`;
+    });
+    lblIds.forEach(id => { $(id).classList.remove('lbl-done','lbl-pending'); $(id).classList.add('lbl-orange'); });
+    circIds.forEach(id => spawnSparkles($(id)));
+  }
+
+  function spawnSparkles(circleEl) {
+    const rect = circleEl.getBoundingClientRect();
+    const cx = rect.left + rect.width / 2, cy = rect.top + rect.height / 2;
+    const particles = [
+      {dx:-24,dy:-24,color:'#FF6A00',r:5},{dx:24,dy:-24,color:'#FFB830',r:6},
+      {dx:-28,dy:6,color:'#FFD700',r:4}, {dx:28,dy:6,color:'#FF6A00',r:5},
+      {dx:0,dy:-32,color:'#FE9F00',r:4}, {dx:14,dy:-28,color:'#FFD700',r:3},
+    ];
+    particles.forEach(({dx,dy,color,r}, i) => {
+      const p = document.createElement('div');
+      p.style.cssText = `position:fixed;width:${r*2}px;height:${r*2}px;border-radius:50%;background:${color};left:${cx-r}px;top:${cy-r}px;pointer-events:none;z-index:9999;`;
+      document.body.appendChild(p);
+      p.animate([{transform:'translate(0,0) scale(1)',opacity:1},{transform:`translate(${dx}px,${dy}px) scale(0)`,opacity:0}],
+        {duration:620,delay:i*28,easing:'cubic-bezier(0,0.9,0.57,1)',fill:'forwards'});
+      setTimeout(() => p.remove(), 720 + i * 28);
+    });
+  }
+
+  /* ── MILESTONE: SESSION → MILESTONE PAGE ── */
+  function transitionToMilestone() {
+    currentPhase = 'milestone';
+    $('sessionContent').classList.add('exit');
+    setTimeout(() => {
+      $('sessionContent').style.display = 'none';
+      $('completeOverlay').style.display = 'none';
+      $('milestoneContent').style.display = 'flex';
+      animateMilestoneIn();
+    }, 430);
+  }
+
+  async function animateMilestoneIn() {
+    const wrap        = $('milestoneContent').querySelector('.ms-mountain-wrap');
+    const label       = $('milestoneContent').querySelector('.ms-label');
+    const title       = $('milestoneContent').querySelector('.ms-title');
+    const progressWrap = $('milestoneContent').querySelector('.ms-progress-wrap');
+    const fill        = $('milestoneContent').querySelector('.ms-track-fill');
+    const highlight   = $('milestoneContent').querySelector('.ms-track-highlight');
+    const node1       = $('msNode1');
+
+    await wait(120);
+    wrap.classList.add('ms-entering');
+    await wait(656);
+    wrap.classList.remove('ms-entering');
+    wrap.classList.add('ms-bouncing');
+
+    label.classList.add('ms-show');
+    await wait(110); title.classList.add('ms-show');
+    await wait(300);
+    progressWrap.classList.add('ms-show');
+    await wait(80);
+
+    /* Animate fill from node 10 (200px) to node 25 (294px) */
+    fill.style.width = '294px';
+    highlight.style.width = '282px';
+    await wait(1120);
+
+    /* Convert node 25 from "next" to "done" with pop + check */
+    const ring = node1.querySelector('.ms-node-next-ring');
+    if (ring) ring.style.display = 'none';
+    node1.classList.remove('ms-node-next');
+    node1.classList.add('ms-node-done','ms-node-pop');
+    const svg = node1.querySelector('svg');
+    if (svg) svg.style.display = 'block';
+    await wait(200);
+    node1.classList.add('ms-check-drawn');
+    spawnSparkles(node1);
+
+    /* Promote node 50 to "next" with dashed ring fade-in */
+    await wait(350);
+    const node2 = $('msNode2');
+    node2.classList.remove('ms-node-future');
+    node2.classList.add('ms-node-next');
+    node2.querySelector('.ms-node-label').classList.remove('ms-node-label-future');
+    node2.querySelector('.ms-node-label').classList.add('ms-node-label-done');
+    const ring2 = node2.querySelector('.ms-node-next-ring');
+    ring2.style.display = '';
+    ring2.getBoundingClientRect();
+    ring2.style.opacity = '1';
+
+    await wait(400); $('finishBtn').classList.add('show');
+  }
+
+  /* ── TRANSITION TO UNIFIED REVIEW ── */
+  function transitionToReview(mode) {
+    currentPhase = 'review';
+    $('finishBtn').classList.remove('show');
+
+    let fromEl;
+    if (mode === 'streak')           fromEl = $('weekContent');
+    else if (mode === 'personalbest') fromEl = $('pbContent');
+    else                              fromEl = $('milestoneContent');
+    fromEl.style.transition = 'opacity 0.35s ease, transform 0.35s ease';
+    fromEl.getBoundingClientRect();
+    fromEl.style.opacity   = '0';
+    fromEl.style.transform = 'translateY(-40px)';
+
+    setTimeout(() => {
+      fromEl.style.display = 'none';
+      fromEl.style.opacity = fromEl.style.transform = fromEl.style.transition = '';
+
+      if (mode === 'streak') {
+        $('rvWeekSection').style.display  = 'none';
+        $('rvQuoteSection').style.display = 'flex';
+      } else {
+        $('rvQuoteSection').style.display = 'none';
+        $('rvWeekSection').style.display  = 'flex';
+      }
+
+      $('reviewContent').style.display = 'flex';
+      animateReviewIn(mode);
+    }, 380);
+  }
+
+  async function animateReviewIn(mode) {
+    /* 1. Stats card slides in */
+    await wait(100);
+    $('rvStatsCard').classList.add('in');
+    await wait(200);
+
+    /* 2. Odometer */
+    await animateRvOdometer();
+
+    /* 3. Week or quote */
+    await wait(300);
+    if (mode === 'milestone' || mode === 'personalbest') {
+      await animateRvWeekCard();
+      await wait(640); /* wait for expansion to finish */
+    } else {
+      $('rvQuoteCard').classList.add('in');
+      await wait(520);
+    }
+
+    /* 4. Continue */
+    $('finishBtn').classList.add('show');
+  }
+
+  function buildRvOdometer(wrap, startVal, endVal) {
+    wrap.innerHTML = '';
+    const startStr    = String(startVal);
+    const endStr      = String(endVal);
+    const len         = Math.max(startStr.length, endStr.length);
+    const paddedStart = startStr.padStart(len, '0');
+    const paddedEnd   = endStr.padStart(len, '0');
+
+    paddedEnd.split('').forEach((endDigit, colIdx) => {
+      const startDigit = parseInt(paddedStart[colIdx] || '0');
+      const target     = parseInt(endDigit);
+
+      const col   = document.createElement('div');
+      col.className = 'rv-odo-col';
+      col.style.width = '0.65em';
+
+      const strip = document.createElement('div');
+      strip.className = 'rv-odo-strip';
+      strip.style.transition = 'none';
+
+      const digits = [];
+      for (let i = target; ; i--) {
+        if (i < 0) i = 9;
+        digits.push(i);
+        if (i === startDigit && digits.length > 1) break;
+        if (digits.length > 14) break;
+      }
+
+      digits.forEach(d => {
+        const span = document.createElement('span');
+        span.className = 'rv-odo-digit';
+        span.textContent = d;
+        strip.appendChild(span);
+      });
+
+      strip.style.transform = `translateY(${-(digits.length - 1) * 1.05}em)`;
+      col.appendChild(strip);
+      wrap.appendChild(col);
+    });
+  }
+
+  function rollRvOdoWrap(wrap) {
+    wrap.querySelectorAll('.rv-odo-strip').forEach(strip => {
+      strip.style.transition = 'transform 1.4s cubic-bezier(0.22,1,0.36,1)';
+      strip.style.transform  = 'translateY(0)';
+    });
+  }
+
+  function animateRvOdometer() {
+    const configs = [
+      { id: 'rvOdo1', start: 24, end: 25  },
+      { id: 'rvOdo2', start: 83, end: 108 },
+      { id: 'rvOdo3', start: 57, end: 62  },
+    ];
+
+    configs.forEach(c => buildRvOdometer($(c.id), c.start, c.end));
+
+    return new Promise(resolve => {
+      // Roll one by one: sessions → minutes → check-ins, staggered 340ms apart
+      setTimeout(() => rollRvOdoWrap($(configs[0].id)),   60);
+      setTimeout(() => rollRvOdoWrap($(configs[1].id)),  400);
+      setTimeout(() => rollRvOdoWrap($(configs[2].id)),  740);
+      setTimeout(resolve, 740 + 1500);
+    });
+  }
+
+  async function animateRvWeekCard() {
+    const card  = $('rvWeekCard');
+    const dcM   = $('rv-dc-m');
+    const lblM  = $('rv-lbl-m');
+    const check = $('rvMCheck');
+
+    card.classList.add('in');
+    await wait(350);
+    dcM.classList.remove('circ-pending'); dcM.classList.add('circ-done');
+    lblM.classList.remove('lbl-pending'); lblM.classList.add('lbl-done');
+    await wait(80);
+    check.classList.add('drawn');
+    await wait(500);
+    card.classList.add('expanded');
+  }
+
+
+  /* ── PERSONAL BEST: SESSION → PB PAGE ── */
+  function transitionToPersonalBest() {
+    currentPhase = 'personalbest';
+    $('sessionContent').classList.add('exit');
+    setTimeout(() => {
+      $('sessionContent').style.display = 'none';
+      $('completeOverlay').style.display = 'none';
+      $('pbContent').style.display = 'flex';
+      animatePersonalBestIn();
+    }, 430);
+  }
+
+  async function animatePersonalBestIn() {
+    const wrap    = $('pbContent').querySelector('.pb-rocket-wrap');
+    const label   = $('pbContent').querySelector('.pb-label');
+    const title   = $('pbContent').querySelector('.pb-title');
+    const compare = $('pbContent').querySelector('.pb-compare');
+
+    await wait(120);
+    wrap.classList.add('pb-entering');
+    await wait(820);
+    wrap.classList.remove('pb-entering');
+    wrap.classList.add('pb-visible');
+
+    label.classList.add('pb-show');
+    await wait(110); title.classList.add('pb-show');
+    await wait(160); compare.classList.add('pb-show');
+    await wait(400); $('finishBtn').classList.add('show');
+  }
+
+  /* ── CONTINUE BUTTON ── */
+  $('finishBtn').addEventListener('click', () => {
+    if (currentPhase === 'milestone')    { transitionToReview('milestone');    return; }
+    if (currentPhase === 'week')         { transitionToReview('streak');       return; }
+    if (currentPhase === 'personalbest') { transitionToReview('personalbest'); return; }
+    /* review → fade out */
+    $('screen').style.transition    = 'opacity 0.4s ease';
+    $('screen').style.opacity       = '0';
+    $('finishBtn').style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+    $('finishBtn').style.opacity    = '0';
+  });
+
+  /* ── REFLECTION BUTTONS ── */
+  document.querySelectorAll('.fbtn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      if (btn.classList.contains('entered') && btn !== activeConfirmBtn) startConfirmation(btn);
+    });
+  });
+  $('skipBtn').addEventListener('click', transitionFromSession);
+
+  /* The chooser is shown first; the session player + completion run once a flow is picked. */
+</script>
+
+</body>
+</html>
