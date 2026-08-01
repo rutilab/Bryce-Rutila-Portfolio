@@ -31,31 +31,92 @@ function MediaTypeBadge({ type }: { type: CaseStudyMediaType }) {
 
 export { MediaTypeBadge };
 
-function LightboxCloseButton({ onClose }: { onClose: () => void }) {
+/** Overlay tint for all lightboxes — dark enough for legible captions sitting directly on the backdrop. */
+const LIGHTBOX_OVERLAY = 'rgba(6, 6, 9, 0.96)';
+
+/**
+ * Standardized circular media-control button, matching the white icon buttons used
+ * across the case study page (carousel arrows, theme toggle). Fixed-positioned via `position`.
+ */
+export function LightboxIconButton({
+  label,
+  onClick,
+  position,
+  children,
+}: {
+  label: string;
+  onClick: () => void;
+  position: CSSProperties;
+  children: ReactNode;
+}) {
+  const [hover, setHover] = useState(false);
+  return (
+    <button
+      type="button"
+      aria-label={label}
+      onClick={(e) => {
+        e.stopPropagation();
+        onClick();
+      }}
+      onMouseEnter={() => setHover(true)}
+      onMouseLeave={() => setHover(false)}
+      style={{
+        position: 'fixed',
+        width: 44,
+        height: 44,
+        borderRadius: '50%',
+        background: hover ? '#e9e9ec' : '#ffffff',
+        border: '1px solid rgba(0,0,0,0.08)',
+        boxShadow: '0 4px 14px rgba(0,0,0,0.35)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        color: '#3f3f46',
+        cursor: 'pointer',
+        transition: 'background 0.15s ease',
+        zIndex: 2,
+        ...position,
+      }}
+    >
+      {children}
+    </button>
+  );
+}
+
+/** Bare close control — no container; a larger, high-contrast X sitting directly on the backdrop. */
+export function LightboxCloseButton({ onClose }: { onClose: () => void }) {
+  const [hover, setHover] = useState(false);
   return (
     <button
       type="button"
       aria-label="Close"
-      onClick={onClose}
+      onClick={(e) => {
+        e.stopPropagation();
+        onClose();
+      }}
+      onMouseEnter={() => setHover(true)}
+      onMouseLeave={() => setHover(false)}
       style={{
         position: 'fixed',
         top: 20,
-        right: 20,
-        width: 36,
-        height: 36,
-        borderRadius: '50%',
-        background: 'rgba(255,255,255,0.1)',
-        border: 'none',
+        right: 24,
+        width: 44,
+        height: 44,
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        color: 'white',
+        background: 'transparent',
+        border: 'none',
+        padding: 0,
         cursor: 'pointer',
+        color: hover ? '#ffffff' : 'rgba(255,255,255,0.92)',
+        transform: hover ? 'scale(1.08)' : 'scale(1)',
+        transition: 'color 0.15s ease, transform 0.15s ease',
+        zIndex: 2,
       }}
-      className="hover:bg-white/20"
     >
-      <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
-        <path d="M11.5 3.5l-8 8M3.5 3.5l8 8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+      <svg width="30" height="30" viewBox="0 0 24 24" fill="none">
+        <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" />
       </svg>
     </button>
   );
@@ -70,39 +131,20 @@ function LightboxNavButton({
   onClick: () => void;
   visible: boolean;
 }) {
+  const position: CSSProperties =
+    direction === 'prev'
+      ? { top: '50%', transform: 'translateY(-50%)', left: 20, visibility: visible ? 'visible' : 'hidden' }
+      : { top: '50%', transform: 'translateY(-50%)', right: 20, visibility: visible ? 'visible' : 'hidden' };
   return (
-    <button
-      type="button"
-      aria-label={direction === 'prev' ? 'Previous' : 'Next'}
-      onClick={(e) => {
-        e.stopPropagation();
-        onClick();
-      }}
-      style={{
-        visibility: visible ? 'visible' : 'hidden',
-        width: 34,
-        height: 34,
-        borderRadius: '50%',
-        flexShrink: 0,
-        background: 'rgba(255,255,255,0.1)',
-        border: 'none',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        color: 'white',
-        cursor: 'pointer',
-        transition: 'background 0.15s',
-      }}
-      className="hover:bg-white/20"
-    >
-      <svg width="13" height="13" viewBox="0 0 14 14" fill="none">
+    <LightboxIconButton label={direction === 'prev' ? 'Previous' : 'Next'} onClick={onClick} position={position}>
+      <svg width="16" height="16" viewBox="0 0 14 14" fill="none">
         {direction === 'prev' ? (
-          <path d="M9 11L4 7l5-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+          <path d="M9 11L4 7l5-4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
         ) : (
-          <path d="M5 3l5 4-5 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+          <path d="M5 3l5 4-5 4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
         )}
       </svg>
-    </button>
+    </LightboxIconButton>
   );
 }
 
@@ -196,11 +238,11 @@ export function CaseStudyMedia({
             position: 'fixed',
             inset: 0,
             zIndex: 9999,
-            background: 'rgba(8,8,8,0.92)',
+            background: LIGHTBOX_OVERLAY,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            padding: '56px 24px 24px',
+            padding: '64px 24px 40px',
             boxSizing: 'border-box',
             cursor: 'zoom-out',
             overflow: 'hidden',
@@ -238,12 +280,12 @@ export function CaseStudyMedia({
             {caption ? (
               <p
                 style={{
-                  marginTop: 14,
-                  maxWidth: 'min(720px, 92vw)',
+                  marginTop: 18,
+                  maxWidth: 'min(760px, 90vw)',
                   textAlign: 'center',
                   fontSize: 14,
                   lineHeight: 1.55,
-                  color: 'rgba(255,255,255,0.72)',
+                  color: 'rgba(255,255,255,0.85)',
                 }}
               >
                 {caption}
@@ -338,90 +380,61 @@ export function CaseStudyMediaGallery({
             position: 'fixed',
             inset: 0,
             zIndex: 9999,
-            background: 'rgba(8,8,8,0.92)',
+            background: LIGHTBOX_OVERLAY,
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
             justifyContent: 'center',
-            padding: '56px 24px 24px',
+            padding: '64px 84px 40px',
             boxSizing: 'border-box',
             cursor: 'zoom-out',
             overflow: 'hidden',
           }}
         >
           <LightboxCloseButton onClose={() => setOpen(false)} />
+          {items.length > 1 ? (
+            <>
+              <LightboxNavButton
+                direction="prev"
+                visible={current > 0}
+                onClick={() => setCurrent((c) => (c - 1 + items.length) % items.length)}
+              />
+              <LightboxNavButton
+                direction="next"
+                visible={current < items.length - 1}
+                onClick={() => setCurrent((c) => (c + 1) % items.length)}
+              />
+            </>
+          ) : null}
 
           <div
             onClick={(e) => e.stopPropagation()}
-            style={{
-              width: '100%',
-              maxWidth: 'min(88vw, 1280px)',
-              height: 'calc(100vh - 80px)',
-              maxHeight: 'calc(100vh - 80px)',
-              display: 'flex',
-              flexDirection: 'column',
-              cursor: 'default',
-              overflow: 'hidden',
-            }}
+            style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', cursor: 'default', maxWidth: 'min(88vw, 1200px)' }}
           >
-            <div
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={item.src}
+              alt={item.alt}
               style={{
-                flex: '1 1 auto',
-                minHeight: 0,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                padding: '12px 8px',
-                overflow: 'hidden',
+                maxWidth: '100%',
+                maxHeight: item.caption ? 'min(72vh, calc(100vh - 210px))' : 'min(82vh, calc(100vh - 150px))',
+                width: 'auto',
+                height: 'auto',
+                objectFit: 'contain',
+                borderRadius: 14,
+                display: 'block',
               }}
-            >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={item.src}
-                alt={item.alt}
-                style={{
-                  maxWidth: '100%',
-                  maxHeight: '100%',
-                  width: 'auto',
-                  height: 'auto',
-                  objectFit: 'contain',
-                  borderRadius: 14,
-                  display: 'block',
-                }}
-              />
-            </div>
-
-            <div
-              style={{
-                flexShrink: 0,
-                borderTop: '1px solid rgba(255,255,255,0.08)',
-                background: 'rgba(8,8,8,0.85)',
-                padding: '14px 16px 16px',
-              }}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 24 }}>
-                <LightboxNavButton
-                  direction="prev"
-                  visible={current > 0}
-                  onClick={() => setCurrent((c) => (c - 1 + items.length) % items.length)}
-                />
-                <div style={{ textAlign: 'center', minWidth: 0, flex: '1 1 auto', maxWidth: 'min(720px, 86vw)' }}>
-                  {item.caption ? (
-                    <p style={{ color: 'rgba(255,255,255,0.72)', fontSize: 14, lineHeight: 1.55, margin: 0 }}>
-                      {item.caption}
-                    </p>
-                  ) : null}
-                  <p style={{ color: 'rgba(255,255,255,0.25)', fontSize: 12, marginTop: item.caption ? 8 : 0 }}>
-                    {current + 1} / {items.length}
-                  </p>
-                </div>
-                <LightboxNavButton
-                  direction="next"
-                  visible={current < items.length - 1}
-                  onClick={() => setCurrent((c) => (c + 1) % items.length)}
-                />
-              </div>
-            </div>
+            />
+            {item.caption ? (
+              <p style={{ marginTop: 18, maxWidth: 'min(760px, 90vw)', textAlign: 'center', fontSize: 14, lineHeight: 1.55, color: 'rgba(255,255,255,0.85)' }}>
+                {item.caption}
+              </p>
+            ) : null}
+            {items.length > 1 ? (
+              <p style={{ marginTop: item.caption ? 8 : 14, fontSize: 12, letterSpacing: '0.02em', color: 'rgba(255,255,255,0.4)' }}>
+                {current + 1} / {items.length}
+              </p>
+            ) : null}
           </div>
         </div>,
         document.body,

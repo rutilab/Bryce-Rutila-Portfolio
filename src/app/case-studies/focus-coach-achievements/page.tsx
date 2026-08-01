@@ -4,8 +4,22 @@ import { useState, useEffect, useRef } from 'react';
 import type { CSSProperties, ReactNode, RefObject } from 'react';
 import { createPortal } from 'react-dom';
 import KeyboardDoubleArrowDownOutlined from '@mui/icons-material/KeyboardDoubleArrowDownOutlined';
-import { CaseStudyMedia, CaseStudyMediaGallery, CaseStudyMediaPlaceholder, CompletionQuoteScreen, CompletionWeekTrackerScreen, EndOfSessionFlow, FocusStreakScreen, MilestoneHeroScreen, NorthStarAnimatedIcon, PersonalBestScreen, ReflectionScreen } from '@/components/case-study';
+import Check from '@mui/icons-material/Check';
+import DarkMode from '@mui/icons-material/DarkMode';
+import DarkModeOutlined from '@mui/icons-material/DarkModeOutlined';
+import LightMode from '@mui/icons-material/LightMode';
+import LightModeOutlined from '@mui/icons-material/LightModeOutlined';
+import { CaseStudyMedia, CaseStudyMediaGallery, CaseStudyMediaPlaceholder, CompletionQuoteScreen, CompletionWeekTrackerScreen, EndOfSessionFlow, FocusStreakScreen, LightboxCloseButton, LightboxIconButton, MilestoneHeroScreen, NorthStarAnimatedIcon, PersonalBestScreen, ReflectionScreen } from '@/components/case-study';
 import { useBodyScrollLock } from '@/hooks/useBodyScrollLock';
+
+type ThemeMode = 'light' | 'dark';
+
+const MOBILE_ASSET = '/case-studies/focus-coach-achievements';
+
+function mobileSrc(name: string, mode: ThemeMode, cacheKey = '1') {
+  const prefix = mode === 'light' ? 'lm' : 'dm';
+  return `${MOBILE_ASSET}/mobile-${prefix}-${name}.png?v=${cacheKey}`;
+}
 
 /** Section eyebrows */
 const EYEBROW_ICON_COLOR = '#272727';
@@ -117,6 +131,144 @@ function VisualCard({
   );
 }
 
+/**
+ * Sun/moon control that swaps the card's assets between modes.
+ * Shows an outline icon of the mode you'll switch *to*, fills it on hover/focus,
+ * and reveals a matching tooltip. Matches the white media-control chrome used by
+ * the ImageViewer arrows elsewhere on the page.
+ */
+function ThemeModeToggle({
+  mode,
+  onToggle,
+}: {
+  mode: ThemeMode;
+  onToggle: () => void;
+}) {
+  const [active, setActive] = useState(false);
+  const goingDark = mode === 'light';
+  const label = goingDark ? 'View dark mode' : 'View light mode';
+  const OutlineIcon = goingDark ? DarkModeOutlined : LightModeOutlined;
+  const FilledIcon = goingDark ? DarkMode : LightMode;
+
+  return (
+    <div className="relative flex justify-end">
+      <button
+        type="button"
+        onClick={onToggle}
+        onMouseEnter={() => setActive(true)}
+        onMouseLeave={() => setActive(false)}
+        onFocus={() => setActive(true)}
+        onBlur={() => setActive(false)}
+        aria-label={label}
+        className="inline-flex items-center justify-center rounded-full focus-visible:outline-none"
+        style={{
+          padding: 4,
+          background: '#ffffff',
+          border: `1px solid ${active ? 'rgba(0,110,254,0.35)' : 'rgba(0,0,0,0.08)'}`,
+          boxShadow: active ? '0 3px 12px rgba(0,110,254,0.20)' : '0 1px 4px rgba(0,0,0,0.10)',
+          color: active ? ACCENT : '#555555',
+          transform: active ? 'scale(1.06)' : 'scale(1)',
+          transition: 'transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease, color 0.18s ease',
+        }}
+      >
+        {/* Crossfade outline → filled without shifting layout */}
+        <span className="relative inline-flex" style={{ width: 18, height: 18 }}>
+          <OutlineIcon
+            sx={{ fontSize: 18, position: 'absolute', inset: 0, opacity: active ? 0 : 1, transition: 'opacity 0.18s ease' }}
+          />
+          <FilledIcon
+            sx={{ fontSize: 18, position: 'absolute', inset: 0, opacity: active ? 1 : 0, transition: 'opacity 0.18s ease' }}
+          />
+        </span>
+      </button>
+
+      <span
+        role="tooltip"
+        aria-hidden="true"
+        style={{
+          position: 'absolute',
+          top: 'calc(100% + 8px)',
+          right: 0,
+          whiteSpace: 'nowrap',
+          background: '#111113',
+          color: '#ffffff',
+          fontSize: 12,
+          fontWeight: 500,
+          lineHeight: 1,
+          padding: '6px 9px',
+          borderRadius: 7,
+          pointerEvents: 'none',
+          boxShadow: '0 6px 18px rgba(0,0,0,0.20)',
+          opacity: active ? 1 : 0,
+          transform: active ? 'translateY(0)' : 'translateY(-3px)',
+          transition: 'opacity 0.18s ease, transform 0.18s ease',
+          zIndex: 20,
+        }}
+      >
+        {label}
+      </span>
+    </div>
+  );
+}
+
+/**
+ * VisualCard with an independent light/dark toggle in the top-right.
+ * Children receive the active mode so image sources can swap.
+ */
+function ThemedVisualCard({
+  children,
+  caption,
+  pad = 'p-4 sm:p-8',
+  defaultMode = 'dark',
+}: {
+  children: (mode: ThemeMode) => ReactNode;
+  caption: (mode: ThemeMode) => string;
+  pad?: string;
+  defaultMode?: ThemeMode;
+}) {
+  const [mode, setMode] = useState<ThemeMode>(defaultMode);
+  return (
+    <div>
+      <div className="relative rounded-[24px] overflow-hidden" style={{ background: BLOCK_BG }}>
+        {/* Inset past the 24px radius so the control isn’t clipped in the corner */}
+        <div className="absolute z-10" style={{ top: 16, right: 16 }}>
+          <ThemeModeToggle
+            mode={mode}
+            onToggle={() => setMode((m) => (m === 'light' ? 'dark' : 'light'))}
+          />
+        </div>
+        {/*
+          Both themes stay mounted in one grid cell and crossfade on opacity, so
+          switching never re-fetches or remounts an <img> — no phantom/blank flash.
+          Identical light/dark dimensions keep the cell height stable.
+        */}
+        <div className={pad}>
+          <div style={{ display: 'grid' }}>
+            {(['light', 'dark'] as ThemeMode[]).map((m) => {
+              const activeLayer = mode === m;
+              return (
+                <div
+                  key={m}
+                  aria-hidden={activeLayer ? undefined : true}
+                  style={{
+                    gridArea: '1 / 1',
+                    opacity: activeLayer ? 1 : 0,
+                    pointerEvents: activeLayer ? 'auto' : 'none',
+                    transition: 'opacity 0.35s ease',
+                  }}
+                >
+                  {children(m)}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+      <p className="text-[13px] text-[#999] text-center mt-3">{caption(mode)}</p>
+    </div>
+  );
+}
+
 /** Placeholder slot for an image/GIF to be added later. */
 function PlaceholderVisual({
   description,
@@ -129,6 +281,200 @@ function PlaceholderVisual({
 }) {
   return (
     <CaseStudyMediaPlaceholder description={description} minHeight={minHeight} style={style} />
+  );
+}
+
+/** Manual image carousel — same chrome as ImageViewer on the Finding Focus landing case study. */
+function ImageViewer({ items }: { items: { src: string; alt: string; label: string }[] }) {
+  const [current, setCurrent] = useState(0);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
+  const item = items[current];
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useBodyScrollLock(lightboxOpen && mounted);
+
+  useEffect(() => {
+    if (!lightboxOpen) return;
+    function onKey(e: KeyboardEvent) {
+      if (e.key === 'Escape') setLightboxOpen(false);
+      if (e.key === 'ArrowLeft') setCurrent((c) => (c - 1 + items.length) % items.length);
+      if (e.key === 'ArrowRight') setCurrent((c) => (c + 1) % items.length);
+    }
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [lightboxOpen, items.length]);
+
+  return (
+    <>
+      <div>
+        <div
+          className="rounded-[24px] overflow-hidden relative h-[500px] md:h-[420px]"
+          style={{ background: BLOCK_BG }}
+        >
+          <div className="absolute inset-0 flex items-center justify-center p-6 sm:p-8">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              role="button"
+              tabIndex={0}
+              aria-label={`Expand image: ${item.alt}`}
+              onClick={() => setLightboxOpen(true)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  setLightboxOpen(true);
+                }
+              }}
+              src={item.src}
+              alt={item.alt}
+              className="max-h-full max-w-full w-auto h-auto block rounded-md select-none"
+              style={{ cursor: 'zoom-in' }}
+              draggable={false}
+            />
+          </div>
+
+          <button
+            type="button"
+            aria-label="Previous image"
+            onClick={(e) => {
+              e.stopPropagation();
+              setCurrent((c) => c - 1);
+            }}
+            style={{
+              visibility: current > 0 ? 'visible' : 'hidden',
+              position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)',
+              width: 32, height: 32, borderRadius: '50%', background: 'white',
+              border: '1px solid rgba(0,0,0,0.08)', boxShadow: '0 1px 4px rgba(0,0,0,0.1)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              color: '#555', cursor: 'pointer', zIndex: 2,
+            }}
+          >
+            <svg width="13" height="13" viewBox="0 0 14 14" fill="none">
+              <path d="M9 11L4 7l5-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </button>
+          <button
+            type="button"
+            aria-label="Next image"
+            onClick={(e) => {
+              e.stopPropagation();
+              setCurrent((c) => c + 1);
+            }}
+            style={{
+              visibility: current < items.length - 1 ? 'visible' : 'hidden',
+              position: 'absolute', right: 16, top: '50%', transform: 'translateY(-50%)',
+              width: 32, height: 32, borderRadius: '50%', background: 'white',
+              border: '1px solid rgba(0,0,0,0.08)', boxShadow: '0 1px 4px rgba(0,0,0,0.1)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              color: '#555', cursor: 'pointer', zIndex: 2,
+            }}
+          >
+            <svg width="13" height="13" viewBox="0 0 14 14" fill="none">
+              <path d="M5 3l5 4-5 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </button>
+        </div>
+
+        <div className="mt-3 flex flex-col items-center gap-2 px-2">
+          <p className="text-[13px] text-[#999] text-center">{item.label}</p>
+          {items.length > 1 && (
+            <div className="flex items-center gap-1.5">
+              {items.map((_, i) => (
+                <button
+                  key={i}
+                  type="button"
+                  aria-label={`Go to image ${i + 1}`}
+                  onClick={() => setCurrent(i)}
+                  style={{
+                    height: 5, borderRadius: 3,
+                    width: i === current ? 20 : 5,
+                    transition: 'width 0.25s',
+                    background: i === current ? EYEBROW_ICON_COLOR : 'rgba(0,0,0,0.12)',
+                    border: 'none', cursor: 'pointer', padding: 0, flexShrink: 0,
+                  }}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {lightboxOpen && mounted && createPortal(
+        <div
+          onClick={() => setLightboxOpen(false)}
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 9999,
+            background: 'rgba(6, 6, 9, 0.96)',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '64px 84px 40px',
+            boxSizing: 'border-box',
+            cursor: 'zoom-out',
+            overflow: 'hidden',
+          }}
+        >
+          <LightboxCloseButton onClose={() => setLightboxOpen(false)} />
+          {items.length > 1 ? (
+            <>
+              <LightboxIconButton
+                label="Previous"
+                onClick={() => setCurrent((c) => (c - 1 + items.length) % items.length)}
+                position={{ top: '50%', transform: 'translateY(-50%)', left: 20, visibility: current > 0 ? 'visible' : 'hidden' }}
+              >
+                <svg width="16" height="16" viewBox="0 0 14 14" fill="none">
+                  <path d="M9 11L4 7l5-4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </LightboxIconButton>
+              <LightboxIconButton
+                label="Next"
+                onClick={() => setCurrent((c) => (c + 1) % items.length)}
+                position={{ top: '50%', transform: 'translateY(-50%)', right: 20, visibility: current < items.length - 1 ? 'visible' : 'hidden' }}
+              >
+                <svg width="16" height="16" viewBox="0 0 14 14" fill="none">
+                  <path d="M5 3l5 4-5 4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </LightboxIconButton>
+            </>
+          ) : null}
+
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', cursor: 'default', maxWidth: 'min(88vw, 1200px)' }}
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={item.src}
+              alt={item.alt}
+              style={{
+                maxWidth: '100%',
+                maxHeight: 'min(72vh, calc(100vh - 210px))',
+                width: 'auto',
+                height: 'auto',
+                objectFit: 'contain',
+                borderRadius: 14,
+                display: 'block',
+              }}
+            />
+            <p style={{ marginTop: 18, maxWidth: 'min(760px, 90vw)', textAlign: 'center', fontSize: 14, lineHeight: 1.55, color: 'rgba(255,255,255,0.85)' }}>
+              {item.label}
+            </p>
+            {items.length > 1 ? (
+              <p style={{ marginTop: 8, fontSize: 12, letterSpacing: '0.02em', color: 'rgba(255,255,255,0.4)' }}>
+                {current + 1} / {items.length}
+              </p>
+            ) : null}
+          </div>
+        </div>,
+        document.body,
+      )}
+    </>
   );
 }
 
@@ -571,54 +917,148 @@ function FlowStepCards() {
 }
 
 // ── EndOfSessionFlowDiagram: three scenario rows of nodes ─────────────────────
-type FlowNode = { title: string; sub?: string; tone: 'neutral' | 'milestone' | 'streak' };
-const FLOW_SCENARIOS: { label: string; nodes: FlowNode[] }[] = [
+type FlowNodeTone = 'reflection' | 'achievement' | 'completion';
+type FlowNode = { title: string; sub?: string; tone: FlowNodeTone };
+
+const FLOW_NODE_COLORS: Record<FlowNodeTone, string> = {
+  reflection: '#006efe',
+  achievement: '#ea580c',
+  completion: '#0d9488',
+};
+
+const FLOW_SCENARIOS: { label: string; info: string; nodes: FlowNode[] }[] = [
   {
     label: 'First session of the day (no achievement)',
+    info: 'The first session of the day will always show a week tracker component on the completion page, unless they earned a streak.',
     nodes: [
-      { title: 'Reflection', tone: 'neutral' },
-      { title: 'Completion', sub: '(week tracker)', tone: 'neutral' },
+      { title: 'Reflection', tone: 'reflection' },
+      { title: 'Completion', sub: '(week tracker)', tone: 'completion' },
+    ],
+  },
+  {
+    label: 'Sessions after the first of the day (no achievement)',
+    info: 'All subsequent sessions completed in a day will show a quote container on the completion page.',
+    nodes: [
+      { title: 'Reflection', tone: 'reflection' },
+      { title: 'Completion', sub: '(quote)', tone: 'completion' },
     ],
   },
   {
     label: 'Achievement session (e.g. milestone reached)',
+    info: 'When users trigger a milestone, there will be a screen dedicated to that milestone that appears in between the reflection and completion screens.',
     nodes: [
-      { title: 'Reflection', tone: 'neutral' },
-      { title: 'Achievement', sub: '(milestone)', tone: 'milestone' },
-      { title: 'Completion', sub: '(week tracker / quote)', tone: 'neutral' },
+      { title: 'Reflection', tone: 'reflection' },
+      { title: 'Achievement', sub: '(milestone)', tone: 'achievement' },
+      { title: 'Completion', sub: '(week tracker / quote)', tone: 'completion' },
     ],
   },
   {
     label: 'Streak completed session',
+    info: 'When users earn a streak, the completion page will always show the quote container.',
     nodes: [
-      { title: 'Reflection', tone: 'neutral' },
-      { title: 'Achievement', sub: '(streak)', tone: 'streak' },
-      { title: 'Completion', sub: '(quote)', tone: 'neutral' },
+      { title: 'Reflection', tone: 'reflection' },
+      { title: 'Achievement', sub: '(streak)', tone: 'achievement' },
+      { title: 'Completion', sub: '(quote)', tone: 'completion' },
     ],
   },
 ];
 
+function FlowInfoTip({ text }: { text: string }) {
+  const [open, setOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
+  const [pos, setPos] = useState({ top: 0, left: 0 });
+  const btnRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  function updatePos() {
+    const el = btnRef.current;
+    if (!el) return;
+    const r = el.getBoundingClientRect();
+    setPos({
+      top: r.bottom + 8,
+      left: Math.min(r.left, window.innerWidth - 320),
+    });
+  }
+
+  function show() {
+    updatePos();
+    setOpen(true);
+  }
+
+  function hide() {
+    setOpen(false);
+  }
+
+  return (
+    <>
+      <button
+        ref={btnRef}
+        type="button"
+        aria-label={text}
+        onMouseEnter={show}
+        onMouseLeave={hide}
+        onFocus={show}
+        onBlur={hide}
+        className="flex items-center justify-center rounded-full text-[11px] font-semibold leading-none shrink-0"
+        style={{
+          width: 18,
+          height: 18,
+          color: '#6b6b6b',
+          background: open ? '#ececec' : '#f0f0f0',
+          border: '1px solid #d0d0d0',
+          cursor: 'help',
+        }}
+      >
+        i
+      </button>
+      {open && mounted && createPortal(
+        <div
+          role="tooltip"
+          style={{
+            position: 'fixed',
+            top: pos.top,
+            left: pos.left,
+            zIndex: 10000,
+            width: 'max-content',
+            maxWidth: 'min(300px, calc(100vw - 24px))',
+            borderRadius: 8,
+            padding: '8px 12px',
+            fontSize: 12,
+            fontWeight: 400,
+            lineHeight: 1.5,
+            color: '#fff',
+            background: 'rgba(33,33,33,0.94)',
+            boxShadow: '0 6px 18px rgba(0,0,0,0.16)',
+            pointerEvents: 'none',
+          }}
+        >
+          {text}
+        </div>,
+        document.body,
+      )}
+    </>
+  );
+}
+
 function FlowNodeChip({ node }: { node: FlowNode }) {
-  const bg =
-    node.tone === 'milestone' ? 'rgba(0,110,254,0.12)'
-      : node.tone === 'streak' ? 'rgba(249,115,22,0.15)'
-        : '#ffffff';
-  const subColor = node.tone === 'milestone' ? ACCENT_DARK : node.tone === 'streak' ? '#ea580c' : '#777777';
+  const color = FLOW_NODE_COLORS[node.tone];
   const hasSub = Boolean(node.sub);
   return (
     <div
       className="flex flex-col items-center justify-center rounded-[12px] px-6"
       style={{
-        background: bg,
+        background: `${color}1f`,
         minHeight: 62,
         minWidth: 117,
-        border: node.tone === 'neutral' ? `1px solid ${BORDER}` : undefined,
       }}
     >
       <div className="flex flex-col items-center justify-center" style={{ minHeight: hasSub ? undefined : 32 }}>
         <span className="text-[14px] font-semibold text-[#1a1a1a] whitespace-nowrap leading-[17px]">{node.title}</span>
         {hasSub && (
-          <span className="text-[12px] whitespace-nowrap leading-[15px] mt-0.5" style={{ color: subColor }}>{node.sub}</span>
+          <span className="text-[12px] whitespace-nowrap leading-[15px] mt-0.5 text-[#1a1a1a]">{node.sub}</span>
         )}
       </div>
     </div>
@@ -662,7 +1102,10 @@ function EndOfSessionFlowDiagram() {
     >
       {FLOW_SCENARIOS.map(sc => (
         <div key={sc.label} className="flex flex-col items-start gap-3">
-          <span className="text-[15px] font-semibold text-[#4a4a4a]">{sc.label}</span>
+          <div className="flex items-center gap-1.5">
+            <span className="text-[15px] font-semibold text-[#4a4a4a]">{sc.label}</span>
+            <FlowInfoTip text={sc.info} />
+          </div>
           <div className="flex items-center gap-3 flex-wrap">
             {sc.nodes.map((node, i) => {
               // Arrow before node i becomes active when pulseStep matches i-1
@@ -739,8 +1182,8 @@ function StudentSurveyChart() {
 
 // ── AnatomyCards: numbered circle badge + title + body ────────────────────────
 const ANATOMY = [
-  { n: '1', title: 'Acknowledge', body: 'A persistent checkmark and "Session Complete" title signal the end.' },
-  { n: '2', title: 'Contextualize', body: 'Session stats show what was just accomplished: duration and check-ins answered.' },
+  { n: '1', title: 'Acknowledge', body: 'A persistent checkmark and "Session Complete" title signal the end of the session.' },
+  { n: '2', title: 'Contextualize', body: 'Session stats show what was just accomplished: how long the session was and number of check-ins.' },
   { n: '3', title: 'Reflect', body: 'One question about their focus, four options, less cognitive load.' },
 ];
 
@@ -1156,6 +1599,174 @@ function Divider({ label, id }: { label?: string; id?: string }) {
   );
 }
 
+// ── CompetitiveAuditTable: 1:1 port of the Figma comparison table ─────────────
+const AUDIT_APPS: { slug: string; name: string; highlight?: boolean }[] = [
+  { slug: 'finding-focus', name: 'Finding Focus', highlight: true },
+  { slug: 'insight-timer', name: 'Insight Timer' },
+  { slug: 'balance', name: 'Balance' },
+  { slug: 'oak', name: 'Oak' },
+  { slug: 'forest', name: 'Forest' },
+  { slug: 'focus-pomo', name: 'Focus Pomo' },
+  { slug: 'focus-keeper', name: 'Focus Keeper' },
+];
+// marks[] aligns to AUDIT_APPS order; true = ✓, false = –
+const AUDIT_ROWS: { label: string; marks: boolean[] }[] = [
+  { label: 'Celebration', marks: [false, true, true, true, true, true, true] },
+  { label: 'Streak', marks: [false, true, true, true, false, false, false] },
+  { label: 'Cumulative Stats', marks: [true, false, true, true, false, false, false] },
+  { label: 'Badge / Reward', marks: [false, false, false, true, true, false, true] },
+  { label: 'Forward-Looking Hook', marks: [false, true, true, false, false, false, false] },
+];
+
+function CompetitiveAuditTable() {
+  const FEATURE_W = 178;
+  const COL_W = 114;
+  const HEADER_H = 104;
+  const ROW_H = 62;
+  const PINNED_W = FEATURE_W + COL_W; // Feature + Finding Focus columns stay pinned
+  const CARD_W = FEATURE_W + COL_W * 7; // 976, matching the Figma table
+  const INTER = 'var(--font-inter), sans-serif';
+
+  const scrollerRef = useRef<HTMLDivElement>(null);
+  const [overflowing, setOverflowing] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
+  const [atEnd, setAtEnd] = useState(false);
+
+  useEffect(() => {
+    const el = scrollerRef.current;
+    if (!el) return;
+    const update = () => {
+      const max = el.scrollWidth - el.clientWidth;
+      setOverflowing(max > 1);
+      setScrolled(el.scrollLeft > 1);
+      setAtEnd(el.scrollLeft >= max - 1);
+    };
+    update();
+    el.addEventListener('scroll', update, { passive: true });
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    return () => {
+      el.removeEventListener('scroll', update);
+      ro.disconnect();
+    };
+  }, []);
+
+  // One cell of the grid. First two columns (Feature + Finding Focus) are sticky.
+  const cellStyle = (col: number, isHeader: boolean, rowIdx: number): CSSProperties => {
+    const sticky = col <= 1;
+    return {
+      position: sticky ? 'sticky' : 'relative',
+      left: col === 0 ? 0 : col === 1 ? FEATURE_W : undefined,
+      zIndex: sticky ? 2 : 1,
+      background: col === 0 ? '#ffffff' : col === 1 ? '#e8f0fc' : 'transparent',
+      borderBottom: isHeader || rowIdx < 4 ? '1px solid #edeff2' : undefined,
+      boxSizing: 'border-box',
+      display: 'flex',
+    };
+  };
+
+  const cells: ReactNode[] = [];
+  // Header — "Feature" label (baseline-aligned with the app names)
+  cells.push(
+    <div key="h-feature" style={{ ...cellStyle(0, true, -1), alignItems: 'flex-end', paddingLeft: 16, paddingBottom: 15 }}>
+      <span style={{ fontSize: 11, fontWeight: 600, color: '#7a8aa0' }}>Feature</span>
+    </div>,
+  );
+  // Header — app icons + names
+  AUDIT_APPS.forEach((app, i) => {
+    cells.push(
+      <div key={`h-${app.slug}`} style={{ ...cellStyle(i + 1, true, -1), flexDirection: 'column', alignItems: 'center', paddingTop: 22 }}>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={`/case-studies/focus-coach-achievements/competitors/${app.slug}.png`}
+          alt={`${app.name} app icon`}
+          width={44}
+          height={44}
+          style={{ width: 44, height: 44, borderRadius: 12, filter: 'drop-shadow(0 4px 4px rgba(0,0,0,0.15))' }}
+        />
+        <span style={{ marginTop: 8, fontSize: 12, fontWeight: app.highlight ? 600 : 500, lineHeight: '15px', color: '#1a1a1a', textAlign: 'center' }}>
+          {app.name}
+        </span>
+      </div>,
+    );
+  });
+  // Body rows
+  AUDIT_ROWS.forEach((row, r) => {
+    cells.push(
+      <div key={`r${r}-label`} style={{ ...cellStyle(0, false, r), alignItems: 'center', paddingLeft: 16 }}>
+        <span style={{ fontSize: 13, fontWeight: 500, color: '#333333' }}>{row.label}</span>
+      </div>,
+    );
+    row.marks.forEach((on, i) => {
+      cells.push(
+        <div key={`r${r}-${i}`} style={{ ...cellStyle(i + 1, false, r), alignItems: 'center', justifyContent: 'center' }}>
+          {on ? (
+            <Check sx={{ fontSize: 22, color: '#1da85f' }} />
+          ) : (
+            <span style={{ fontSize: 20, fontWeight: 700, lineHeight: 1, color: '#c1c8d2' }}>–</span>
+          )}
+        </div>,
+      );
+    });
+  });
+
+  return (
+    <div className="rounded-[24px] p-4 sm:p-8" style={{ background: BLOCK_BG }}>
+      {/* Rounded frame clips the scroll area, so its corners stay rounded even when the table is scrolled and cut off. */}
+      <div className="relative mx-auto" style={{ maxWidth: CARD_W, borderRadius: 16, background: '#ffffff', overflow: 'hidden' }}>
+        <div ref={scrollerRef} className="audit-scroller" style={{ overflowX: 'auto', overflowY: 'hidden' }}>
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: `${FEATURE_W}px repeat(7, ${COL_W}px)`,
+              gridTemplateRows: `${HEADER_H}px repeat(5, ${ROW_H}px)`,
+              width: CARD_W,
+              fontFamily: INTER,
+            }}
+          >
+            {cells}
+          </div>
+        </div>
+
+        {/* Frozen-column boundary shadow — appears once competitors scroll behind the pinned columns */}
+        <div
+          aria-hidden
+          style={{ position: 'absolute', top: 0, bottom: 0, left: PINNED_W, width: 14, pointerEvents: 'none', zIndex: 3, background: 'linear-gradient(to right, rgba(15,23,42,0.10), rgba(15,23,42,0))', opacity: scrolled ? 1 : 0, transition: 'opacity 0.2s ease' }}
+        />
+
+        {/* Right fade — only when the table overflows and isn't scrolled to the end */}
+        <div
+          aria-hidden
+          style={{ position: 'absolute', top: 0, bottom: 0, right: 0, width: 48, pointerEvents: 'none', zIndex: 3, background: 'linear-gradient(to left, #ffffff, rgba(255,255,255,0))', opacity: overflowing && !atEnd ? 1 : 0, transition: 'opacity 0.2s ease' }}
+        />
+
+        {/* Hairline border drawn on top so it never affects the scroll width */}
+        <div aria-hidden style={{ position: 'absolute', inset: 0, borderRadius: 16, border: '1px solid #e6e8ec', pointerEvents: 'none', zIndex: 4 }} />
+      </div>
+
+      <style jsx>{`
+        .audit-scroller {
+          scrollbar-width: thin;
+          scrollbar-color: #cbd5e1 transparent;
+        }
+        .audit-scroller::-webkit-scrollbar {
+          height: 8px;
+        }
+        .audit-scroller::-webkit-scrollbar-track {
+          background: transparent;
+        }
+        .audit-scroller::-webkit-scrollbar-thumb {
+          background-color: #cbd5e1;
+          border-radius: 999px;
+        }
+        .audit-scroller::-webkit-scrollbar-thumb:hover {
+          background-color: #aab6c6;
+        }
+      `}</style>
+    </div>
+  );
+}
+
 const SECTION = 'max-w-[1200px] mx-auto px-5 sm:px-10 md:px-20 pb-14 md:pb-28';
 
 // ── Page ──────────────────────────────────────────────────────────────────────
@@ -1215,7 +1826,7 @@ export default function FocusCoachAchievementsCaseStudy() {
                   { value: '3', label: 'achievement types, each with its own animated screen' },
                   {
                     value: '22%',
-                    label: 'time spent responding to the post-session reflection',
+                    label: 'less time spent rating focus at the end of a session',
                     icon: <KeyboardDoubleArrowDownOutlined sx={{ fontSize: 24, color: ACCENT }} />,
                   },
                 ]}
@@ -1236,11 +1847,11 @@ export default function FocusCoachAchievementsCaseStudy() {
             heading="The Focus Coach is the flagship tool from Finding Focus, an edtech company building attention training tools for classrooms."
             body="It's a guided study timer that helps students stay on task while doing their work by periodically checking in on them."
           >
-            <VisualCard caption="A Focus Coach check-in during an active Focus Session" pad="p-3 sm:p-6">
+            <VisualCard caption="What a check-in looks like during a Focus Session" pad="p-3 sm:p-6">
               <CaseStudyMedia
                 src="/case-studies/focus-coach-achievements/focus-coach-check-in.gif"
-                alt="A Focus Coach check-in during an active Focus Session"
-                caption="A Focus Coach check-in during an active Focus Session"
+                alt="What a check-in looks like during a Focus Session"
+                caption="What a check-in looks like during a Focus Session"
               />
             </VisualCard>
           </Section>
@@ -1253,7 +1864,7 @@ export default function FocusCoachAchievementsCaseStudy() {
             <SmallStatRow
               stats={[
                 { value: '39.3%', label: 'of users only ever completed one Focus Session' },
-                { value: '54.6%', label: 'of all sessions are completed by the top 1% of users' },
+                { value: '54.6%', label: 'of all sessions were completed by the top 1% of users' },
               ]}
             />
           </Section>
@@ -1263,11 +1874,11 @@ export default function FocusCoachAchievementsCaseStudy() {
             heading="The end of session experience was where we lost users."
             body='Every session ended with a brief "session complete" animation, a 1–100 reflection slider, and an MVP-state completion screen built around a check-in graph. We&rsquo;d assumed students would rack up check-ins, but most sessions only had one or two, which meant the graph had little value.'
           >
-            <VisualCard caption="The original end of session flow">
+            <VisualCard caption="This is what the previous end of session flow looked like. If students did not have a check-in the graph provided no value">
               <CaseStudyMedia
                 src="/case-studies/focus-coach-achievements/old-session-flow.gif?v=2"
                 alt="The original end of session flow, including the focus rating and completion screen"
-                caption="The original end of session flow"
+                caption="This is what the previous end of session flow looked like. If students did not have a check-in the graph provided no value"
               />
             </VisualCard>
           </Section>
@@ -1313,22 +1924,20 @@ export default function FocusCoachAchievementsCaseStudy() {
           <Section
             eyebrow="Competitive Audit"
             heading={<>Strong completions <Em>celebrate</Em>. Ours <Em>reported</Em>.</>}
-            body="I audited the end-of-session experiences for Insight Timer, Balance, Oak, Forest, Focus Pomo, and Focus Keeper. The best experiences used the end of a session as an opportunity to celebrate the user and promote future engagement. Something ours failed to do."
+            body="I audited the end-of-session experiences for six of the biggest mindfulness and timer apps. The best experiences used the end of a session as an opportunity to celebrate the user and promote future engagement. Something ours failed to do."
           >
-            <VisualCard>
-              <PlaceholderVisual minHeight={320} description="Image: Comparison table of Finding Focus versus other apps" />
-            </VisualCard>
+            <CompetitiveAuditTable />
           </Section>
 
           <Section
             eyebrow="Gamification Question"
             heading={<>We considered XP, badges, and collectibles.<br />We decided <Em>against</Em> all of them.</>}
-            body="Students supported the idea of badges and rewards, and many similar applications were gamified. But our co-founder pushed back hard on full gamification: Finding Focus exists to help students genuinely improve their focus, not to complete sessions for rewards. The moment a badge becomes the reason a student starts a session, the tool is failing at its actual job."
+            body="Our survey showed that students supported the idea of badges and rewards, and the competitive audit found that similar applications used gamification. But despite that, full gamification wasn't something I recommended: Finding Focus exists to help students genuinely improve their focus, not to collect rewards. The moment a badge becomes the reason a student starts a session, the tool is failing at its actual job."
           >
             <Callout
               variant="neutral"
               eyebrow="Behavioral Insight"
-              heading="One student completed hundreds of one minute sessions just to win a teacher’s prize."
+              heading="One student completed hundreds of one-minute sessions to win a teacher’s prize."
               body="This was a clear signal that attaching rewards to usage can lead to users gaming the system."
             />
           </Section>
@@ -1349,14 +1958,25 @@ export default function FocusCoachAchievementsCaseStudy() {
               'My team was in full support so I got to work creating designs and a spec sheet of the full system – trigger logic, thresholds, priority rules, and the copy.',
             ]}
           >
-            <VisualCard caption="Screenshot from a Slack canvas I created to document ideas for rules, logic, and copy. The example shown here is the Personal Best category." pad="p-4 sm:p-6">
-              <CaseStudyMedia
-                src="/case-studies/focus-coach-achievements/personal-best-spec.png"
-                alt="Slack canvas screenshot documenting Personal Best achievement rules, logic, and copy"
-                maxWidth={640}
-                caption="Screenshot from a Slack canvas I created to document ideas for rules, logic, and copy. The example shown here is the Personal Best category."
-              />
-            </VisualCard>
+            <ImageViewer
+              items={[
+                {
+                  src: '/case-studies/focus-coach-achievements/personal-best-spec.png',
+                  alt: 'Slack canvas screenshot documenting Personal Best achievement rules, logic, and copy',
+                  label: 'Screenshot from a Slack canvas documenting Personal Best criteria — trigger logic, thresholds, and copy.',
+                },
+                {
+                  src: '/case-studies/focus-coach-achievements/streaks-logic-spec.png',
+                  alt: 'Slack canvas screenshot documenting Focus Streak logic for how full weeks are tracked and celebrated',
+                  label: 'Screenshot from a Slack canvas documenting Focus Streak logic — how full weeks are tracked and celebrated.',
+                },
+                {
+                  src: '/case-studies/focus-coach-achievements/milestone-logic-spec.png',
+                  alt: 'Slack canvas screenshot proposing milestone thresholds and copy options across Sessions, Hours, and Check-ins',
+                  label: 'Screenshot from a Slack canvas proposing milestone thresholds and rotating copy options across Sessions, Hours, and Check-ins.',
+                },
+              ]}
+            />
           </Section>
 
           {/* Streaks Behavior — heading + body + dark-pattern callout, then a second heading + image */}
@@ -1364,7 +1984,7 @@ export default function FocusCoachAchievementsCaseStudy() {
             <Section
               eyebrow="Streaks Behavior"
               heading="Traditional streaks employ a dark pattern."
-              body="The idea of streaks was something that my co-founder was staunchly against. The argument against streaks was that they make users return solely for the purpose of not losing their streak. It was a dark pattern that we wanted to avoid, especially since our target demographic is K-12 students."
+              body="Our team had long considered adding streaks, but my background in behavior analysis made me cautious. Streaks often trigger a 'streak maintenance mode,' where users return to an app purely to keep a number alive rather than to engage meaningfully. That’s a classic dark pattern, and one we specifically wanted to avoid given that Finding Focus serves K-12 students."
             >
               <Callout
                 variant="danger"
@@ -1378,7 +1998,7 @@ export default function FocusCoachAchievementsCaseStudy() {
               heading="Enter Focus Streaks: a more ethical take on streaks."
               body="My solution to the streaks dilemma was to make it something that users earned rather than maintained. As long as a user completed at least one session each weekday (Monday - Friday) they were able to earn a Focus Streak for that week. Once users earned one there was no risk of losing it, and they could earn as many as they wanted."
             >
-              <VisualCard caption="The Focus Streak week container — earned, never lost" pad="p-6 sm:p-10">
+              <VisualCard caption="A custom animation I created that plays when users earn a Focus Streak" pad="p-6 sm:p-10">
                 <FocusStreakWeekCard />
               </VisualCard>
             </Section>
@@ -1418,7 +2038,7 @@ export default function FocusCoachAchievementsCaseStudy() {
             heading="A guided experience is more engaging than a single page full of content."
             body={[
               'The idea for a completion page that rotated through different content worked in theory, but once I began creating mockups it became clear that the design wasn’t working.',
-              'That’s when I realized that the best experience would be a guided end of session completion flow where each piece of content had its own super polished screen and animation.',
+              'That’s when I realized the best experience would be a guided end-of-session flow where each piece of content - if it was triggered - had its own dedicated screen and a purposeful animation.',
             ]}
           >
             <FlowStepCards />
@@ -1426,12 +2046,12 @@ export default function FocusCoachAchievementsCaseStudy() {
 
           <Section
             eyebrow="End of Session Logic"
-            heading="Simple logic decides which screens are included in the end of session flow."
+            heading="A few rules decide which screens are shown at the end of a session."
           >
             <div className="flex flex-col gap-3">
               <EndOfSessionFlowDiagram />
               <p className="text-[13px] text-[#999] text-center">
-                The shipped flow logic — the achievement screen is rare by design, which is exactly what makes it a special moment
+                The flow adapts to each session — the achievement screen only appears when one is earned, which is what makes it a special moment
               </p>
             </div>
           </Section>
@@ -1439,11 +2059,11 @@ export default function FocusCoachAchievementsCaseStudy() {
           <Section
             eyebrow="Personal Reflection"
             heading="With the flow defined, I started re-designing the personal reflection screen."
-            body="The redesign does three jobs in order: acknowledge the session has ended, provide context on what was accomplished, and ask users to reflect."
+            body="The redesign does three jobs: acknowledge the session has ended, provide context on what was accomplished, and allow users to quickly reflect."
           >
             <div className="flex flex-col gap-10">
               <AnatomyCards />
-              <VisualCard caption="The redesigned reflection screen — one question, four options, written to encourage honesty" pad="p-3 sm:p-5">
+              <VisualCard caption="The new design showed users more clearly that their session had ended and allowed them to quickly reflect on it." pad="p-3 sm:p-5">
                 <ReflectionScreen />
               </VisualCard>
             </div>
@@ -1484,7 +2104,7 @@ export default function FocusCoachAchievementsCaseStudy() {
           <Section
             eyebrow="The Completion Screen"
             heading="A completion screen with progress you can see, and a nudge to come back."
-            body="All-time stats count up odometer style, showing users how this session added to their all-time progress. Below the stats sits one of two containers: the week tracker or a course quote."
+            body="All-time stats count up odometer style, showing users how this session added to their all-time progress. Below the stats container sits one of two containers: a week tracker or a course quote. If it is the first session of the day then the week tracker is shown, if not then the course quote container is shown."
           >
             <SegmentedMedia
               tabs={[
@@ -1492,7 +2112,7 @@ export default function FocusCoachAchievementsCaseStudy() {
                   label: 'Week Tracker',
                   type: 'GIF',
                   description: 'Live completion screen with week tracker',
-                  caption: 'Week Tracker — checks off each weekday a session is completed, gently encouraging a session every weekday',
+                  caption: 'Week Tracker — shown after the first session of the day, gently encouraging a session every weekday',
                   content: <CompletionWeekTrackerScreen />,
                 },
                 {
@@ -1506,83 +2126,80 @@ export default function FocusCoachAchievementsCaseStudy() {
             />
           </Section>
 
-          <Section
-            eyebrow="Team Presentation"
-            heading="Showing off the new experience to my teammates"
-            body={[
-              'Since this was such a big project with so many interconnected updates, it was important to explain all the new designs in a meeting with my broader team and gather feedback.',
-              'In order to give my team members as clear of a picture as possible, I created an HTML prototype that I was able to let them interact with.',
-            ]}
-          >
-            <VisualCard caption="Presenting the design project to my broader team over Slack" pad="p-4 sm:p-6">
-              <CaseStudyMedia
-                src="/case-studies/focus-coach-achievements/team-meeting-huddle.png"
-                alt="Slack huddle screenshot presenting the Focus Coach Milestones design to the broader team"
-                maxWidth={720}
-                caption="Presenting the design project to my broader team over Slack"
-              />
-            </VisualCard>
-          </Section>
-
           <Section eyebrow="Final Design" heading="The complete end of session flow – all together.">
             <VisualCard caption="The end of session flow users see after completing their first session">
               <EndOfSessionFlow />
             </VisualCard>
           </Section>
 
-          <VisualCard caption="Personal reflection — mobile, dark mode" pad="p-4 sm:p-8">
-            <CaseStudyMedia
-              src="/case-studies/focus-coach-achievements/mobile-dm-reflection.png"
-              alt="Mobile dark mode personal reflection screen with Session Complete checkmark and four focus options"
-              maxWidth={260}
-              caption="Personal reflection — mobile, dark mode"
-            />
-          </VisualCard>
+          <ThemedVisualCard
+            caption={(mode) => `Personal reflection — mobile, ${mode} mode`}
+            pad="p-4 sm:p-8"
+          >
+            {(mode) => (
+              <CaseStudyMedia
+                src={mobileSrc('reflection', mode)}
+                alt={`Mobile ${mode} mode personal reflection screen with Session Complete checkmark and four focus options`}
+                maxWidth={260}
+                caption={`Personal reflection — mobile, ${mode} mode`}
+              />
+            )}
+          </ThemedVisualCard>
 
-          <VisualCard caption="Achievement screens — mobile, dark mode" pad="p-4 sm:p-6">
-            <CaseStudyMediaGallery
-              columns={3}
-              maxWidth={780}
-              gapClassName="gap-3 sm:gap-4"
-              items={[
-                {
-                  src: '/case-studies/focus-coach-achievements/mobile-dm-milestone.png',
-                  alt: 'Mobile dark mode milestone screen with mountain illustration and progress to 25 sessions',
-                  caption: 'Milestone — mobile, dark mode',
-                },
-                {
-                  src: '/case-studies/focus-coach-achievements/mobile-dm-streak.png',
-                  alt: 'Mobile dark mode Focus Streak screen with flaming calendar and weekday tracker',
-                  caption: 'Focus Streak — mobile, dark mode',
-                },
-                {
-                  src: '/case-studies/focus-coach-achievements/mobile-dm-personal-best.png',
-                  alt: 'Mobile dark mode Personal Best screen with rocket and previous vs new best comparison',
-                  caption: 'Personal Best — mobile, dark mode',
-                },
-              ]}
-            />
-          </VisualCard>
+          <ThemedVisualCard
+            caption={(mode) => `Achievement screens — mobile, ${mode} mode`}
+            pad="p-4 sm:p-6"
+          >
+            {(mode) => (
+              <CaseStudyMediaGallery
+                columns={3}
+                maxWidth={780}
+                gapClassName="gap-3 sm:gap-4"
+                items={[
+                  {
+                    src: mobileSrc('milestone', mode, '3'),
+                    alt: `Mobile ${mode} mode milestone screen with mountain illustration and progress to 25 sessions`,
+                    caption: `Milestone — mobile, ${mode} mode`,
+                  },
+                  {
+                    src: mobileSrc('streak', mode, '3'),
+                    alt: `Mobile ${mode} mode Focus Streak screen with flaming calendar and weekday tracker`,
+                    caption: `Focus Streak — mobile, ${mode} mode`,
+                  },
+                  {
+                    src: mobileSrc('personal-best', mode, '3'),
+                    alt: `Mobile ${mode} mode Personal Best screen with rocket and previous vs new best comparison`,
+                    caption: `Personal Best — mobile, ${mode} mode`,
+                  },
+                ]}
+              />
+            )}
+          </ThemedVisualCard>
 
-          <VisualCard caption="Completion screens — mobile, dark mode" pad="p-4 sm:p-6">
-            <CaseStudyMediaGallery
-              columns={2}
-              maxWidth={520}
-              gapClassName="gap-3 sm:gap-4"
-              items={[
-                {
-                  src: '/case-studies/focus-coach-achievements/mobile-dm-completion-streak.png',
-                  alt: 'Mobile dark mode completion screen with all-time stats and week tracker',
-                  caption: 'Week Tracker — mobile, dark mode',
-                },
-                {
-                  src: '/case-studies/focus-coach-achievements/mobile-dm-completion-quote.png',
-                  alt: 'Mobile dark mode completion screen with all-time stats and course quote',
-                  caption: 'Course Quote — mobile, dark mode',
-                },
-              ]}
-            />
-          </VisualCard>
+          <ThemedVisualCard
+            caption={(mode) => `Completion screens — mobile, ${mode} mode`}
+            pad="p-4 sm:p-6"
+          >
+            {(mode) => (
+              <CaseStudyMediaGallery
+                columns={2}
+                maxWidth={520}
+                gapClassName="gap-3 sm:gap-4"
+                items={[
+                  {
+                    src: mobileSrc('completion-streak', mode, '6'),
+                    alt: `Mobile ${mode} mode completion screen with all-time stats and week tracker`,
+                    caption: `Week Tracker — mobile, ${mode} mode`,
+                  },
+                  {
+                    src: mobileSrc('completion-quote', mode, '3'),
+                    alt: `Mobile ${mode} mode completion screen with all-time stats and course quote`,
+                    caption: `Course Quote — mobile, ${mode} mode`,
+                  },
+                ]}
+              />
+            )}
+          </ThemedVisualCard>
 
         </div>
       </section>

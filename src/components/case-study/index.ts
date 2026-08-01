@@ -6,7 +6,7 @@ export { ProsConsCard } from './ProsConsCard';
 export { ObjectiveCard } from './ObjectiveCard';
 export { TwoColumnLayout } from './TwoColumnLayout';
 export { WinningChoiceScrollStars } from './WinningChoiceScrollStars';
-export { CaseStudyMedia, CaseStudyMediaGallery, CaseStudyMediaPlaceholder, MediaTypeBadge } from './CaseStudyMedia';
+export { CaseStudyMedia, CaseStudyMediaGallery, CaseStudyMediaPlaceholder, MediaTypeBadge, LightboxIconButton, LightboxCloseButton } from './CaseStudyMedia';
 export type { CaseStudyMediaType, CaseStudyMediaItem } from './CaseStudyMedia';
 export { MilestoneHeroScreen } from './MilestoneHeroScreen';
 export { FocusStreakScreen } from './FocusStreakScreen';
