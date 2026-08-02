@@ -329,13 +329,22 @@
   }
 }
 
-/* Mobile: fade images in when decoded instead of hard pops (case study drill-down pages). */
+/* Mobile: fade images in when decoded instead of hard pops (case study drill-down pages).
+   Fallback animation forces visibility if JS reveal never runs (e.g. resize race). */
 @media (max-width: 639px) {
   .case-study-content-layer img {
     opacity: 0;
     transition: opacity 0.45s ease-out;
+    animation: cs-img-reveal-fallback 0.01s linear 2.5s forwards;
   }
   .case-study-content-layer img.case-study-img-visible {
+    opacity: 1;
+    animation: none;
+  }
+}
+
+@keyframes cs-img-reveal-fallback {
+  to {
     opacity: 1;
   }
 }

@@ -37,7 +37,7 @@ function PersonalBestRocket() {
   }, []);
 
   if (!svg) {
-    return <div style={{ width: 196, height: 283 }} aria-hidden />;
+    return <div style={{ width: 145, height: 209 }} aria-hidden />;
   }
 
   return (
@@ -105,8 +105,9 @@ export function PersonalBestScreen() {
   return (
     <div ref={ref} className="w-full flex justify-center">
       <div
-        className="relative w-full overflow-hidden rounded-[16px] bg-[#f7f8fa]"
-        style={{ minHeight: 620 }}
+        className="relative flex w-full items-center justify-center overflow-hidden rounded-[16px] bg-[#f7f8fa]"
+        /* Match Milestone live screen height */
+        style={{ height: 587 }}
         aria-label="Personal Best achievement screen — longest session"
       >
         <div className="flex w-full flex-col items-center px-4 py-10 sm:px-8 sm:py-12">
@@ -163,6 +164,8 @@ export function PersonalBestScreen() {
           justify-content: center;
           opacity: 0;
           flex-shrink: 0;
+          width: 145px;
+          height: 209px;
         }
         .pb-rocket-wrap.entering {
           animation: pb-mountain-in 0.78s cubic-bezier(0.34, 1.1, 0.64, 1) forwards;
@@ -170,10 +173,12 @@ export function PersonalBestScreen() {
         .pb-rocket-wrap.visible {
           opacity: 1;
         }
-        .pb-rocket-svg :global(svg) {
+        /* :global — SVG is injected by a child component, so it won't get the jsx hash */
+        .pb-rocket-wrap :global(svg) {
           display: block;
-          width: 196px;
-          height: auto;
+          width: 145px;
+          max-width: 100%;
+          height: 209px;
         }
         .pb-label {
           margin-top: 32px;
@@ -220,6 +225,7 @@ export function PersonalBestScreen() {
         }
         .pb-box {
           width: 132px;
+          max-width: calc(50% - 14px);
           background: #eeeeee;
           border-radius: 8px;
           padding: 12px 0;
@@ -228,6 +234,7 @@ export function PersonalBestScreen() {
           align-items: center;
           gap: 8px;
           box-shadow: 0 0 0 2px #666666;
+          box-sizing: border-box;
         }
         .pb-box.pb-new {
           background: #f1f7fb;
@@ -251,7 +258,7 @@ export function PersonalBestScreen() {
         }
         .pb-continue {
           margin-top: 40px;
-          width: min(408px, 86vw);
+          width: min(408px, 100%);
           height: 48px;
           border: none;
           border-radius: 12px;

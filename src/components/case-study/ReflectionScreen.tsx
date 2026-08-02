@@ -66,6 +66,19 @@ export function ReflectionScreen({
   const [reflShow, setReflShow] = useState(false);
   const [btnEntered, setBtnEntered] = useState([false, false, false, false]);
   const [confirming, setConfirming] = useState<number | null>(null);
+  const stageRef = useRef<HTMLDivElement>(null);
+  /** True when responses use 2×2 — needs a taller standalone stage. */
+  const [stackResponses, setStackResponses] = useState(false);
+
+  useEffect(() => {
+    const el = stageRef.current;
+    if (!el) return;
+    const measure = () => setStackResponses(el.clientWidth < 680);
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
 
   useEffect(() => {
     if (!inView) return;
@@ -150,10 +163,14 @@ export function ReflectionScreen({
       className={embedded ? 'absolute inset-0' : 'w-full flex justify-center'}
     >
       <div
+        ref={stageRef}
         className={[
           'refl-stage relative w-full overflow-hidden bg-[#f7f8fa]',
-          embedded ? 'h-full' : 'rounded-[16px]',
-        ].join(' ')}
+          embedded ? 'refl-stage-embedded h-full' : 'rounded-[16px]',
+          stackResponses ? 'refl-stage-stacked' : '',
+        ]
+          .filter(Boolean)
+          .join(' ')}
         style={embedded ? undefined : { height: 640 }}
         aria-label="Redesigned personal reflection screen"
       >
@@ -243,16 +260,32 @@ export function ReflectionScreen({
                   </button>
                 ))}
               </div>
-              <button type="button" className="refl-skip" tabIndex={-1}>
-                skip &amp; discard
-              </button>
+              {!embedded ? (
+                <button type="button" className="refl-skip" tabIndex={-1}>
+                  skip &amp; discard
+                </button>
+              ) : null}
             </div>
           </div>
         </div>
+        {embedded ? (
+          <button
+            type="button"
+            className={`refl-skip refl-skip-docked ${reflShow ? 'refl-skip-visible' : ''}`}
+            tabIndex={-1}
+            aria-hidden={!reflShow}
+          >
+            skip &amp; discard
+          </button>
+        ) : null}
       </div>
 
       <style jsx>{`
         /* Handoff layout: 190px ring starts dead-center, then content expands upward */
+        .refl-stage {
+          container-type: inline-size;
+          container-name: refl;
+        }
         .refl-content-handoff {
           position: absolute;
           left: 50%;
@@ -272,6 +305,27 @@ export function ReflectionScreen({
           padding-bottom: 32px;
           max-height: calc(100% - 40px);
           overflow-y: auto;
+        }
+        .refl-stage-embedded .refl-content-handoff.refl-content-expanded {
+          padding-bottom: 56px;
+        }
+        /* Slightly tighter 2×2 so content fits without an oversized stage */
+        .refl-stage-stacked .refl-body {
+          gap: 16px;
+          padding-top: 16px;
+        }
+        .refl-stage-stacked .refl-fbtn {
+          padding: 18px 10px;
+          min-height: 72px;
+          font-size: 14px;
+        }
+        .refl-stage-stacked .refl-question {
+          font-size: 17px;
+        }
+        .refl-stage-stacked .refl-content-handoff.refl-content-expanded {
+          padding-bottom: 24px;
+          top: 28px;
+          max-height: calc(100% - 28px);
         }
         .refl-circle {
           width: 150px;
@@ -431,7 +485,7 @@ export function ReflectionScreen({
           transition: max-height 0.75s ease, opacity 0.55s ease;
         }
         .refl-cloak.show {
-          max-height: 480px;
+          max-height: none;
           opacity: 1;
         }
         .refl-body {
@@ -450,16 +504,27 @@ export function ReflectionScreen({
           text-align: center;
         }
         .refl-btn-row {
-          display: flex;
+          /* 2×2 by default so we never wrap to a lonely 3+1 row.
+             Jump straight to 4-across only when all four fit. */
+          display: grid;
+          grid-template-columns: repeat(2, 148px);
+          grid-auto-rows: 1fr;
+          align-items: stretch;
           gap: 12px;
           padding: 8px 4px;
-          flex-wrap: wrap;
           justify-content: center;
           width: 100%;
+        }
+        @container refl (min-width: 680px) {
+          .refl-btn-row {
+            grid-template-columns: repeat(4, 148px);
+          }
         }
         .refl-fbtn {
           position: relative;
           width: 148px;
+          height: 100%;
+          min-height: 88px;
           background: #fff;
           border: 1.5px solid #d8d8d8;
           border-radius: 10px;
@@ -475,6 +540,7 @@ export function ReflectionScreen({
           padding: 28px 12px;
           line-height: 1.35;
           outline: none;
+          box-sizing: border-box;
         }
         .refl-fbtn.entered {
           opacity: 1;
@@ -547,6 +613,20 @@ export function ReflectionScreen({
           color: #5b5b5b;
           cursor: default;
           padding: 2px 0;
+          flex-shrink: 0;
+        }
+        .refl-skip-docked {
+          position: absolute;
+          left: 50%;
+          bottom: 20px;
+          transform: translateX(-50%);
+          z-index: 4;
+          opacity: 0;
+          pointer-events: none;
+          transition: opacity 0.45s ease;
+        }
+        .refl-skip-docked.refl-skip-visible {
+          opacity: 1;
         }
         @keyframes refl-stat-in {
           to {
@@ -580,14 +660,31 @@ export function ReflectionScreen({
             height: 88px;
           }
           .refl-fbtn {
-            width: auto;
-            flex: 1 1 calc(50% - 6px);
-            max-width: 200px;
+            width: 100%;
+            max-width: none;
+            height: 100%;
             font-size: 13px;
-            padding: 22px 10px;
+            padding: 20px 8px;
+          }
+          .refl-badge {
+            width: 28px;
+            height: 28px;
+            font-size: 12px;
+            top: -6px;
+            right: -6px;
           }
           .refl-question {
             font-size: 17px;
+          }
+          .refl-body {
+            gap: 18px;
+            padding-top: 24px;
+          }
+          .refl-btn-row {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 8px;
+            padding: 4px 2px;
+            max-width: 360px;
           }
         }
         @media (prefers-reduced-motion: reduce) {

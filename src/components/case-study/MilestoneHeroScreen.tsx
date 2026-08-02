@@ -4,12 +4,12 @@ import { useEffect, useRef, useState, type CSSProperties, type RefObject } from 
 
 type NodeState = 'done' | 'next' | 'future';
 
-const NODES: { label: string; left: number }[] = [
-  { label: '1', left: 12 },
-  { label: '5', left: 106 },
-  { label: '10', left: 200 },
-  { label: '25', left: 294 },
-  { label: '50', left: 388 },
+const NODES: { label: string; leftPct: number }[] = [
+  { label: '1', leftPct: 3 },
+  { label: '5', leftPct: 26.5 },
+  { label: '10', leftPct: 50 },
+  { label: '25', leftPct: 73.5 },
+  { label: '50', leftPct: 97 },
 ];
 
 const SPARKLES = [
@@ -93,8 +93,8 @@ export function MilestoneHeroScreen({
   const [showLabel, setShowLabel] = useState(false);
   const [showTitle, setShowTitle] = useState(false);
   const [showProgress, setShowProgress] = useState(false);
-  const [fillWidth, setFillWidth] = useState(200);
-  const [highlightWidth, setHighlightWidth] = useState(188);
+  const [fillWidth, setFillWidth] = useState('50%');
+  const [highlightWidth, setHighlightWidth] = useState('47%');
   const [node25, setNode25] = useState<NodeState>('next');
   const [node50, setNode50] = useState<NodeState>('future');
   const [node25Pop, setNode25Pop] = useState(false);
@@ -123,8 +123,8 @@ export function MilestoneHeroScreen({
       setShowLabel(false);
       setShowTitle(false);
       setShowProgress(false);
-      setFillWidth(200);
-      setHighlightWidth(188);
+      setFillWidth('50%');
+      setHighlightWidth('47%');
       setNode25('next');
       setNode50('future');
       setNode25Pop(false);
@@ -147,8 +147,8 @@ export function MilestoneHeroScreen({
     later(() => setShowTitle(true), s(886));
     later(() => setShowProgress(true), s(1186));
     later(() => {
-      setFillWidth(294);
-      setHighlightWidth(282);
+      setFillWidth('73.5%');
+      setHighlightWidth('70.5%');
     }, s(1266));
     later(() => {
       setNode25('done');
@@ -189,13 +189,15 @@ export function MilestoneHeroScreen({
           'relative w-full overflow-hidden bg-[#f0f1f2]',
           embedded ? 'h-full max-w-none' : 'max-w-[960px] rounded-[24px]',
         ].join(' ')}
-        style={embedded ? undefined : { minHeight: 560 }}
+        style={embedded ? undefined : { height: 587 }}
         aria-label="Milestone achievement screen — 25 sessions completed"
       >
         <div
           className={[
             'flex flex-col items-center px-6',
-            embedded ? 'pt-10 pb-[100px] sm:pt-12' : 'py-12 sm:py-16',
+            // Embedded (Final Design EOS flow): vertically center the mountain→progress
+            // group in the space above the docked Continue button.
+            embedded ? 'h-full justify-center box-border pb-[100px]' : 'py-12 sm:py-16',
           ].join(' ')}
         >
           <div
@@ -230,7 +232,7 @@ export function MilestoneHeroScreen({
                     ]
                       .filter(Boolean)
                       .join(' ')}
-                    style={{ left: node.left }}
+                    style={{ left: `${node.leftPct}%` }}
                   >
                     {state === 'next' ? <div className="ms-node-next-ring" /> : null}
                     {state === 'done' ? (
@@ -300,6 +302,11 @@ export function MilestoneHeroScreen({
           align-items: center;
           justify-content: center;
           opacity: 0;
+          align-self: center;
+          margin-left: auto;
+          margin-right: auto;
+          width: 264px;
+          max-width: 100%;
         }
         .ms-mountain-wrap.ms-entering {
           animation: ms-mountain-in 0.624s cubic-bezier(0.34, 1.1, 0.64, 1) forwards;
@@ -307,10 +314,13 @@ export function MilestoneHeroScreen({
         .ms-mountain-wrap.ms-visible {
           opacity: 1;
         }
-        .ms-mountain-svg :global(svg) {
+        /* :global — SVG is injected by a child component, so it won't get the jsx hash */
+        .ms-mountain-wrap :global(svg) {
           display: block;
           width: 264px;
+          max-width: 100%;
           height: auto;
+          margin: 0 auto;
         }
         .ms-label {
           margin-top: 32px;
@@ -323,6 +333,7 @@ export function MilestoneHeroScreen({
           opacity: 0;
           transform: translateY(10px);
           transition: opacity 0.45s ease, transform 0.45s cubic-bezier(0.34, 1.2, 0.64, 1);
+          align-self: center;
         }
         .ms-title {
           margin-top: 4px;
@@ -333,6 +344,7 @@ export function MilestoneHeroScreen({
           opacity: 0;
           transform: translateY(10px);
           transition: opacity 0.45s ease, transform 0.45s cubic-bezier(0.34, 1.2, 0.64, 1);
+          align-self: center;
         }
         .ms-label.ms-show,
         .ms-title.ms-show,
@@ -342,24 +354,22 @@ export function MilestoneHeroScreen({
         }
         .ms-progress-wrap {
           margin-top: 24px;
+          margin-left: auto;
+          margin-right: auto;
           position: relative;
+          width: min(400px, 100%);
+          max-width: 400px;
+          padding: 0 12px;
+          box-sizing: border-box;
           opacity: 0;
           transform: translateY(10px);
           transition: opacity 0.55s ease, transform 0.55s cubic-bezier(0.34, 1.2, 0.64, 1);
+          align-self: center;
         }
         .ms-progress-meter {
           position: relative;
-          width: 400px;
+          width: 100%;
           height: 47px;
-        }
-        @media (max-width: 480px) {
-          .ms-progress-wrap {
-            transform: scale(0.82);
-            transform-origin: top center;
-          }
-          .ms-progress-wrap.ms-show {
-            transform: scale(0.82) translateY(0);
-          }
         }
         .ms-track {
           position: absolute;
@@ -421,6 +431,8 @@ export function MilestoneHeroScreen({
         .ms-node-label {
           position: absolute;
           top: 30px;
+          left: 50%;
+          transform: translateX(-50%);
           font-size: 14px;
           font-weight: 600;
           letter-spacing: 0.33px;
@@ -454,7 +466,7 @@ export function MilestoneHeroScreen({
         }
         .ms-continue {
           margin-top: 40px;
-          width: min(408px, 86vw);
+          width: min(408px, 100%);
           height: 48px;
           border: none;
           border-radius: 12px;

@@ -66,11 +66,10 @@ BAR 9000 is a personal portfolio website for Bryce, a product designer. The site
    - `BackgroundImage.tsx` - Time-based background images
 
 3. **Case Study Components** (`src/components/case-study/`)
-   - `SectionIndicator.tsx` - Section label with dot indicator
-   - `ImageCard.tsx` - Image with gradient background and caption
-   - `ObjectiveCard.tsx` - Objective display card
-   - `TwoColumnLayout.tsx` - Two-column flex layout
-   - `ProsConsCard.tsx` - Pros/cons comparison card
+   - Shared media: `CaseStudyMedia`, `CaseStudyMediaGallery`, placeholders
+   - Focus Coach live screens: reflection, milestone, streak, personal best, completion, end-of-session flow
+   - Older helpers: `SectionIndicator`, `ImageCard`, `ObjectiveCard`, `TwoColumnLayout`, `ProsConsCard`
+   - Page-local patterns for Focus Coach (theme toggle, flow tips, ImageViewer) live in `focus-coach-achievements/page.tsx` — see `focus-coach-achievements-context.md`
 
 ### Data Model
 
@@ -136,8 +135,10 @@ AI-powered chat endpoint.
 BAR 9000/
 ├── public/
 │   ├── backgrounds/         # Time-of-day background images
+│   ├── case-studies/
+│   │   └── focus-coach-achievements/  # Focus Coach case study assets (GIFs, mobile dm/lm, specs)
 │   ├── images/
-│   │   └── case-studies/    # Case study images
+│   │   └── case-studies/    # Other case study images
 │   └── *.svg                # Icons and logos
 ├── src/
 │   ├── app/                 # Next.js App Router pages
@@ -145,25 +146,29 @@ BAR 9000/
 │   │   │   └── chat/        # Chat API route
 │   │   ├── about/           # About page
 │   │   ├── case-studies/
-│   │   │   ├── [slug]/      # Dynamic case study route
-│   │   │   └── finding-focus-ai-assistant/  # Finding Focus AI Assistant case study
+│   │   │   ├── finding-focus-ai-assistant/
+│   │   │   ├── finding-focus-landing-page/
+│   │   │   └── focus-coach-achievements/  # End-of-session redesign case study
 │   │   ├── layout.tsx       # Root layout
 │   │   ├── page.tsx         # Home page
 │   │   └── globals.css      # Global styles
 │   ├── components/
 │   │   ├── chat/            # Chat interface components
 │   │   ├── layout/          # Layout components
-│   │   └── case-study/      # Case study components
+│   │   └── case-study/      # Shared case study media / live screens
 │   ├── data/
 │   │   └── conversationFlows.ts  # Fallback chat responses
 │   ├── hooks/
 │   │   ├── useChat.ts       # Chat API hook
+│   │   ├── useBodyScrollLock.ts
 │   │   └── useTimeOfDay.ts  # Time-based theming hook
 │   ├── lib/
 │   │   └── utils.ts         # Utility functions (cn)
 │   ├── styles/              # Additional styles
 │   └── types/
 │       └── index.ts         # TypeScript type definitions
+├── focus-coach-case-study-copy.md          # 1:1 page copy export
+├── focus-coach-achievements-context.md     # Agent context for Focus Coach work
 ├── .env.local               # Environment variables (not committed)
 ├── PLANNING.md              # This file
 ├── TASK.md                  # Task tracking
@@ -171,6 +176,13 @@ BAR 9000/
 ├── tailwind.config.ts
 └── tsconfig.json
 ```
+
+### Focus Coach Achievements (active case study)
+
+- **Route:** `/case-studies/focus-coach-achievements`
+- **Implementation:** mostly self-contained in `page.tsx` (VisualCard, ThemedVisualCard light/dark toggle, ImageViewer, flow diagram, etc.) plus live screens from `@/components/case-study`
+- **Copy source of truth for text:** keep page and `focus-coach-case-study-copy.md` in sync; use `focus-coach-achievements-context.md` for decisions/assets/patterns
+- **Accent:** `#006efe` (Finding Focus blue)
 
 ---
 
@@ -295,9 +307,9 @@ When implementing designs from Figma:
 ## Future Considerations
 
 ### Near-term
-- [ ] Complete all case study sections from Figma designs
-- [ ] Add remaining case studies (Project Two, Project Three)
-- [ ] Mobile responsiveness polish
+- [ ] Complete remaining Finding Focus AI Assistant sections from Figma
+- [ ] Commit / PR Focus Coach Achievements work currently on `main`
+- [ ] Mobile responsiveness polish across case studies
 - [ ] Accessibility audit and improvements
 
 ### Medium-term

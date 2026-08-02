@@ -378,8 +378,9 @@ function CompletionScreen({
           display: flex;
           flex-direction: column;
           align-items: center;
-          padding: 16px 0 20px;
+          padding: 16px 8px 20px;
           gap: 10px;
+          box-sizing: border-box;
           opacity: 0;
           transform: translateY(16px);
           transition: opacity 0.5s ease, transform 0.55s cubic-bezier(0.34, 1.2, 0.64, 1);
@@ -405,8 +406,9 @@ function CompletionScreen({
         .rv-stat {
           display: flex;
           align-items: baseline;
-          gap: 6px;
-          padding: 0 12px;
+          gap: 4px;
+          padding: 0 8px;
+          min-width: 0;
         }
         .rv-stat-ticker {
           display: inline-flex;
@@ -534,7 +536,8 @@ function CompletionScreen({
           font-weight: 600;
           color: #666;
           text-align: center;
-          width: 249px;
+          width: 100%;
+          max-width: 249px;
           line-height: 1.4;
         }
         .rv-quote-card {
@@ -557,8 +560,10 @@ function CompletionScreen({
           transform: translateY(0) scale(1);
         }
         .rv-quote-text {
-          width: 296px;
-          max-width: 90%;
+          width: 100%;
+          max-width: 296px;
+          padding: 0 16px;
+          box-sizing: border-box;
           font-size: 16px;
           font-weight: 600;
           letter-spacing: 0.43px;
@@ -568,7 +573,7 @@ function CompletionScreen({
         }
         .rv-continue {
           margin-top: 8px;
-          width: min(408px, 86vw);
+          width: min(408px, 100%);
           height: 48px;
           border: none;
           border-radius: 12px;

@@ -1,5 +1,32 @@
 # TASK.md
 
+## Case Study: Focus Coach Achievements
+
+**Page:** `/case-studies/focus-coach-achievements` · **Branch:** `main`  
+**Docs:** `focus-coach-case-study-copy.md` (copy 1:1) · `focus-coach-achievements-context.md` (agent context)
+
+### Completed (through 2026-07-30)
+- [x] Case study page built and linked from homepage / case-studies index
+- [x] Copy synced with live page (`focus-coach-case-study-copy.md`)
+- [x] Student Signal survey chart (Yes / Maybe / No, n = 89)
+- [x] Content Ideas Slack-spec carousel (`ImageViewer` + lightbox)
+- [x] End of Session Logic diagram (4 scenarios, colored nodes, `(i)` tip tooltips)
+- [x] Live animated screens: Milestone, Focus Streak, Personal Best, Completion Week Tracker / Quote
+- [x] Mobile dark-mode mockups (reflection, 3 achievements, 2 completion)
+- [x] Mobile light-mode mockups + per-container sun/moon toggle (`ThemedVisualCard`)
+- [x] Transparent knockout for LM (and prior DM streak) phone canvases
+- [x] Team Presentation section removed (asset retained unused)
+- [x] Outcomes: launch status, signal cards, early −22% reflection result
+- [x] Closing CTA → interactive prototype modal
+
+### Remaining / polish (optional)
+- [ ] Commit Focus Coach changes on a feature branch (currently uncommitted on `main`)
+- [ ] Sync Figma Bryce Active frame to latest page copy if still divergent
+- [ ] Decide whether to delete unused `team-meeting-huddle.png`
+- [ ] Ensure `chrome/` (Chrome for Testing) stays out of git commits
+
+---
+
 ## Case Study: Finding Focus AI Assistant
 
 ### Design Implementation (from Figma)
@@ -14,7 +41,7 @@
 ### Content
 - [ ] Add actual case study images (screenshots, GIFs, videos)
 - [ ] Review and finalize copy for all sections
-- [ ] Add Case Study #2 (placeholder currently)
+- [ ] Add Case Study #2 (placeholder currently) — *partially superseded by Focus Coach Achievements*
 - [ ] Add Case Study #3 (placeholder currently)
 
 ---
@@ -50,6 +77,11 @@
 ---
 
 ## Completed Work
+
+### 2026-07-30 — Focus Coach Achievements
+- [x] Light-mode mobile assets (`mobile-lm-*.png`) + dark/light sun/moon toggles on three containers
+- [x] Toggle UI: filled soft-blue pill, hover state, corner inset so radius doesn’t clip
+- [x] Agent/context markdown updated (`focus-coach-achievements-context.md`, copy doc, this file)
 
 ### 2026-01-27
 - [x] Updated Header section to match Figma design (1200px max-width, 120px padding, gradient background)

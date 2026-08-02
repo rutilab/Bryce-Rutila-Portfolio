@@ -247,13 +247,24 @@
     .question { font-size: 24px; font-weight: 500; color: #111; text-align: center; }
 
     /* ── FOCUS BUTTONS ── */
-    .btn-row { display: flex; gap: 12px; padding: 12px 14px; flex-wrap: wrap; justify-content: center; }
-    @media (max-width: 780px) {
-      .btn-row { width: 100%; padding: 12px 0; }
-      .fbtn { width: auto; flex: 1 1 calc(50% - 6px); max-width: 346px; }
+    .btn-row {
+      display: grid;
+      grid-template-columns: repeat(2, 160px);
+      gap: 12px;
+      padding: 12px 14px;
+      justify-content: center;
+      width: 100%;
+      box-sizing: border-box;
+    }
+    @media (min-width: 780px) {
+      .btn-row { grid-template-columns: repeat(4, 160px); }
+    }
+    @media (max-width: 779px) {
+      .btn-row { width: 100%; padding: 12px 0; grid-template-columns: repeat(2, minmax(0, 1fr)); max-width: 360px; margin: 0 auto; }
+      .fbtn { width: 100%; max-width: none; }
     }
     .fbtn {
-      position: relative; width: 160px;
+      position: relative; width: 160px; box-sizing: border-box;
       background: #fff; border: 1.5px solid #d8d8d8; border-radius: 10px;
       box-shadow: 0 2px 0 0 #d8d8d8; cursor: pointer;
       font-family: 'Montserrat', sans-serif; font-size: 16px; font-weight: 600; color: #222;
@@ -417,7 +428,7 @@
 
     /* ── WEEK CARD ── */
     .week-card {
-      width: 408px; background: #fff; border: 2px solid #d8d8d8;
+      width: 408px; max-width: 100%; background: #fff; border: 2px solid #d8d8d8;
       border-radius: 16px 16px 0 0; overflow: hidden;
       height: 96px; position: relative;
       opacity: 0; transform: translateY(16px);
@@ -865,6 +876,80 @@
     }
     .pb-box.pb-new .pb-box-label { color: #4FA0E6; }
     .pb-box.pb-new .pb-box-value { color: #4FA0E6; }
+
+    /* ═══════════════════════════════════════
+       EMBED MODE (case study live screens)
+       ?embed=streak — loop Focus Streak week screen only
+    ═══════════════════════════════════════ */
+    html.embed-streak,
+    html.embed-streak body {
+      height: 100%;
+      margin: 0;
+      background: #f7f8fa;
+      min-height: 100%;
+      align-items: stretch;
+      overflow: hidden;
+    }
+    html.embed-streak .chooser-screen,
+    html.embed-streak #sessionView,
+    html.embed-streak #completeOverlay,
+    html.embed-streak #milestoneContent,
+    html.embed-streak #pbContent,
+    html.embed-streak #reviewContent,
+    html.embed-streak #endScreen {
+      display: none !important;
+    }
+    html.embed-streak #screen {
+      max-width: none;
+      width: 100%;
+      height: 100%;
+      min-height: 100%;
+      box-sizing: border-box;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: 32px 24px;
+      background: #f7f8fa;
+      overflow: hidden;
+    }
+    html.embed-streak #weekContent {
+      display: flex !important;
+      min-height: 0;
+      flex: 0 0 auto;
+      padding-bottom: 0;
+      gap: 28px;
+      justify-content: center;
+    }
+    /* Match Milestone / Personal Best in-flow Continue button */
+    html.embed-streak #finishBtn {
+      position: static !important;
+      left: auto !important;
+      bottom: auto !important;
+      display: block !important;
+      width: min(408px, 100%);
+      max-width: none;
+      height: 48px;
+      /* flex gap (28) + 12 ≈ 40px top spacing like .pb-continue / .ms-continue */
+      margin: 12px auto 0;
+      padding: 0;
+      border-radius: 12px;
+      background: #76bffe;
+      box-shadow: none;
+      font-size: 14px;
+      font-weight: 700;
+      letter-spacing: 0.6px;
+      text-transform: uppercase;
+      color: #fff;
+      opacity: 0;
+      transform: translateY(10px) !important;
+      pointer-events: none;
+      cursor: default;
+      transition: opacity 0.4s ease, transform 0.4s cubic-bezier(0.34, 1.2, 0.64, 1);
+    }
+    html.embed-streak #finishBtn.show {
+      opacity: 1 !important;
+      transform: translateY(0) !important;
+    }
 
   </style>
 </head>
@@ -1976,6 +2061,8 @@
 
   /* ── CONTINUE BUTTON ── */
   $('finishBtn').addEventListener('click', () => {
+    // Decorative in case-study embeds (matches Milestone / Personal Best pointer-events: none)
+    if (new URLSearchParams(window.location.search).get('embed')) return;
     if (currentPhase === 'milestone')    { transitionToReview('milestone');    return; }
     if (currentPhase === 'week')         { transitionToReview('streak');       return; }
     if (currentPhase === 'personalbest') { transitionToReview('personalbest'); return; }
@@ -2013,7 +2100,60 @@
   });
   $('skipBtn').addEventListener('click', transitionFromSession);
 
-  /* The chooser is shown first; the session player + completion run once a flow is picked. */
+  /* The chooser is shown first; the session player + completion run once a flow is picked.
+     Case study embed (?embed=streak) skips the demo chrome and loops the week screen. */
+  const embedMode = new URLSearchParams(window.location.search).get('embed');
+
+  function resetWeekScreenForEmbed() {
+    const calWrap = $('calendarWrap');
+    calWrap.classList.remove('cal-entering', 'cal-visible');
+    calWrap.style.opacity = '';
+    $('streakTitle').classList.remove('show');
+    ['dc-m', 'dc-tu', 'dc-w', 'dc-th'].forEach((id) => {
+      const el = $(id);
+      el.classList.remove('circ-orange');
+      el.classList.add('circ-done');
+      el.style.animation = '';
+    });
+    $('dc-f').classList.remove('circ-orange');
+    $('dc-f').classList.add('circ-pending');
+    $('dc-f').style.animation = '';
+    ['lbl-m', 'lbl-tu', 'lbl-w', 'lbl-th'].forEach((id) => {
+      $(id).classList.remove('lbl-orange');
+      $(id).classList.add('lbl-done');
+    });
+    $('lbl-f').classList.remove('lbl-orange');
+    $('lbl-f').classList.add('lbl-pending');
+    const fw = $('flameIconWrap');
+    const fp = $('flamePath');
+    fw.classList.remove('flame-pop', 'flame-spin', 'flame-slam');
+    fw.style.transform = '';
+    fp.style.fill = fp.style.fillOpacity = fp.style.strokeOpacity = '';
+    $('weekCard').classList.remove('in', 'expanded');
+    $('finishBtn').classList.remove('show');
+  }
+
+  async function runEmbedStreakLoop() {
+    document.documentElement.classList.add('embed-streak');
+    $('chooserScreen').classList.add('hidden');
+    $('sessionView').style.display = 'none';
+    $('completeOverlay').style.display = 'none';
+    $('weekContent').style.display = 'flex';
+    // Place Continue in the week column so it matches Milestone / Personal Best layout
+    $('weekContent').appendChild($('finishBtn'));
+    flowMode = 'streak';
+    currentPhase = 'week';
+
+    for (;;) {
+      resetWeekScreenForEmbed();
+      await animateWeekIn();
+      await wait(2800);
+    }
+  }
+
+  if (embedMode === 'streak') {
+    runEmbedStreakLoop();
+  }
 </script>
 
 </body>

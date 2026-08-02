@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import type { CSSProperties, ReactNode, RefObject } from 'react';
+import type { CSSProperties, MutableRefObject, ReactNode, RefObject } from 'react';
 import { createPortal } from 'react-dom';
 import KeyboardDoubleArrowDownOutlined from '@mui/icons-material/KeyboardDoubleArrowDownOutlined';
 import Check from '@mui/icons-material/Check';
@@ -9,7 +9,8 @@ import DarkMode from '@mui/icons-material/DarkMode';
 import DarkModeOutlined from '@mui/icons-material/DarkModeOutlined';
 import LightMode from '@mui/icons-material/LightMode';
 import LightModeOutlined from '@mui/icons-material/LightModeOutlined';
-import { CaseStudyMedia, CaseStudyMediaGallery, CaseStudyMediaPlaceholder, CompletionQuoteScreen, CompletionWeekTrackerScreen, EndOfSessionFlow, FocusStreakScreen, LightboxCloseButton, LightboxIconButton, MilestoneHeroScreen, NorthStarAnimatedIcon, PersonalBestScreen, ReflectionScreen } from '@/components/case-study';
+import { CaseStudyMedia, CaseStudyMediaGallery, CaseStudyMediaPlaceholder, CompletionQuoteScreen, CompletionWeekTrackerScreen, EndOfSessionFlow, FocusStreakScreen, LightboxCloseButton, LightboxIconButton, LiveScreenFit, MediaCarouselStage, MilestoneHeroScreen, NorthStarAnimatedIcon, PersonalBestScreen, ReflectionScreen, SlideCarousel } from '@/components/case-study';
+import type { CaseStudyMediaItem } from '@/components/case-study';
 import { useBodyScrollLock } from '@/hooks/useBodyScrollLock';
 
 type ThemeMode = 'light' | 'dark';
@@ -220,13 +221,19 @@ function ThemedVisualCard({
   caption,
   pad = 'p-4 sm:p-8',
   defaultMode = 'dark',
+  mode: controlledMode,
+  onModeChange,
 }: {
   children: (mode: ThemeMode) => ReactNode;
   caption: (mode: ThemeMode) => string;
   pad?: string;
   defaultMode?: ThemeMode;
+  mode?: ThemeMode;
+  onModeChange?: (mode: ThemeMode) => void;
 }) {
-  const [mode, setMode] = useState<ThemeMode>(defaultMode);
+  const [internalMode, setInternalMode] = useState<ThemeMode>(defaultMode);
+  const mode = controlledMode ?? internalMode;
+  const setMode = onModeChange ?? setInternalMode;
   return (
     <div>
       <div className="relative rounded-[24px] overflow-hidden" style={{ background: BLOCK_BG }}>
@@ -234,7 +241,7 @@ function ThemedVisualCard({
         <div className="absolute z-10" style={{ top: 16, right: 16 }}>
           <ThemeModeToggle
             mode={mode}
-            onToggle={() => setMode((m) => (m === 'light' ? 'dark' : 'light'))}
+            onToggle={() => setMode(mode === 'light' ? 'dark' : 'light')}
           />
         </div>
         {/*
@@ -255,6 +262,7 @@ function ThemedVisualCard({
                     opacity: activeLayer ? 1 : 0,
                     pointerEvents: activeLayer ? 'auto' : 'none',
                     transition: 'opacity 0.35s ease',
+                    visibility: activeLayer ? 'visible' : 'hidden',
                   }}
                 >
                   {children(m)}
@@ -265,6 +273,84 @@ function ThemedVisualCard({
         </div>
       </div>
       <p className="text-[13px] text-[#999] text-center mt-3">{caption(mode)}</p>
+    </div>
+  );
+}
+
+/**
+ * Side-by-side phone mockups until the row no longer fits, then Content Ideas–
+ * style carousel (one at a time with arrows). Light/dark mode is shared so the
+ * carousel index is preserved across theme toggles.
+ */
+function ThemedMockupCarousel({
+  caption,
+  buildItems,
+  columns,
+  desktopMaxWidth,
+  carouselMaxWidth = 260,
+}: {
+  caption: (mode: ThemeMode) => string;
+  buildItems: (mode: ThemeMode) => CaseStudyMediaItem[];
+  columns: 2 | 3;
+  desktopMaxWidth: number;
+  carouselMaxWidth?: number;
+}) {
+  const [mode, setMode] = useState<ThemeMode>('dark');
+  const [sideBySide, setSideBySide] = useState(true);
+  const wrapRef = useRef<HTMLDivElement>(null);
+  const items = buildItems(mode);
+
+  // Minimum container width to keep all phones on one row (before switching to carousel).
+  const MIN_PHONE = 160;
+  const GAP = 12;
+  const PAD = 40;
+  const minSideBySide = columns * MIN_PHONE + (columns - 1) * GAP + PAD;
+
+  useEffect(() => {
+    const el = wrapRef.current;
+    if (!el) return;
+    const measure = () => {
+      setSideBySide(el.clientWidth >= minSideBySide);
+    };
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [minSideBySide]);
+
+  return (
+    <div ref={wrapRef} className="w-full">
+      {sideBySide ? (
+        <ThemedVisualCard
+          caption={caption}
+          mode={mode}
+          onModeChange={setMode}
+          pad="p-4 sm:p-6"
+        >
+          {(m) => (
+            <CaseStudyMediaGallery
+              columns={columns}
+              maxWidth={desktopMaxWidth}
+              gapClassName="gap-3 sm:gap-4"
+              preventStack
+              items={buildItems(m)}
+            />
+          )}
+        </ThemedVisualCard>
+      ) : (
+        <MediaCarouselStage
+          items={items}
+          caption={caption(mode)}
+          maxWidth={carouselMaxWidth}
+          background={BLOCK_BG}
+          topRight={
+            <ThemeModeToggle
+              mode={mode}
+              onToggle={() => setMode((m) => (m === 'light' ? 'dark' : 'light'))}
+            />
+          }
+        />
+      )}
     </div>
   );
 }
@@ -289,10 +375,23 @@ function ImageViewer({ items }: { items: { src: string; alt: string; label: stri
   const [current, setCurrent] = useState(0);
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [viewport, setViewport] = useState<'xs' | 'sm' | 'md'>('md');
   const item = items[current];
 
   useEffect(() => {
     setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    const update = () => {
+      const w = window.innerWidth;
+      if (w < 640) setViewport('xs');
+      else if (w < 768) setViewport('sm');
+      else setViewport('md');
+    };
+    update();
+    window.addEventListener('resize', update);
+    return () => window.removeEventListener('resize', update);
   }, []);
 
   useBodyScrollLock(lightboxOpen && mounted);
@@ -308,14 +407,34 @@ function ImageViewer({ items }: { items: { src: string; alt: string; label: stri
     return () => window.removeEventListener('keydown', onKey);
   }, [lightboxOpen, items.length]);
 
+  const stageHeight = viewport === 'xs' ? 260 : viewport === 'sm' ? 400 : 420;
+  const stagePad = viewport === 'xs' ? 16 : 32;
+
+  useEffect(() => {
+    // Self-reveal for mobile fade CSS (same system as CaseStudyMedia)
+    const imgs = document.querySelectorAll('.case-study-content-layer img');
+    imgs.forEach((el) => {
+      const img = el as HTMLImageElement;
+      const show = () => {
+        img.classList.add('case-study-img-visible');
+        img.dataset.csReveal = '1';
+      };
+      if (img.complete) show();
+      else {
+        img.addEventListener('load', show, { once: true });
+        img.addEventListener('error', show, { once: true });
+      }
+    });
+  }, [current, item.src]);
+
   return (
     <>
       <div>
         <div
-          className="rounded-[24px] overflow-hidden relative h-[500px] md:h-[420px]"
-          style={{ background: BLOCK_BG }}
+          className="rounded-[24px] overflow-hidden relative"
+          style={{ background: BLOCK_BG, height: stageHeight }}
         >
-          <div className="absolute inset-0 flex items-center justify-center p-6 sm:p-8">
+          <div className="absolute inset-0 flex items-center justify-center" style={{ padding: stagePad }}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               role="button"
@@ -414,7 +533,8 @@ function ImageViewer({ items }: { items: { src: string; alt: string; label: stri
             flexDirection: 'column',
             alignItems: 'center',
             justifyContent: 'center',
-            padding: '64px 84px 40px',
+            /* Tight side padding on XS so arrows don't steal width from the image */
+            padding: viewport === 'xs' ? '56px 12px 32px' : '64px 84px 40px',
             boxSizing: 'border-box',
             cursor: 'zoom-out',
             overflow: 'hidden',
@@ -425,19 +545,31 @@ function ImageViewer({ items }: { items: { src: string; alt: string; label: stri
             <>
               <LightboxIconButton
                 label="Previous"
+                size={viewport === 'xs' ? 32 : 44}
                 onClick={() => setCurrent((c) => (c - 1 + items.length) % items.length)}
-                position={{ top: '50%', transform: 'translateY(-50%)', left: 20, visibility: current > 0 ? 'visible' : 'hidden' }}
+                position={{
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  left: viewport === 'xs' ? 6 : 20,
+                  visibility: current > 0 ? 'visible' : 'hidden',
+                }}
               >
-                <svg width="16" height="16" viewBox="0 0 14 14" fill="none">
+                <svg width={viewport === 'xs' ? 13 : 16} height={viewport === 'xs' ? 13 : 16} viewBox="0 0 14 14" fill="none">
                   <path d="M9 11L4 7l5-4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
               </LightboxIconButton>
               <LightboxIconButton
                 label="Next"
+                size={viewport === 'xs' ? 32 : 44}
                 onClick={() => setCurrent((c) => (c + 1) % items.length)}
-                position={{ top: '50%', transform: 'translateY(-50%)', right: 20, visibility: current < items.length - 1 ? 'visible' : 'hidden' }}
+                position={{
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  right: viewport === 'xs' ? 6 : 20,
+                  visibility: current < items.length - 1 ? 'visible' : 'hidden',
+                }}
               >
-                <svg width="16" height="16" viewBox="0 0 14 14" fill="none">
+                <svg width={viewport === 'xs' ? 13 : 16} height={viewport === 'xs' ? 13 : 16} viewBox="0 0 14 14" fill="none">
                   <path d="M5 3l5 4-5 4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
               </LightboxIconButton>
@@ -446,7 +578,7 @@ function ImageViewer({ items }: { items: { src: string; alt: string; label: stri
 
           <div
             onClick={(e) => e.stopPropagation()}
-            style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', cursor: 'default', maxWidth: 'min(88vw, 1200px)' }}
+            style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', cursor: 'default', maxWidth: 'min(92vw, 1200px)' }}
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
@@ -626,7 +758,7 @@ function FocusStreakWeekCard() {
             />
           </svg>
           <div className="flex items-center justify-center px-5 py-4">
-            <p className="w-[249px] text-center text-[14px] font-semibold leading-[1.4] text-[#666]">
+            <p className="w-full max-w-[249px] text-center text-[14px] font-semibold leading-[1.4] text-[#666]">
               Nice job completing a session every day this week!
             </p>
           </div>
@@ -815,7 +947,7 @@ function GoalCards() {
       {GOALS.map((g, i) => (
         <div
           key={g.n}
-          className="rounded-[20px] p-6 flex flex-col gap-3"
+          className="rounded-[20px] p-4 sm:p-6 flex flex-col gap-3"
           style={{
             background: CARD_LIGHT,
             opacity: inView ? 1 : 0,
@@ -853,7 +985,7 @@ function Callout({
   const bar = isDanger ? DANGER : ACCENT_DARK;
   return (
     <div
-      className="flex items-stretch gap-5 rounded-[20px] p-6 max-w-[820px]"
+      className="flex items-stretch gap-4 sm:gap-5 rounded-[20px] p-4 sm:p-6 max-w-[820px]"
       style={{ background: bg, ...(isDanger ? {} : { border: `1px solid ${BORDER}` }) }}
     >
       <div style={{ width: 2, borderRadius: 2, background: bar, flexShrink: 0 }} />
@@ -1048,7 +1180,7 @@ function FlowNodeChip({ node }: { node: FlowNode }) {
   const hasSub = Boolean(node.sub);
   return (
     <div
-      className="flex flex-col items-center justify-center rounded-[12px] px-6"
+      className="flex flex-col items-center justify-center rounded-[12px] px-6 shrink-0"
       style={{
         background: `${color}1f`,
         minHeight: 62,
@@ -1082,9 +1214,26 @@ function FlowArrow({ active }: { active: boolean }) {
   );
 }
 
+/** Design width of the nowrap flow chart — scales as a unit below this. */
+const FLOW_DIAGRAM_MIN_W = 680;
+
 function EndOfSessionFlowDiagram() {
   const [ref, inView] = useInView<HTMLDivElement>(0.3);
   const [pulseStep, setPulseStep] = useState(0);
+  const [open, setOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
+  const outerRef = useRef<HTMLDivElement>(null);
+  const innerRef = useRef<HTMLDivElement>(null);
+  const lightboxFrameRef = useRef<HTMLDivElement>(null);
+  const lightboxInnerRef = useRef<HTMLDivElement>(null);
+  const [scale, setScale] = useState(1);
+  const [innerHeight, setInnerHeight] = useState(0);
+  const [lightboxScale, setLightboxScale] = useState(1);
+  const [lightboxInnerHeight, setLightboxInnerHeight] = useState(0);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     if (!inView) return;
@@ -1094,33 +1243,176 @@ function EndOfSessionFlowDiagram() {
     return () => window.clearInterval(id);
   }, [inView]);
 
+  useEffect(() => {
+    const outer = outerRef.current;
+    const inner = innerRef.current;
+    if (!outer || !inner) return;
+
+    const measure = () => {
+      const naturalW = Math.max(inner.scrollWidth, FLOW_DIAGRAM_MIN_W);
+      const available = outer.clientWidth;
+      const next = available > 0 && available < naturalW ? available / naturalW : 1;
+      setScale(next);
+      setInnerHeight(inner.offsetHeight);
+    };
+
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(outer);
+    return () => ro.disconnect();
+  }, []);
+
+  useEffect(() => {
+    if (!open) return;
+    const frame = lightboxFrameRef.current;
+    const inner = lightboxInnerRef.current;
+    if (!frame || !inner) return;
+
+    const measure = () => {
+      const naturalW = Math.max(inner.scrollWidth, FLOW_DIAGRAM_MIN_W);
+      const available = frame.clientWidth;
+      const next = available > 0 && available < naturalW ? available / naturalW : 1;
+      setLightboxScale(next);
+      setLightboxInnerHeight(inner.offsetHeight);
+    };
+
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(frame);
+    window.addEventListener('resize', measure);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener('resize', measure);
+    };
+  }, [open]);
+
+  useBodyScrollLock(open && mounted);
+
+  useEffect(() => {
+    if (!open) return;
+    function onKey(e: KeyboardEvent) {
+      if (e.key === 'Escape') setOpen(false);
+    }
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [open]);
+
+  function renderChartBody(stopTipPropagate: boolean) {
+    return (
+      <>
+        {FLOW_SCENARIOS.map(sc => (
+          <div key={sc.label} className="flex flex-col items-start gap-3">
+            <div className="flex items-center gap-1.5">
+              <span className="text-[15px] font-semibold text-[#4a4a4a] whitespace-nowrap">{sc.label}</span>
+              {stopTipPropagate ? (
+                <span onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
+                  <FlowInfoTip text={sc.info} />
+                </span>
+              ) : (
+                <FlowInfoTip text={sc.info} />
+              )}
+            </div>
+            {/* nowrap so rows never stack — the whole chart scales instead */}
+            <div className="flex items-center gap-3 flex-nowrap">
+              {sc.nodes.map((node, i) => {
+                const arrowActive = inView && i > 0 && pulseStep === i - 1;
+                return (
+                  <div key={i} className="flex items-center gap-3 shrink-0">
+                    {i > 0 && <FlowArrow active={arrowActive} />}
+                    <FlowNodeChip node={node} />
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        ))}
+      </>
+    );
+  }
+
   return (
-    <div
-      ref={ref}
-      className="rounded-[24px] flex flex-col items-start gap-7 px-6 sm:px-10 py-8"
-      style={{ background: BLOCK_BG }}
-    >
-      {FLOW_SCENARIOS.map(sc => (
-        <div key={sc.label} className="flex flex-col items-start gap-3">
-          <div className="flex items-center gap-1.5">
-            <span className="text-[15px] font-semibold text-[#4a4a4a]">{sc.label}</span>
-            <FlowInfoTip text={sc.info} />
-          </div>
-          <div className="flex items-center gap-3 flex-wrap">
-            {sc.nodes.map((node, i) => {
-              // Arrow before node i becomes active when pulseStep matches i-1
-              const arrowActive = inView && i > 0 && pulseStep === i - 1;
-              return (
-                <div key={i} className="flex items-center gap-3">
-                  {i > 0 && <FlowArrow active={arrowActive} />}
-                  <FlowNodeChip node={node} />
-                </div>
-              );
-            })}
-          </div>
+    <>
+      <div
+        ref={(node) => {
+          (ref as MutableRefObject<HTMLDivElement | null>).current = node;
+          outerRef.current = node;
+        }}
+        role="button"
+        tabIndex={0}
+        aria-label="Expand end of session logic diagram"
+        onClick={() => setOpen(true)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            setOpen(true);
+          }
+        }}
+        className="rounded-[24px] overflow-hidden w-full"
+        style={{
+          background: BLOCK_BG,
+          height: innerHeight > 0 ? innerHeight * scale : undefined,
+          cursor: 'zoom-in',
+        }}
+      >
+        <div
+          ref={innerRef}
+          className="flex flex-col items-start gap-7 px-10 py-8 box-border"
+          style={{
+            width: FLOW_DIAGRAM_MIN_W,
+            transform: scale < 1 ? `scale(${scale})` : undefined,
+            transformOrigin: 'top left',
+          }}
+        >
+          {renderChartBody(true)}
         </div>
-      ))}
-    </div>
+      </div>
+
+      {open && mounted && createPortal(
+        <div
+          onClick={() => setOpen(false)}
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 9999,
+            background: 'rgba(6, 6, 9, 0.96)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '64px 16px 40px',
+            boxSizing: 'border-box',
+            cursor: 'zoom-out',
+            overflow: 'auto',
+          }}
+        >
+          <LightboxCloseButton onClose={() => setOpen(false)} />
+          <div
+            ref={lightboxFrameRef}
+            onClick={(e) => e.stopPropagation()}
+            className="rounded-[24px] overflow-hidden w-full"
+            style={{
+              /* Solid fill in lightbox — frosted BLOCK_BG reads as transparent on the dark overlay */
+              background: '#e8eef8',
+              cursor: 'default',
+              maxWidth: FLOW_DIAGRAM_MIN_W,
+              height: lightboxInnerHeight > 0 ? lightboxInnerHeight * lightboxScale : undefined,
+            }}
+          >
+            <div
+              ref={lightboxInnerRef}
+              className="flex flex-col items-start gap-7 px-10 py-8 box-border"
+              style={{
+                width: FLOW_DIAGRAM_MIN_W,
+                transform: lightboxScale < 1 ? `scale(${lightboxScale})` : undefined,
+                transformOrigin: 'top left',
+              }}
+            >
+              {renderChartBody(false)}
+            </div>
+          </div>
+        </div>,
+        document.body,
+      )}
+    </>
   );
 }
 
@@ -1137,7 +1429,7 @@ function StudentSurveyChart() {
   return (
     <div
       ref={ref}
-      className="rounded-[20px] bg-white p-6 sm:p-8 flex flex-col gap-6"
+      className="rounded-[20px] bg-white p-4 sm:p-8 flex flex-col gap-6"
       style={{ border: `1px solid ${BORDER}` }}
     >
       <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-2">
@@ -1257,11 +1549,16 @@ function SegmentedMedia({
     maxWidth?: number | string;
     /** Live interactive screen — takes precedence over src / placeholder. */
     content?: ReactNode;
+    /** Content handles its own XS scaling (e.g. iframe embeds). */
+    selfFit?: boolean;
   }[];
 }) {
   const [active, setActive] = useState(0);
   const [visible, setVisible] = useState(true);
   const fadeTimer = useRef<number | null>(null);
+  const tabsRowRef = useRef<HTMLDivElement>(null);
+  const tabsShellRef = useRef<HTMLDivElement>(null);
+  const [tabScale, setTabScale] = useState(1);
   const t = tabs[active];
 
   useEffect(() => {
@@ -1269,6 +1566,26 @@ function SegmentedMedia({
       if (fadeTimer.current != null) window.clearTimeout(fadeTimer.current);
     };
   }, []);
+
+  // Scale the pill row down as a unit instead of wrapping the last tab.
+  useEffect(() => {
+    const row = tabsRowRef.current;
+    const shell = tabsShellRef.current;
+    if (!row || !shell) return;
+    const measure = () => {
+      const available = shell.clientWidth;
+      // Temporarily clear scale to measure intrinsic width
+      const prev = row.style.transform;
+      row.style.transform = 'none';
+      const needed = row.scrollWidth;
+      row.style.transform = prev;
+      setTabScale(available > 0 && needed > available ? available / needed : 1);
+    };
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(shell);
+    return () => ro.disconnect();
+  }, [tabs]);
 
   function switchTab(i: number) {
     if (i === active) return;
@@ -1282,24 +1599,34 @@ function SegmentedMedia({
 
   return (
     <div className="flex flex-col items-center gap-6">
-      <div className="inline-flex items-center gap-1 rounded-full bg-white p-1" style={{ border: `1px solid ${BORDER}` }}>
-        {tabs.map((tab, i) => {
-          const on = i === active;
-          return (
-            <button
-              key={tab.label}
-              onClick={() => switchTab(i)}
-              className="px-4 py-2 rounded-full text-[13px] transition-colors"
-              style={
-                on
-                  ? { background: 'rgba(0,110,254,0.12)', color: ACCENT_DARK, fontWeight: 600 }
-                  : { color: '#545454', fontWeight: 500 }
-              }
-            >
-              {tab.label}
-            </button>
-          );
-        })}
+      <div ref={tabsShellRef} className="w-full flex justify-center overflow-hidden">
+        <div
+          ref={tabsRowRef}
+          className="inline-flex flex-nowrap items-center gap-1 rounded-full bg-white p-1"
+          style={{
+            border: `1px solid ${BORDER}`,
+            transform: tabScale < 1 ? `scale(${tabScale})` : undefined,
+            transformOrigin: 'center center',
+          }}
+        >
+          {tabs.map((tab, i) => {
+            const on = i === active;
+            return (
+              <button
+                key={tab.label}
+                onClick={() => switchTab(i)}
+                className="shrink-0 whitespace-nowrap px-3 sm:px-4 py-2 rounded-full text-[12px] sm:text-[13px] transition-colors"
+                style={
+                  on
+                    ? { background: 'rgba(0,110,254,0.12)', color: ACCENT_DARK, fontWeight: 600 }
+                    : { color: '#545454', fontWeight: 500 }
+                }
+              >
+                {tab.label}
+              </button>
+            );
+          })}
+        </div>
       </div>
       <div
         className="w-full"
@@ -1311,7 +1638,7 @@ function SegmentedMedia({
       >
         <VisualCard pad={t.content ? 'p-3 sm:p-5' : 'p-4'} caption={t.caption}>
           {t.content ? (
-            t.content
+            t.selfFit ? t.content : <LiveScreenFit>{t.content}</LiveScreenFit>
           ) : t.src ? (
             <CaseStudyMedia
               src={t.src}
@@ -1364,7 +1691,7 @@ function ClosingCTA() {
     <>
       <div
         ref={ref}
-        className="rounded-[24px] px-8 sm:px-14 py-12 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6"
+        className="rounded-[24px] px-5 sm:px-14 py-10 sm:py-12 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6"
         style={{
           background: '#ffffff',
           boxShadow: '0 8px 28px rgba(0,13,38,0.08)',
@@ -1628,12 +1955,23 @@ const AUDIT_ROWS: { label: string; marks: boolean[] }[] = [
 ];
 
 function CompetitiveAuditTable() {
-  const FEATURE_W = 178;
-  const COL_W = 114;
-  const HEADER_H = 104;
-  const ROW_H = 62;
+  const [compact, setCompact] = useState(false);
+
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 639px)');
+    const update = () => setCompact(mq.matches);
+    update();
+    mq.addEventListener('change', update);
+    return () => mq.removeEventListener('change', update);
+  }, []);
+
+  const FEATURE_W = compact ? 112 : 178;
+  const COL_W = compact ? 88 : 114;
+  const HEADER_H = compact ? 92 : 104;
+  const ROW_H = compact ? 52 : 62;
+  const ICON = compact ? 32 : 44;
   const PINNED_W = FEATURE_W + COL_W; // Feature + Finding Focus columns stay pinned
-  const CARD_W = FEATURE_W + COL_W * 7; // 976, matching the Figma table
+  const CARD_W = FEATURE_W + COL_W * 7;
   const INTER = 'var(--font-inter), sans-serif';
 
   const scrollerRef = useRef<HTMLDivElement>(null);
@@ -1658,7 +1996,7 @@ function CompetitiveAuditTable() {
       el.removeEventListener('scroll', update);
       ro.disconnect();
     };
-  }, []);
+  }, [FEATURE_W, COL_W, CARD_W]);
 
   // One cell of the grid. First two columns (Feature + Finding Focus) are sticky.
   const cellStyle = (col: number, isHeader: boolean, rowIdx: number): CSSProperties => {
@@ -1677,23 +2015,23 @@ function CompetitiveAuditTable() {
   const cells: ReactNode[] = [];
   // Header — "Feature" label (baseline-aligned with the app names)
   cells.push(
-    <div key="h-feature" style={{ ...cellStyle(0, true, -1), alignItems: 'flex-end', paddingLeft: 16, paddingBottom: 15 }}>
-      <span style={{ fontSize: 11, fontWeight: 600, color: '#7a8aa0' }}>Feature</span>
+    <div key="h-feature" style={{ ...cellStyle(0, true, -1), alignItems: 'flex-end', paddingLeft: compact ? 10 : 16, paddingBottom: 15 }}>
+      <span style={{ fontSize: compact ? 10 : 11, fontWeight: 600, color: '#7a8aa0' }}>Feature</span>
     </div>,
   );
   // Header — app icons + names
   AUDIT_APPS.forEach((app, i) => {
     cells.push(
-      <div key={`h-${app.slug}`} style={{ ...cellStyle(i + 1, true, -1), flexDirection: 'column', alignItems: 'center', paddingTop: 22 }}>
+      <div key={`h-${app.slug}`} style={{ ...cellStyle(i + 1, true, -1), flexDirection: 'column', alignItems: 'center', paddingTop: compact ? 14 : 22, paddingInline: 4 }}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src={`/case-studies/focus-coach-achievements/competitors/${app.slug}.png`}
           alt={`${app.name} app icon`}
-          width={44}
-          height={44}
-          style={{ width: 44, height: 44, borderRadius: 12, filter: 'drop-shadow(0 4px 4px rgba(0,0,0,0.15))' }}
+          width={ICON}
+          height={ICON}
+          style={{ width: ICON, height: ICON, borderRadius: compact ? 9 : 12, filter: 'drop-shadow(0 4px 4px rgba(0,0,0,0.15))' }}
         />
-        <span style={{ marginTop: 8, fontSize: 12, fontWeight: app.highlight ? 600 : 500, lineHeight: '15px', color: '#1a1a1a', textAlign: 'center' }}>
+        <span style={{ marginTop: compact ? 6 : 8, fontSize: compact ? 10 : 12, fontWeight: app.highlight ? 600 : 500, lineHeight: compact ? '12px' : '15px', color: '#1a1a1a', textAlign: 'center' }}>
           {app.name}
         </span>
       </div>,
@@ -1702,17 +2040,17 @@ function CompetitiveAuditTable() {
   // Body rows
   AUDIT_ROWS.forEach((row, r) => {
     cells.push(
-      <div key={`r${r}-label`} style={{ ...cellStyle(0, false, r), alignItems: 'center', paddingLeft: 16 }}>
-        <span style={{ fontSize: 13, fontWeight: 500, color: '#333333' }}>{row.label}</span>
+      <div key={`r${r}-label`} style={{ ...cellStyle(0, false, r), alignItems: 'center', paddingLeft: compact ? 10 : 16, paddingRight: 6 }}>
+        <span style={{ fontSize: compact ? 11 : 13, fontWeight: 500, color: '#333333', lineHeight: 1.25 }}>{row.label}</span>
       </div>,
     );
     row.marks.forEach((on, i) => {
       cells.push(
         <div key={`r${r}-${i}`} style={{ ...cellStyle(i + 1, false, r), alignItems: 'center', justifyContent: 'center' }}>
           {on ? (
-            <Check sx={{ fontSize: 22, color: '#1da85f' }} />
+            <Check sx={{ fontSize: compact ? 18 : 22, color: '#1da85f' }} />
           ) : (
-            <span style={{ fontSize: 20, fontWeight: 700, lineHeight: 1, color: '#c1c8d2' }}>–</span>
+            <span style={{ fontSize: compact ? 16 : 20, fontWeight: 700, lineHeight: 1, color: '#c1c8d2' }}>–</span>
           )}
         </div>,
       );
@@ -1720,10 +2058,10 @@ function CompetitiveAuditTable() {
   });
 
   return (
-    <div className="rounded-[24px] p-4 sm:p-8" style={{ background: BLOCK_BG }}>
+    <div className="rounded-[24px] p-3 sm:p-8" style={{ background: BLOCK_BG }}>
       {/* Rounded frame clips the scroll area, so its corners stay rounded even when the table is scrolled and cut off. */}
-      <div className="relative mx-auto" style={{ maxWidth: CARD_W, borderRadius: 16, background: '#ffffff', overflow: 'hidden' }}>
-        <div ref={scrollerRef} className="audit-scroller" style={{ overflowX: 'auto', overflowY: 'hidden' }}>
+      <div className="relative mx-auto w-full" style={{ maxWidth: CARD_W, borderRadius: 16, background: '#ffffff', overflow: 'hidden' }}>
+        <div ref={scrollerRef} className="audit-scroller" style={{ overflowX: 'auto', overflowY: 'hidden', WebkitOverflowScrolling: 'touch' }}>
           <div
             style={{
               display: 'grid',
@@ -1746,7 +2084,7 @@ function CompetitiveAuditTable() {
         {/* Right fade — only when the table overflows and isn't scrolled to the end */}
         <div
           aria-hidden
-          style={{ position: 'absolute', top: 0, bottom: 0, right: 0, width: 48, pointerEvents: 'none', zIndex: 3, background: 'linear-gradient(to left, #ffffff, rgba(255,255,255,0))', opacity: overflowing && !atEnd ? 1 : 0, transition: 'opacity 0.2s ease' }}
+          style={{ position: 'absolute', top: 0, bottom: 0, right: 0, width: compact ? 28 : 48, pointerEvents: 'none', zIndex: 3, background: 'linear-gradient(to left, #ffffff, rgba(255,255,255,0))', opacity: overflowing && !atEnd ? 1 : 0, transition: 'opacity 0.2s ease' }}
         />
 
         {/* Hairline border drawn on top so it never affects the scroll width */}
@@ -1787,12 +2125,12 @@ export default function FocusCoachAchievementsCaseStudy() {
 
       {/* ── HERO ── */}
       <header id="section-intro" className="relative bg-gradient-to-b from-[rgba(0,110,254,0.12)] to-[#fcfcfc] to-[87%] min-[600px]:-mr-[100px]">
-        <div className="max-w-[1200px] mx-auto px-6 pt-[80px] pb-0">
+        <div className="max-w-[1200px] mx-auto px-5 sm:px-6 pt-[80px] pb-0">
 
-          <div className="flex items-center gap-2.5 mb-6" style={{ opacity: 0.65 }}>
+          <div className="flex flex-wrap items-center gap-2.5 mb-6" style={{ opacity: 0.65 }}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/case-studies/finding-focus-ai-assistant/finding-focus-logo.svg" alt="Finding Focus logo" className="h-7 w-auto" style={{ filter: 'brightness(0)' }} />
-            <span className="text-[15px] font-semibold text-[#000] tracking-[-0.1px]">Finding Focus • Edtech • Product Design</span>
+            <img src="/case-studies/finding-focus-ai-assistant/finding-focus-logo.svg" alt="Finding Focus logo" className="h-7 w-auto shrink-0" style={{ filter: 'brightness(0)' }} />
+            <span className="text-[14px] sm:text-[15px] font-semibold text-[#000] tracking-[-0.1px]">Finding Focus • Edtech • Product Design</span>
           </div>
 
           <h1 className="text-[28px] sm:text-[34px] md:text-[40px] font-semibold leading-[110%] tracking-[-1px] text-[#1a1a1a] mb-10 max-w-[680px]">
@@ -1822,7 +2160,7 @@ export default function FocusCoachAchievementsCaseStudy() {
 
           {/* ── TL;DR ── */}
           <div className="mt-14 pb-14 md:pb-28">
-            <div className="rounded-[24px] p-8 md:p-10 flex flex-col gap-6" style={{ background: '#ffffff', border: `1px solid ${BORDER}` }}>
+            <div className="rounded-[24px] p-5 sm:p-8 md:p-10 flex flex-col gap-6" style={{ background: '#ffffff', border: `1px solid ${BORDER}` }}>
               <Eyebrow label="TL;DR" />
               <p className="text-[16px] font-normal leading-[150%] text-[#333] max-w-[880px]">
                 Students weren&apos;t coming back to the Focus Coach — and the end of a session was where we lost them.
@@ -2018,28 +2356,43 @@ export default function FocusCoachAchievementsCaseStudy() {
             heading="Now that we had Focus Streaks we had to think through how to show the rest of the content."
             body="The original idea was to rotate through different content on the completion screen and show whatever was relevant to the session a user just completed, so the page always had something fresh to show."
           >
-            <VisualCard caption="Early rotating-content concepts for Milestones, Personal Bests, and Quotes" pad="p-4 sm:p-6">
-              <CaseStudyMediaGallery
-                maxWidth={520}
-                items={[
-                  {
-                    src: '/case-studies/focus-coach-achievements/early-milestone-mockup.png',
-                    alt: 'Early Milestone completion screen mockup',
-                    caption: 'Early Milestone mockup',
-                  },
-                  {
-                    src: '/case-studies/focus-coach-achievements/early-personal-best-mockup.png',
-                    alt: 'Early Personal Best completion screen mockup',
-                    caption: 'Early Personal Best mockup',
-                  },
-                  {
-                    src: '/case-studies/focus-coach-achievements/early-quote-mockup.png',
-                    alt: 'Early Quote completion screen mockup',
-                    caption: 'Early Quote mockup',
-                  },
-                ]}
-              />
-            </VisualCard>
+            {(() => {
+              const earlyItems: CaseStudyMediaItem[] = [
+                {
+                  src: '/case-studies/focus-coach-achievements/early-milestone-mockup.png',
+                  alt: 'Early Milestone completion screen mockup',
+                  caption: 'Early Milestone mockup',
+                },
+                {
+                  src: '/case-studies/focus-coach-achievements/early-personal-best-mockup.png',
+                  alt: 'Early Personal Best completion screen mockup',
+                  caption: 'Early Personal Best mockup',
+                },
+                {
+                  src: '/case-studies/focus-coach-achievements/early-quote-mockup.png',
+                  alt: 'Early Quote completion screen mockup',
+                  caption: 'Early Quote mockup',
+                },
+              ];
+              const earlyCaption = 'Early rotating-content concepts for Milestones, Personal Bests, and Quotes';
+              return (
+                <>
+                  <div className="sm:hidden">
+                    <MediaCarouselStage
+                      items={earlyItems}
+                      caption={earlyCaption}
+                      maxWidth={260}
+                      background={BLOCK_BG}
+                    />
+                  </div>
+                  <div className="hidden sm:block">
+                    <VisualCard caption={earlyCaption} pad="p-4 sm:p-6">
+                      <CaseStudyMediaGallery maxWidth={520} items={earlyItems} />
+                    </VisualCard>
+                  </div>
+                </>
+              );
+            })()}
           </Section>
 
           <Section
@@ -2073,7 +2426,9 @@ export default function FocusCoachAchievementsCaseStudy() {
             <div className="flex flex-col gap-10">
               <AnatomyCards />
               <VisualCard caption="The new design showed users more clearly that their session had ended and allowed them to quickly reflect on it." pad="p-3 sm:p-5">
-                <ReflectionScreen />
+                <LiveScreenFit>
+                  <ReflectionScreen />
+                </LiveScreenFit>
               </VisualCard>
             </div>
           </Section>
@@ -2098,6 +2453,7 @@ export default function FocusCoachAchievementsCaseStudy() {
                   description: 'Live Focus Streak achievement screen with flaming calendar and week tracker',
                   caption: 'Focus Streaks — shown when a user completes at least one session each weekday during a week',
                   content: <FocusStreakScreen />,
+                  selfFit: true,
                 },
                 {
                   label: 'Personal Best',
@@ -2155,60 +2511,46 @@ export default function FocusCoachAchievementsCaseStudy() {
             )}
           </ThemedVisualCard>
 
-          <ThemedVisualCard
+          <ThemedMockupCarousel
             caption={(mode) => `Achievement screens — mobile, ${mode} mode`}
-            pad="p-4 sm:p-6"
-          >
-            {(mode) => (
-              <CaseStudyMediaGallery
-                columns={3}
-                maxWidth={780}
-                gapClassName="gap-3 sm:gap-4"
-                items={[
-                  {
-                    src: mobileSrc('milestone', mode, '3'),
-                    alt: `Mobile ${mode} mode milestone screen with mountain illustration and progress to 25 sessions`,
-                    caption: `Milestone — mobile, ${mode} mode`,
-                  },
-                  {
-                    src: mobileSrc('streak', mode, '3'),
-                    alt: `Mobile ${mode} mode Focus Streak screen with flaming calendar and weekday tracker`,
-                    caption: `Focus Streak — mobile, ${mode} mode`,
-                  },
-                  {
-                    src: mobileSrc('personal-best', mode, '3'),
-                    alt: `Mobile ${mode} mode Personal Best screen with rocket and previous vs new best comparison`,
-                    caption: `Personal Best — mobile, ${mode} mode`,
-                  },
-                ]}
-              />
-            )}
-          </ThemedVisualCard>
+            columns={3}
+            desktopMaxWidth={780}
+            buildItems={(mode) => [
+              {
+                src: mobileSrc('milestone', mode, '3'),
+                alt: `Mobile ${mode} mode milestone screen with mountain illustration and progress to 25 sessions`,
+                caption: `Milestone — mobile, ${mode} mode`,
+              },
+              {
+                src: mobileSrc('streak', mode, '3'),
+                alt: `Mobile ${mode} mode Focus Streak screen with flaming calendar and weekday tracker`,
+                caption: `Focus Streak — mobile, ${mode} mode`,
+              },
+              {
+                src: mobileSrc('personal-best', mode, '3'),
+                alt: `Mobile ${mode} mode Personal Best screen with rocket and previous vs new best comparison`,
+                caption: `Personal Best — mobile, ${mode} mode`,
+              },
+            ]}
+          />
 
-          <ThemedVisualCard
+          <ThemedMockupCarousel
             caption={(mode) => `Completion screens — mobile, ${mode} mode`}
-            pad="p-4 sm:p-6"
-          >
-            {(mode) => (
-              <CaseStudyMediaGallery
-                columns={2}
-                maxWidth={520}
-                gapClassName="gap-3 sm:gap-4"
-                items={[
-                  {
-                    src: mobileSrc('completion-streak', mode, '6'),
-                    alt: `Mobile ${mode} mode completion screen with all-time stats and week tracker`,
-                    caption: `Week Tracker — mobile, ${mode} mode`,
-                  },
-                  {
-                    src: mobileSrc('completion-quote', mode, '3'),
-                    alt: `Mobile ${mode} mode completion screen with all-time stats and course quote`,
-                    caption: `Course Quote — mobile, ${mode} mode`,
-                  },
-                ]}
-              />
-            )}
-          </ThemedVisualCard>
+            columns={2}
+            desktopMaxWidth={520}
+            buildItems={(mode) => [
+              {
+                src: mobileSrc('completion-streak', mode, '6'),
+                alt: `Mobile ${mode} mode completion screen with all-time stats and week tracker`,
+                caption: `Week Tracker — mobile, ${mode} mode`,
+              },
+              {
+                src: mobileSrc('completion-quote', mode, '3'),
+                alt: `Mobile ${mode} mode completion screen with all-time stats and course quote`,
+                caption: `Course Quote — mobile, ${mode} mode`,
+              },
+            ]}
+          />
 
         </div>
       </section>
@@ -2224,15 +2566,39 @@ export default function FocusCoachAchievementsCaseStudy() {
             body="The new experience launched in July, when most students are out of school and classroom usage is naturally lower. We haven’t collected enough post-launch data to draw conclusions yet. When students return this fall, we’ll monitor whether more first-time users come back and whether usage becomes less concentrated among a small group of students."
           >
             <div className="flex flex-col gap-6">
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div className="sm:hidden">
+                <SlideCarousel
+                  slides={OUTCOME_SIGNALS.map((signal, index) => ({
+                    key: signal.title,
+                    content: (
+                      <div className="flex flex-col gap-3 rounded-[20px] p-6" style={{ background: CARD_LIGHT }}>
+                        <span
+                          className="text-[12px] font-medium tracking-[1px]"
+                          style={{ color: ACCENT_DARK, fontFamily: 'var(--font-ibm-plex-mono), monospace' }}
+                        >
+                          0{index + 1}
+                        </span>
+                        <div>
+                          <p className="text-[16px] font-semibold text-[#1a1a1a]">{signal.title}</p>
+                          <p className="mt-1.5 text-[14px] leading-[165%] text-[#666]">{signal.body}</p>
+                        </div>
+                      </div>
+                    ),
+                  }))}
+                />
+              </div>
+              <div className="hidden sm:grid sm:grid-cols-3 sm:gap-3">
                 {OUTCOME_SIGNALS.map((signal, index) => (
-                  <div key={signal.title} className="rounded-[20px] p-6 flex flex-col gap-3" style={{ background: CARD_LIGHT }}>
-                    <span className="text-[12px] font-medium tracking-[1px]" style={{ color: ACCENT_DARK, fontFamily: 'var(--font-ibm-plex-mono), monospace' }}>
+                  <div key={signal.title} className="flex flex-col gap-3 rounded-[20px] p-6" style={{ background: CARD_LIGHT }}>
+                    <span
+                      className="text-[12px] font-medium tracking-[1px]"
+                      style={{ color: ACCENT_DARK, fontFamily: 'var(--font-ibm-plex-mono), monospace' }}
+                    >
                       0{index + 1}
                     </span>
                     <div>
                       <p className="text-[16px] font-semibold text-[#1a1a1a]">{signal.title}</p>
-                      <p className="text-[14px] leading-[165%] text-[#666] mt-1.5">{signal.body}</p>
+                      <p className="mt-1.5 text-[14px] leading-[165%] text-[#666]">{signal.body}</p>
                     </div>
                   </div>
                 ))}

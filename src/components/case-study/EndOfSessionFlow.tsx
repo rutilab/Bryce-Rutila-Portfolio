@@ -5,6 +5,11 @@ import { CompletionWeekTrackerScreen } from './CompletionScreen';
 import { MilestoneHeroScreen } from './MilestoneHeroScreen';
 import { ReflectionScreen } from './ReflectionScreen';
 
+/** Design width for the end-of-session stage — scales as a unit below this. */
+const EOS_DESIGN_W = 408;
+const EOS_STAGE_H = 680;
+const EOS_STAGE_H_COMPACT = 560;
+
 type Phase = 'session' | 'reflection' | 'milestone' | 'completion';
 type ExitStyle = 'none' | 'crossfade' | 'exit-up' | 'exit-continue';
 
@@ -64,9 +69,18 @@ function SessionPlayerPhase({
 }) {
   const [remaining, setRemaining] = useState(DEMO_REMAINING);
   const [ringDone, setRingDone] = useState(false);
+  const [compact, setCompact] = useState(false);
   const finished = useRef(false);
   const onCompleteRef = useRef(onComplete);
   onCompleteRef.current = onComplete;
+
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 639px)');
+    const update = () => setCompact(mq.matches);
+    update();
+    mq.addEventListener('change', update);
+    return () => mq.removeEventListener('change', update);
+  }, []);
 
   useEffect(() => {
     if (!active) {
@@ -99,28 +113,34 @@ function SessionPlayerPhase({
   // Force a complete offset at 00:00 so no dark sliver remains (CSS transition
   // would otherwise still be catching up when we leave the screen).
   const dashOffset = ringDone ? CIRCUMFERENCE : (elapsed / TOTAL_SECONDS) * CIRCUMFERENCE;
+  const ring = compact ? 150 : 190;
 
   return (
     <div className="eos-session absolute inset-0 flex flex-col items-center justify-center bg-[rgb(2,1,1)] select-none">
       <div
-        className="eos-music absolute top-8 left-1/2 -translate-x-1/2 flex h-14 items-center rounded-xl border border-[rgb(38,39,41)] px-4"
+        className="eos-music absolute left-1/2 -translate-x-1/2 flex items-center rounded-xl border border-[rgb(38,39,41)]"
         style={{
+          top: compact ? 20 : 32,
+          height: compact ? 44 : 56,
+          maxWidth: 'calc(100% - 24px)',
+          paddingLeft: compact ? 12 : 16,
+          paddingRight: compact ? 12 : 16,
           background: 'linear-gradient(215deg, rgba(140,140,140,0.2) 0%, rgba(43,43,43,0.2) 100%)',
           backdropFilter: 'blur(10px)',
           WebkitBackdropFilter: 'blur(10px)',
         }}
       >
-        <svg className="shrink-0 fill-white" width="20" height="20" viewBox="0 0 24 24" aria-hidden>
+        <svg className="shrink-0 fill-white" width="18" height="18" viewBox="0 0 24 24" aria-hidden>
           <path d="M12 3c-4.97 0-9 4.03-9 9v7c0 1.1.9 2 2 2h4v-8H5v-1c0-3.87 3.13-7 7-7s7 3.13 7 7v1h-4v8h4c1.1 0 2-.9 2-2v-7c0-4.97-4.03-9-9-9z" />
         </svg>
-        <span className="mx-2 whitespace-nowrap text-[14px] font-medium text-white">Wandering Breeze</span>
-        <svg className="shrink-0 fill-[rgb(160,160,160)]" width="22" height="22" viewBox="0 0 24 24" aria-hidden>
+        <span className="mx-2 truncate font-medium text-white" style={{ fontSize: compact ? 13 : 14 }}>Wandering Breeze</span>
+        <svg className="shrink-0 fill-[rgb(160,160,160)]" width="20" height="20" viewBox="0 0 24 24" aria-hidden>
           <path d="M7 10l5 5 5-5z" />
         </svg>
       </div>
 
-      <div className="relative flex h-[190px] w-[190px] items-center justify-center">
-        <svg viewBox="0 0 190 190" width="190" height="190" aria-hidden>
+      <div className="relative flex items-center justify-center" style={{ width: ring, height: ring }}>
+        <svg viewBox="0 0 190 190" className="h-full w-full" aria-hidden>
           <path
             d="m 95,3 a 92,92 0 1,0 0,184 a 92,92 0 1,0 0,-184"
             fill="none"
@@ -140,35 +160,51 @@ function SessionPlayerPhase({
             }}
           />
         </svg>
-        <span className="absolute z-[1] text-center text-[36px] font-medium text-white">
+        <span
+          className="absolute z-[1] text-center font-medium text-white"
+          style={{ fontSize: compact ? 28 : 36 }}
+        >
           {fmtTime(remaining)}
         </span>
       </div>
 
       <div
-        className="absolute bottom-0 left-0 right-0 flex items-center justify-center gap-5 pb-8 pt-5"
+        className="absolute bottom-0 left-0 right-0 flex items-center justify-center"
         style={{
+          gap: compact ? 12 : 20,
+          paddingBottom: compact ? 24 : 32,
+          paddingTop: compact ? 16 : 20,
           backgroundColor: 'rgba(5,3,3,0.8)',
           backdropFilter: 'blur(2px)',
           WebkitBackdropFilter: 'blur(2px)',
         }}
       >
         <div
-          className="eos-sbtn flex h-12 w-[114px] items-center justify-center gap-1 rounded-full border border-[rgb(38,39,41)] text-[15px] font-medium text-white"
-          style={{ backgroundImage: 'linear-gradient(215deg, rgb(26,26,26) 0%, rgb(9,9,9) 100%)' }}
+          className="eos-sbtn flex items-center justify-center gap-1 rounded-full border border-[rgb(38,39,41)] font-medium text-white"
+          style={{
+            height: compact ? 44 : 48,
+            width: compact ? 96 : 114,
+            fontSize: compact ? 14 : 15,
+            backgroundImage: 'linear-gradient(215deg, rgb(26,26,26) 0%, rgb(9,9,9) 100%)',
+          }}
           aria-hidden
         >
-          <svg width="22" height="22" viewBox="0 0 24 24" className="fill-white" aria-hidden>
+          <svg width="20" height="20" viewBox="0 0 24 24" className="fill-white" aria-hidden>
             <path d="M8 19c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2s-2 .9-2 2v10c0 1.1.9 2 2 2zm6-12v10c0 1.1.9 2 2 2s2-.9 2-2V7c0-1.1-.9-2-2-2s-2 .9-2 2z" />
           </svg>
           Pause
         </div>
         <div
-          className="eos-sbtn flex h-12 w-[114px] items-center justify-center gap-1 rounded-full border border-[rgb(38,39,41)] text-[15px] font-medium text-white"
-          style={{ backgroundImage: 'linear-gradient(215deg, rgb(26,26,26) 0%, rgb(9,9,9) 100%)' }}
+          className="eos-sbtn flex items-center justify-center gap-1 rounded-full border border-[rgb(38,39,41)] font-medium text-white"
+          style={{
+            height: compact ? 44 : 48,
+            width: compact ? 96 : 114,
+            fontSize: compact ? 14 : 15,
+            backgroundImage: 'linear-gradient(215deg, rgb(26,26,26) 0%, rgb(9,9,9) 100%)',
+          }}
           aria-hidden
         >
-          <svg width="22" height="22" viewBox="0 0 24 24" className="fill-white" aria-hidden>
+          <svg width="20" height="20" viewBox="0 0 24 24" className="fill-white" aria-hidden>
             <path d="M9 16.17 5.53 12.7a.9959.9959 0 0 0-1.41 0c-.39.39-.39 1.02 0 1.41l4.18 4.18c.39.39 1.02.39 1.41 0L20.29 7.71c.39-.39.39-1.02 0-1.41a.9959.9959 0 0 0-1.41 0L9 16.17z" />
           </svg>
           Finish
@@ -305,80 +341,118 @@ export function EndOfSessionFlow() {
 
   const live = layers.find((l) => !l.exiting);
   const bgDark = live?.phase === 'session';
+  const [compact, setCompact] = useState(false);
+  const stageOuterRef = useRef<HTMLDivElement>(null);
+  const [scale, setScale] = useState(1);
+
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 639px)');
+    const update = () => setCompact(mq.matches);
+    update();
+    mq.addEventListener('change', update);
+    return () => mq.removeEventListener('change', update);
+  }, []);
+
+  useEffect(() => {
+    const outer = stageOuterRef.current;
+    if (!outer) return;
+    const measure = () => {
+      const available = outer.clientWidth;
+      const next = available > 0 && available < EOS_DESIGN_W ? available / EOS_DESIGN_W : 1;
+      setScale(next);
+    };
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(outer);
+    return () => ro.disconnect();
+  }, []);
+
+  const designH = compact ? EOS_STAGE_H_COMPACT : EOS_STAGE_H;
 
   return (
     <div ref={ref} className="w-full">
       <div
+        ref={stageOuterRef}
         className="eos-stage relative w-full overflow-hidden rounded-[16px]"
         style={{
-          height: 680,
+          height: designH * scale,
           background: bgDark ? 'rgb(2,1,1)' : '#f2f2f2',
           transition: `background ${CROSSFADE_MS}ms ease`,
         }}
         aria-label="Complete end of session flow — session player through completion"
       >
-        {inView &&
-          layers.map((layer, index) => {
-            const isLive = live?.id === layer.id;
-            let opacity = 1;
-            let transform: string | undefined;
-            let transition = 'none';
+        <div
+          className="relative"
+          style={{
+            width: scale < 1 ? EOS_DESIGN_W : '100%',
+            height: designH,
+            transform: scale < 1 ? `scale(${scale})` : undefined,
+            transformOrigin: 'top left',
+          }}
+        >
+          {inView &&
+            layers.map((layer, index) => {
+              const isLive = live?.id === layer.id;
+              let opacity = 1;
+              let transform: string | undefined;
+              let transition = 'none';
 
-            if (layer.exitStyle === 'crossfade') {
-              opacity = layer.fadeIn
-                ? crossfadeReveal
-                  ? 1
-                  : 0
-                : layer.exiting
-                  ? 0
-                  : 1;
-              transition = `opacity ${CROSSFADE_MS}ms ease`;
-            } else if (layer.exitStyle === 'exit-up') {
-              opacity = layer.exiting ? 0 : 1;
-              transform = layer.exiting ? 'translateY(-70px)' : 'translateY(0)';
-              transition = layer.exiting
-                ? 'opacity 0.4s ease, transform 0.4s cubic-bezier(0.4, 0, 1, 1)'
-                : 'none';
-            } else if (layer.exitStyle === 'exit-continue') {
-              opacity = layer.exiting ? 0 : 1;
-              transform = layer.exiting ? 'translateY(-40px)' : 'translateY(0)';
-              transition = layer.exiting
-                ? `opacity ${EXIT_CONTINUE_MS}ms ease, transform ${EXIT_CONTINUE_MS}ms ease`
-                : 'none';
-            }
+              if (layer.exitStyle === 'crossfade') {
+                opacity = layer.fadeIn
+                  ? crossfadeReveal
+                    ? 1
+                    : 0
+                  : layer.exiting
+                    ? 0
+                    : 1;
+                transition = `opacity ${CROSSFADE_MS}ms ease`;
+              } else if (layer.exitStyle === 'exit-up') {
+                opacity = layer.exiting ? 0 : 1;
+                transform = layer.exiting ? 'translateY(-70px)' : 'translateY(0)';
+                transition = layer.exiting
+                  ? 'opacity 0.4s ease, transform 0.4s cubic-bezier(0.4, 0, 1, 1)'
+                  : 'none';
+              } else if (layer.exitStyle === 'exit-continue') {
+                opacity = layer.exiting ? 0 : 1;
+                transform = layer.exiting ? 'translateY(-40px)' : 'translateY(0)';
+                transition = layer.exiting
+                  ? `opacity ${EXIT_CONTINUE_MS}ms ease, transform ${EXIT_CONTINUE_MS}ms ease`
+                  : 'none';
+              }
 
-            return (
-              <div
-                key={layer.id}
-                className="absolute inset-0"
-                style={{
-                  zIndex: index + 1,
-                  opacity,
-                  transform,
-                  transition,
-                  pointerEvents: 'none',
-                }}
-              >
-                {layer.phase === 'session' ? (
-                  <SessionPlayerPhase active={isLive && inView} onComplete={advance} />
-                ) : null}
-                {layer.phase === 'reflection' ? (
-                  <ReflectionScreen
-                    playOnce
-                    embedded
-                    autoSelectIndex={3}
-                    onComplete={advance}
-                  />
-                ) : null}
-                {layer.phase === 'milestone' ? (
-                  <MilestoneHeroScreen playOnce embedded onComplete={advance} />
-                ) : null}
-                {layer.phase === 'completion' ? (
-                  <CompletionWeekTrackerScreen playOnce embedded onComplete={advance} />
-                ) : null}
-              </div>
-            );
-          })}
+              return (
+                <div
+                  key={layer.id}
+                  className="absolute inset-0"
+                  style={{
+                    zIndex: index + 1,
+                    opacity,
+                    transform,
+                    transition,
+                    pointerEvents: 'none',
+                  }}
+                >
+                  {layer.phase === 'session' ? (
+                    <SessionPlayerPhase active={isLive && inView} onComplete={advance} />
+                  ) : null}
+                  {layer.phase === 'reflection' ? (
+                    <ReflectionScreen
+                      playOnce
+                      embedded
+                      autoSelectIndex={3}
+                      onComplete={advance}
+                    />
+                  ) : null}
+                  {layer.phase === 'milestone' ? (
+                    <MilestoneHeroScreen playOnce embedded onComplete={advance} />
+                  ) : null}
+                  {layer.phase === 'completion' ? (
+                    <CompletionWeekTrackerScreen playOnce embedded onComplete={advance} />
+                  ) : null}
+                </div>
+              );
+            })}
+        </div>
       </div>
     </div>
   );
