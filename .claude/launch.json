@@ -1,0 +1,10 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "bar9000-dev",
+      "port": 3101,
+      "url": "http://localhost:3101"
+    }
+  ]
+}

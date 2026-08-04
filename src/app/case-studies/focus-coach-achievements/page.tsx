@@ -9,7 +9,7 @@ import DarkMode from '@mui/icons-material/DarkMode';
 import DarkModeOutlined from '@mui/icons-material/DarkModeOutlined';
 import LightMode from '@mui/icons-material/LightMode';
 import LightModeOutlined from '@mui/icons-material/LightModeOutlined';
-import { CaseStudyMedia, CaseStudyMediaGallery, CaseStudyMediaPlaceholder, CompletionQuoteScreen, CompletionWeekTrackerScreen, EndOfSessionFlow, FocusStreakScreen, LightboxCloseButton, LightboxIconButton, LiveScreenFit, MediaCarouselStage, MilestoneHeroScreen, NorthStarAnimatedIcon, PersonalBestScreen, ReflectionScreen, SlideCarousel } from '@/components/case-study';
+import { CaseStudyMedia, CaseStudyMediaGallery, CaseStudyMediaPlaceholder, CompletionQuoteScreen, CompletionWeekTrackerScreen, EndOfSessionFlow, FocusStreakScreen, LightboxCloseButton, LightboxIconButton, LiveScreenFit, MediaCarouselStage, MilestoneHeroScreen, NorthStarAnimatedIcon, PersonalBestScreen, ReflectionScreen } from '@/components/case-study';
 import type { CaseStudyMediaItem } from '@/components/case-study';
 import { useBodyScrollLock } from '@/hooks/useBodyScrollLock';
 
@@ -1009,11 +1009,11 @@ function FlowStepCards() {
   const [ref, inView] = useInView<HTMLDivElement>(0.25);
 
   return (
-    <div ref={ref} className="flex flex-col md:flex-row md:items-stretch gap-3">
+    <div ref={ref} className="flex flex-col lg:flex-row lg:items-stretch gap-3">
       {FLOW_STEPS.map((s, i) => (
         <div
           key={s.n}
-          className="flex flex-col md:flex-1 md:flex-row md:items-center md:gap-3"
+          className="flex flex-col lg:flex-1 lg:flex-row lg:items-stretch lg:gap-3"
           style={{
             opacity: inView ? 1 : 0,
             transform: inView ? 'translateY(0)' : 'translateY(18px)',
@@ -1021,11 +1021,11 @@ function FlowStepCards() {
           }}
         >
           <div
-            className="w-full md:flex-1 rounded-[16px] overflow-hidden bg-white"
+            className="w-full lg:flex-1 flex flex-col rounded-[16px] overflow-hidden bg-white"
             style={{ border: `1px solid ${BORDER}` }}
           >
             <div style={{ height: 6, background: s.color }} />
-            <div className="flex flex-col gap-2 px-6 pt-5 pb-6">
+            <div className="flex flex-col gap-2 px-6 pt-5 pb-6 flex-1">
               <div className="flex items-center justify-between">
                 <span className="text-[26px] font-semibold leading-none" style={{ color: s.color }}>{s.n}</span>
                 <span
@@ -1040,7 +1040,7 @@ function FlowStepCards() {
             </div>
           </div>
           {i < FLOW_STEPS.length - 1 && (
-            <span className="hidden md:block text-[18px] text-[#8c8c8c] shrink-0">→</span>
+            <span className="hidden lg:flex lg:items-center text-[18px] text-[#8c8c8c] shrink-0">→</span>
           )}
         </div>
       ))}
@@ -1500,37 +1500,79 @@ function AnatomyCards() {
   );
 }
 
-// ── Outcomes: signals we’ll watch after launch ───────────────────────────────
-const OUTCOME_SIGNALS = [
+// ── Outcomes: leading (early usability) vs. lagging (core retention) indicators ──
+const LEADING_INDICATORS = [
   {
-    title: 'Second-session conversion',
-    body: 'The percentage of first-time students who return for another Focus Session within 7 days.',
+    title: 'Reflection friction',
+    body: 'Time spent rating focus is already down 22% — an early signal that simplifying the reflection screen lowered the cognitive load.',
+    status: 'Observed',
   },
   {
-    title: 'Consecutive-day usage',
-    body: 'Whether more students complete sessions on consecutive weekdays and work toward a full Focus Streak.',
-  },
-  {
-    title: 'Usage concentration',
-    body: 'Whether the top 1% account for a smaller share of sessions as more students return.',
+    title: 'Focus Streak completion',
+    body: 'Track the percentage of students who achieve their first Focus Streak to confirm that the reward is both attainable and motivating.',
+    status: 'Tracking',
   },
 ] as const;
+
+const LAGGING_INDICATORS = [
+  {
+    title: 'First-session retention',
+    body: 'Reduce the baseline 39.3% single-session abandonment rate to under 25%.',
+    status: 'Target',
+  },
+  {
+    title: 'Session distribution',
+    body: 'Reduce the percentage of total sessions completed by the top 1% from 54.6% to under 30%.',
+    status: 'Target',
+  },
+] as const;
+
+function IndicatorCard({ title, body, status }: { title: string; body: string; status: string }) {
+  return (
+    <div className="flex flex-col gap-2.5 rounded-[20px] p-6" style={{ background: CARD_LIGHT }}>
+      <div className="flex items-center justify-between gap-3">
+        <p className="text-[16px] font-semibold text-[#1a1a1a]">{title}</p>
+        <span
+          className="shrink-0 rounded-full px-2.5 py-1 text-[10px] font-medium tracking-[1px] uppercase"
+          style={{ color: ACCENT_DARK, background: 'rgba(0,0,0,0.05)' }}
+        >
+          {status}
+        </span>
+      </div>
+      <p className="text-[14px] leading-[165%] text-[#666]">{body}</p>
+    </div>
+  );
+}
+
+function IndicatorGroup({
+  label,
+  indicators,
+}: {
+  label: string;
+  indicators: ReadonlyArray<{ title: string; body: string; status: string }>;
+}) {
+  return (
+    <div className="flex flex-col gap-4">
+      <p className="text-[12px] font-medium tracking-[1px] uppercase" style={{ color: EYEBROW_ICON_COLOR }}>{label}</p>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        {indicators.map(indicator => (
+          <IndicatorCard key={indicator.title} {...indicator} />
+        ))}
+      </div>
+    </div>
+  );
+}
 
 const TAKEAWAYS = [
   {
     eyebrow: 'Restraint',
     title: 'The strongest product decision was what we chose not to ship.',
-    body: 'Students asked for badges and levels, but a rewards economy would have made collecting the point. Streaks, milestones, and personal bests gave us celebration without turning focus into a currency.',
+    body: 'Early research showed that almost half of students would have been in favor of badges and levels. But leaning fully into gamification would have made collecting badges the point of using the tool. Choosing streaks, milestones, and personal bests gave us a way to celebrate effort without turning focus into a currency.',
   },
   {
     eyebrow: 'Designing for context',
-    title: 'An ethical mechanic starts with the reality of the people using it.',
-    body: 'Students often do not control when classroom sessions happen. Focus Streaks are earned across a school week and never lost, replacing daily loss aversion with progress that fits their lives.',
-  },
-  {
-    eyebrow: 'Changing my mind',
-    title: 'A principle is useful until the work proves it wrong.',
-    body: 'I began convinced that one completion page meant less friction. The milestone mockups showed that compression was underselling the moment, so I traded that principle for a guided flow where every screen earns its place.',
+    title: "Product decisions should match the user's reality.",
+    body: "Students aren't using this app in a vacuum. They don't control when classes meet or when homework happens. Making streaks roll over week-to-week instead of being something students have to maintain day after day removed cheap loss-aversion tactics and respected how students actually use classroom tools.",
   },
 ] as const;
 
@@ -2562,53 +2604,12 @@ export default function FocusCoachAchievementsCaseStudy() {
         <div className="flex flex-col gap-16">
           <Section
             eyebrow="Launch Status"
-            heading="It shipped during the summer. We’ll measure the impact this fall."
-            body="The new experience launched in July, when most students are out of school and classroom usage is naturally lower. We haven’t collected enough post-launch data to draw conclusions yet. When students return this fall, we’ll monitor whether more first-time users come back and whether usage becomes less concentrated among a small group of students."
+            heading="This project shipped during the summer. We’ll measure the impact this fall."
+            body="Since this project launched in July (2026), when most students are out of school and classroom usage is naturally lower, we do not have enough data to draw any conclusions yet. To determine if we successfully improved the end of session experience, I set up clear goals to track performance for the Fall semester."
           >
-            <div className="flex flex-col gap-6">
-              <div className="sm:hidden">
-                <SlideCarousel
-                  slides={OUTCOME_SIGNALS.map((signal, index) => ({
-                    key: signal.title,
-                    content: (
-                      <div className="flex flex-col gap-3 rounded-[20px] p-6" style={{ background: CARD_LIGHT }}>
-                        <span
-                          className="text-[12px] font-medium tracking-[1px]"
-                          style={{ color: ACCENT_DARK, fontFamily: 'var(--font-ibm-plex-mono), monospace' }}
-                        >
-                          0{index + 1}
-                        </span>
-                        <div>
-                          <p className="text-[16px] font-semibold text-[#1a1a1a]">{signal.title}</p>
-                          <p className="mt-1.5 text-[14px] leading-[165%] text-[#666]">{signal.body}</p>
-                        </div>
-                      </div>
-                    ),
-                  }))}
-                />
-              </div>
-              <div className="hidden sm:grid sm:grid-cols-3 sm:gap-3">
-                {OUTCOME_SIGNALS.map((signal, index) => (
-                  <div key={signal.title} className="flex flex-col gap-3 rounded-[20px] p-6" style={{ background: CARD_LIGHT }}>
-                    <span
-                      className="text-[12px] font-medium tracking-[1px]"
-                      style={{ color: ACCENT_DARK, fontFamily: 'var(--font-ibm-plex-mono), monospace' }}
-                    >
-                      0{index + 1}
-                    </span>
-                    <div>
-                      <p className="text-[16px] font-semibold text-[#1a1a1a]">{signal.title}</p>
-                      <p className="mt-1.5 text-[14px] leading-[165%] text-[#666]">{signal.body}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-              <Callout
-                variant="neutral"
-                eyebrow="Early Result"
-                heading="Reflection response time is already down 22%."
-                body="Students are answering the redesigned reflection question faster — an early signal that simplifying the screen is reducing friction."
-              />
+            <div className="flex flex-col gap-8">
+              <IndicatorGroup label="Leading Indicators — early usability & engagement" indicators={LEADING_INDICATORS} />
+              <IndicatorGroup label="Lagging Indicators — core retention metrics" indicators={LAGGING_INDICATORS} />
             </div>
           </Section>
         </div>
@@ -2618,7 +2619,7 @@ export default function FocusCoachAchievementsCaseStudy() {
 
       {/* ── TAKEAWAYS ── */}
       <section className={SECTION}>
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
           {TAKEAWAYS.map(takeaway => (
             <div
               key={takeaway.eyebrow}
