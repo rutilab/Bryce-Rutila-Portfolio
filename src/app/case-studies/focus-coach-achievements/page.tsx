@@ -2274,7 +2274,7 @@ export default function FocusCoachAchievementsCaseStudy() {
 
           <Section
             eyebrow="Project Goals"
-            heading={<>Before designing anything, I mapped out what the end of session should be <Em>for</Em>.</>}
+            heading={<>Before designing anything, I mapped out what the end of session should be for.</>}
           >
             <GoalCards />
           </Section>
@@ -2284,11 +2284,7 @@ export default function FocusCoachAchievementsCaseStudy() {
             className="rounded-[24px] px-8 py-10 flex flex-col items-center text-center gap-4 bg-white"
             style={{ border: `1px solid ${BORDER}` }}
           >
-            <NorthStarAnimatedIcon
-              className="block size-14 shrink-0"
-              blueFill={ACCENT}
-              yellowFill="#FFF712"
-            />
+            <NorthStarAnimatedIcon className="block size-14 shrink-0" />
             <p className="text-[11px] font-medium tracking-[1.5px] uppercase" style={{ color: EYEBROW_ICON_COLOR }}>North Star</p>
             <p className="text-[24px] font-semibold leading-[145%] tracking-[-0.3px] text-[#1a1a1a] max-w-[680px]">
               Turn the end of every session into an opportunity to delight and engage users
