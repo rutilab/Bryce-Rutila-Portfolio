@@ -650,6 +650,341 @@ label[for] {
   user-select: none;
 }
 
+/*
+ * Cursor-local BRYCE wash on hero copy — single masked overlay (not per-glyph)
+ * so it stays fluid with the tip. White sticker outline under the fill.
+ * (Not applied to ideation / [PROD].)
+ */
+.subheader-iri {
+  display: inline-grid;
+  vertical-align: baseline;
+  max-width: 100%;
+}
+
+.subheader-iri > .subheader-iri-base,
+.subheader-iri > .subheader-iri-fx {
+  grid-area: 1 / 1;
+}
+
+.subheader-iri-base {
+  color: #141510;
+  position: relative;
+  z-index: 0;
+}
+
+.subheader-iri-fx {
+  z-index: 1;
+  pointer-events: none;
+  opacity: var(--iri-glow, 0);
+  -webkit-mask-image: radial-gradient(
+    circle 68px at var(--iri-x, 50%) var(--iri-y, 50%),
+    #000 0%,
+    #000 32%,
+    transparent 72%
+  );
+  mask-image: radial-gradient(
+    circle 68px at var(--iri-x, 50%) var(--iri-y, 50%),
+    #000 0%,
+    #000 32%,
+    transparent 72%
+  );
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+}
+
+.subheader-iri-fx-stack {
+  display: grid;
+}
+
+.subheader-iri-fx-stack > * {
+  grid-area: 1 / 1;
+}
+
+/* White sticker backing */
+.subheader-iri-outline {
+  color: #ffffff;
+  -webkit-text-stroke: 3.5px #ffffff;
+  paint-order: stroke fill;
+  text-shadow:
+    -1px -1px 0 #fff,
+     1px -1px 0 #fff,
+    -1px  1px 0 #fff,
+     1px  1px 0 #fff;
+}
+
+/* BRYCE block colors: B → R → Y → C → E */
+.subheader-iri-shine {
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+  background-image: linear-gradient(
+    115deg,
+    #FF9C12 0%,
+    #12B4FF 20%,
+    #FFF712 40%,
+    #FF12F7 60%,
+    #31E300 80%,
+    #FF9C12 100%
+  );
+  background-size: 220% 100%;
+  background-position: 0% 50%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  animation: subheader-iridescent-drift 9s linear infinite;
+  animation-play-state: paused;
+}
+
+.subheader-iri.is-iri-active .subheader-iri-shine {
+  animation-play-state: running;
+}
+
+@keyframes subheader-iridescent-drift {
+  from { background-position: 0% 50%; }
+  to   { background-position: 220% 50%; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .subheader-iri-shine {
+    animation: none;
+    background-position: 40% 50%;
+  }
+}
+
+/* ── Iridescent section eyebrows (label + dashed rule) ─────────────────── */
+.iri-eyebrow {
+  display: grid;
+  margin-bottom: 24px;
+  max-width: 100%;
+}
+
+.iri-eyebrow > .iri-eyebrow-base,
+.iri-eyebrow > .iri-eyebrow-fx {
+  grid-area: 1 / 1;
+}
+
+.iri-eyebrow-base {
+  position: relative;
+  z-index: 0;
+}
+
+.iri-eyebrow-row {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-bottom: 4px;
+}
+
+.iri-eyebrow-label {
+  font-family: var(--font-ibm-plex-mono), monospace;
+  font-size: 14px;
+  line-height: 24px;
+  color: #141510;
+}
+
+.iri-eyebrow-dash {
+  border-bottom: 1px dashed #141510;
+}
+
+.iri-eyebrow.is-slinging .iri-eyebrow-dash-shine {
+  opacity: 0;
+}
+
+/* ── Slingshot dashed rule easter egg ─────────────────────────────────── */
+.sling-dash {
+  position: relative;
+  height: 1px;
+  /* Generous hit area without shifting layout */
+  padding: 14px 0;
+  margin: -14px 0;
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+  z-index: 2;
+}
+
+.sling-dash.is-pulling {
+  cursor: grabbing;
+}
+
+.iri-eyebrow.is-slinging {
+  /* Keep long rubber-band pulls from clipping inside section stacks */
+  overflow: visible;
+  z-index: 5;
+}
+
+.sling-dash-idle {
+  border-bottom: 1px dashed #141510;
+  pointer-events: none;
+}
+
+.sling-dash-idle.is-hidden {
+  opacity: 0;
+}
+
+.sling-dash-rubber {
+  position: absolute;
+  left: 0;
+  top: 14px;
+  overflow: visible;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.sling-dash-rubber.is-fixed {
+  position: fixed;
+  top: auto;
+  z-index: 198;
+}
+
+.sling-dash-fly {
+  position: absolute;
+  width: 56px;
+  height: 56px;
+  object-fit: contain;
+  pointer-events: none;
+  z-index: 3;
+  /* Perch above the fold — bottom of fly sits on the rubber band */
+  transform: translate(-50%, -100%);
+  transform-origin: 50% 100%;
+  filter: drop-shadow(0 2px 4px rgba(20, 21, 16, 0.18));
+  user-select: none;
+}
+
+/* Aiming down: hang under the fold — top of fly sits on the rubber band */
+.sling-dash-fly.is-below {
+  transform: translate(-50%, 0%);
+  transform-origin: 50% 0%;
+}
+
+.sling-dash-fly.is-perched {
+  position: fixed;
+  z-index: 199;
+}
+
+.sling-dash-fly.is-airborne {
+  position: fixed;
+  z-index: 200;
+  will-change: transform, left, top;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sling-dash {
+    cursor: default;
+    pointer-events: none;
+  }
+}
+
+.iri-eyebrow-fx {
+  z-index: 1;
+  pointer-events: none;
+  opacity: var(--iri-glow, 0);
+  -webkit-mask-image: radial-gradient(
+    circle 72px at var(--iri-x, 50%) var(--iri-y, 50%),
+    #000 0%,
+    #000 30%,
+    transparent 72%
+  );
+  mask-image: radial-gradient(
+    circle 72px at var(--iri-x, 50%) var(--iri-y, 50%),
+    #000 0%,
+    #000 30%,
+    transparent 72%
+  );
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+}
+
+.iri-eyebrow-fx-inner {
+  width: 100%;
+}
+
+.iri-eyebrow-icon-fx {
+  flex-shrink: 0;
+  display: block;
+}
+
+.iri-eyebrow-label-stack {
+  display: inline-grid;
+  font-family: var(--font-ibm-plex-mono), monospace;
+  font-size: 14px;
+  line-height: 24px;
+}
+
+.iri-eyebrow-label-stack > * {
+  grid-area: 1 / 1;
+}
+
+.iri-eyebrow-label-outline {
+  color: #ffffff;
+  -webkit-text-stroke: 2.5px #ffffff;
+  paint-order: stroke fill;
+  text-shadow:
+    -1px -1px 0 #fff,
+     1px -1px 0 #fff,
+    -1px  1px 0 #fff,
+     1px  1px 0 #fff;
+}
+
+.iri-eyebrow-label-shine {
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+  background-image: linear-gradient(
+    115deg,
+    #FF9C12 0%,
+    #12B4FF 20%,
+    #FFF712 40%,
+    #FF12F7 60%,
+    #31E300 80%,
+    #FF9C12 100%
+  );
+  background-size: 220% 100%;
+  background-position: 0% 50%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  animation: subheader-iridescent-drift 9s linear infinite;
+  animation-play-state: paused;
+}
+
+.iri-eyebrow.is-iri-active .iri-eyebrow-label-shine,
+.iri-eyebrow.is-iri-active .iri-eyebrow-dash-shine {
+  animation-play-state: running;
+}
+
+.iri-eyebrow-dash-shine {
+  height: 1px;
+  width: 100%;
+  background-image: linear-gradient(
+    90deg,
+    #FF9C12 0%,
+    #12B4FF 20%,
+    #FFF712 40%,
+    #FF12F7 60%,
+    #31E300 80%,
+    #FF9C12 100%
+  );
+  background-size: 220% 100%;
+  background-position: 0% 50%;
+  animation: subheader-iridescent-drift 9s linear infinite;
+  animation-play-state: paused;
+  -webkit-mask-image: repeating-linear-gradient(
+    to right,
+    #000 0 5px,
+    transparent 5px 10px
+  );
+  mask-image: repeating-linear-gradient(
+    to right,
+    #000 0 5px,
+    transparent 5px 10px
+  );
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .iri-eyebrow-label-shine,
+  .iri-eyebrow-dash-shine {
+    animation: none;
+    background-position: 40% 50%;
+  }
+}
+
 /* Keep ideation-to-PROD chips on one line */
 .subheader-inline-chips {
   white-space: nowrap;

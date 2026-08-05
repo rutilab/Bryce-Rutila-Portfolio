@@ -7,6 +7,8 @@ import HalftoneFly from '@/components/HalftoneFly';
 import { AIAssistantThumbnail } from '@/components/AIAssistantThumbnail';
 import { MilestoneThumbnail } from '@/components/MilestoneThumbnail';
 import { IdeationChip } from '@/components/IdeationChip';
+import { IridescentText } from '@/components/IridescentText';
+import { IridescentEyebrow } from '@/components/IridescentEyebrow';
 import Loader from '@/components/Loader';
 
 // Module-level flag: resets on real page reload (module re-imported), persists across SPA remounts
@@ -958,11 +960,11 @@ export default function Home() {
           </svg>
 
           <p className="subheader-text">
-            A systems-thinking product designer who crafts end-to-end
-            solutions, from{' '}
+            <IridescentText text="A systems-thinking product designer who crafts end-to-end solutions, from " />
             <span className="subheader-inline-chips" style={{ whiteSpace: 'nowrap' }}>
               <IdeationChip />{' '}
-              to <span className="subheader-prod">[PROD]</span>
+              <IridescentText text="to" />{' '}
+              <span className="subheader-prod">[PROD]</span>
             </span>
           </p>
         </section>
@@ -970,16 +972,19 @@ export default function Home() {
         {/* ── Featured Projects ──────────────────────────────────────────── */}
         <section className="projects-section">
 
-          <div style={{ marginBottom: '24px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '5px', marginBottom: '4px' }}>
+          <IridescentEyebrow
+            label="FEATURED PROJECTS"
+            iconPathD={[
+              'M8 0L9.16938 5.17688L13.6569 2.34315L10.8231 6.83062L16 8L10.8231 9.16938L13.6569 13.6569L9.16938 10.8231L8 16L6.83062 10.8231L2.34315 13.6569L5.17688 9.16938L0 8L5.17688 6.83062L2.34315 2.34315L6.83062 5.17688L8 0Z',
+              'M8 4L8.58469 6.58844L10.8284 5.17157L9.41156 7.41531L12 8L9.41156 8.58469L10.8284 10.8284L8.58469 9.41156L8 12L7.41531 9.41156L5.17157 10.8284L6.58844 8.58469L4 8L6.58844 7.41531L5.17157 5.17157L7.41531 6.58844L8 4Z',
+            ]}
+            icon={
               <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ flexShrink: 0 }}>
                 <path d="M8 0L9.16938 5.17688L13.6569 2.34315L10.8231 6.83062L16 8L10.8231 9.16938L13.6569 13.6569L9.16938 10.8231L8 16L6.83062 10.8231L2.34315 13.6569L5.17688 9.16938L0 8L5.17688 6.83062L2.34315 2.34315L6.83062 5.17688L8 0Z" fill="#141510"/>
                 <path d="M8 4L8.58469 6.58844L10.8284 5.17157L9.41156 7.41531L12 8L9.41156 8.58469L10.8284 10.8284L8.58469 9.41156L8 12L7.41531 9.41156L5.17157 10.8284L6.58844 8.58469L4 8L6.58844 7.41531L5.17157 5.17157L7.41531 6.58844L8 4Z" fill="#FAF7F2"/>
               </svg>
-              <span style={{ fontFamily: "var(--font-ibm-plex-mono), monospace", fontSize: '14px', lineHeight: '24px', color: '#141510' }}>FEATURED PROJECTS</span>
-            </div>
-            <div style={{ borderBottom: '1px dashed #141510' }} />
-          </div>
+            }
+          />
 
           <div className="projects-grid">
             {PROJECTS.map((p, i) => <ProjectCard key={i} {...p} />)}
@@ -1000,17 +1005,19 @@ export default function Home() {
             </h2>
           </div>
 
-          {/* Divider */}
-          <div style={{ marginBottom: '24px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '5px', marginBottom: '4px' }}>
+          <IridescentEyebrow
+            label="ENDORSEMENTS"
+            iconPathD={[
+              'M8 0L10.1607 5.83927L16 8L10.1607 10.1607L8 16L5.83927 10.1607L0 8L5.83927 5.83927L8 0Z',
+              'M8 4L9.08036 6.91964L12 8L9.08036 9.08036L8 12L6.91964 9.08036L4 8L6.91964 6.91964L8 4Z',
+            ]}
+            icon={
               <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ flexShrink: 0 }}>
                 <path d="M8 0L10.1607 5.83927L16 8L10.1607 10.1607L8 16L5.83927 10.1607L0 8L5.83927 5.83927L8 0Z" fill="#141510"/>
                 <path d="M8 4L9.08036 6.91964L12 8L9.08036 9.08036L8 12L6.91964 9.08036L4 8L6.91964 6.91964L8 4Z" fill="#FAF7F2"/>
               </svg>
-              <span style={{ fontFamily: "var(--font-ibm-plex-mono), monospace", fontSize: '14px', lineHeight: '24px', color: '#141510' }}>ENDORSEMENTS</span>
-            </div>
-            <div style={{ borderBottom: '1px dashed #141510' }} />
-          </div>
+            }
+          />
 
           {/* Cards */}
           <div className="endorsements-grid">
