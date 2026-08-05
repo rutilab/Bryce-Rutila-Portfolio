@@ -218,7 +218,7 @@ function CompletionScreen({
                               style={{
                                 transform: odoRolling[i]
                                   ? 'translateY(0)'
-                                  : `translateY(${-(digits.length - 1) * 1.05}em)`,
+                                  : `translateY(${-(digits.length - 1) * 1.2}em)`,
                                 transition: odoRolling[i]
                                   ? 'transform 1.4s cubic-bezier(0.22, 1, 0.36, 1)'
                                   : 'none',
@@ -413,18 +413,21 @@ function CompletionScreen({
         .rv-stat-ticker {
           display: inline-flex;
           overflow: hidden;
-          height: 1.05em;
+          height: 1.2em;
           align-items: flex-start;
           font-size: 24px;
           font-weight: 800;
           color: #76bffe;
-          line-height: 1.05;
+          line-height: 1.2;
         }
         .rv-odo-col {
           position: relative;
           overflow: hidden;
-          height: 1.05em;
-          width: 0.65em;
+          height: 1.2em;
+          /* Slightly wider than glyph width — bold-weight digit metrics vary enough
+             across renderers (esp. WebKit combined with LiveScreenFit's zoom scaling)
+             that 0.65em could clip on some devices; 0.72em gives it headroom. */
+          width: 0.72em;
         }
         .rv-odo-strip {
           display: flex;
@@ -432,8 +435,11 @@ function CompletionScreen({
         }
         .rv-odo-digit {
           display: block;
-          height: 1.05em;
-          line-height: 1.05;
+          /* Taller than the font's own line-height so bold digit glyphs (which can
+             render with more vertical extent than 1.05em under WebKit's zoom-scaled
+             text metrics) never get clipped by the column's overflow: hidden. */
+          height: 1.2em;
+          line-height: 1.2;
           text-align: center;
         }
         .rv-stat-l {

@@ -326,6 +326,15 @@ export function MilestoneHeroScreen({
           height: auto;
           margin: 0 auto;
         }
+        /* Smaller hero art on XS so it doesn't dominate the viewport's vertical space. */
+        @media (max-width: 599px) {
+          .ms-mountain-wrap {
+            width: 176px;
+          }
+          .ms-mountain-wrap :global(svg) {
+            width: 176px;
+          }
+        }
         .ms-label {
           margin-top: 32px;
           font-size: 16px;
