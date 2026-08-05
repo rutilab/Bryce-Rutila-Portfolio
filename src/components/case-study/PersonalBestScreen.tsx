@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState, type RefObject } from 'react';
+import { memo, useEffect, useRef, useState, type RefObject } from 'react';
 
 function useInView<T extends Element>(threshold = 0.25): [RefObject<T | null>, boolean] {
   const ref = useRef<T | null>(null);
@@ -20,7 +20,12 @@ function useInView<T extends Element>(threshold = 0.25): [RefObject<T | null>, b
   return [ref, inView];
 }
 
-function PersonalBestRocket() {
+/**
+ * Memoized: takes no props, so it renders exactly once. Without this, every state
+ * update in the reveal sequence re-renders this subtree and restarts the CSS
+ * animations inside the injected SVG (the flame wobble/flicker) from zero.
+ */
+const PersonalBestRocket = memo(function PersonalBestRocket() {
   const [svg, setSvg] = useState('');
 
   useEffect(() => {
@@ -47,7 +52,7 @@ function PersonalBestRocket() {
       dangerouslySetInnerHTML={{ __html: svg }}
     />
   );
-}
+});
 
 /**
  * Live Personal Best achievement screen ported from the Focus Coach HTML prototype.
@@ -97,7 +102,7 @@ export function PersonalBestScreen() {
     later(() => setShowTitle(true), t(1050));
     later(() => setShowCompare(true), t(1210));
     later(() => setShowContinue(true), t(1610));
-    later(() => setRun((v) => v + 1), t(5200));
+    // Play the reveal once and hold at rest — no auto-replay loop.
 
     return () => timers.forEach(clearTimeout);
   }, [run, inView]);

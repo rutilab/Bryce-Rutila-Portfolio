@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState, type CSSProperties, type RefObject } from 'react';
+import { memo, useEffect, useRef, useState, type CSSProperties, type RefObject } from 'react';
 
 type NodeState = 'done' | 'next' | 'future';
 
@@ -39,7 +39,12 @@ function useInView<T extends Element>(threshold = 0.35): [RefObject<T | null>, b
   return [ref, inView];
 }
 
-function MilestoneMountain() {
+/**
+ * Memoized: takes no props, so it renders exactly once. Without this, every state
+ * update in the reveal sequence re-renders this subtree and restarts the CSS
+ * animations inside the injected SVG (flag wave, drifting clouds) from zero.
+ */
+const MilestoneMountain = memo(function MilestoneMountain() {
   const [svg, setSvg] = useState('');
 
   useEffect(() => {
@@ -66,7 +71,7 @@ function MilestoneMountain() {
       dangerouslySetInnerHTML={{ __html: svg }}
     />
   );
-}
+});
 
 export type MilestoneHeroScreenProps = {
   playOnce?: boolean;
@@ -93,8 +98,8 @@ export function MilestoneHeroScreen({
   const [showLabel, setShowLabel] = useState(false);
   const [showTitle, setShowTitle] = useState(false);
   const [showProgress, setShowProgress] = useState(false);
-  const [fillWidth, setFillWidth] = useState('50%');
-  const [highlightWidth, setHighlightWidth] = useState('47%');
+  const [fillTransform, setFillTransform] = useState('translateX(-50%)');
+  const [highlightTransform, setHighlightTransform] = useState('scaleX(0.47)');
   const [node25, setNode25] = useState<NodeState>('next');
   const [node50, setNode50] = useState<NodeState>('future');
   const [node25Pop, setNode25Pop] = useState(false);
@@ -123,8 +128,8 @@ export function MilestoneHeroScreen({
       setShowLabel(false);
       setShowTitle(false);
       setShowProgress(false);
-      setFillWidth('50%');
-      setHighlightWidth('47%');
+      setFillTransform('translateX(-50%)');
+      setHighlightTransform('scaleX(0.47)');
       setNode25('next');
       setNode50('future');
       setNode25Pop(false);
@@ -147,8 +152,8 @@ export function MilestoneHeroScreen({
     later(() => setShowTitle(true), s(886));
     later(() => setShowProgress(true), s(1186));
     later(() => {
-      setFillWidth('73.5%');
-      setHighlightWidth('70.5%');
+      setFillTransform('translateX(-26.5%)');
+      setHighlightTransform('scaleX(0.705)');
     }, s(1266));
     later(() => {
       setNode25('done');
@@ -166,9 +171,8 @@ export function MilestoneHeroScreen({
     if (playOnce) {
       later(() => setContinuePressing(true), continueAt + 1600);
       later(() => onCompleteRef.current?.(), continueAt + 1600 + 190);
-    } else {
-      later(() => setRun((v) => v + 1), continueAt + 2800);
     }
+    // Otherwise, play the reveal once and hold at rest — no auto-replay loop.
 
     return () => timers.forEach(clearTimeout);
   }, [run, inView, playOnce]);
@@ -212,8 +216,8 @@ export function MilestoneHeroScreen({
           <div className={`ms-progress-wrap ${showProgress ? 'ms-show' : ''}`}>
             <div className="ms-progress-meter">
               <div className="ms-track">
-                <div className="ms-track-fill" style={{ width: fillWidth }} />
-                <div className="ms-track-highlight" style={{ width: highlightWidth }} />
+                <div className="ms-track-fill" style={{ transform: fillTransform }} />
+                <div className="ms-track-highlight" style={{ transform: highlightTransform }} />
               </div>
               {NODES.map((node, index) => {
                 const state = nodeState(index);
@@ -379,24 +383,36 @@ export function MilestoneHeroScreen({
           height: 16px;
           background: #e5e5e5;
           border-radius: 8px;
+          /* Clips the translated fill. Nodes are siblings of .ms-track, so they stay unclipped. */
+          overflow: hidden;
         }
+        /*
+         * Fill and highlight animate with transform rather than width: width would
+         * force a layout pass on every frame for the full 1.1s, which starves the
+         * main thread the mountain SVG repaints on and makes its flag/clouds stutter.
+         * The fill slides a full-width bar in from the left so its rounded right cap
+         * never distorts; the highlight scales, where the 1px radius hides it.
+         */
         .ms-track-fill {
           position: absolute;
           top: 0;
           left: 0;
+          width: 100%;
           height: 100%;
           background: #76bffe;
           border-radius: 8px;
-          transition: width 1.1s cubic-bezier(0.4, 0, 0.2, 1);
+          transition: transform 1.1s cubic-bezier(0.4, 0, 0.2, 1);
         }
         .ms-track-highlight {
           position: absolute;
           top: 2px;
           left: 4px;
+          width: 100%;
           height: 2px;
           background: #9ed2ff;
           border-radius: 1px;
-          transition: width 1.1s cubic-bezier(0.4, 0, 0.2, 1);
+          transform-origin: left center;
+          transition: transform 1.1s cubic-bezier(0.4, 0, 0.2, 1);
         }
         .ms-node {
           position: absolute;
