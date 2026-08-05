@@ -442,20 +442,24 @@ function CompletionScreen({
         }
         .rv-odo-digit {
           /*
-           * Flex + align-items: flex-end (not line-height centering) anchors the
-           * glyph to the row's bottom edge, so growing the row's height for
-           * clipping headroom only adds space above the digit, not below it. That
-           * keeps the column's bottom edge — which .rv-stat's flex-end alignment
-           * uses to line the number up with its label — right where the visible
-           * digit actually ends, instead of drifting down into the label.
+           * Deliberately plain block + line-height centering rather than flex
+           * alignment. Under LiveScreenFit's fractional zoom, a flex align step
+           * resolves each item's position independently, so neighbouring digit
+           * columns could round to different pixel offsets — one digit sitting a
+           * pixel high and clipping against the column's overflow: hidden. Letting
+           * the line box position the glyph keeps every column on the same code
+           * path, so they round identically.
            */
-          display: flex;
-          align-items: flex-end;
-          justify-content: center;
-          /* Taller than the font's own line-height so bold digit glyphs (which can
-             render with more vertical extent than 1.05em under WebKit's zoom-scaled
-             text metrics) never get clipped by the column's overflow: hidden. */
+          display: block;
+          /* Box height and line box are the same 1.2em, so the glyph is centred with
+             symmetric headroom above and below — enough that bold digits don't clip
+             under WebKit's zoom-scaled text metrics. */
           height: 1.2em;
+          line-height: 1.2;
+          text-align: center;
+          /* Strips vary in length per column (11 digits vs 2 for "25"); never let a
+             longer strip compress its digits relative to a shorter one. */
+          flex-shrink: 0;
         }
         .rv-stat-l {
           font-size: 12px;
