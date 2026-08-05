@@ -6,7 +6,7 @@ type Variant = 'week' | 'quote';
 
 const ODO_CONFIGS = [
   { label: 'Sessions', start: 24, end: 25 },
-  { label: 'Min', start: 83, end: 108 },
+  { label: 'Min', start: 83, end: 95 },
   { label: 'Check-ins', start: 57, end: 62 },
 ] as const;
 
@@ -406,13 +406,14 @@ function CompletionScreen({
         .rv-stat {
           display: flex;
           /*
-           * flex-end, not baseline: .rv-stat-ticker has no real text baseline (it's
-           * nested divs, not inline text), so browsers fall back to its bottom
-           * margin edge as a synthetic baseline. Growing the ticker's box height for
-           * digit headroom pushed that synthetic baseline down into the label below
-           * it. Bottom-aligning both boxes directly avoids that.
+           * Baseline, not flex-end. The number and its label are different font
+           * sizes, so aligning box bottoms always leaves the digits sitting high —
+           * each box carries half-leading below its glyph proportional to its own
+           * font-size. Sharing a text baseline is what actually lands the digits
+           * on the same line as the label. This works because .rv-odo-col is no
+           * longer clipped, so the ticker exposes the digit's real baseline.
            */
-          align-items: flex-end;
+          align-items: baseline;
           gap: 6px;
           padding: 0 8px;
           min-width: 0;
@@ -427,9 +428,15 @@ function CompletionScreen({
           color: #76bffe;
           line-height: 1.2;
         }
+        /*
+         * No overflow here — the ticker above already clips to the same 1.2em
+         * window. Keeping the column unclipped means it reports a real text
+         * baseline (from the digit inside) rather than a synthesised one from its
+         * bottom edge, which is what lets .rv-stat baseline-align the number with
+         * its label instead of guessing from box edges.
+         */
         .rv-odo-col {
           position: relative;
-          overflow: hidden;
           height: 1.2em;
           /* Slightly wider than glyph width — bold-weight digit metrics vary enough
              across renderers (esp. WebKit combined with LiveScreenFit's zoom scaling)
