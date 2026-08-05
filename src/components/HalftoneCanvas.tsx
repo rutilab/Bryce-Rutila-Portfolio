@@ -106,6 +106,11 @@ export default function HalftoneCanvas({ rippleTrigger = 0 }: Props) {
       const HR2       = HIGHLIGHT_R * HIGHLIGHT_R;
       // Offset dots by scroll position (mod GRID) so they scroll with the page
       const scrollOff = (window.scrollY % GRID) * dpr;
+      // Ideation rotate drag suppresses glow even between mousemove events
+      const suppressGlow =
+        mouse.overClickable ||
+        mouse.inHalftone ||
+        !!document.body.dataset.ideationRotating;
 
       const ripple      = rippleRef.current;
       const waveRadius  = ripple ? WAVE_SPEED * (ts - ripple.time) / 1000 : -1;
@@ -136,7 +141,7 @@ export default function HalftoneCanvas({ rippleTrigger = 0 }: Props) {
           }
 
           // Cursor repulsion
-          if (!mouse.overClickable) {
+          if (!suppressGlow) {
             const dx = dotX - mouse.x;
             const dy = dotY - mouse.y;
             const d2 = dx * dx + dy * dy;
@@ -166,7 +171,7 @@ export default function HalftoneCanvas({ rippleTrigger = 0 }: Props) {
           const dotX = g.gx[i] + g.ox[i];
           const dotY = g.gy[i] + g.oy[i];
           const hdx  = dotX - mouse.x, hdy = dotY - mouse.y;
-          if (!mouse.overClickable && !mouse.inHalftone && hdx * hdx + hdy * hdy < HR2) continue;
+          if (!suppressGlow && hdx * hdx + hdy * hdy < HR2) continue;
 
           const r  = g.br[i] * dpr;
           const cx = dotX * dpr, cy = dotY * dpr - scrollOff;
@@ -176,7 +181,7 @@ export default function HalftoneCanvas({ rippleTrigger = 0 }: Props) {
         ctx.fill();
 
         // ── Pass 2: Highlight zone ───────────────────────────────────────
-        if (!mouse.overClickable && !mouse.inHalftone && mouse.x > -999) {
+        if (!suppressGlow && mouse.x > -999) {
           ctx.fillStyle = COLOR_HIGHLIGHT;
           ctx.beginPath();
           for (let i = 0; i < g.n; i++) {
@@ -216,6 +221,30 @@ export default function HalftoneCanvas({ rippleTrigger = 0 }: Props) {
     init();
 
     // ── Events ─────────────────────────────────────────────────────────────
+    const CLICKABLE_SEL =
+      'a, button, [role="button"], select, input, label, .bryce-svg, .subheader-ideation, [data-suppress-halftone]';
+
+    const cursorSuppressesHighlight = (cursor: string) =>
+      cursor === 'pointer' ||
+      cursor === 'grab' ||
+      cursor === 'grabbing' ||
+      cursor.includes('url(') ||
+      cursor.includes('grab');
+
+    /** Prefer elements under the pointer — window event targets can miss rotated/inline chips. */
+    const isOverClickable = (clientX: number, clientY: number, fallbackTarget: EventTarget | null) => {
+      const stack = document.elementsFromPoint(clientX, clientY);
+      for (const node of stack) {
+        if (!(node instanceof Element)) continue;
+        if (node.closest(CLICKABLE_SEL)) return true;
+        if (cursorSuppressesHighlight(getComputedStyle(node).cursor)) return true;
+      }
+      const el = fallbackTarget instanceof Element ? fallbackTarget : null;
+      if (el?.closest(CLICKABLE_SEL)) return true;
+      if (el && cursorSuppressesHighlight(getComputedStyle(el).cursor)) return true;
+      return false;
+    };
+
     const onMove  = (e: MouseEvent) => {
       if (document.body.dataset.modalOpen) {
         mouse.x = e.clientX; mouse.y = e.clientY;
@@ -223,14 +252,13 @@ export default function HalftoneCanvas({ rippleTrigger = 0 }: Props) {
         return;
       }
       mouse.x = e.clientX; mouse.y = e.clientY;
-
-      const el = e.target as Element | null;
-      if (el?.closest('a, button, [role="button"], select, input, label, .bryce-svg')) {
+      // Active ideation rotate drag — suppress glow for the whole gesture.
+      if (document.body.dataset.ideationRotating) {
         mouse.overClickable = true;
-      } else {
-        const cs = el ? getComputedStyle(el).cursor : '';
-        mouse.overClickable = cs === 'pointer' || cs === 'grab' || cs === 'grabbing';
+        mouse.inHalftone = false;
+        return;
       }
+      mouse.overClickable = isOverClickable(e.clientX, e.clientY, e.target);
 
       const els = document.querySelectorAll('.br-fly-collected');
       let hit = false;
@@ -245,13 +273,11 @@ export default function HalftoneCanvas({ rippleTrigger = 0 }: Props) {
     const onLeave = () => { mouse.x = -9999; mouse.y = -9999; mouse.overClickable = false; mouse.inHalftone = false; };
     const onOver  = (e: MouseEvent) => {
       if (document.body.dataset.modalOpen) return;
-      const el = e.target as Element | null;
-      if (el?.closest('a, button, [role="button"], select, input, label, .bryce-svg')) {
+      if (document.body.dataset.ideationRotating) {
         mouse.overClickable = true;
-      } else {
-        const cs = el ? getComputedStyle(el).cursor : '';
-        mouse.overClickable = cs === 'pointer' || cs === 'grab' || cs === 'grabbing';
+        return;
       }
+      mouse.overClickable = isOverClickable(e.clientX, e.clientY, e.target);
     };
 
     let resizeTimer: ReturnType<typeof setTimeout>;

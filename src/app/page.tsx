@@ -6,6 +6,7 @@ import HalftoneCanvas from '@/components/HalftoneCanvas';
 import HalftoneFly from '@/components/HalftoneFly';
 import { AIAssistantThumbnail } from '@/components/AIAssistantThumbnail';
 import { MilestoneThumbnail } from '@/components/MilestoneThumbnail';
+import { IdeationChip } from '@/components/IdeationChip';
 import Loader from '@/components/Loader';
 
 // Module-level flag: resets on real page reload (module re-imported), persists across SPA remounts
@@ -41,9 +42,9 @@ const PROJECTS: Project[] = [
     title: 'Focus Coach Achievements',
     eyebrow: 'FINDING FOCUS • 2026',
     description:
-      "Redesigning the session completion flow around celebration — milestones, personal bests, and focus streaks that make finishing a session feel earned",
+      'Redesigning the session completion flow to celebrate users progress and help reduce churn rates.',
     tags: ['UX DESIGN', 'GAMIFICATION', 'ANIMATION'],
-    readTime: '10 MIN READ',
+    readTime: '10-12 MIN READ',
     cardColor: '#31e300',
     href: '/case-studies/focus-coach-achievements',
     thumbnailContent: <MilestoneThumbnail />,
@@ -540,7 +541,7 @@ function ProjectCard({ title, eyebrow, description, tags, readTime, cardColor, h
               lineHeight: 'normal',
               letterSpacing: '-0.168px',
               color: '#141510',
-              margin: '0 0 2px 0',
+              margin: '0 0 8px 0',
             }}>
               <span style={{
                 backgroundColor: hovered ? highlightBg : 'transparent',
@@ -957,7 +958,12 @@ export default function Home() {
           </svg>
 
           <p className="subheader-text">
-            A product designer who loves bringing ideas to life.
+            A systems-thinking product designer who crafts end-to-end
+            solutions, from{' '}
+            <span className="subheader-inline-chips" style={{ whiteSpace: 'nowrap' }}>
+              <IdeationChip />{' '}
+              to <span className="subheader-prod">[PROD]</span>
+            </span>
           </p>
         </section>
 

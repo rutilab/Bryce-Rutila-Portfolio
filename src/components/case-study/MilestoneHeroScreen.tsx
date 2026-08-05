@@ -197,7 +197,13 @@ export function MilestoneHeroScreen({
           // Height matches content: the mountain (and its padding) shrinks below
           // 600px, so the container does too — otherwise XS is left with dead
           // space below the Continue button.
-          embedded ? 'h-full max-w-none' : 'max-w-[960px] rounded-[24px] h-[500px] min-[600px]:h-[587px]',
+          // hideContinue (home thumbnail): hug content so the card can scale the
+          // full mountain→progress asset without empty Continue-button space.
+          embedded
+            ? 'h-full max-w-none'
+            : hideContinue
+              ? 'max-w-[960px] rounded-[24px] h-auto'
+              : 'max-w-[960px] rounded-[24px] h-[500px] min-[600px]:h-[587px]',
         ].join(' ')}
         aria-label="Milestone achievement screen — 25 sessions completed"
       >
@@ -206,7 +212,12 @@ export function MilestoneHeroScreen({
             'flex flex-col items-center px-6',
             // Embedded (Final Design EOS flow): vertically center the mountain→progress
             // group in the space above the docked Continue button.
-            embedded ? 'h-full justify-center box-border pb-[100px]' : 'py-12 sm:py-16',
+            // hideContinue: tighter padding so the thumbnail fills more of the card.
+            embedded
+              ? 'h-full justify-center box-border pb-[100px]'
+              : hideContinue
+                ? 'pt-8 pb-6'
+                : 'py-12 sm:py-16',
           ].join(' ')}
         >
           <div

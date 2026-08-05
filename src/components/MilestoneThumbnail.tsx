@@ -5,16 +5,21 @@ import { MilestoneHeroScreen } from '@/components/case-study';
 
 /** Intrinsic width the screen is laid out at before scaling. */
 const DESIGN_W = 520;
+/**
+ * Intrinsic height of MilestoneHeroScreen with `hideContinue` (content-hugged,
+ * compact padding, 264×210 mountain). Used so we can scale to fit the full
+ * mountain→progress asset inside the card instead of cropping by width alone.
+ */
+const DESIGN_H = 400;
 
 /**
  * Home page card thumbnail for the Focus Coach Achievements case study — renders
  * the same live Milestone hero screen used at the top of the case study, scaled
- * to fill the card.
+ * to fit entirely within the card (contain).
  *
  * The Continue button is dropped (`hideContinue`) — it's not meaningful in a
- * thumbnail and dropping it brings the screen's proportions close enough to the
- * card's that filling by width leaves only a sliver of trailing whitespace to
- * crop, not any actual content.
+ * thumbnail. Scaling uses both axes so the 4:3 project cards don't crop the
+ * progress meter on larger breakpoints.
  *
  * Uses `zoom` rather than `transform: scale` deliberately: zoom scales layout, so
  * the box collapses to its scaled size with no separate height compensation
@@ -24,7 +29,7 @@ const DESIGN_W = 520;
  */
 export function MilestoneThumbnail() {
   const outerRef = useRef<HTMLDivElement>(null);
-  const [scale, setScale] = useState(0.6);
+  const [scale, setScale] = useState(0.5);
 
   useEffect(() => {
     const outer = outerRef.current;
@@ -32,7 +37,9 @@ export function MilestoneThumbnail() {
 
     const update = () => {
       const containerW = outer.clientWidth;
-      if (containerW > 0) setScale(containerW / DESIGN_W);
+      const containerH = outer.clientHeight;
+      if (containerW <= 0 || containerH <= 0) return;
+      setScale(Math.min(containerW / DESIGN_W, containerH / DESIGN_H));
     };
 
     update();
@@ -49,6 +56,10 @@ export function MilestoneThumbnail() {
         inset: 0,
         overflow: 'hidden',
         borderRadius: '12px',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: '#f0f1f2',
       }}
     >
       <div
@@ -57,6 +68,7 @@ export function MilestoneThumbnail() {
           zoom: scale,
           pointerEvents: 'none',
           userSelect: 'none',
+          flexShrink: 0,
         }}
       >
         <MilestoneHeroScreen hideContinue />
