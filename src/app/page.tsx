@@ -5,6 +5,7 @@ import Link from 'next/link';
 import HalftoneCanvas from '@/components/HalftoneCanvas';
 import HalftoneFly from '@/components/HalftoneFly';
 import { AIAssistantThumbnail } from '@/components/AIAssistantThumbnail';
+import { MilestoneThumbnail } from '@/components/MilestoneThumbnail';
 import Loader from '@/components/Loader';
 
 // Module-level flag: resets on real page reload (module re-imported), persists across SPA remounts
@@ -45,31 +46,7 @@ const PROJECTS: Project[] = [
     readTime: '10 MIN READ',
     cardColor: '#31e300',
     href: '/case-studies/focus-coach-achievements',
-    thumbnailContent: (
-      // Placeholder — swap for final asset: milestone achievement screen with summit illustration
-      <div style={{
-        position: 'absolute', inset: '8px',
-        borderRadius: '5px',
-        border: '2px dashed #31e300',
-        backgroundColor: 'rgba(49, 227, 0, 0.07)',
-        display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-        gap: '6px', padding: '12px', textAlign: 'center',
-      }}>
-        <span style={{
-          fontFamily: "var(--font-ibm-plex-mono), monospace",
-          fontSize: '10px', letterSpacing: '0.08em',
-          color: '#1e8a00', textTransform: 'uppercase',
-        }}>
-          Placeholder · Image
-        </span>
-        <span style={{
-          fontFamily: "var(--font-inter), sans-serif",
-          fontSize: '11px', lineHeight: '15px', color: '#557a4a',
-        }}>
-          Milestone achievement screen with summit illustration
-        </span>
-      </div>
-    ),
+    thumbnailContent: <MilestoneThumbnail />,
   },
   {
     title: 'AI Chat Assistant',

@@ -77,6 +77,8 @@ export type MilestoneHeroScreenProps = {
   playOnce?: boolean;
   onComplete?: () => void;
   embedded?: boolean;
+  /** Omit the Continue button — for contexts (e.g. thumbnails) where it's dead weight. */
+  hideContinue?: boolean;
 };
 
 /**
@@ -87,6 +89,7 @@ export function MilestoneHeroScreen({
   playOnce = false,
   onComplete,
   embedded = false,
+  hideContinue = false,
 }: MilestoneHeroScreenProps = {}) {
   const [ref, inViewObserved] = useInView<HTMLDivElement>(0.25);
   const inView = playOnce || inViewObserved;
@@ -284,21 +287,23 @@ export function MilestoneHeroScreen({
             </div>
           </div>
 
-          <button
-            type="button"
-            tabIndex={-1}
-            className={[
-              'ms-continue',
-              embedded ? 'ms-continue-docked' : '',
-              showContinue ? 'ms-show' : '',
-              continuePressing ? 'ms-pressing' : '',
-            ]
-              .filter(Boolean)
-              .join(' ')}
-            aria-hidden
-          >
-            Continue
-          </button>
+          {!hideContinue ? (
+            <button
+              type="button"
+              tabIndex={-1}
+              className={[
+                'ms-continue',
+                embedded ? 'ms-continue-docked' : '',
+                showContinue ? 'ms-show' : '',
+                continuePressing ? 'ms-pressing' : '',
+              ]
+                .filter(Boolean)
+                .join(' ')}
+              aria-hidden
+            >
+              Continue
+            </button>
+          ) : null}
         </div>
       </div>
 
