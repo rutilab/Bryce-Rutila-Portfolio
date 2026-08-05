@@ -191,9 +191,11 @@ export function MilestoneHeroScreen({
       <div
         className={[
           'relative w-full overflow-hidden bg-[#f0f1f2]',
-          embedded ? 'h-full max-w-none' : 'max-w-[960px] rounded-[24px]',
+          // Height matches content: the mountain (and its padding) shrinks below
+          // 600px, so the container does too — otherwise XS is left with dead
+          // space below the Continue button.
+          embedded ? 'h-full max-w-none' : 'max-w-[960px] rounded-[24px] h-[500px] min-[600px]:h-[587px]',
         ].join(' ')}
-        style={embedded ? undefined : { height: 587 }}
         aria-label="Milestone achievement screen — 25 sessions completed"
       >
         <div

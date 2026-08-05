@@ -405,8 +405,15 @@ function CompletionScreen({
         }
         .rv-stat {
           display: flex;
-          align-items: baseline;
-          gap: 4px;
+          /*
+           * flex-end, not baseline: .rv-stat-ticker has no real text baseline (it's
+           * nested divs, not inline text), so browsers fall back to its bottom
+           * margin edge as a synthetic baseline. Growing the ticker's box height for
+           * digit headroom pushed that synthetic baseline down into the label below
+           * it. Bottom-aligning both boxes directly avoids that.
+           */
+          align-items: flex-end;
+          gap: 6px;
           padding: 0 8px;
           min-width: 0;
         }
@@ -434,13 +441,21 @@ function CompletionScreen({
           flex-direction: column;
         }
         .rv-odo-digit {
-          display: block;
+          /*
+           * Flex + align-items: flex-end (not line-height centering) anchors the
+           * glyph to the row's bottom edge, so growing the row's height for
+           * clipping headroom only adds space above the digit, not below it. That
+           * keeps the column's bottom edge — which .rv-stat's flex-end alignment
+           * uses to line the number up with its label — right where the visible
+           * digit actually ends, instead of drifting down into the label.
+           */
+          display: flex;
+          align-items: flex-end;
+          justify-content: center;
           /* Taller than the font's own line-height so bold digit glyphs (which can
              render with more vertical extent than 1.05em under WebKit's zoom-scaled
              text metrics) never get clipped by the column's overflow: hidden. */
           height: 1.2em;
-          line-height: 1.2;
-          text-align: center;
         }
         .rv-stat-l {
           font-size: 12px;
