@@ -1751,10 +1751,11 @@ function ClosingCTA() {
             </a>
           </p>
         </div>
+        {/* Prototype iframe experience isn't usable at small viewports — button hidden below 600px. */}
         <button
           type="button"
           onClick={() => setOpen(true)}
-          className="shrink-0 inline-flex items-center gap-2 rounded-full px-7 py-4 text-[16px] font-semibold text-white transition-opacity hover:opacity-85"
+          className="hidden min-[600px]:inline-flex shrink-0 items-center gap-2 rounded-full px-7 py-4 text-[16px] font-semibold text-white transition-opacity hover:opacity-85"
           style={{ background: '#111113' }}
         >
           Try the Prototype

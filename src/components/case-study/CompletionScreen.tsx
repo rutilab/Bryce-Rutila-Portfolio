@@ -450,6 +450,27 @@ function CompletionScreen({
           background: #d8d8d8;
           flex-shrink: 0;
         }
+        /*
+         * Below 400px, LiveScreenFit has to zoom this whole screen down further to
+         * avoid overflow (the stats row is wider than XS viewports at full size).
+         * Trimming padding/font-size here shrinks the row's natural width, so less
+         * zoom is needed and the result reads as sized-down rather than scrunched.
+         */
+        @media (max-width: 399px) {
+          .rv-stat {
+            gap: 3px;
+            padding: 0 5px;
+          }
+          .rv-stat-ticker {
+            font-size: 20px;
+          }
+          .rv-stat-l {
+            font-size: 11px;
+          }
+          .rv-divider {
+            height: 18px;
+          }
+        }
         .rv-week-card {
           width: 100%;
           max-width: 408px;
