@@ -2214,7 +2214,7 @@ export default function FocusCoachAchievementsCaseStudy() {
               <p className="text-[16px] font-normal leading-[150%] text-[#333] max-w-[880px]">
                 Students weren&apos;t coming back to the Focus Coach — and the end of a session was where we lost them.
                 I redesigned it into a guided flow with a simpler reflection, celebratory achievements, and a brand-new
-                completion screen, built to motivate without manipulative gamification.
+                completion screen, built to motivate without manipulative tactics.
               </p>
               <StatRow
                 stats={[
@@ -2237,7 +2237,7 @@ export default function FocusCoachAchievementsCaseStudy() {
                     smoothScrollTo(el.getBoundingClientRect().top + window.scrollY - 40);
                   }}
                 >
-                  Jump to final designs?
+                  Jump to final designs
                   <span className="tldr-jump-arrow" aria-hidden="true">
                     <ArrowDownward sx={{ fontSize: 15 }} />
                   </span>

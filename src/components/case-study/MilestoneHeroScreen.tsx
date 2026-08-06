@@ -96,6 +96,9 @@ export function MilestoneHeroScreen({
   const [run, setRun] = useState(0);
   const onCompleteRef = useRef(onComplete);
   onCompleteRef.current = onComplete;
+  // styled-jsx isn't guaranteed on the very first paint — hide until mount so we
+  // don't flash raw unstyled copy (labels, vertical node list, Continue).
+  const [paintReady, setPaintReady] = useState(false);
   const [mountainIn, setMountainIn] = useState(false);
   const [mountainVisible, setMountainVisible] = useState(false);
   const [showLabel, setShowLabel] = useState(false);
@@ -110,6 +113,10 @@ export function MilestoneHeroScreen({
   const [showSparks, setShowSparks] = useState(false);
   const [showContinue, setShowContinue] = useState(false);
   const [continuePressing, setContinuePressing] = useState(false);
+
+  useEffect(() => {
+    setPaintReady(true);
+  }, []);
 
   useEffect(() => {
     if (!inView) return;
@@ -219,6 +226,11 @@ export function MilestoneHeroScreen({
                 ? 'pt-8 pb-6'
                 : 'py-12 sm:py-16',
           ].join(' ')}
+          style={{
+            opacity: paintReady ? 1 : 0,
+            // Keep layout stable; only the visual flash is suppressed
+            transition: paintReady ? 'opacity 0.15s ease' : undefined,
+          }}
         >
           <div
             className={`ms-mountain-wrap ${mountainIn ? 'ms-entering' : ''} ${mountainVisible ? 'ms-visible' : ''}`}
