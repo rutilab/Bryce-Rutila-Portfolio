@@ -40,7 +40,9 @@ export function useCursorIriGlow(
     };
 
     const tick = () => {
-      const target = mouse.over ? 1 : 0;
+      // Ideation rotate drag — keep the BRYCE wash off until the gesture ends
+      const rotating = !!document.body.dataset.ideationRotating;
+      const target = mouse.over && !rotating ? 1 : 0;
       const fadeIn = reducedMotion ? 0.55 : IRI_FADE_IN;
       const fadeOut = reducedMotion ? 0.16 : IRI_FADE_OUT;
       const rate = target > glow.current ? fadeIn : fadeOut;
@@ -62,7 +64,7 @@ export function useCursorIriGlow(
       fx.style.setProperty('--iri-y', `${pos.y.toFixed(1)}px`);
       root.classList.toggle('is-iri-active', glow.current > 0);
 
-      if (mouse.over || glow.current > 0) {
+      if (mouse.over || glow.current > 0 || rotating) {
         raf = requestAnimationFrame(tick);
       } else {
         running = false;

@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import type { CSSProperties, MutableRefObject, ReactNode, RefObject } from 'react';
 import { createPortal } from 'react-dom';
 import KeyboardDoubleArrowDownOutlined from '@mui/icons-material/KeyboardDoubleArrowDownOutlined';
+import ArrowDownward from '@mui/icons-material/ArrowDownward';
 import Check from '@mui/icons-material/Check';
 import DarkMode from '@mui/icons-material/DarkMode';
 import DarkModeOutlined from '@mui/icons-material/DarkModeOutlined';
@@ -80,15 +81,17 @@ function Section({
   heading,
   body,
   children,
+  id,
 }: {
   eyebrow?: string;
   heading?: ReactNode;
   body?: string | string[];
   children?: ReactNode;
+  id?: string;
 }) {
   const bodies = body == null ? [] : Array.isArray(body) ? body : [body];
   return (
-    <div className="flex flex-col gap-10">
+    <div id={id} className="flex flex-col gap-10">
       <div className="flex flex-col gap-4">
         <div className="max-w-[760px]">
           {eyebrow && <Eyebrow label={eyebrow} />}
@@ -2203,7 +2206,10 @@ export default function FocusCoachAchievementsCaseStudy() {
 
           {/* ── TL;DR ── */}
           <div className="mt-14 pb-14 md:pb-28">
-            <div className="rounded-[24px] p-5 sm:p-8 md:p-10 flex flex-col gap-6" style={{ background: '#ffffff', border: `1px solid ${BORDER}` }}>
+            <div
+              className="relative rounded-[24px] px-5 pt-5 pb-6 sm:px-8 sm:pt-8 md:px-10 md:pt-10 flex flex-col gap-6"
+              style={{ background: '#ffffff', border: `1px solid ${BORDER}` }}
+            >
               <Eyebrow label="TL;DR" />
               <p className="text-[16px] font-normal leading-[150%] text-[#333] max-w-[880px]">
                 Students weren&apos;t coming back to the Focus Coach — and the end of a session was where we lost them.
@@ -2221,6 +2227,22 @@ export default function FocusCoachAchievementsCaseStudy() {
                   },
                 ]}
               />
+              <div className="flex justify-center pt-1">
+                <button
+                  type="button"
+                  className="tldr-jump-btn"
+                  onClick={() => {
+                    const el = document.getElementById('section-final-designs');
+                    if (!el) return;
+                    smoothScrollTo(el.getBoundingClientRect().top + window.scrollY - 40);
+                  }}
+                >
+                  Jump to final designs?
+                  <span className="tldr-jump-arrow" aria-hidden="true">
+                    <ArrowDownward sx={{ fontSize: 15 }} />
+                  </span>
+                </button>
+              </div>
             </div>
           </div>
 
@@ -2530,7 +2552,11 @@ export default function FocusCoachAchievementsCaseStudy() {
             />
           </Section>
 
-          <Section eyebrow="Final Design" heading="The complete end of session flow – all together.">
+          <Section
+            id="section-final-designs"
+            eyebrow="Final Design"
+            heading="The complete end of session flow – all together."
+          >
             <VisualCard caption="The end of session flow users see after completing their first session">
               <EndOfSessionFlow />
             </VisualCard>

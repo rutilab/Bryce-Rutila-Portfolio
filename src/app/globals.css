@@ -527,7 +527,7 @@ label[for] {
 .confetti-container {
   position: fixed;
   pointer-events: none;
-  z-index: 101;
+  z-index: 300;
 }
 .confetti-piece {
   position: absolute;
@@ -561,6 +561,61 @@ label[for] {
   position: absolute;
   user-select: none;
   pointer-events: none;
+}
+
+/* Occasional “hey, drag me” shake — fired one fly at a time via JS */
+@keyframes br-fly-shake {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) rotate(0deg);
+  }
+  18% {
+    transform: translate3d(-1.4px, 0.4px, 0) rotate(-1.1deg);
+  }
+  36% {
+    transform: translate3d(1.6px, -0.8px, 0) rotate(1.2deg);
+  }
+  54% {
+    transform: translate3d(-1.1px, 0.5px, 0) rotate(-0.8deg);
+  }
+  72% {
+    transform: translate3d(0.8px, -0.3px, 0) rotate(0.5deg);
+  }
+}
+
+.br-fly.br-fly-shake:not(.is-dragging):not(.br-fly-collected) {
+  animation: br-fly-shake 0.65s ease-in-out both;
+}
+
+/* Soft pop when a slingshot fly fills a vacant slot */
+@keyframes br-fly-refill {
+  0% {
+    transform: scale(0.88);
+    opacity: 0.65;
+  }
+  60% {
+    transform: scale(1.04);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.br-fly.br-fly-just-filled:not(.is-dragging) {
+  animation: br-fly-refill 0.42s cubic-bezier(0.34, 1.4, 0.64, 1) both;
+  transform-origin: center center;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .br-fly.br-fly-shake {
+    animation: none;
+  }
+
+  .br-fly.br-fly-just-filled {
+    animation: none;
+  }
 }
 
 .br-fly img {
@@ -1119,6 +1174,13 @@ body[data-ideation-rotating] * {
   min-width: 0;
   text-decoration: none;
   color: inherit;
+  transition: opacity 0.22s ease;
+}
+
+/* Dim case-study cards while yanking the slingshot so the rubber band / fly read clearly */
+body.slingshot-dragging .project-card-pair {
+  opacity: 0.18;
+  pointer-events: none;
 }
 /* 800–949px: side-by-side (text right of card) */
 @media (min-width: 800px) and (max-width: 949px) {
@@ -1312,6 +1374,74 @@ body[data-ideation-rotating] * {
   .scrabble-tile {
     width: 36px;
     height: 36px;
+  }
+}
+
+/* TL;DR “Jump to final designs” — outline secondary + hover nudge */
+.tldr-jump-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border-radius: 9999px;
+  padding: 8px 14px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #141510;
+  background: transparent;
+  border: 1px solid #141510;
+  cursor: pointer;
+  transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+
+.tldr-jump-btn:hover,
+.tldr-jump-btn:focus-visible {
+  background: rgba(20, 21, 16, 0.06);
+  outline: none;
+}
+
+.tldr-jump-btn .tldr-jump-arrow {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 0;
+  opacity: 0;
+  overflow: hidden;
+  transform: translateY(-2px);
+  transition:
+    width 0.22s ease,
+    opacity 0.18s ease,
+    transform 0.22s ease;
+}
+
+.tldr-jump-btn:hover .tldr-jump-arrow,
+.tldr-jump-btn:focus-visible .tldr-jump-arrow {
+  width: 15px;
+  opacity: 1;
+  transform: translateY(0);
+  animation: tldr-arrow-nudge 0.7s ease-in-out 0.22s infinite;
+}
+
+@keyframes tldr-arrow-nudge {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(3px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tldr-jump-btn .tldr-jump-arrow {
+    transition: opacity 0.15s ease, width 0.15s ease;
+  }
+
+  .tldr-jump-btn:hover .tldr-jump-arrow,
+  .tldr-jump-btn:focus-visible .tldr-jump-arrow {
+    animation: none;
+    width: 15px;
+    opacity: 1;
+    transform: translateY(0);
   }
 }
 

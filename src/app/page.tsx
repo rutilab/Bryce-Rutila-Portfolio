@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import Link from 'next/link';
 import HalftoneCanvas from '@/components/HalftoneCanvas';
 import HalftoneFly from '@/components/HalftoneFly';
@@ -10,6 +11,21 @@ import { IdeationChip } from '@/components/IdeationChip';
 import { IridescentText } from '@/components/IridescentText';
 import { IridescentEyebrow } from '@/components/IridescentEyebrow';
 import Loader from '@/components/Loader';
+import { registerBrFlyRefill } from '@/lib/brFlyRefill';
+
+const BR_FLY_SRCS = [
+  '/butterflies/updated-br-fly-1.svg',
+  '/butterflies/updated-br-fly-2.svg',
+  '/butterflies/updated-br-fly-3.svg',
+] as const;
+
+/** Accent for net glow — keyed to the fly art, not the slot index */
+function colorForFlySrc(src: string): string {
+  if (src.includes('fly-1')) return '#12B4FF';
+  if (src.includes('fly-2')) return '#31E300';
+  if (src.includes('fly-3')) return '#FF12F7';
+  return '#12B4FF';
+}
 
 // Module-level flag: resets on real page reload (module re-imported), persists across SPA remounts
 let _loaderHasRun = false;
@@ -25,6 +41,24 @@ function solidHighlight(hex: string, alpha: number, bg = '#faf7f2'): string {
   const [br, bg_g, bb] = parse(bg);
   const blend = (f: number, b: number) => Math.round(b * (1 - alpha) + f * alpha);
   return `#${[blend(fr, br), blend(fg, bg_g), blend(fb, bb)].map(v => v.toString(16).padStart(2, '0')).join('')}`;
+}
+
+/** BRYCE hover wash — shared across all project cards so colors rotate in order */
+const PROJECT_HOVER_COLORS = [
+  '#FF9C12', // orange
+  '#12B4FF', // blue
+  '#FFF712', // yellow
+  '#FF12F7', // pink
+  '#31E300', // green
+] as const;
+
+/** Last color index shown on any card; -1 so the first hover starts at orange */
+let lastProjectHoverColorIdx = -1;
+
+function nextProjectHoverColor(): string {
+  lastProjectHoverColorIdx =
+    (lastProjectHoverColorIdx + 1) % PROJECT_HOVER_COLORS.length;
+  return PROJECT_HOVER_COLORS[lastProjectHoverColorIdx];
 }
 
 // ── Project data ───────────────────────────────────────────────────────────
@@ -490,13 +524,27 @@ function ClockIcon() {
 }
 
 // ── Project card ───────────────────────────────────────────────────────────
-function ProjectCard({ title, eyebrow, description, tags, readTime, cardColor, href, thumbnailContent }: Project) {
+function ProjectCard({ title, eyebrow, description, tags, readTime, href, thumbnailContent }: Project) {
   const hoverCount = useRef(0);
   const [hovered, setHovered] = useState(false);
-  const highlightBg = solidHighlight(cardColor, 0.38);
+  const [hoverColor, setHoverColor] = useState<string>(PROJECT_HOVER_COLORS[0]);
+  const highlightBg = solidHighlight(hoverColor, 0.38);
 
-  const enter = () => { hoverCount.current++; setHovered(true); };
-  const leave = () => { hoverCount.current--; if (hoverCount.current <= 0) { hoverCount.current = 0; setHovered(false); } };
+  const enter = () => {
+    hoverCount.current++;
+    // Only advance color on a fresh hover (not when moving between thumbnail ↔ text)
+    if (hoverCount.current === 1) {
+      setHoverColor(nextProjectHoverColor());
+      setHovered(true);
+    }
+  };
+  const leave = () => {
+    hoverCount.current--;
+    if (hoverCount.current <= 0) {
+      hoverCount.current = 0;
+      setHovered(false);
+    }
+  };
 
   return (
     <Link
@@ -504,7 +552,7 @@ function ProjectCard({ title, eyebrow, description, tags, readTime, cardColor, h
       className="project-card-pair"
       style={{ textDecoration: 'none', pointerEvents: 'none' }}
     >
-      {/* Outer card — white by default, fills with card color on hover */}
+      {/* Outer card — white by default, fills with rotating BRYCE color on hover */}
       <div
         className="project-card-outer"
         onMouseEnter={enter}
@@ -512,7 +560,7 @@ function ProjectCard({ title, eyebrow, description, tags, readTime, cardColor, h
         style={{
           pointerEvents: 'auto',
           cursor: 'pointer',
-          backgroundColor: hovered ? cardColor : '#fdfbf9',
+          backgroundColor: hovered ? hoverColor : '#fdfbf9',
           transform: hovered ? 'scale(1.025)' : 'scale(1)',
           boxShadow: hovered
             ? '0px 6px 24px 0px rgba(0, 0, 0, 0.28)'
@@ -593,7 +641,7 @@ function ProjectCard({ title, eyebrow, description, tags, readTime, cardColor, h
         </div>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '16px' }}>
           {tags.map(tag => (
-            <Tag key={tag} label={tag} hovered={hovered} cardColor={cardColor} />
+            <Tag key={tag} label={tag} hovered={hovered} cardColor={hoverColor} />
           ))}
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
@@ -676,12 +724,33 @@ export default function Home() {
   const [flyDragging, setFlyDragging] = useState<number | null>(null);
   const flyDragStart = useRef({ mx: 0, my: 0, ox: 0, oy: 0 });
   const [collectedFlies, setCollectedFlies] = useState<Set<number>>(new Set());
+  /** Per-slot art — can change when a slingshot fly fills a vacant spot */
+  const [flySrcs, setFlySrcs] = useState<string[]>([...BR_FLY_SRCS]);
+  const [justFilledFly, setJustFilledFly] = useState<number | null>(null);
+  const [shakingFly, setShakingFly] = useState<number | null>(null);
   const [overNet, setOverNet] = useState(false);
   const [confetti, setConfetti] = useState<{ x: number; y: number; id: number } | null>(null);
   const netRef = useRef<HTMLDivElement>(null);
+  const flySlotRefs = useRef<(HTMLDivElement | null)[]>([null, null, null]);
   const flyMousePos = useRef({ x: 0, y: 0 });
   const confettiId = useRef(0);
   const flyAlphaMaps = useRef<Map<string, { data: Uint8Array; w: number; h: number }>>(new Map());
+  const collectedFliesRef = useRef(collectedFlies);
+  const flyDraggingRef = useRef(flyDragging);
+  const lastShookFlyRef = useRef<number | null>(null);
+  collectedFliesRef.current = collectedFlies;
+  flyDraggingRef.current = flyDragging;
+
+  const triggerConfetti = (x: number, y: number) => {
+    confettiId.current += 1;
+    const id = confettiId.current;
+    setConfetti({ x, y, id });
+    window.setTimeout(() => {
+      setConfetti((cur) => (cur?.id === id ? null : cur));
+    }, 1000);
+  };
+  const triggerConfettiRef = useRef(triggerConfetti);
+  triggerConfettiRef.current = triggerConfetti;
 
   const flyHitTest = (imgEl: HTMLImageElement, e: React.MouseEvent) => {
     const src = imgEl.src;
@@ -730,9 +799,7 @@ export default function Home() {
       const my = flyMousePos.current.y;
       if (isOverNet(mx, my)) {
         setCollectedFlies(prev => new Set(prev).add(idx));
-        confettiId.current += 1;
-        setConfetti({ x: mx, y: my, id: confettiId.current });
-        setTimeout(() => setConfetti(null), 1000);
+        triggerConfetti(mx, my);
       }
       setFlyDragging(null);
       setOverNet(false);
@@ -745,6 +812,112 @@ export default function Home() {
       window.removeEventListener('mouseup', onUp);
     };
   }, [flyDragging]);
+
+  // Occasional attention shake — one fly at a time, 3.5–6.5s apart
+  useEffect(() => {
+    if (loaderState !== 'done') return;
+    if (typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      return;
+    }
+
+    let waitTimer = 0;
+    let clearTimer = 0;
+    let cancelled = false;
+
+    const schedule = () => {
+      const delay = 3500 + Math.random() * 3000; // 3.5–6.5s
+      waitTimer = window.setTimeout(() => {
+        if (cancelled) return;
+        if (flyDraggingRef.current !== null) {
+          schedule();
+          return;
+        }
+
+        const mobile = window.matchMedia('(max-width: 799px)').matches;
+        const available = [0, 1, 2].filter((i) => {
+          if (collectedFliesRef.current.has(i)) return false;
+          if (mobile && i === 0) return false; // blue fly hidden on small screens
+          return true;
+        });
+        if (available.length === 0) return;
+
+        let pool = available;
+        if (available.length > 1 && lastShookFlyRef.current != null) {
+          const withoutLast = available.filter((i) => i !== lastShookFlyRef.current);
+          if (withoutLast.length) pool = withoutLast;
+        }
+
+        const pick = pool[Math.floor(Math.random() * pool.length)];
+        lastShookFlyRef.current = pick;
+        setShakingFly(pick);
+
+        clearTimer = window.setTimeout(() => {
+          if (!cancelled) setShakingFly(null);
+          if (!cancelled) schedule();
+        }, 700);
+      }, delay);
+    };
+
+    schedule();
+    return () => {
+      cancelled = true;
+      window.clearTimeout(waitTimer);
+      window.clearTimeout(clearTimer);
+    };
+  }, [loaderState]);
+
+  // Register vacant hero slots so slingshot flies can refill them
+  useEffect(() => {
+    registerBrFlyRefill({
+      getVacantSlots: () => {
+        const slots: { index: number; cx: number; cy: number }[] = [];
+        collectedFliesRef.current.forEach((index) => {
+          const el = flySlotRefs.current[index];
+          if (!el) return;
+          const style = window.getComputedStyle(el);
+          if (style.display === 'none' || style.visibility === 'hidden') return;
+          const r = el.getBoundingClientRect();
+          if (r.width < 2 || r.height < 2) return;
+          slots.push({
+            index,
+            cx: r.left + r.width / 2,
+            cy: r.top + r.height / 2,
+          });
+        });
+        return slots;
+      },
+      fillSlot: (index, src) => {
+        const el = flySlotRefs.current[index];
+        let cx = window.innerWidth / 2;
+        let cy = window.innerHeight / 3;
+        if (el) {
+          const r = el.getBoundingClientRect();
+          cx = r.left + r.width / 2;
+          cy = r.top + r.height / 2;
+        }
+
+        setFlySrcs((prev) => {
+          const next = [...prev];
+          next[index] = src;
+          return next;
+        });
+        setCollectedFlies((prev) => {
+          const next = new Set(prev);
+          next.delete(index);
+          return next;
+        });
+        // Reset drag offset so the fly sits cleanly in-slot
+        setFlyOffsets((prev) => prev.map((o, i) => (i === index ? { x: 0, y: 0 } : o)));
+        setJustFilledFly(index);
+        window.setTimeout(() => {
+          setJustFilledFly((cur) => (cur === index ? null : cur));
+        }, 450);
+
+        triggerConfettiRef.current(cx, cy);
+      },
+    });
+    return () => registerBrFlyRefill(null);
+  }, []);
 
   return (
     <>
@@ -760,8 +933,7 @@ export default function Home() {
       <main className="landing-main">
         {/* ── Butterfly Net (visible during drag) ─────────────────────── */}
         {flyDragging !== null && (() => {
-          const flyColors = ['#12B4FF', '#31E300', '#FF12F7'];
-          const c = flyColors[flyDragging] || '#12B4FF';
+          const c = colorForFlySrc(flySrcs[flyDragging] ?? BR_FLY_SRCS[flyDragging]);
           return (
             <div
               ref={netRef}
@@ -781,42 +953,44 @@ export default function Home() {
           );
         })()}
 
-        {/* ── Collection confetti ──────────────────────────────────────── */}
-        {confetti && (
-          <div key={confetti.id} className="confetti-container" style={{ left: confetti.x, top: confetti.y }}>
-            {Array.from({ length: 16 }, (_, i) => {
-              const angle = (i / 16) * Math.PI * 2 + Math.random() * 0.5;
-              const dist = 40 + Math.random() * 60;
-              const colors = ['#12B4FF', '#31E300', '#FF12F7', '#FFD700', '#FF6B35'];
-              return (
-                <span
-                  key={i}
-                  className="confetti-piece"
-                  style={{
-                    backgroundColor: colors[i % colors.length],
-                    '--cx': `${Math.cos(angle) * dist}px`,
-                    '--cy': `${Math.sin(angle) * dist - 30}px`,
-                    '--cr': `${Math.random() * 720 - 360}deg`,
-                    animationDelay: `${Math.random() * 0.1}s`,
-                  } as React.CSSProperties}
-                />
-              );
-            })}
-          </div>
-        )}
+        {/* ── Collection confetti (portaled so it sits above hero chrome) ─ */}
+        {confetti &&
+          createPortal(
+            <div key={confetti.id} className="confetti-container" style={{ left: confetti.x, top: confetti.y }}>
+              {Array.from({ length: 16 }, (_, i) => {
+                const angle = (i / 16) * Math.PI * 2 + Math.random() * 0.5;
+                const dist = 40 + Math.random() * 60;
+                const colors = ['#12B4FF', '#31E300', '#FF12F7', '#FFD700', '#FF6B35'];
+                return (
+                  <span
+                    key={i}
+                    className="confetti-piece"
+                    style={{
+                      backgroundColor: colors[i % colors.length],
+                      '--cx': `${Math.cos(angle) * dist}px`,
+                      '--cy': `${Math.sin(angle) * dist - 30}px`,
+                      '--cr': `${Math.random() * 720 - 360}deg`,
+                      animationDelay: `${Math.random() * 0.1}s`,
+                    } as React.CSSProperties}
+                  />
+                );
+              })}
+            </div>,
+            document.body,
+          )}
 
         {/* ── BR Flies ─────────────────────────────────────────────────── */}
         <div className="br-flies-container">
-          {[
-            { src: '/butterflies/updated-br-fly-1.svg', cls: 'br-fly br-fly-1' },
-            { src: '/butterflies/updated-br-fly-2.svg', cls: 'br-fly br-fly-2' },
-            { src: '/butterflies/updated-br-fly-3.svg', cls: 'br-fly br-fly-3' },
-          ].map((fly, i) => (
-            <div key={i} className={`${fly.cls}${collectedFlies.has(i) ? ' br-fly-collected' : ''}`}>
-              <HalftoneFly src={fly.src} collected={collectedFlies.has(i)} />
+          {BR_FLY_SRCS.map((_, i) => (
+            <div
+              key={i}
+              ref={(el) => { flySlotRefs.current[i] = el; }}
+              className={`br-fly br-fly-${i + 1}${collectedFlies.has(i) ? ' br-fly-collected' : ''}${flyDragging === i ? ' is-dragging' : ''}${shakingFly === i ? ' br-fly-shake' : ''}${justFilledFly === i ? ' br-fly-just-filled' : ''}`}
+            >
+              <HalftoneFly src={flySrcs[i]} collected={collectedFlies.has(i)} />
               {!collectedFlies.has(i) && (
                 <img
-                  src={fly.src}
+                  src={flySrcs[i]}
                   alt=""
                   draggable={false}
                   onMouseDown={e => {
@@ -960,7 +1134,7 @@ export default function Home() {
           </svg>
 
           <p className="subheader-text">
-            <IridescentText text="A systems-thinking product designer who crafts end-to-end solutions, from " />
+            <IridescentText text="A systems-thinking product designer building memorable digital experiences from " />
             <span className="subheader-inline-chips" style={{ whiteSpace: 'nowrap' }}>
               <IdeationChip />{' '}
               <IridescentText text="to" />{' '}
