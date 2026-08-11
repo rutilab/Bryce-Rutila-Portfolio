@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef, type ReactNode, type CSSProperties } from 'react';
+import { useState, useEffect, useRef, type ReactNode, type CSSProperties, type RefObject } from 'react';
 import { createPortal } from 'react-dom';
 import { AI_ASSISTANT_CSS, AI_ASSISTANT_HTML } from './ai-assistant-modal';
 import SmsIcon from '@mui/icons-material/Sms';
@@ -9,15 +9,111 @@ import VerticalAlignTopIcon from '@mui/icons-material/VerticalAlignTop';
 import PlaceIcon from '@mui/icons-material/Place';
 import ViewModuleIcon from '@mui/icons-material/ViewModule';
 import InboxIcon from '@mui/icons-material/Inbox';
-import { NorthStarAnimatedIcon, PainPointGridPlaceholder, WinningChoiceScrollStars } from '@/components/case-study';
+import ArrowDownward from '@mui/icons-material/ArrowDownward';
+import { NorthStarAnimatedIcon, WinningChoiceScrollStars } from '@/components/case-study';
 import { useBodyScrollLock } from '@/hooks/useBodyScrollLock';
 
-/** North Star callout: neutral border + #272727 label; icon is inline animated SVG */
-const NORTH_STAR_LABEL_COLOR = '#272727';
-/** Section eyebrows, MUI icons, diagram labels, carousel progress (Finding Focus case studies) */
+/** Section eyebrows, MUI icons, diagram labels — near-black, matches the Focus Coach Achievements template */
 const EYEBROW_ICON_COLOR = '#272727';
-/** Pencil cursor for “homework” hover in Comparative Analysis (hotspot: tip, top-left of asset). */
-const PENCIL_CURSOR_URL = '/case-studies/finding-focus-ai-assistant/pencil-cursor.png';
+/** Finding Focus blue — the accent used across all Finding Focus case studies */
+const ACCENT = '#006efe';
+const ACCENT_DARK = '#0057c2';
+/** Hairline border on white cards (TL;DR, Callout, Takeaways) */
+const BORDER = '#e6ecf4';
+/** Solid light container for content cards (Project Goals) */
+const CARD_LIGHT = '#f5f7fa';
+
+function useInView<T extends Element>(
+  threshold = 0.35,
+  rootMargin = '0px 0px -8% 0px',
+): [RefObject<T | null>, boolean] {
+  const ref = useRef<T | null>(null);
+  const [inView, setInView] = useState(false);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el || inView) return;
+    const obs = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting) {
+        setInView(true);
+        obs.disconnect();
+      }
+    }, { threshold, rootMargin });
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, [inView, threshold, rootMargin]);
+
+  return [ref, inView];
+}
+
+// ── StatRow: headline numbers with a blue underline tick ──────────────────────
+function StatRow({ stats }: { stats: { value: string; label: string; icon?: ReactNode }[] }) {
+  const [ref, inView] = useInView<HTMLDivElement>(0.45);
+
+  return (
+    <div ref={ref} className="grid grid-cols-1 sm:grid-cols-3 gap-8 sm:gap-10 max-w-[820px]">
+      {stats.map((s, i) => (
+        <div key={i}>
+          <div className="flex flex-col w-fit">
+            <div className="flex items-center gap-1">
+              {s.icon}
+              <p className="text-[24px] font-semibold text-[#1a1a1a] leading-[32px]">{s.value}</p>
+            </div>
+            <div
+              style={{
+                width: s.icon ? '100%' : 28,
+                height: 3,
+                background: ACCENT,
+                borderRadius: 2,
+                margin: '10px 0',
+                transformOrigin: 'left center',
+                transform: inView ? 'scaleX(1)' : 'scaleX(0)',
+                transition: `transform 0.7s cubic-bezier(0.22, 1, 0.36, 1) ${i * 120}ms`,
+              }}
+            />
+          </div>
+          <p className="text-[14px] font-normal leading-[160%] text-[#666]">{s.label}</p>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ── GoalCards: numbered, one sentence each ────────────────────────────────────
+const PROJECT_GOALS = [
+  { n: '01', title: 'Truly understand queries', body: 'The assistant should understand what teachers are actually asking, with contextual awareness.' },
+  { n: '02', title: 'Provide relevant responses', body: 'Teachers should get a real answer to any question about Finding Focus, without being boxed into a limited set of scripted responses.' },
+  { n: '03', title: 'Exceed teacher expectations', body: 'The experience should set a new bar for what an edtech chatbot can feel like.' },
+];
+
+function GoalCards() {
+  const [ref, inView] = useInView<HTMLDivElement>(0.3);
+
+  return (
+    <div ref={ref} className="grid gap-3 grid-cols-1 lg:grid-cols-3">
+      {PROJECT_GOALS.map((g, i) => (
+        <div
+          key={g.n}
+          className="rounded-[20px] p-4 sm:p-6 flex flex-col gap-3"
+          style={{
+            background: CARD_LIGHT,
+            opacity: inView ? 1 : 0,
+            transform: inView ? 'translateY(0)' : 'translateY(16px)',
+            transition: `opacity 0.55s ease ${i * 160}ms, transform 0.55s ease ${i * 160}ms`,
+          }}
+        >
+          <span className="text-[12px] font-medium tracking-[1px]" style={{ color: ACCENT_DARK, fontFamily: 'var(--font-ibm-plex-mono), monospace' }}>
+            {g.n}
+          </span>
+          <div>
+            <p className="text-[16px] font-semibold mb-1.5 text-[#1a1a1a]">{g.title}</p>
+            <p className="text-[15px] font-normal leading-[170%] text-[#555]">{g.body}</p>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
 
 /** Single-image lightbox copy — matches VisualCard on case study pages (#999 / #bbb). */
 const LB_CAP_PRIMARY: CSSProperties = {
@@ -121,11 +217,60 @@ function StopPlayButton({ stopped, onClick }: { stopped: boolean; onClick: () =>
   );
 }
 
-function Eyebrow({ label }: { label: string }) {
+function Eyebrow({ label, color = EYEBROW_ICON_COLOR }: { label: string; color?: string }) {
   return (
-    <p className="text-[11px] font-medium tracking-[1.5px] uppercase" style={{ color: EYEBROW_ICON_COLOR }}>
+    <p className="text-[11px] font-medium tracking-[1.5px] uppercase" style={{ color }}>
       {label}
     </p>
+  );
+}
+
+/** Underlined inline term with a hover/focus tooltip — for glossary-style call-outs inside headings. */
+function TermTooltip({ children, tip }: { children: ReactNode; tip: string }) {
+  const [active, setActive] = useState(false);
+
+  return (
+    <span
+      className="relative inline-block"
+      onMouseEnter={() => setActive(true)}
+      onMouseLeave={() => setActive(false)}
+    >
+      <span
+        tabIndex={0}
+        onFocus={() => setActive(true)}
+        onBlur={() => setActive(false)}
+        className="underline"
+        style={{ textDecorationStyle: 'dotted', textDecorationColor: 'rgba(0,0,0,0.4)', textUnderlineOffset: 3, cursor: 'help' }}
+      >
+        {children}
+      </span>
+      <span
+        role="tooltip"
+        aria-hidden={!active}
+        style={{
+          position: 'absolute',
+          top: 'calc(100% + 10px)',
+          left: 0,
+          width: 260,
+          whiteSpace: 'normal',
+          background: '#111113',
+          color: '#ffffff',
+          fontSize: 13,
+          fontWeight: 400,
+          lineHeight: 1.5,
+          padding: '10px 12px',
+          borderRadius: 10,
+          pointerEvents: 'none',
+          boxShadow: '0 6px 18px rgba(0,0,0,0.2)',
+          opacity: active ? 1 : 0,
+          transform: active ? 'translateY(0)' : 'translateY(-4px)',
+          transition: 'opacity 0.18s ease, transform 0.18s ease',
+          zIndex: 20,
+        }}
+      >
+        {tip}
+      </span>
+    </span>
   );
 }
 
@@ -134,23 +279,25 @@ function Section({
   heading,
   body,
   children,
+  id,
 }: {
   eyebrow?: string;
   heading: ReactNode;
-  body?: string;
+  body?: ReactNode;
   children?: React.ReactNode;
+  id?: string;
 }) {
   return (
-    <div className="flex flex-col gap-10">
+    <div id={id} className="flex flex-col gap-10">
       <div className="flex flex-col gap-4">
-        <div className="max-w-[720px]">
+        <div className="max-w-[760px]">
           {eyebrow && <Eyebrow label={eyebrow} />}
-          <h2 className="text-[22px] md:text-[30px] font-semibold leading-[125%] tracking-[-0.5px] text-[#1a1a1a] mt-4">
+          <h2 className="text-[22px] md:text-[30px] font-semibold leading-[130%] tracking-[-0.5px] text-[#1a1a1a] mt-4">
             {heading}
           </h2>
         </div>
         {body && (
-          <p className="text-[15px] md:text-[18px] font-normal leading-[180%] text-[#555] max-w-[920px]">{body}</p>
+          <p className="text-[15px] md:text-[18px] font-normal leading-[180%] text-[#555] max-w-[820px]">{body}</p>
         )}
       </div>
       {children}
@@ -158,51 +305,40 @@ function Section({
   );
 }
 
+/**
+ * Decision-summary callout — left accent-bar construction matching the Achievements
+ * template's Callout, on-brand blue. Used for the recurring "Winning Choice" moments,
+ * which have no direct template analog (see KEEP-4 in the alignment PRD).
+ */
 function Callout({
-  accentColor,
   label,
   heading,
   body,
   compactBody,
-  iconSrc,
   icon,
-  variant = 'default',
 }: {
-  accentColor: string;
   label: string;
   heading: string;
   body?: string;
   compactBody?: boolean;
-  iconSrc?: string;
   icon?: ReactNode;
-  variant?: 'default' | 'northStar';
 }) {
-  const hasIcon = Boolean(iconSrc || icon);
-  const isNorthStar = variant === 'northStar';
-  const containerStyle = isNorthStar
-    ? { boxShadow: '0 0 0 2px #efefef' }
-    : { boxShadow: '0 2px 16px rgba(0,0,0,0.07)', borderLeft: `2px solid ${accentColor}` };
-  const labelColor = isNorthStar ? NORTH_STAR_LABEL_COLOR : accentColor;
   return (
     <div
-      className="flex max-w-[760px] items-stretch bg-white rounded-[16px]"
-      style={containerStyle}
+      className="flex max-w-[760px] items-stretch gap-4 sm:gap-5 bg-white rounded-[16px] p-4 sm:p-6"
+      style={{ border: `1px solid ${BORDER}` }}
     >
-      {hasIcon && (
-        <div className="flex shrink-0 items-center justify-center self-stretch px-4" aria-hidden>
-          {icon ?? (
-            iconSrc ? (
-              /* eslint-disable-next-line @next/next/no-img-element */
-              <img src={iconSrc} alt="" width={64} height={64} className="block size-16 object-contain" />
-            ) : null
-          )}
+      <div style={{ width: 2, borderRadius: 2, background: ACCENT_DARK, flexShrink: 0 }} />
+      {icon && (
+        <div className="flex shrink-0 items-center justify-center" aria-hidden>
+          {icon}
         </div>
       )}
-      <div className={`flex min-w-0 flex-1 flex-col gap-3 py-6 pr-6 ${hasIcon ? '' : 'pl-6'}`}>
-        <p className="text-[11px] font-medium tracking-[1.5px] uppercase" style={{ color: labelColor }}>
+      <div className="flex min-w-0 flex-1 flex-col gap-2">
+        <p className="text-[11px] font-medium tracking-[1.5px] uppercase" style={{ color: ACCENT_DARK }}>
           {label}
         </p>
-        <p className="text-[20px] font-semibold leading-[135%] text-[#1a1a1a]">{heading}</p>
+        <p className="text-[19px] font-semibold leading-[135%] text-[#1a1a1a]">{heading}</p>
         {body && (
           <p className={compactBody ? 'text-[14px] font-normal leading-[170%] text-[#666]' : 'text-[17px] font-normal leading-[175%] text-[#666]'}>{body}</p>
         )}
@@ -335,7 +471,7 @@ function IdeationViewer({ items }: {
         <div className="flex items-center gap-1.5">
           {items.map((_, i) => (
             <button key={i} onClick={() => setCurrent(i)} style={{ height: 5, borderRadius: 3, width: i === current ? 48 : 5, transition: 'width 0.25s', background: 'rgba(0,0,0,0.12)', border: 'none', cursor: 'pointer', padding: 0, position: 'relative', overflow: 'hidden', flexShrink: 0 }}>
-              {i === current && <div style={{ position: 'absolute', left: 0, top: 0, height: '100%', width: `${dotProgress}%`, background: '#272727' }} />}
+              {i === current && <div style={{ position: 'absolute', left: 0, top: 0, height: '100%', width: `${dotProgress}%`, background: ACCENT }} />}
             </button>
           ))}
         </div>
@@ -379,248 +515,118 @@ function ComparisonGrid({
 }
 
 // ── MediaViewer: full-width media viewer with auto-advance, lightbox, progress dots ──
-const MEDIA_ADVANCE_MS: Record<'GIF' | 'Image', number> = { GIF: 20000, Image: 20000 };
-
-function MediaViewer({
+/**
+ * ToggleMedia — pill-tab switcher for per-source assets (ChatGPT / Gemini / etc.), matching the
+ * Achievements template's SegmentedMedia pill design. Replaces the old timed carousel: switching
+ * tabs mounts a fresh <img>, so a GIF simply loops for as long as it stays the active tab — no
+ * timer, no stop/play control needed.
+ */
+function ToggleMedia({
   items,
   constrained = true,
-  active = true,
 }: {
   items: { src: string; alt: string; label: string; caption: string; type: 'GIF' | 'Image' }[];
   constrained?: boolean;
-  /** When false (e.g. card is behind in deck), timer pauses and resets. */
-  active?: boolean;
 }) {
-  const [current, setCurrent] = useState(0);
-  const [dotProgress, setDotProgress] = useState(0);
+  const [active, setActive] = useState(0);
+  const [visible, setVisible] = useState(true);
   const [lightboxOpen, setLightboxOpen] = useState(false);
-  const [gifStopped, setGifStopped] = useState(false);
   const [mounted, setMounted] = useState(false);
-  const containerRef = useRef<HTMLDivElement>(null);
-  const [inViewport, setInViewport] = useState(false);
-  const itemsRef = useRef(items);
-  itemsRef.current = items;
-  const gifImgRef = useRef<HTMLImageElement | null>(null);
-  const frame0CanvasRef = useRef<HTMLCanvasElement | null>(null);
-  const savedProgressRef = useRef(0);
+  const fadeTimer = useRef<number | null>(null);
 
-  // Capture frame 0 when a GIF loads (before animation starts).
-  // Draw scaled+centered into the canvas so it matches objectFit:contain.
-  function handleGifLoad(img: HTMLImageElement) {
-    const canvas = frame0CanvasRef.current;
-    if (!canvas || img.naturalWidth === 0) return;
-    const parent = canvas.parentElement;
-    const cw = parent?.clientWidth || img.naturalWidth;
-    const ch = parent?.clientHeight || img.naturalHeight;
-    canvas.width = cw;
-    canvas.height = ch;
-    const ctx = canvas.getContext('2d');
-    if (ctx) {
-      const scale = Math.min(cw / img.naturalWidth, ch / img.naturalHeight);
-      const w = img.naturalWidth * scale;
-      const h = img.naturalHeight * scale;
-      ctx.drawImage(img, (cw - w) / 2, (ch - h) / 2, w, h);
-    }
-  }
-
-  function closeLightbox() { setLightboxOpen(false); }
-
-  // Mark as client-mounted so createPortal can safely target document.body
   useEffect(() => { setMounted(true); }, []);
-
   useBodyScrollLock(lightboxOpen && mounted);
 
-  // Track viewport visibility
   useEffect(() => {
-    const el = containerRef.current;
-    if (!el) return;
-    const observer = new IntersectionObserver(
-      ([entry]) => setInViewport(entry.isIntersecting),
-      { threshold: 0.4 }
-    );
-    observer.observe(el);
-    return () => observer.disconnect();
+    return () => {
+      if (fadeTimer.current != null) window.clearTimeout(fadeTimer.current);
+    };
   }, []);
 
-  // Reset GIF stopped state when switching slides; restore src in case it was cleared
-  useEffect(() => {
-    setGifStopped(false);
-    savedProgressRef.current = 0;
-    const item = itemsRef.current[current];
-    if (item?.type === 'GIF' && gifImgRef.current) {
-      gifImgRef.current.src = item.src;
-    }
-  }, [current]);
+  function switchTab(i: number) {
+    if (i === active) return;
+    setVisible(false);
+    if (fadeTimer.current != null) window.clearTimeout(fadeTimer.current);
+    fadeTimer.current = window.setTimeout(() => {
+      setActive(i);
+      setVisible(true);
+    }, 160);
+  }
 
-  // ── Auto-advance timer ────────────────────────────────────────────────────
-  const shouldAdvance = inViewport && active && !lightboxOpen && !gifStopped;
-
-  useEffect(() => {
-    if (!shouldAdvance) return; // stop RAF but keep savedProgressRef as-is
-    const duration = MEDIA_ADVANCE_MS[itemsRef.current[current].type];
-    const startP = savedProgressRef.current;
-    const remaining = duration * (1 - startP / 100);
-    const startTime = Date.now();
-    let rafId: number;
-    function tick() {
-      const p = Math.min(100, startP + ((Date.now() - startTime) / remaining) * (100 - startP));
-      savedProgressRef.current = p;
-      setDotProgress(p);
-      if (p < 100) { rafId = requestAnimationFrame(tick); }
-      else { savedProgressRef.current = 0; setCurrent(c => (c + 1) % itemsRef.current.length); }
-    }
-    rafId = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(rafId);
-  }, [current, shouldAdvance]);
-
-  const item = items[current];
+  const item = items[active];
   const maxH = constrained ? 'min(460px, calc(100vh - 500px))' : '460px';
 
   return (
-    <div ref={containerRef}>
-      {/* Row: left-arrow | image (clickable → lightbox) | right-arrow */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-
-        {/* Left arrow */}
-        <button
-          onClick={() => setCurrent(c => (c - 1 + items.length) % items.length)}
-          style={{
-            visibility: current > 0 ? 'visible' : 'hidden',
-            width: 32, height: 32, borderRadius: '50%', flexShrink: 0,
-            border: '1px solid rgba(0,0,0,0.08)',
-            boxShadow: '0 1px 4px rgba(0,0,0,0.1)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            color: '#555', cursor: 'pointer', transition: 'background 0.15s',
-          }}
-          className="bg-white hover:bg-[#f0f0f0]"
+    <div className="flex flex-col items-center gap-6">
+      {/* Toggle — below the card's dividing line, one pill per source */}
+      <div className="w-full flex justify-center">
+        <div
+          className="inline-flex flex-nowrap items-center gap-1 rounded-full bg-white p-1"
+          style={{ border: `1px solid ${BORDER}` }}
         >
-          <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-            <path d="M9 11L4 7l5-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-          </svg>
-        </button>
+          {items.map((it, i) => {
+            const on = i === active;
+            return (
+              <button
+                key={it.label}
+                onClick={() => switchTab(i)}
+                className="shrink-0 whitespace-nowrap px-3 sm:px-4 py-2 rounded-full text-[12px] sm:text-[13px] transition-colors"
+                style={
+                  on
+                    ? { background: 'rgba(0,110,254,0.12)', color: ACCENT_DARK, fontWeight: 600 }
+                    : { color: '#545454', fontWeight: 500 }
+                }
+              >
+                {it.label}
+              </button>
+            );
+          })}
+        </div>
+      </div>
 
-        {/* Image container — entire area is click-to-expand with zoom-in cursor */}
+      <div
+        className="w-full"
+        style={{
+          opacity: visible ? 1 : 0,
+          transform: visible ? 'translateY(0)' : 'translateY(6px)',
+          transition: 'opacity 0.25s ease, transform 0.25s ease',
+        }}
+      >
+        {/* Asset — click to expand; GIFs loop natively for as long as they're mounted */}
         <div
           role="button"
           tabIndex={0}
           onClick={() => setLightboxOpen(true)}
           onKeyDown={e => e.key === 'Enter' && setLightboxOpen(true)}
           style={{
-            flex: 1, position: 'relative', aspectRatio: '16/9',
+            position: 'relative',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            aspectRatio: '16/9',
             maxHeight: maxH, minHeight: constrained ? 160 : 0,
             borderRadius: 16, overflow: 'hidden',
             background: 'rgba(220,232,248,0.45)',
             cursor: 'zoom-in',
           }}
         >
-          {items.map((it, i) => (
-            <div key={i} style={{
-              position: 'absolute', inset: 0,
-              opacity: i === current ? 1 : 0, transition: 'opacity 0.3s ease',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-            }}>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                ref={i === current && it.type === 'GIF' ? gifImgRef : undefined}
-                src={it.src} alt={it.alt}
-                onLoad={it.type === 'GIF' && i === current ? e => handleGifLoad(e.currentTarget) : undefined}
-                style={{
-                  width: '100%', height: '100%', objectFit: 'contain', pointerEvents: 'none', userSelect: 'none',
-                  display: gifStopped && i === current && it.type === 'GIF' ? 'none' : undefined,
-                }}
-              />
-            </div>
-          ))}
-
-          {/* Frame 0 canvas — shown when stopped, hidden when playing */}
-          {item.type === 'GIF' && (
-            <canvas
-              ref={frame0CanvasRef}
-              style={{
-                position: 'absolute', inset: 0, width: '100%', height: '100%',
-                pointerEvents: 'none',
-                display: gifStopped ? 'block' : 'none',
-              }}
-            />
-          )}
-
-          {/* Media type badge */}
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            key={item.src}
+            src={item.src} alt={item.alt}
+            style={{ maxWidth: '100%', maxHeight: '100%', width: 'auto', height: 'auto', objectFit: 'contain', pointerEvents: 'none', userSelect: 'none' }}
+          />
           <div className="absolute top-2.5 left-2.5 px-2 py-0.5 rounded-md text-[11px] font-medium tracking-wide pointer-events-none" style={{ background: 'rgba(0,0,0,0.5)', color: 'white' }}>
             {item.type}
           </div>
-
-          {/* GIF stop/play button */}
-          {item.type === 'GIF' && (
-            <StopPlayButton
-              stopped={gifStopped}
-              onClick={() => {
-                if (!gifStopped) {
-                  if (gifImgRef.current) gifImgRef.current.src = '';
-                  savedProgressRef.current = 0;
-                  setDotProgress(0);
-                  setGifStopped(true);
-                } else {
-                  if (gifImgRef.current) gifImgRef.current.src = item.src;
-                  setGifStopped(false);
-                }
-              }}
-            />
-          )}
         </div>
 
-        {/* Right arrow */}
-        <button
-          onClick={() => setCurrent(c => (c + 1) % items.length)}
-          style={{
-            visibility: current < items.length - 1 ? 'visible' : 'hidden',
-            width: 32, height: 32, borderRadius: '50%', flexShrink: 0,
-            border: '1px solid rgba(0,0,0,0.08)',
-            boxShadow: '0 1px 4px rgba(0,0,0,0.1)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            color: '#555', cursor: 'pointer', transition: 'background 0.15s',
-          }}
-          className="bg-white hover:bg-[#f0f0f0]"
-        >
-          <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-            <path d="M5 3l5 4-5 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-          </svg>
-        </button>
+        {/* Caption */}
+        <p className="mt-3 text-[13px] text-[#888] leading-[160%] text-center">{item.caption}</p>
       </div>
 
-      {/* Caption */}
-      <div className="mt-3 flex flex-col gap-0.5 text-center">
-        <p className="text-[13px] font-semibold text-[#1a1a1a]">{item.label}</p>
-        <p className="text-[13px] text-[#888] leading-[160%]">{item.caption}</p>
-      </div>
-
-      {/* Progress-bar dots */}
-      {items.length > 1 && (
-        <div className="flex justify-center items-center gap-1.5 mt-3">
-          {items.map((_, i) => (
-            <button
-              key={i}
-              onClick={() => setCurrent(i)}
-              style={{
-                height: 5, borderRadius: 3, flexShrink: 0,
-                width: i === current ? 52 : 5,
-                transition: 'width 0.25s',
-                background: 'rgba(0,0,0,0.12)',
-                border: 'none', cursor: 'pointer', padding: 0,
-                position: 'relative', overflow: 'hidden',
-              }}
-            >
-              {i === current && (
-                <div style={{ position: 'absolute', left: 0, top: 0, height: '100%', width: `${dotProgress}%`, background: '#272727' }} />
-              )}
-            </button>
-          ))}
-        </div>
-      )}
-
-      {/* ── Lightbox — fixed image slot + pinned caption/nav (no jump between slides) ── */}
+      {/* ── Lightbox ── */}
       {lightboxOpen && mounted && createPortal(
         <div
-          onClick={() => closeLightbox()}
+          onClick={() => setLightboxOpen(false)}
           style={{
             position: 'fixed', inset: 0, zIndex: 9999,
             background: 'rgba(8,8,8,0.92)',
@@ -636,7 +642,7 @@ function MediaViewer({
         >
           <button
             type="button"
-            onClick={() => closeLightbox()}
+            onClick={() => setLightboxOpen(false)}
             style={{
               position: 'fixed', top: 20, right: 20,
               width: 36, height: 36, borderRadius: '50%',
@@ -651,134 +657,39 @@ function MediaViewer({
             </svg>
           </button>
 
-          {items.length === 1 ? (
-            <div
-              onClick={e => e.stopPropagation()}
-              style={{
-                width: '100%',
-                maxWidth: 'min(88vw, 1280px)',
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                cursor: 'default',
-                maxHeight: 'calc(100vh - 80px)',
-                overflow: 'auto',
-              }}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '12px 8px' }}>
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={item.src} alt={item.alt}
-                  style={{
-                    maxWidth: '100%',
-                    maxHeight: 'min(74vh, calc(100vh - 200px))',
-                    width: 'auto',
-                    height: 'auto',
-                    objectFit: 'contain',
-                    borderRadius: 14,
-                    display: 'block',
-                  }}
-                />
-              </div>
-              <div style={{ marginTop: 12, width: '100%', maxWidth: 'min(720px, 92vw)' }}>
-                <p style={LB_CAP_PRIMARY}>{item.label}</p>
-                {item.caption ? <p style={LB_CAP_SECONDARY}>{item.caption}</p> : null}
-              </div>
-            </div>
-          ) : (
-            <div
-              onClick={e => e.stopPropagation()}
-              style={{
-                width: '100%',
-                maxWidth: 'min(88vw, 1280px)',
-                height: 'calc(100vh - 80px)',
-                maxHeight: 'calc(100vh - 80px)',
-                display: 'flex',
-                flexDirection: 'column',
-                cursor: 'default',
-                overflow: 'hidden',
-                background: 'transparent',
-                boxShadow: 'none',
-              }}
-            >
-              <div
+          <div
+            onClick={e => e.stopPropagation()}
+            style={{
+              width: '100%',
+              maxWidth: 'min(88vw, 1280px)',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              cursor: 'default',
+              maxHeight: 'calc(100vh - 80px)',
+              overflow: 'auto',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '12px 8px' }}>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={item.src} alt={item.alt}
                 style={{
-                  flex: '1 1 auto',
-                  minHeight: 0,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  padding: '12px 8px',
-                  overflow: 'hidden',
+                  maxWidth: '100%',
+                  maxHeight: 'min(74vh, calc(100vh - 200px))',
+                  width: 'auto',
+                  height: 'auto',
+                  objectFit: 'contain',
+                  borderRadius: 14,
+                  display: 'block',
                 }}
-              >
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={item.src} alt={item.alt}
-                  style={{
-                    maxWidth: '100%',
-                    maxHeight: '100%',
-                    width: 'auto',
-                    height: 'auto',
-                    objectFit: 'contain',
-                    borderRadius: 14,
-                    display: 'block',
-                  }}
-                />
-              </div>
-
-              <div
-                style={{
-                  flexShrink: 0,
-                  borderTop: '1px solid rgba(255,255,255,0.08)',
-                  background: 'rgba(8,8,8,0.85)',
-                  padding: '14px 16px 16px',
-                }}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 24 }}>
-                  <button
-                    type="button"
-                    onClick={e => { e.stopPropagation(); setCurrent(c => (c - 1 + items.length) % items.length); }}
-                    style={{
-                      visibility: current > 0 ? 'visible' : 'hidden',
-                      width: 34, height: 34, borderRadius: '50%', flexShrink: 0,
-                      background: 'rgba(255,255,255,0.1)', border: 'none',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      color: 'white', cursor: 'pointer', transition: 'background 0.15s',
-                    }}
-                    className="hover:bg-white/20"
-                  >
-                    <svg width="13" height="13" viewBox="0 0 14 14" fill="none">
-                      <path d="M9 11L4 7l5-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                    </svg>
-                  </button>
-
-                  <div style={{ textAlign: 'center', minWidth: 0, flex: '1 1 auto', maxWidth: 'min(720px, 86vw)' }}>
-                    <p style={LB_CAP_PRIMARY}>{item.label}</p>
-                    {item.caption ? <p style={LB_CAP_SECONDARY}>{item.caption}</p> : null}
-                    <p style={{ color: 'rgba(255,255,255,0.25)', fontSize: 12, marginTop: 8 }}>{current + 1} / {items.length}</p>
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={e => { e.stopPropagation(); setCurrent(c => (c + 1) % items.length); }}
-                    style={{
-                      visibility: current < items.length - 1 ? 'visible' : 'hidden',
-                      width: 34, height: 34, borderRadius: '50%', flexShrink: 0,
-                      background: 'rgba(255,255,255,0.1)', border: 'none',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      color: 'white', cursor: 'pointer', transition: 'background 0.15s',
-                    }}
-                    className="hover:bg-white/20"
-                  >
-                    <svg width="13" height="13" viewBox="0 0 14 14" fill="none">
-                      <path d="M5 3l5 4-5 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                    </svg>
-                  </button>
-                </div>
-              </div>
+              />
             </div>
-          )}
+            <div style={{ marginTop: 12, width: '100%', maxWidth: 'min(720px, 92vw)' }}>
+              <p style={LB_CAP_PRIMARY}>{item.label}</p>
+              {item.caption ? <p style={LB_CAP_SECONDARY}>{item.caption}</p> : null}
+            </div>
+          </div>
         </div>,
         document.body
       )}
@@ -835,10 +746,12 @@ function ChatbotFlowDiagram() {
       {/* Arrow 3 */}
       <line x1="476" y1="105" x2="520" y2="105" stroke="#CACACA" strokeWidth="1.5" strokeDasharray="4 2"/>
       <polygon points="520,100 530,105 520,110" fill="#CACACA"/>
-      {/* Step 4: Stuck */}
+      {/* Step 4: Stalled */}
       <rect x="530" y="80" width="72" height="50" rx="12" fill="#F5F5F5" stroke="#DEDEDE" strokeWidth="1.5"/>
-      <text x="566" y="103" textAnchor="middle" fontSize="18" fill="#AAAAAA" fontFamily="Inter, sans-serif">?</text>
-      <text x="566" y="119" textAnchor="middle" fontSize="9" fill="#AAAAAA" fontFamily="Inter, sans-serif">stuck</text>
+      <line x1="560" y1="87" x2="572" y2="99" stroke="#AAAAAA" strokeWidth="2" strokeLinecap="round"/>
+      <line x1="572" y1="87" x2="560" y2="99" stroke="#AAAAAA" strokeWidth="2" strokeLinecap="round"/>
+      <text x="566" y="112" textAnchor="middle" fontSize="9" fill="#AAAAAA" fontFamily="Inter, sans-serif">conversation</text>
+      <text x="566" y="123" textAnchor="middle" fontSize="9" fill="#AAAAAA" fontFamily="Inter, sans-serif">stalls</text>
     </svg>
   );
 }
@@ -1022,20 +935,7 @@ function ResearchDeck() {
   const outerRef = useRef<HTMLDivElement>(null);
   const [displayProgress, setDisplayProgress] = useState(0);
   const [deckDisabled, setDeckDisabled] = useState(false);
-  const [deckInView, setDeckInView] = useState(false);
   const aniState = useRef({ scrollP: 0, displayP: 0, animating: false, animTarget: 0, animStartP: 0, animStartTime: 0, animId: 0 });
-
-  // Track whether the deck section is visible at all (gates MediaViewer auto-advance)
-  useEffect(() => {
-    const el = outerRef.current;
-    if (!el) return;
-    const observer = new IntersectionObserver(
-      ([entry]) => setDeckInView(entry.isIntersecting),
-      { threshold: 0.05 }
-    );
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, []);
 
   // Enable/disable deck based on viewport height AND width
   useEffect(() => {
@@ -1120,8 +1020,6 @@ function ResearchDeck() {
     };
   }, [deckDisabled]);
 
-  const layoutIndex = Math.min(Math.round(displayProgress), 2);
-
   const cards = [
     {
       number: 1 as const,
@@ -1161,7 +1059,7 @@ function ResearchDeck() {
       <div className="flex flex-col gap-16">
         {cards.map((card, i) => (
           <ResearchCard key={i} number={card.number} icon={card.icon} title={card.title} body={card.body}>
-            <MediaViewer items={card.media} constrained={false} />
+            <ToggleMedia items={card.media} constrained={false} />
           </ResearchCard>
         ))}
       </div>
@@ -1198,7 +1096,7 @@ function ResearchDeck() {
                 pointerEvents: s.pointerEvents,
               }}>
                 <ResearchCard number={card.number} icon={card.icon} title={card.title} body={card.body}>
-                  <MediaViewer items={card.media} active={deckInView && layoutIndex === i} />
+                  <ToggleMedia items={card.media} />
                 </ResearchCard>
               </div>
             );
@@ -1356,7 +1254,8 @@ const NAV_SECTIONS = [
   { id: 'section-overview',   label: 'Overview' },
   { id: 'section-research',   label: 'Research' },
   { id: 'section-design',     label: 'Design' },
-  { id: 'section-reflection', label: 'Reflection' },
+  { id: 'section-outcomes',   label: 'Outcomes' },
+  { id: 'section-reflection', label: 'Takeaways' },
 ];
 
 function smoothScrollTo(targetY: number) {
@@ -1441,16 +1340,18 @@ function SectionNav() {
 }
 
 // ── MacBezel ─────────────────────────────────────────────────────────────────
-function MacBezel({ src, alt }: { src: string; alt: string }) {
+function MacBezel({ alt, children }: { alt: string; children: ReactNode }) {
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%' }}>
       {/* Monitor body */}
-      <div style={{
+      <div role="img" aria-label={alt} style={{
         background: 'linear-gradient(160deg, #2a2a2c 0%, #1a1a1c 100%)',
         borderRadius: 14,
         padding: '10px 10px 20px',
         boxShadow: '0 2px 0 rgba(255,255,255,0.06) inset, 0 30px 80px rgba(0,0,0,0.35), 0 8px 20px rgba(0,0,0,0.2)',
         position: 'relative',
+        width: '100%',
+        maxWidth: 760,
       }}>
         {/* Camera dot */}
         <div style={{
@@ -1463,14 +1364,9 @@ function MacBezel({ src, alt }: { src: string; alt: string }) {
         <div style={{
           borderRadius: 4,
           overflow: 'hidden',
-          lineHeight: 0,
           boxShadow: '0 0 0 1px rgba(0,0,0,0.5) inset',
         }}>
-          <img
-            src={src}
-            alt={alt}
-            style={{ display: 'block', width: '100%', maxWidth: 760 }}
-          />
+          {children}
         </div>
       </div>
       {/* Stand neck */}
@@ -1703,6 +1599,44 @@ function Divider({ label, id }: { label?: string; id?: string }) {
   );
 }
 
+// ── ClosingCTA ───────────────────────────────────────────────────────────────
+function ClosingCTA() {
+  const [ref, inView] = useInView<HTMLDivElement>(0.35);
+
+  return (
+    <div
+      ref={ref}
+      className="rounded-[24px] px-5 sm:px-14 py-10 sm:py-12 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6"
+      style={{
+        background: '#ffffff',
+        boxShadow: '0 8px 28px rgba(0,13,38,0.08)',
+        opacity: inView ? 1 : 0,
+        transform: inView ? 'translateY(0)' : 'translateY(16px)',
+        transition: 'opacity 0.65s ease, transform 0.65s ease',
+      }}
+    >
+      <div className="flex flex-col gap-2.5">
+        <p className="text-[22px] font-semibold text-[#1a1a1a]">See the assistant in context</p>
+        <p className="text-[16px] font-normal text-[#555]">
+          Shipped to production in 2024 — live at{' '}
+          <a href="https://findingfocus.app" target="_blank" rel="noopener noreferrer" className="hover:underline" style={{ color: ACCENT }}>
+            findingfocus.app
+          </a>
+        </p>
+      </div>
+      <a
+        href="https://findingfocus.app"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="shrink-0 inline-flex items-center gap-2 rounded-full px-7 py-4 text-[16px] font-semibold text-white transition-opacity hover:opacity-85"
+        style={{ background: '#111113' }}
+      >
+        Visit Finding Focus
+      </a>
+    </div>
+  );
+}
+
 // ── Page ─────────────────────────────────────────────────────────────────────
 export default function FindingFocusAiAssistantCaseStudy() {
   const ideationSentinelRef = useRef<HTMLDivElement>(null);
@@ -1742,28 +1676,19 @@ export default function FindingFocusAiAssistantCaseStudy() {
           <div className="flex items-center gap-2.5 mb-6" style={{ opacity: 0.65 }}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src="/case-studies/finding-focus-ai-assistant/finding-focus-logo.svg" alt="Finding Focus logo" className="h-7 w-auto" style={{ filter: 'brightness(0)' }} />
-            <span className="text-[15px] font-semibold text-[#000] tracking-[-0.1px]">Finding Focus</span>
+            <span className="text-[15px] font-semibold text-[#000] tracking-[-0.1px]">Finding Focus • Edtech • UX Design</span>
           </div>
 
           {/* Title */}
-          <h1 className="text-[28px] sm:text-[34px] md:text-[40px] font-semibold leading-[110%] tracking-[-1px] text-[#1a1a1a] mb-4 max-w-[680px]">
+          <h1 className="text-[28px] sm:text-[34px] md:text-[40px] font-semibold leading-[110%] tracking-[-1px] text-[#1a1a1a] mb-10 max-w-[680px]">
             Finding Focus Assistant
           </h1>
-
-          {/* Description */}
-          <p className="text-[15px] md:text-[18px] font-normal leading-[170%] text-[#555] max-w-[800px] mb-10">
-            My team and I designed an LLM-powered AI assistant to provide our teachers with on-demand, personalized support directly from within their interface.
-          </p>
 
           {/* Hero illustration */}
           <HeroIllustration />
 
-          {/* My Role / Team / Timeline */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 sm:gap-10 mt-10 pb-16 text-center sm:text-center">
-            <div>
-              <p className="text-[17px] md:text-[20px] font-semibold text-[#1a1a1a] mb-2">My Role</p>
-              <p className="text-[15px] md:text-[17px] font-normal leading-[175%] text-[#555]">UX Lead</p>
-            </div>
+          {/* Team / Timeline / My Role */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 sm:gap-10 mt-10 text-center">
             <div>
               <p className="text-[17px] md:text-[20px] font-semibold text-[#1a1a1a] mb-2">Team</p>
               <p className="text-[15px] md:text-[17px] font-normal leading-[175%] text-[#555]">
@@ -1774,6 +1699,49 @@ export default function FindingFocusAiAssistantCaseStudy() {
             <div>
               <p className="text-[17px] md:text-[20px] font-semibold text-[#1a1a1a] mb-2">Timeline</p>
               <p className="text-[15px] md:text-[17px] font-normal leading-[175%] text-[#555]">Aug – Nov 2024</p>
+            </div>
+            <div>
+              <p className="text-[17px] md:text-[20px] font-semibold text-[#1a1a1a] mb-2">My Role</p>
+              <p className="text-[15px] md:text-[17px] font-normal leading-[175%] text-[#555]">UX Lead</p>
+            </div>
+          </div>
+
+          {/* ── TL;DR ── */}
+          <div className="mt-14 pb-14 md:pb-28">
+            <div
+              className="relative rounded-[24px] px-5 pt-5 pb-6 sm:px-8 sm:pt-8 md:px-10 md:pt-10 flex flex-col gap-6"
+              style={{ background: '#ffffff', border: `1px solid ${BORDER}` }}
+            >
+              <Eyebrow label="TL;DR" />
+              <p className="text-[16px] font-normal leading-[150%] text-[#333] max-w-[880px]">
+                Finding Focus&apos;s most successful teachers all had one thing in common — hands-on support from
+                our team. With fewer than 5% of sign-ups ever getting that, we designed an LLM-powered assistant to
+                bring the same personalized help to every teacher, on demand. It shipped in 2024 and cut support
+                tickets by 12%.
+              </p>
+              <StatRow
+                stats={[
+                  { value: '18%', label: 'of teachers clicked into the assistant on first use' },
+                  { value: '62%', label: 'of teachers who opened it went on to ask a question' },
+                  { value: '12%', label: 'fewer support tickets since launch' },
+                ]}
+              />
+              <div className="flex justify-center pt-1">
+                <button
+                  type="button"
+                  className="tldr-jump-btn"
+                  onClick={() => {
+                    const el = document.getElementById('section-final-designs');
+                    if (!el) return;
+                    smoothScrollTo(el.getBoundingClientRect().top + window.scrollY - 40);
+                  }}
+                >
+                  Jump to final designs
+                  <span className="tldr-jump-arrow" aria-hidden="true">
+                    <ArrowDownward sx={{ fontSize: 15 }} />
+                  </span>
+                </button>
+              </div>
             </div>
           </div>
 
@@ -1786,8 +1754,27 @@ export default function FindingFocusAiAssistantCaseStudy() {
       <section className="max-w-[1200px] mx-auto px-5 sm:px-10 md:px-20 pb-14 md:pb-28">
         <Section
           eyebrow="Context"
-          heading="Turning a grant requirement into an opportunity for personalized support."
-          body="Our most successful teachers shared one common thread — direct support from our team during implementation. With grant requirements pushing us toward AI integration, we recognized that an LLM-powered assistant could provide that same hands-on support to every teacher at scale."
+          heading="Finding Focus is an edtech company building attention-training tools for classrooms."
+          body="Teachers use our tools through a dedicated teacher interface where they can share the courses, facilitate classroom activities, and track student progress over time."
+        >
+          <VisualCard caption="The Classroom Dashboard within the teacher interface">
+            <div className="flex items-center justify-center p-4 sm:p-8">
+              <ExpandableImage
+                src="/case-studies/finding-focus-ai-assistant/focus-tab-bezel.png"
+                alt="The Classroom Dashboard within the Finding Focus teacher interface"
+                className="w-full max-w-[720px] h-auto block"
+              />
+            </div>
+          </VisualCard>
+        </Section>
+      </section>
+
+      {/* ── THE PROBLEM ── */}
+      <section className="max-w-[1200px] mx-auto px-5 sm:px-10 md:px-20 pb-14 md:pb-28">
+        <Section
+          eyebrow="The Problem"
+          heading="Our most successful teachers all received hands-on support, but that support didn't scale."
+          body="One-on-one support was the difference-maker during implementation, but between our team's limited bandwidth and teachers not knowing how to reach us, fewer than 5% of sign-ups ever received it."
         >
           <VisualCard caption="Less than 5% of all of Finding Focus's sign-ups received one-on-one support">
             <div className="flex items-center justify-center py-12 px-8">
@@ -1798,22 +1785,84 @@ export default function FindingFocusAiAssistantCaseStudy() {
         </Section>
       </section>
 
-      {/* ── THE PROBLEM ── */}
+      {/* ── HYPOTHESIS ── */}
+      <section className="max-w-[1200px] mx-auto px-5 sm:px-10 md:px-20 pb-14 md:pb-28">
+        <div className="flex flex-col gap-10">
+          <Section
+            eyebrow="Hypothesis"
+            heading="An AI assistant could deliver hands-on support at scale."
+            body="Our only self-serve option was a dense Zendesk help center teachers had to search on their own — something busy teachers rarely have time for. Hands-on support worked because we answered questions directly and anticipated the ones teachers hadn't thought to ask. An AI assistant could bridge that gap between a static help center and a real person."
+          >
+            <VisualCard caption="What users see when navigating Finding Focus' Zendesk site">
+              <div className="flex items-center justify-center p-4 sm:p-8">
+                <div style={{ width: '100%', maxWidth: 720, overflow: 'hidden', borderRadius: 12 }}>
+                  <ExpandableImage
+                    src="/case-studies/finding-focus-ai-assistant/zendesk-help-center.png"
+                    alt="Finding Focus' Zendesk help center, showing the Facilitating with Students article category"
+                    className="w-full h-auto block"
+                    style={{ marginBottom: -4 }}
+                  />
+                </div>
+              </div>
+            </VisualCard>
+          </Section>
+
+          <div style={{ maxWidth: '690px' }}>
+            <Callout
+              label="Added Motivation"
+              heading="Building this also kept us competitive for edtech grants."
+              body="As a non-profit, Finding Focus relies on grant funding, and demonstrating that we could meaningfully incorporate AI made us more competitive for grants."
+            />
+          </div>
+        </div>
+      </section>
+
+      {/* ── PROJECT GOALS ── */}
       <section className="max-w-[1200px] mx-auto px-5 sm:px-10 md:px-20 pb-14 md:pb-28">
         <div className="flex flex-col gap-16">
 
           <Section
-            eyebrow="User Insight"
-            heading="Teachers don't like chatbots."
-            body="The teachers we talked to were burned out from previous experiences with other chatbots — and for good reason. Traditional chatbots run on rigid decision trees. So when a teacher's question didn't match a pre-defined path, the conversation simply stalled — leaving them frustrated."
+            eyebrow="Project Goals"
+            heading="Before designing anything, I defined what a great assistant needed to do."
+          >
+            <GoalCards />
+          </Section>
+
+          {/* North Star — centered, bordered container matching the Achievements template */}
+          <div
+            className="rounded-[24px] px-8 py-10 flex flex-col items-center text-center gap-4 bg-white"
+            style={{ border: `1px solid ${BORDER}` }}
+          >
+            <NorthStarAnimatedIcon className="block size-14 shrink-0" />
+            <p className="text-[11px] font-medium tracking-[1.5px] uppercase" style={{ color: EYEBROW_ICON_COLOR }}>North Star</p>
+            <p className="text-[24px] font-semibold leading-[145%] tracking-[-0.3px] text-[#1a1a1a] max-w-[680px]">
+              Create a genuinely helpful assistant that provides relevant answers to any question about Finding Focus.
+            </p>
+          </div>
+
+        </div>
+      </section>
+
+      <Divider label="Research" id="section-research" />
+
+      {/* ── RESEARCH ── */}
+      <section className="max-w-[1200px] mx-auto px-5 sm:px-10 md:px-20 pb-14 md:pb-28">
+        <div className="flex flex-col gap-16">
+
+          {/* User Interviews */}
+          <Section
+            eyebrow="User Interviews"
+            heading="Teachers were skeptical of chatbots."
+            body="I began by interviewing teachers about their support needs. A clear pattern emerged: 6 of the 10 were wary of an in-product chatbot, with 4 citing past experiences with chatbots that did not answer their questions as well as a human would have."
           >
             <div className="flex flex-col gap-6">
               <VisualCard>
-                <div className="p-10 md:p-14 flex items-center justify-center">
+                <div className="pt-8 sm:pt-10 pb-10 md:pb-14 px-10 md:px-14 flex flex-col items-center gap-6">
+                  <p className="text-[15px] font-semibold text-[#1a1a1a]">Traditional Chatbot Experience</p>
                   <ChatbotFlowDiagram />
                 </div>
               </VisualCard>
-              <div className="pain-point-grid grid gap-3 grid-cols-[repeat(auto-fit,minmax(250px,1fr))]">
+              <div className="pain-point-grid grid gap-3 grid-cols-1 lg:grid-cols-3">
                 <div className="rounded-[20px] p-6 flex flex-col gap-3" style={{ background: 'rgba(224,48,48,0.06)' }}>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src="/images/case-studies/image.svg" alt="" className="w-6 h-6 flex-shrink-0" />
@@ -1838,30 +1887,9 @@ export default function FindingFocusAiAssistantCaseStudy() {
                     <p className="text-[15px] font-normal leading-[175%] text-[#555]">Users end up resorting to other options — like messaging the support team directly — which is time-consuming for everyone involved.</p>
                   </div>
                 </div>
-                <PainPointGridPlaceholder />
               </div>
             </div>
           </Section>
-
-          {/* Challenge callout — width capped at ~2 columns */}
-          <div style={{ maxWidth: '690px' }}>
-            <Callout
-              accentColor="#272727"
-              variant="northStar"
-              label="NORTH STAR"
-              heading="Create a genuinely helpful assistant that provides relevant answers to any teacher question."
-              icon={<NorthStarAnimatedIcon className="block size-16 shrink-0" />}
-            />
-          </div>
-
-        </div>
-      </section>
-
-      <Divider label="Research" id="section-research" />
-
-      {/* ── RESEARCH ── */}
-      <section className="max-w-[1200px] mx-auto px-5 sm:px-10 md:px-20 pb-14 md:pb-28">
-        <div className="flex flex-col gap-24">
 
           {/* Unit 1: Two options */}
           <Section
@@ -1869,12 +1897,11 @@ export default function FindingFocusAiAssistantCaseStudy() {
             heading="Two options. One clear winner."
             body="Before anything else, Finding Focus had to decide on the 'brain' of our chat interface — the core technology that would understand and respond to user requests. I evaluated two main approaches: Rule-Based NLU systems and Large Language Model (LLM) APIs."
           >
-            {/* Comparison card */}
-            <div className="rounded-[24px] overflow-hidden" style={{ background: 'rgba(220,232,248,0.45)' }}>
-              <div className="grid grid-cols-1 lg:grid-cols-2 divide-y lg:divide-y-0 lg:divide-x divide-[rgba(150,170,210,0.3)]">
+            {/* Comparison cards */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
 
                 {/* Left: NLU */}
-                <div className="p-8 flex flex-col gap-5">
+                <div className="rounded-[24px] bg-white p-8 flex flex-col gap-5" style={{ border: `1px solid ${BORDER}` }}>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src="/images/case-studies/NLU.svg" alt="" className="w-8 h-8" />
                   <div>
@@ -1905,9 +1932,9 @@ export default function FindingFocusAiAssistantCaseStudy() {
                 </div>
 
                 {/* Right: LLM — winner */}
-                <div className="p-8 flex flex-col gap-5 relative">
+                <div className="rounded-[24px] bg-white p-8 flex flex-col gap-5 relative" style={{ border: `1px solid ${BORDER}` }}>
                   <div className="absolute top-6 right-6">
-                    <span className="text-[11px] font-semibold uppercase tracking-[1px] bg-[rgba(39,39,39,0.12)] text-[#272727] rounded-full px-3 py-1">Winner</span>
+                    <span className="text-[11px] font-semibold uppercase tracking-[1px] bg-[rgba(0,110,254,0.12)] rounded-full px-3 py-1" style={{ color: ACCENT_DARK }}>Winner</span>
                   </div>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src="/images/case-studies/openai.svg" alt="" className="w-8 h-8" />
@@ -1938,22 +1965,8 @@ export default function FindingFocusAiAssistantCaseStudy() {
                   </p>
                 </div>
 
-              </div>
             </div>
           </Section>
-
-          {/* Winning choice */}
-          <div style={{ maxWidth: '690px' }}>
-            <Callout
-              accentColor="#272727"
-              variant="northStar"
-              label="The Winning Choice"
-              heading="LLM Powered API"
-              body="OpenAI's Assistants API was the clear choice — its ability to truly understand queries, respond naturally, and connect directly to our external knowledge base made it the right fit."
-              compactBody
-              icon={<WinningChoiceScrollStars className="block size-[72px] shrink-0 md:size-20" />}
-            />
-          </div>
 
           {/* Unit 2: Competitive analysis + scroll deck — gap-20 (80px) between intro copy and deck only */}
           <div className="flex flex-col gap-20">
@@ -1961,30 +1974,24 @@ export default function FindingFocusAiAssistantCaseStudy() {
               eyebrow="Comparative Analysis"
               heading={
                 <>
-                  Before designing anything, we did our{' '}
-                  <span
-                    className="inline-block align-baseline"
-                    style={{
-                      padding: 4,
-                      cursor: `url(${PENCIL_CURSOR_URL}) 0 0, auto`,
-                    }}
-                  >
-                    homework
-                  </span>
-                  .
+                  Following{' '}
+                  <TermTooltip tip="Users spend most of their time on other sites. This means that users prefer your site to work the same way as all the other sites they already know.">
+                    Jakob&apos;s Law
+                  </TermTooltip>
+                  , I collected and compared patterns from the most popular LLMs
                 </>
               }
-              body="I conducted a comprehensive comparative analysis of leading LLM chat interfaces — Gemini, Claude, Meta AI, and ChatGPT — focusing on three key areas that would shape our design direction."
+              body={<>The LLM chat interfaces I focused on were: <strong className="font-semibold">Gemini, Claude, Meta AI, and ChatGPT</strong>. There were three key patterns that I compared:</>}
             />
             <ResearchDeck />
           </div>
 
           {/* Key Insights — three ingredients */}
-          <div className="flex flex-col gap-6 -mt-10">
+          <div className="flex flex-col gap-6">
             <div className="flex flex-col gap-3">
               <Eyebrow label="Key Insights" />
-              <h2 className="text-[22px] md:text-[30px] font-semibold text-[#1a1a1a] leading-[120%]">Three ingredients for a great LLM chat experience.</h2>
-              <p className="text-[15px] md:text-[18px] font-normal leading-[180%] text-[#555]">The comparative analysis of leading AI chat products revealed consistent patterns that separate frustrating experiences from genuinely effective ones — three design decisions that every LLM chat interface should get right.</p>
+              <h2 className="text-[22px] md:text-[30px] font-semibold text-[#1a1a1a] leading-[120%]">Three patterns emerged as the UX fundamentals to get right.</h2>
+              <p className="text-[15px] md:text-[18px] font-normal leading-[180%] text-[#555]">From the leading LLM chat interfaces, three patterns rose to the top. Together they made the difference between a chat experience that felt clunky and one that felt enjoyable.</p>
             </div>
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mt-2">
               <div className="bg-white rounded-[20px] border border-[#e8e8e8] p-6 flex flex-col gap-4">
@@ -1992,8 +1999,8 @@ export default function FindingFocusAiAssistantCaseStudy() {
                   <SmsIcon sx={{ fontSize: 20, color: '#272727' }} />
                 </div>
                 <div>
-                  <p className="text-[16px] font-semibold text-[#1a1a1a] mb-2">Implement letter-by-letter text streaming</p>
-                  <p className="text-[15px] font-normal leading-[170%] text-[#666]">Streaming text as it generates provides immediate visual feedback, making the assistant feel faster and more responsive than waiting for a complete response.</p>
+                  <p className="text-[16px] font-semibold text-[#1a1a1a] mb-2">Letter-by-letter streaming</p>
+                  <p className="text-[15px] font-normal leading-[170%] text-[#666]">Streaming text as it generates provides immediate visual feedback, making the assistant feel faster and more responsive.</p>
                 </div>
               </div>
               <div className="bg-white rounded-[20px] border border-[#e8e8e8] p-6 flex flex-col gap-4">
@@ -2001,8 +2008,8 @@ export default function FindingFocusAiAssistantCaseStudy() {
                   <ForumIcon sx={{ fontSize: 20, color: '#272727' }} />
                 </div>
                 <div>
-                  <p className="text-[16px] font-semibold text-[#1a1a1a] mb-2">Use distinctive styling for user vs. AI messages</p>
-                  <p className="text-[15px] font-normal leading-[170%] text-[#666]">Left/right message layout with user bubbles follows conventions teachers already know, making it effortless to follow the conversation without learning new patterns.</p>
+                  <p className="text-[16px] font-semibold text-[#1a1a1a] mb-2">Distinctive styling for user vs AI messages</p>
+                  <p className="text-[15px] font-normal leading-[170%] text-[#666]">Left/right message layout with user&apos;s messages in text bubbles makes it easy to follow the conversation.</p>
                 </div>
               </div>
               <div className="bg-white rounded-[20px] border border-[#e8e8e8] p-6 flex flex-col gap-4">
@@ -2010,8 +2017,8 @@ export default function FindingFocusAiAssistantCaseStudy() {
                   <VerticalAlignTopIcon sx={{ fontSize: 20, color: '#272727' }} />
                 </div>
                 <div>
-                  <p className="text-[16px] font-semibold text-[#1a1a1a] mb-2">Anchor each message in a fixed section</p>
-                  <p className="text-[15px] font-normal leading-[170%] text-[#666]">Keeping each exchange in its own stable container prevents the layout from shifting as text streams in — so teachers can read without losing their place.</p>
+                  <p className="text-[16px] font-semibold text-[#1a1a1a] mb-2">Auto-scroll and anchor</p>
+                  <p className="text-[15px] font-normal leading-[170%] text-[#666]">Auto-scrolling and anchoring to each new message keeps the layout stable as text streams in, making it easier to follow without disrupting the reading experience.</p>
                 </div>
               </div>
             </div>
@@ -2055,8 +2062,6 @@ export default function FindingFocusAiAssistantCaseStudy() {
             ]} />
 
             <Callout
-              accentColor="#272727"
-              variant="northStar"
               label="The Winning Choice"
               heading="Floating Action Button"
               body="Always reachable without pulling teachers away from what they're doing."
@@ -2083,8 +2088,6 @@ export default function FindingFocusAiAssistantCaseStudy() {
             ]} />
 
             <Callout
-              accentColor="#272727"
-              variant="northStar"
               label="The Winning Choice"
               heading="Anchored Modal Overlay"
               body="Stays present without taking over — enough screen space to have a real conversation, without losing sight of where you are."
@@ -2113,8 +2116,6 @@ export default function FindingFocusAiAssistantCaseStudy() {
           ]} />
 
           <Callout
-            accentColor="#272727"
-            variant="northStar"
             label="The Winning Choice"
             heading="Suggested Question Tiles"
             body="Question tiles give teachers a clear starting point — and signal what the assistant is actually capable of from the moment it opens."
@@ -2129,6 +2130,7 @@ export default function FindingFocusAiAssistantCaseStudy() {
       <section className="max-w-[1200px] mx-auto px-5 sm:px-10 md:px-20 pb-12 md:pb-20">
         <div className="flex flex-col gap-10">
           <Section
+            id="section-final-designs"
             eyebrow="Final Designs"
             heading="Putting it all together."
             body="The three big decisions shown above — access point, display format, empty state — shaped the core design direction; however, this project also included dozens of smaller decisions that don't each merit their own section, but collectively helped shape the final experience."
@@ -2162,6 +2164,8 @@ export default function FindingFocusAiAssistantCaseStudy() {
         </div>
       </section>
 
+      <Divider label="Outcomes" id="section-outcomes" />
+
       {/* ── OUTCOMES ── */}
       <section className="max-w-[1200px] mx-auto px-5 sm:px-10 md:px-20 pb-12 md:pb-20">
         <div className="flex flex-col gap-10">
@@ -2170,58 +2174,47 @@ export default function FindingFocusAiAssistantCaseStudy() {
             heading="What happened after launch."
             body="We didn't approach this project with explicit success metrics — the original driver was grant competitiveness. That said, the results were still meaningful: since implementing the assistant, support ticket volume has decreased by 12% compared to previous semesters. The assistant has helped teachers get answers without needing to directly reach out to our team — which was the core promise of the tool."
           />
-          {/* Stat card */}
-          <div className="flex">
-            <div className="bg-[rgba(220,232,248,0.45)] rounded-[24px] p-8 flex items-center gap-5">
-              {/* Down arrow icon */}
-              <div className="flex-shrink-0 w-14 h-14 rounded-2xl bg-[rgba(79,160,230,0.12)] flex items-center justify-center">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M12 5v14M5 12l7 7 7-7" stroke="#4FA0E6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
-              </div>
-              <div>
-                <p className="text-[36px] font-bold text-[#1a1a1a] leading-none">12%</p>
-                <p className="text-[14px] text-[#666] mt-1">decrease in support tickets</p>
-              </div>
-            </div>
-          </div>
+          <StatRow
+            stats={[
+              { value: '12%', label: 'decrease in support tickets compared to previous semesters' },
+            ]}
+          />
         </div>
       </section>
 
-      <Divider id="section-reflection" label="Reflection" />
+      <Divider id="section-reflection" label="Takeaways" />
 
-      {/* ── REFLECTION ── */}
+      {/* ── TAKEAWAYS ── */}
       <section className="max-w-[1200px] mx-auto px-5 sm:px-10 md:px-20 pb-14 md:pb-28">
-        <div className="flex flex-col gap-12">
-
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            <div className="bg-[rgba(220,232,248,0.45)] rounded-[24px] p-8">
-              <p className="text-[11px] font-medium tracking-[1.5px] uppercase text-[#272727] mb-3">Design Landscape</p>
-              <h4 className="text-[18px] font-semibold text-[#1a1a1a] mb-3">LLM chat interfaces are still early — design around your use case, not conventions</h4>
-              <p className="text-[16px] font-normal leading-[175%] text-[#555]">There&apos;s no settled playbook for LLM chat UI yet. Patterns that work for ChatGPT don&apos;t automatically translate to a tool teachers use mid-workflow.</p>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+            <div className="rounded-[24px] p-7 flex flex-col gap-3 bg-white" style={{ border: `1px solid ${BORDER}` }}>
+              <Eyebrow label="Design Landscape" color={ACCENT} />
+              <h4 className="text-[18px] font-semibold leading-[145%] text-[#1a1a1a]">LLM chat interfaces are still early — design around your use case, not conventions</h4>
+              <p className="text-[15px] font-normal leading-[175%] text-[#555]">There&apos;s no settled playbook for LLM chat UI yet. Patterns that work for ChatGPT don&apos;t automatically translate to a tool teachers use mid-workflow.</p>
             </div>
-            <div className="bg-[rgba(220,232,248,0.45)] rounded-[24px] p-8">
-              <p className="text-[11px] font-medium tracking-[1.5px] uppercase text-[#272727] mb-3">What I Learned</p>
-              <h4 className="text-[18px] font-semibold text-[#1a1a1a] mb-3">The depth of what goes into making an LLM actually useful surprised me</h4>
-              <p className="text-[16px] font-normal leading-[175%] text-[#555]">Working hands-on with the Assistants API — vector storage, context windows, system prompt design — gave me a much more grounded picture of what&apos;s actually happening under the hood.</p>
+            <div className="rounded-[24px] p-7 flex flex-col gap-3 bg-white" style={{ border: `1px solid ${BORDER}` }}>
+              <Eyebrow label="What I Learned" color={ACCENT} />
+              <h4 className="text-[18px] font-semibold leading-[145%] text-[#1a1a1a]">The depth of what goes into making an LLM actually useful surprised me</h4>
+              <p className="text-[15px] font-normal leading-[175%] text-[#555]">Working hands-on with the Assistants API — vector storage, context windows, system prompt design — gave me a much more grounded picture of what&apos;s actually happening under the hood.</p>
             </div>
-            <div className="bg-[rgba(220,232,248,0.45)] rounded-[24px] p-8">
-              <p className="text-[11px] font-medium tracking-[1.5px] uppercase text-[#272727] mb-3">Honest Takeaway</p>
-              <h4 className="text-[18px] font-semibold text-[#1a1a1a] mb-3">The assistant helps — but it doesn&apos;t replace a person</h4>
-              <p className="text-[16px] font-normal leading-[175%] text-[#555]">Teachers who onboard with a team member still see higher implementation success than those who don&apos;t. The assistant is a support layer, not a replacement for human connection.</p>
+            <div className="rounded-[24px] p-7 flex flex-col gap-3 bg-white" style={{ border: `1px solid ${BORDER}` }}>
+              <Eyebrow label="Honest Takeaway" color={ACCENT} />
+              <h4 className="text-[18px] font-semibold leading-[145%] text-[#1a1a1a]">The assistant helps — but it doesn&apos;t replace a person</h4>
+              <p className="text-[15px] font-normal leading-[175%] text-[#555]">Teachers who onboard with a team member still see higher implementation success than those who don&apos;t. The assistant is a support layer, not a replacement for human connection.</p>
             </div>
-            <div className="bg-[rgba(220,232,248,0.45)] rounded-[24px] p-8">
-              <p className="text-[11px] font-medium tracking-[1.5px] uppercase text-[#272727] mb-3">If I Could Do It Again</p>
-              <h4 className="text-[18px] font-semibold text-[#1a1a1a] mb-3">I would have invested more in user testing — but it wasn&apos;t in the cards</h4>
-              <p className="text-[16px] font-normal leading-[175%] text-[#555]">Early-stage startup work rarely has runway for structured usability testing before shipping. It made the competitive research more load-bearing — when you can&apos;t test with users, understanding what established products got right becomes your best available signal.</p>
+            <div className="rounded-[24px] p-7 flex flex-col gap-3 bg-white" style={{ border: `1px solid ${BORDER}` }}>
+              <Eyebrow label="If I Could Do It Again" color={ACCENT} />
+              <h4 className="text-[18px] font-semibold leading-[145%] text-[#1a1a1a]">I would have invested more in user testing — but it wasn&apos;t in the cards</h4>
+              <p className="text-[15px] font-normal leading-[175%] text-[#555]">Early-stage startup work rarely has runway for structured usability testing before shipping. It made the competitive research more load-bearing — when you can&apos;t test with users, understanding what established products got right becomes your best available signal.</p>
             </div>
           </div>
-
-        </div>
       </section>
 
-      {/* Footer */}
-      <div className="h-20" />
+      {/* ── CLOSING CTA ── */}
+      <section className="max-w-[1200px] mx-auto px-5 sm:px-10 md:px-20 pb-20">
+        <ClosingCTA />
+      </section>
+
     </div>
   );
 }

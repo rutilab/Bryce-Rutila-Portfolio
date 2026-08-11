@@ -13,8 +13,14 @@
   --font-inter: var(--font-inter);
 }
 
+/* overflow-x uses `clip`, not `hidden`, on html + body.
+   `hidden` on one axis forces the other axis from `visible` to `auto`, which turns body into a
+   scroll container — that silently breaks `position: sticky` descendants (they stick relative to
+   body's scrollport, which never scrolls, so they never pin). `clip` and `visible` are a compatible
+   pair per CSS Overflow 3, so overflow-y stays `visible` and sticky keeps working. Horizontal
+   overflow is still clipped exactly as before. */
 html {
-  overflow-x: hidden;
+  overflow-x: clip;
   scrollbar-width: none;
 }
 html::-webkit-scrollbar {
@@ -26,7 +32,7 @@ body {
   color: var(--foreground);
   font-family: var(--font-sf-pro);
   min-height: 100vh;
-  overflow-x: hidden;
+  overflow-x: clip;
   scrollbar-width: none;
 }
 body::-webkit-scrollbar {
