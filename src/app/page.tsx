@@ -349,6 +349,7 @@ function EndorsementCard({ name, role, company, quote, fullQuote, initials, avat
     window.addEventListener('keydown', onKey);
     return () => {
       document.body.style.overflow = '';
+      document.body.style.overflowX = 'clip';
       delete document.body.dataset.modalOpen;
       window.removeEventListener('wheel', preventScroll);
       window.removeEventListener('touchmove', preventScroll);

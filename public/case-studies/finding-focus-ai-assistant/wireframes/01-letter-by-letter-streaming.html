@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Wireframe — Letter-by-letter streaming</title>
+<script>if (/\bembed=1\b/.test(location.search)) document.documentElement.classList.add("embed");</script>
+<style>
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: #e9e9e9;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+}
+
+.page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+/* Case-study embed: center the intrinsic chat frame and scale it to fit */
+html.embed, html.embed body {
+  background: transparent;
+  overflow: hidden;
+  height: 100%;
+  width: 100%;
+}
+html.embed .page {
+  min-height: 0;
+  width: 100%;
+  height: 100%;
+  padding: 20px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+html.embed .frame {
+  width: 480px;
+  height: 620px;
+  max-width: none;
+  flex-shrink: 0;
+  pointer-events: none;
+  user-select: none;
+  transform-origin: center center;
+}
+
+
+
+/* ── Lo-fi chat frame: plain grayscale, no branding ─────────────────── */
+.frame {
+  width: 480px;
+  max-width: 100%;
+  height: 620px;
+  background: #fff;
+  border: 1.5px solid #bbb;
+  border-radius: 6px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.frame-header {
+  height: 44px;
+  flex-shrink: 0;
+  border-bottom: 1.5px solid #bbb;
+  display: flex;
+  align-items: center;
+  padding: 0 14px;
+  gap: 8px;
+}
+.frame-header .dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  border: 1.5px solid #999;
+}
+.frame-header .bar {
+  height: 8px;
+  width: 100px;
+  background: #ddd;
+  border-radius: 4px;
+}
+
+.frame-body {
+  flex-grow: 1;
+  overflow-y: auto;
+  padding: 20px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.msg { display: flex; gap: 10px; align-items: flex-start; }
+.msg.user { justify-content: flex-end; }
+.msg.ai { justify-content: flex-start; }
+
+.avatar {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 1.5px solid #999;
+  background: #f2f2f2;
+  flex-shrink: 0;
+}
+
+.bubble {
+  max-width: 76%;
+  padding: 10px 14px;
+  border-radius: 14px;
+  font-size: 14px;
+  line-height: 1.5;
+  color: #222;
+}
+.msg.user .bubble {
+  background: #ececec;
+  border: 1.5px solid #ccc;
+  border-bottom-right-radius: 4px;
+}
+.msg.ai .bubble {
+  background: #fff;
+  border: 1.5px dashed #bbb;
+  border-bottom-left-radius: 4px;
+}
+
+.typing-dots {
+  display: inline-flex;
+  gap: 4px;
+  padding: 6px 2px;
+}
+.typing-dots span {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #999;
+  animation: bounce 1.1s infinite ease-in-out;
+}
+.typing-dots span:nth-child(2) { animation-delay: 0.15s; }
+.typing-dots span:nth-child(3) { animation-delay: 0.3s; }
+@keyframes bounce {
+  0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
+  30% { transform: translateY(-4px); opacity: 1; }
+}
+
+/* Caret shown at the end of the streaming text */
+.caret {
+  display: inline-block;
+  width: 2px;
+  height: 14px;
+  background: #333;
+  margin-left: 2px;
+  vertical-align: -2px;
+  animation: blink 0.9s step-end infinite;
+}
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+.frame-footer {
+  flex-shrink: 0;
+  border-top: 1.5px solid #bbb;
+  padding: 12px 14px;
+  display: flex;
+  align-items: center;
+}
+.footer-input {
+  flex-grow: 1;
+  height: 34px;
+  border: 1.5px solid #ccc;
+  border-radius: 999px;
+  background: #f5f5f5;
+}
+
+</style>
+</head>
+<body>
+<div class="page">
+  <div>
+
+    <div class="frame">
+      <div class="frame-header">
+        <div class="dot"></div>
+        <div class="bar"></div>
+      </div>
+
+      <div class="frame-body" id="body">
+        <div class="msg user">
+          <div class="bubble">Why is letter-by-letter streaming good UX?</div>
+        </div>
+        <!-- AI message gets inserted here by the script -->
+      </div>
+
+      <div class="frame-footer">
+        <div class="footer-input"></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+(function () {
+  var body = document.getElementById('body');
+
+  var responseText = "This is what letter-by-letter streaming looks like. Instead of the full answer appearing all at once, each character is revealed in sequence. It gives immediate visual feedback that a response is on its way, makes the wait feel shorter even when the answer is long, and lets you start reading before the message has finished generating.";
+
+  var CHAR_DELAY = 16;      // ms per character
+  var THINKING_DELAY = 900; // pause before streaming starts
+  var HOLD_AFTER = 2200;    // pause after streaming finishes, before looping
+  var RESET_GAP = 700;      // pause on the blank state before restarting
+
+  function run() {
+    // 1. "Thinking" indicator
+    var row = document.createElement('div');
+    row.className = 'msg ai';
+    row.innerHTML =
+      '<div class="avatar"></div>' +
+      '<div class="bubble typing-dots"><span></span><span></span><span></span></div>';
+    body.appendChild(row);
+
+    setTimeout(function () {
+      // 2. Swap to a streaming text bubble
+      row.innerHTML =
+        '<div class="avatar"></div>' +
+        '<div class="bubble"><span id="streamText"></span><span class="caret" id="caret"></span></div>';
+      var textEl = document.getElementById('streamText');
+      var caretEl = document.getElementById('caret');
+
+      var i = 0;
+      function tick() {
+        if (i >= responseText.length) {
+          caretEl.remove();
+          setTimeout(reset, HOLD_AFTER);
+          return;
+        }
+        textEl.textContent += responseText[i];
+        i++;
+        setTimeout(tick, CHAR_DELAY);
+      }
+      tick();
+    }, THINKING_DELAY);
+  }
+
+  function reset() {
+    // Fade the AI row out, then remove it and start the loop over.
+    var aiRow = body.querySelector('.msg.ai');
+    if (aiRow) {
+      aiRow.style.transition = 'opacity 0.3s ease-out';
+      aiRow.style.opacity = '0';
+      setTimeout(function () {
+        aiRow.remove();
+        setTimeout(run, RESET_GAP);
+      }, 300);
+    } else {
+      setTimeout(run, RESET_GAP);
+    }
+  }
+
+  run();
+})();
+</script>
+
+<script>
+(function () {
+  if (!document.documentElement.classList.contains('embed')) return;
+  var page = document.querySelector('.page');
+  var frame = document.querySelector('.frame');
+  if (!page || !frame) return;
+
+  var wrap = document.createElement('div');
+  wrap.className = 'embed-fit';
+  wrap.style.overflow = 'hidden';
+  wrap.style.flexShrink = '0';
+  frame.parentNode.insertBefore(wrap, frame);
+  wrap.appendChild(frame);
+  frame.style.transformOrigin = 'top left';
+
+  function fit() {
+    // Keep ~20px padding top/bottom (and sides) while scaling the 480×620 frame up to fill
+    var padX = 24, padY = 40;
+    var sw = (page.clientWidth - padX) / 480;
+    var sh = (page.clientHeight - padY) / 620;
+    var s = Math.max(0.25, Math.min(sw, sh));
+    wrap.style.width = (480 * s) + 'px';
+    wrap.style.height = (620 * s) + 'px';
+    frame.style.transform = 'scale(' + s + ')';
+  }
+  fit();
+  if (typeof ResizeObserver !== 'undefined') {
+    new ResizeObserver(fit).observe(page);
+  } else {
+    window.addEventListener('resize', fit);
+  }
+})();
+</script>
+
+</body>
+</html>

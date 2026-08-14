@@ -94,10 +94,16 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html
+      lang="en"
+      // Inline overflow-x: clip so sticky can't be broken by a stale CSS bundle that still
+      // emits overflow-x: hidden (see globals.css). clip + visible-y keeps body from becoming
+      // a scroll container; sticky pins to the viewport again.
+      style={{ overflowX: 'clip' }}
+    >
       <body
         className={`${geistSans.variable} ${geistMono.variable} ${inter.variable} ${battambang.variable} ${ibmPlexMono.variable} antialiased`}
-        style={{ background: '#faf7f2', color: '#141510' }}
+        style={{ background: '#faf7f2', color: '#141510', overflowX: 'clip' }}
       >
         <BackgroundImage />
         <Navigation />

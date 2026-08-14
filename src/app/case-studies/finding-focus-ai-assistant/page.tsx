@@ -138,6 +138,8 @@ const LB_CAP_SECONDARY: CSSProperties = {
 // ── Asset paths ──────────────────────────────────────────────────────────────
 const assets = {
   accessingAssistant: '/case-studies/finding-focus-ai-assistant/accessing-assistant.gif',
+  fabCalloutZoom: '/case-studies/finding-focus-ai-assistant/fab-callout-zoom.gif',
+  modalOverlay: '/case-studies/finding-focus-ai-assistant/modal-overlay.jpg',
   typicalChatInterface: '/case-studies/finding-focus-ai-assistant/typical-chat-interface.png',
   chatgptTextOutput: '/case-studies/finding-focus-ai-assistant/chatgpt-text-output.gif',
   geminiTextOutput: '/case-studies/finding-focus-ai-assistant/gemini-text-output.gif',
@@ -307,8 +309,7 @@ function Section({
 
 /**
  * Decision-summary callout — left accent-bar construction matching the Achievements
- * template's Callout, on-brand blue. Used for the recurring "Winning Choice" moments,
- * which have no direct template analog (see KEEP-4 in the alignment PRD).
+ * template's Callout, on-brand blue.
  */
 function Callout({
   label,
@@ -347,6 +348,25 @@ function Callout({
   );
 }
 
+/** Old-style winning-choice card: stars icon + gray eyebrow, no left accent bar. */
+function WinningChoiceCallout({ heading, body }: { heading: string; body: string }) {
+  return (
+    <div
+      className="flex max-w-[760px] items-center gap-4 sm:gap-5 bg-white rounded-[16px] p-4 sm:p-6"
+      style={{ border: `1px solid ${BORDER}` }}
+    >
+      <WinningChoiceScrollStars className="block size-[72px] shrink-0 md:size-20" />
+      <div className="flex min-w-0 flex-1 flex-col gap-1.5">
+        <p className="text-[11px] font-medium tracking-[1.5px] uppercase text-[#999]">
+          The Winning Choice
+        </p>
+        <p className="text-[19px] font-semibold leading-[135%] text-[#1a1a1a]">{heading}</p>
+        <p className="text-[14px] font-normal leading-[170%] text-[#666]">{body}</p>
+      </div>
+    </div>
+  );
+}
+
 function DecisionPill({ children }: { children: React.ReactNode }) {
   return (
     <div className="inline-flex self-start items-center gap-2 bg-[rgba(39,39,39,0.08)] border border-[rgba(39,39,39,0.2)] rounded-full px-4 py-2">
@@ -368,7 +388,7 @@ function VisualCard({
 }) {
   return (
     <div>
-      <div className="rounded-[24px] overflow-hidden" style={{ background: 'rgba(220,232,248,0.45)' }}>
+      <div className="rounded-[24px] overflow-clip" style={{ background: 'rgba(220,232,248,0.45)' }}>
         {children}
       </div>
       {caption && (
@@ -383,97 +403,120 @@ function VisualCard({
   );
 }
 
-// ── IdeationViewer: image carousel with auto-advance dots (no lightbox) ───────
-function IdeationViewer({ items }: {
-  items: { src: string; alt: string; secondSrc?: string; secondAlt?: string; label: string; caption: string }[];
+// ── IdeationToggle: pill tabs for UX consideration options (wireframe + comparison) ──
+/**
+ * Same pill-toggle chrome as ToggleMedia / comparative analysis. Each tab shows a
+ * wireframe + pros/cons pair. The winning option is listed first and marked with a
+ * Winner tag in the media well's top-right corner.
+ */
+function IdeationToggle({
+  items,
+}: {
+  items: {
+    src: string;
+    alt: string;
+    secondSrc?: string;
+    secondAlt?: string;
+    label: string;
+    winner?: boolean;
+  }[];
 }) {
-  const [current, setCurrent] = useState(0);
-  const [dotProgress, setDotProgress] = useState(0);
-  const containerRef = useRef<HTMLDivElement>(null);
-  const [inViewport, setInViewport] = useState(false);
-  const itemsRef = useRef(items);
-  itemsRef.current = items;
-  const DURATION = 12000;
+  const [active, setActive] = useState(0);
+  const [visible, setVisible] = useState(true);
+  const fadeTimer = useRef<number | null>(null);
 
   useEffect(() => {
-    const el = containerRef.current;
-    if (!el) return;
-    const observer = new IntersectionObserver(
-      ([entry]) => setInViewport(entry.isIntersecting),
-      { threshold: 0.4 }
-    );
-    observer.observe(el);
-    return () => observer.disconnect();
+    return () => {
+      if (fadeTimer.current != null) window.clearTimeout(fadeTimer.current);
+    };
   }, []);
 
-  useEffect(() => {
-    if (!inViewport) { setDotProgress(0); return; }
-    const startTime = Date.now();
-    setDotProgress(0);
-    let rafId: number;
-    function tick() {
-      const p = Math.min(100, ((Date.now() - startTime) / DURATION) * 100);
-      setDotProgress(p);
-      if (p < 100) { rafId = requestAnimationFrame(tick); }
-      else { setCurrent(c => (c + 1) % itemsRef.current.length); }
-    }
-    rafId = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(rafId);
-  }, [current, inViewport]);
+  function switchTab(i: number) {
+    if (i === active) return;
+    setVisible(false);
+    if (fadeTimer.current != null) window.clearTimeout(fadeTimer.current);
+    fadeTimer.current = window.setTimeout(() => {
+      setActive(i);
+      setVisible(true);
+    }, 160);
+  }
 
-  const item = items[current];
+  const item = items[active];
 
   return (
-    <div ref={containerRef}>
-      {/* Full-width container — taller on mobile for stacked layout, shorter on desktop for side-by-side */}
-      <div className="rounded-[24px] overflow-hidden relative h-[500px] md:h-[380px]" style={{ background: 'rgba(220,232,248,0.45)' }}>
-        {items.map((it, i) => (
-          <div
-            key={i}
-            className={`absolute inset-0 flex items-center justify-center p-8 gap-6 ${it.secondSrc ? 'flex-col md:flex-row' : ''}`}
-            style={{ opacity: i === current ? 1 : 0, transition: 'opacity 0.4s ease' }}
-          >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={it.src} alt={it.alt}
-              className={it.secondSrc
-                ? 'max-h-[44%] md:max-h-full md:max-w-[52%] max-w-full w-auto h-auto block flex-shrink-0'
-                : 'max-h-full max-w-full w-auto h-auto block'
-              }
-            />
-            {it.secondSrc && (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={it.secondSrc} alt={it.secondAlt ?? ''}
-                className="max-h-[44%] md:max-h-full md:max-w-[44%] max-w-full w-auto h-auto block flex-shrink-0"
-              />
-            )}
-          </div>
-        ))}
-        {/* Arrows inside the container */}
-        <button
-          onClick={() => setCurrent(c => (c - 1 + items.length) % items.length)}
-          style={{ visibility: current > 0 ? 'visible' : 'hidden', position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)', width: 32, height: 32, borderRadius: '50%', background: 'white', border: '1px solid rgba(0,0,0,0.08)', boxShadow: '0 1px 4px rgba(0,0,0,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#555', cursor: 'pointer', zIndex: 2 }}
+    <div className="flex flex-col items-center gap-6">
+      <div className="w-full flex justify-center">
+        <div
+          className="inline-flex flex-nowrap items-center gap-1 rounded-full bg-white p-1"
+          style={{ border: `1px solid ${BORDER}` }}
         >
-          <svg width="13" height="13" viewBox="0 0 14 14" fill="none"><path d="M9 11L4 7l5-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
-        </button>
-        <button
-          onClick={() => setCurrent(c => (c + 1) % items.length)}
-          style={{ visibility: current < items.length - 1 ? 'visible' : 'hidden', position: 'absolute', right: 16, top: '50%', transform: 'translateY(-50%)', width: 32, height: 32, borderRadius: '50%', background: 'white', border: '1px solid rgba(0,0,0,0.08)', boxShadow: '0 1px 4px rgba(0,0,0,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#555', cursor: 'pointer', zIndex: 2 }}
-        >
-          <svg width="13" height="13" viewBox="0 0 14 14" fill="none"><path d="M5 3l5 4-5 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
-        </button>
+          {items.map((it, i) => {
+            const on = i === active;
+            return (
+              <button
+                key={it.label}
+                onClick={() => switchTab(i)}
+                className="shrink-0 whitespace-nowrap px-3 sm:px-4 py-2 rounded-full text-[12px] sm:text-[13px] transition-colors"
+                style={
+                  on
+                    ? { background: 'rgba(0,110,254,0.12)', color: ACCENT_DARK, fontWeight: 600 }
+                    : { color: '#545454', fontWeight: 500 }
+                }
+              >
+                {it.label}
+              </button>
+            );
+          })}
+        </div>
       </div>
 
-      {/* Label + progress dots */}
-      <div className="mt-3 flex flex-col items-center gap-2">
-        <p className="text-[13px] text-[#999]">{item.label}</p>
-        <div className="flex items-center gap-1.5">
-          {items.map((_, i) => (
-            <button key={i} onClick={() => setCurrent(i)} style={{ height: 5, borderRadius: 3, width: i === current ? 48 : 5, transition: 'width 0.25s', background: 'rgba(0,0,0,0.12)', border: 'none', cursor: 'pointer', padding: 0, position: 'relative', overflow: 'hidden', flexShrink: 0 }}>
-              {i === current && <div style={{ position: 'absolute', left: 0, top: 0, height: '100%', width: `${dotProgress}%`, background: ACCENT }} />}
-            </button>
-          ))}
+      <div
+        className="w-full"
+        style={{
+          opacity: visible ? 1 : 0,
+          transform: visible ? 'translateY(0)' : 'translateY(6px)',
+          transition: 'opacity 0.25s ease, transform 0.25s ease',
+        }}
+      >
+        <div
+          className={`w-full rounded-[24px] overflow-clip flex items-center justify-center p-8 gap-6 h-[500px] md:h-[380px] ${item.secondSrc ? 'flex-col md:flex-row' : ''}`}
+          style={{ position: 'relative', background: 'rgba(220,232,248,0.45)' }}
+        >
+          {item.winner && (
+            <span
+              className="text-[11px] font-semibold uppercase tracking-[1px] rounded-full px-3 py-1 pointer-events-none"
+              style={{
+                position: 'absolute',
+                top: 12,
+                right: 12,
+                zIndex: 10,
+                background: 'rgba(0,110,254,0.12)',
+                color: ACCENT_DARK,
+              }}
+            >
+              Winner
+            </span>
+          )}
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            key={item.src}
+            src={item.src}
+            alt={item.alt}
+            className={
+              item.secondSrc
+                ? 'max-h-[44%] md:max-h-full md:max-w-[52%] max-w-full w-auto h-auto block flex-shrink-0'
+                : 'max-h-full max-w-full w-auto h-auto block'
+            }
+          />
+          {item.secondSrc && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              key={item.secondSrc}
+              src={item.secondSrc}
+              alt={item.secondAlt ?? ''}
+              className="max-h-[44%] md:max-h-full md:max-w-[44%] max-w-full w-auto h-auto block flex-shrink-0"
+            />
+          )}
         </div>
       </div>
     </div>
@@ -592,7 +635,11 @@ function ToggleMedia({
           transition: 'opacity 0.25s ease, transform 0.25s ease',
         }}
       >
-        {/* Asset — click to expand; GIFs loop natively for as long as they're mounted */}
+        {/* Asset — click to expand; GIFs loop natively for as long as they're mounted.
+            width:100% keeps the well full-bleed when maxHeight would otherwise shrink it via
+            aspect-ratio (that left-aligned the blue box). Height still caps at maxH so
+            ResearchDeck sticky card sizes stay stable. overflow:clip (not hidden) avoids
+            creating a scroll container. Image fills the well and object-fit:contain centers it. */}
         <div
           role="button"
           tabIndex={0}
@@ -600,10 +647,10 @@ function ToggleMedia({
           onKeyDown={e => e.key === 'Enter' && setLightboxOpen(true)}
           style={{
             position: 'relative',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            width: '100%',
             aspectRatio: '16/9',
             maxHeight: maxH, minHeight: constrained ? 160 : 0,
-            borderRadius: 16, overflow: 'hidden',
+            borderRadius: 16, overflow: 'clip',
             background: 'rgba(220,232,248,0.45)',
             cursor: 'zoom-in',
           }}
@@ -612,7 +659,12 @@ function ToggleMedia({
           <img
             key={item.src}
             src={item.src} alt={item.alt}
-            style={{ maxWidth: '100%', maxHeight: '100%', width: 'auto', height: 'auto', objectFit: 'contain', pointerEvents: 'none', userSelect: 'none' }}
+            style={{
+              position: 'absolute', inset: 0,
+              width: '100%', height: '100%',
+              objectFit: 'contain', objectPosition: 'center',
+              pointerEvents: 'none', userSelect: 'none',
+            }}
           />
           <div className="absolute top-2.5 left-2.5 px-2 py-0.5 rounded-md text-[11px] font-medium tracking-wide pointer-events-none" style={{ background: 'rgba(0,0,0,0.5)', color: 'white' }}>
             {item.type}
@@ -876,14 +928,18 @@ function ResearchCard({
       <div className="absolute left-1/2 -translate-x-1/2 -top-1 z-10">
         <NumberSticker number={number} />
       </div>
-      <div className="bg-white rounded-[24px] border border-[#e8e8e8] overflow-hidden shadow-sm">
+      <div className="bg-white rounded-[24px] border border-[#e8e8e8] overflow-clip shadow-sm">
         {/* Header */}
-        <div className="px-8 pt-12 pb-6">
-          <div className="flex items-center gap-4 mb-4">
+        <div className="px-8 pt-12 pb-5">
+          <div className="flex items-center gap-4 mb-3">
             {icon}
-            <h3 className="text-[19px] font-semibold text-[#1a1a1a]">{title}</h3>
+            <h3 className="text-[19px] font-semibold text-[#1a1a1a] leading-[120%]">
+              {title}
+            </h3>
           </div>
-          <p className="text-[16px] font-normal leading-[175%] text-[#555]">{body}</p>
+          <p className="text-[16px] font-normal leading-[175%] text-[#555]">
+            {body}
+          </p>
         </div>
         <div className="mx-8 h-px bg-[#eeeeee]" />
         {/* Visual content */}
@@ -898,7 +954,7 @@ function ResearchCard({
 // ── Scroll-driven deck animation ─────────────────────────────────────────────
 const SCROLL_PER_CARD = 600;
 
-function getCardStyle(i: number, progress: number): {
+function getCardStyle(i: number, progress: number, fadeStart = 0.4): {
   transform: string; opacity: number; zIndex: number; pointerEvents: 'auto' | 'none';
 } {
   if (progress >= i + 1) {
@@ -909,8 +965,8 @@ function getCardStyle(i: number, progress: number): {
     const eased = t * t; // ease-in: starts slow, accelerates away
     return {
       transform: `translateY(${eased * -130}%) scale(${1 - eased * 0.08})`,
-      // Stays fully visible for first 40%, then fades over remaining 60%
-      opacity: Math.max(0, 1 - Math.max(0, (t - 0.4) / 0.6)),
+      // Stays fully visible until fadeStart, then fades over the remaining range
+      opacity: Math.max(0, 1 - Math.max(0, (t - fadeStart) / (1 - fadeStart))),
       zIndex: 30, pointerEvents: 'none',
     };
   }
@@ -1069,14 +1125,16 @@ function ResearchDeck() {
   return (
     // Outer height: 100vh + 2 card exits + dead zone bumper at start
     <div ref={outerRef} style={{ height: `calc(100vh + ${SCROLL_PER_CARD * 2 + RESEARCH_DECK_DEAD_ZONE}px)` }}>
-      {/* Sticky viewport — fills 100vh, overflow hidden clips peeking cards at viewport bottom */}
+      {/* Sticky viewport — fills 100vh; overflow:clip clips peeking cards without creating a
+          scroll container (overflow:hidden would), so position:sticky keeps pinning to the
+          viewport — same rule as html/body overflow-x: clip in globals.css. */}
       <div style={{
         position: 'sticky',
         top: 0,
         height: '100vh',
         paddingTop: 64,
         paddingBottom: 48,
-        overflow: 'hidden',
+        overflow: 'clip',
         display: 'flex',
         flexDirection: 'column',
         justifyContent: 'flex-start',
@@ -1098,6 +1156,284 @@ function ResearchDeck() {
                 <ResearchCard number={card.number} icon={card.icon} title={card.title} body={card.body}>
                   <ToggleMedia items={card.media} />
                 </ResearchCard>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── InsightsDeck: same scroll-snap stack as ResearchDeck, wireframe HTML embeds ──
+/**
+ * Blue media well sized to match ToggleMedia’s overall block (pills + 16:9 media +
+ * caption) so insight cards land at the same height as comparative-analysis cards.
+ * Extra height absorbs shorter body copy (often one line vs two).
+ */
+function WireframeEmbed({
+  src,
+  title,
+  constrained = true,
+  fill = false,
+}: {
+  src: string;
+  title: string;
+  constrained?: boolean;
+  fill?: boolean;
+}) {
+  // Same viewport formula as ToggleMedia, plus headroom so insight cards match
+  // comparative height (missing pills/caption + often one fewer body line).
+  const maxH = constrained ? 'min(520px, calc(100vh - 440px))' : '520px';
+  return (
+    <div
+      className={fill ? 'w-full h-full min-h-0' : 'w-full'}
+      style={{
+        position: 'relative',
+        width: '100%',
+        ...(fill
+          ? { flex: '1 1 auto', minHeight: 280 }
+          : { height: maxH, minHeight: constrained ? 240 : 320 }),
+        borderRadius: 16,
+        overflow: 'clip',
+        background: 'rgba(220,232,248,0.45)',
+      }}
+    >
+      <iframe
+        src={`${src}?embed=1`}
+        title={title}
+        className="absolute inset-0 w-full h-full border-0 block"
+        scrolling="no"
+        style={{ pointerEvents: 'none' }}
+      />
+    </div>
+  );
+}
+
+/** Equal-height card shell so stacked peeks stay evenly spaced at 36px. */
+function InsightsCard({
+  number,
+  icon,
+  title,
+  body,
+  embed,
+  embedTitle,
+  shellHeight,
+}: {
+  number: 1 | 2 | 3;
+  icon: React.ReactNode;
+  title: string;
+  body: string;
+  embed: string;
+  embedTitle: string;
+  shellHeight: number;
+}) {
+  return (
+    <div className="pt-5 relative h-full box-border">
+      <div className="absolute left-1/2 -translate-x-1/2 -top-1 z-10">
+        <NumberSticker number={number} />
+      </div>
+      <div
+        className="bg-white rounded-[24px] border border-[#e8e8e8] overflow-clip shadow-sm flex flex-col"
+        style={{ height: shellHeight }}
+      >
+        <div className="px-8 pt-12 pb-5 flex-shrink-0">
+          <div className="flex items-center gap-4 mb-3">
+            {icon}
+            <h3 className="text-[19px] font-semibold text-[#1a1a1a] leading-[120%]">{title}</h3>
+          </div>
+          <p className="text-[16px] font-normal leading-[175%] text-[#555]">{body}</p>
+        </div>
+        <div className="mx-8 h-px bg-[#eeeeee] flex-shrink-0" />
+        <div className="p-8 flex-1 min-h-0 flex flex-col">
+          <WireframeEmbed fill src={embed} title={embedTitle} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function InsightsDeck() {
+  const outerRef = useRef<HTMLDivElement>(null);
+  const [displayProgress, setDisplayProgress] = useState(0);
+  const [deckDisabled, setDeckDisabled] = useState(false);
+  // Equal shell height for even peeks — sized from the sticky viewport like ToggleMedia
+  const [shellHeight, setShellHeight] = useState(640);
+  const aniState = useRef({ scrollP: 0, displayP: 0, animating: false, animTarget: 0, animStartP: 0, animStartTime: 0, animId: 0 });
+
+  const wireBase = '/case-studies/finding-focus-ai-assistant/wireframes';
+  const cards = [
+    {
+      number: 1 as const,
+      icon: <SmsIcon sx={{ fontSize: 32, color: '#272727' }} />,
+      title: 'Letter-by-letter streaming',
+      body: 'Streaming text as it generates provides immediate visual feedback, making the assistant feel faster and more responsive.',
+      embed: `${wireBase}/01-letter-by-letter-streaming.html`,
+      embedTitle: 'Letter-by-letter streaming wireframe',
+    },
+    {
+      number: 2 as const,
+      icon: <ForumIcon sx={{ fontSize: 32, color: '#272727' }} />,
+      title: 'Distinctive styling for user vs AI messages',
+      body: "Left/right message layout with user's messages in text bubbles makes it easy to follow the conversation.",
+      embed: `${wireBase}/02-distinctive-message-styling.html`,
+      embedTitle: 'Distinctive message styling wireframe',
+    },
+    {
+      number: 3 as const,
+      icon: <VerticalAlignTopIcon sx={{ fontSize: 32, color: '#272727' }} />,
+      title: 'Auto-scroll and anchor',
+      body: 'Auto-scrolling and anchoring to each new message keeps the layout stable as text streams in, making it easier to follow without disrupting the reading experience.',
+      embed: `${wireBase}/03-auto-scroll-and-anchor.html`,
+      embedTitle: 'Auto-scroll and anchor wireframe',
+    },
+  ];
+
+  useEffect(() => {
+    function checkSize() {
+      setDeckDisabled(window.innerHeight < MIN_DECK_HEIGHT || window.innerWidth < 900);
+    }
+    checkSize();
+    window.addEventListener('resize', checkSize);
+    return () => window.removeEventListener('resize', checkSize);
+  }, []);
+
+  // Mirror ToggleMedia / ResearchDeck vertical budget: card fits in the sticky
+  // viewport (100vh − top/bottom pads − peek strips) and shrinks on shorter screens.
+  useEffect(() => {
+    function updateShell() {
+      const stickyTopPad = 64;
+      const stickyBottomPad = 48;
+      const stickerPad = 20;
+      const peekRoom = 72; // 36px × 2 stacked peeks
+      const avail = window.innerHeight - stickyTopPad - stickyBottomPad - stickerPad - peekRoom;
+      // Header (~150) + divider/padding (~72) + media matching ToggleMedia block
+      const mediaH = Math.min(460, window.innerHeight - 500) + 100;
+      const target = 150 + 72 + mediaH;
+      setShellHeight(Math.max(420, Math.min(avail, target)));
+    }
+    updateShell();
+    window.addEventListener('resize', updateShell);
+    return () => window.removeEventListener('resize', updateShell);
+  }, [deckDisabled]);
+
+  useEffect(() => {
+    if (deckDisabled) return;
+    const state = aniState.current;
+
+    function animateTo(target: number) {
+      if (state.animating && state.animTarget === target) return;
+      state.animating = true;
+      state.animTarget = target;
+      state.animStartP = state.displayP;
+      state.animStartTime = Date.now();
+    }
+
+    function tick() {
+      if (state.animating) {
+        const t = Math.min(1, (Date.now() - state.animStartTime) / 700);
+        const eased = t * t * (3 - 2 * t);
+        const newP = state.animStartP + (state.animTarget - state.animStartP) * eased;
+        state.displayP = newP;
+        setDisplayProgress(newP);
+        if (t >= 1) {
+          state.animating = false;
+          state.displayP = state.animTarget;
+          setDisplayProgress(state.animTarget);
+        }
+      }
+      state.animId = requestAnimationFrame(tick);
+    }
+
+    let snappedTo = 0;
+    let prevRawP = -1;
+
+    function onScroll() {
+      if (!outerRef.current) return;
+      const rect = outerRef.current.getBoundingClientRect();
+      const rawP = Math.max(0, Math.min(2, (-rect.top - RESEARCH_DECK_DEAD_ZONE) / SCROLL_PER_CARD));
+      const scrollingForward = prevRawP < 0 || rawP >= prevRawP;
+      prevRawP = rawP;
+      state.scrollP = rawP;
+
+      if (state.animating) {
+        if (!scrollingForward && rawP < state.animTarget - 0.5) {
+          state.animating = false;
+          snappedTo = state.animTarget - 1;
+          animateTo(snappedTo);
+        }
+        return;
+      }
+
+      if (scrollingForward && rawP > snappedTo && snappedTo < 2) {
+        snappedTo++;
+        animateTo(snappedTo);
+      } else if (!scrollingForward && rawP < snappedTo - 0.5 && snappedTo > 0) {
+        snappedTo--;
+        animateTo(snappedTo);
+      }
+    }
+
+    state.animId = requestAnimationFrame(tick);
+    window.addEventListener('scroll', onScroll, { passive: true });
+    onScroll();
+    return () => {
+      window.removeEventListener('scroll', onScroll);
+      cancelAnimationFrame(state.animId);
+    };
+  }, [deckDisabled]);
+
+  if (deckDisabled) {
+    return (
+      <div className="flex flex-col gap-16">
+        {cards.map((card, i) => (
+          <ResearchCard key={i} number={card.number} icon={card.icon} title={card.title} body={card.body}>
+            <WireframeEmbed src={card.embed} title={card.embedTitle} constrained={false} />
+          </ResearchCard>
+        ))}
+      </div>
+    );
+  }
+
+  // Same sticky chrome + scroll runway as ResearchDeck (vertical responsiveness)
+  return (
+    <div ref={outerRef} style={{ height: `calc(100vh + ${SCROLL_PER_CARD * 2 + RESEARCH_DECK_DEAD_ZONE}px)` }}>
+      <div style={{
+        position: 'sticky',
+        top: 0,
+        height: '100vh',
+        paddingTop: 64,
+        paddingBottom: 48,
+        overflow: 'clip',
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'flex-start',
+      }}>
+        <div style={{ position: 'relative', flex: 1 }}>
+          {cards.map((card, i) => {
+            const s = getCardStyle(i, displayProgress, 0.72);
+            return (
+              <div key={i} style={{
+                position: i === 0 ? 'relative' : 'absolute',
+                top: 0, left: 0, right: 0,
+                // Match card-0 height so peek strips stay evenly spaced
+                height: i === 0 ? undefined : '100%',
+                willChange: 'transform, opacity',
+                transform: s.transform,
+                opacity: s.opacity,
+                zIndex: s.zIndex,
+                pointerEvents: s.pointerEvents,
+                backfaceVisibility: 'hidden',
+              }}>
+                <InsightsCard
+                  number={card.number}
+                  icon={card.icon}
+                  title={card.title}
+                  body={card.body}
+                  embed={card.embed}
+                  embedTitle={card.embedTitle}
+                  shellHeight={shellHeight}
+                />
               </div>
             );
           })}
@@ -1203,7 +1539,7 @@ function DesignDeck() {
   function CardChildren({ gifSrc, gifAlt, decision, decisionBody }: { gifSrc: string; gifAlt: string; decision: string; decisionBody: string }) {
     return (
       <div>
-        <div style={{ borderRadius: 16, overflow: 'hidden', background: 'rgba(220,232,248,0.45)', maxHeight: deckDisabled ? '380px' : maxGifH }}>
+        <div style={{ borderRadius: 16, overflow: 'clip', background: 'rgba(220,232,248,0.45)', maxHeight: deckDisabled ? '380px' : maxGifH }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={gifSrc} alt={gifAlt} style={{ width: '100%', height: 'auto', display: 'block' }} />
         </div>
@@ -1230,7 +1566,7 @@ function DesignDeck() {
 
   return (
     <div ref={outerRef} style={{ height: `calc(100vh + ${SCROLL_PER_CARD * 2 + DESIGN_DECK_DEAD_ZONE}px)` }}>
-      <div style={{ position: 'sticky', top: 0, height: '100vh', paddingTop: 80, paddingBottom: 48, overflow: 'hidden', display: 'flex', flexDirection: 'column', justifyContent: 'flex-start' }}>
+      <div style={{ position: 'sticky', top: 0, height: '100vh', paddingTop: 80, paddingBottom: 48, overflow: 'clip', display: 'flex', flexDirection: 'column', justifyContent: 'flex-start' }}>
         <div style={{ position: 'relative', flex: 1 }}>
           {cards.map((card, i) => {
             const s = getCardStyle(i, displayProgress);
@@ -1986,42 +2322,14 @@ export default function FindingFocusAiAssistantCaseStudy() {
             <ResearchDeck />
           </div>
 
-          {/* Key Insights — three ingredients */}
-          <div className="flex flex-col gap-6">
+          {/* Key Insights — scroll deck matching comparative analysis */}
+          <div className="flex flex-col gap-20">
             <div className="flex flex-col gap-3">
               <Eyebrow label="Key Insights" />
               <h2 className="text-[22px] md:text-[30px] font-semibold text-[#1a1a1a] leading-[120%]">Three patterns emerged as the UX fundamentals to get right.</h2>
               <p className="text-[15px] md:text-[18px] font-normal leading-[180%] text-[#555]">From the leading LLM chat interfaces, three patterns rose to the top. Together they made the difference between a chat experience that felt clunky and one that felt enjoyable.</p>
             </div>
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mt-2">
-              <div className="bg-white rounded-[20px] border border-[#e8e8e8] p-6 flex flex-col gap-4">
-                <div className="w-9 h-9 rounded-xl bg-[#272727]/10 flex items-center justify-center flex-shrink-0">
-                  <SmsIcon sx={{ fontSize: 20, color: '#272727' }} />
-                </div>
-                <div>
-                  <p className="text-[16px] font-semibold text-[#1a1a1a] mb-2">Letter-by-letter streaming</p>
-                  <p className="text-[15px] font-normal leading-[170%] text-[#666]">Streaming text as it generates provides immediate visual feedback, making the assistant feel faster and more responsive.</p>
-                </div>
-              </div>
-              <div className="bg-white rounded-[20px] border border-[#e8e8e8] p-6 flex flex-col gap-4">
-                <div className="w-9 h-9 rounded-xl bg-[#272727]/10 flex items-center justify-center flex-shrink-0">
-                  <ForumIcon sx={{ fontSize: 20, color: '#272727' }} />
-                </div>
-                <div>
-                  <p className="text-[16px] font-semibold text-[#1a1a1a] mb-2">Distinctive styling for user vs AI messages</p>
-                  <p className="text-[15px] font-normal leading-[170%] text-[#666]">Left/right message layout with user&apos;s messages in text bubbles makes it easy to follow the conversation.</p>
-                </div>
-              </div>
-              <div className="bg-white rounded-[20px] border border-[#e8e8e8] p-6 flex flex-col gap-4">
-                <div className="w-9 h-9 rounded-xl bg-[#272727]/10 flex items-center justify-center flex-shrink-0">
-                  <VerticalAlignTopIcon sx={{ fontSize: 20, color: '#272727' }} />
-                </div>
-                <div>
-                  <p className="text-[16px] font-semibold text-[#1a1a1a] mb-2">Auto-scroll and anchor</p>
-                  <p className="text-[15px] font-normal leading-[170%] text-[#666]">Auto-scrolling and anchoring to each new message keeps the layout stable as text streams in, making it easier to follow without disrupting the reading experience.</p>
-                </div>
-              </div>
-            </div>
+            <InsightsDeck />
           </div>
 
         </div>
@@ -2053,21 +2361,31 @@ export default function FindingFocusAiAssistantCaseStudy() {
 
             <Section
               heading="Where should teachers access the assistant from?"
-              body="Entry point placement shapes everything — it determines how often teachers reach for the tool, and whether it feels like a core part of the platform or an afterthought. Getting this wrong means the assistant goes unused, no matter how good the experience inside it is."
+              body="Where teachers reach the assistant from shapes how often they actually use it. Put it somewhere prominent and it reads as a core part of the platform; bury it and it feels like an afterthought they'll forget is there."
             />
 
-            <IdeationViewer items={[
-              { src: assets.ideationNavDrawerWireframe, alt: 'Dedicated tab in the nav drawer wireframe', secondSrc: assets.ideationNavDrawerComparison, secondAlt: 'Nav drawer pros and cons', label: 'Option 1 — Dedicated Tab in the Nav Drawer', caption: '' },
-              { src: assets.ideationFabWireframe, alt: 'Floating action button wireframe', secondSrc: assets.ideationFabComparison, secondAlt: 'FAB pros and cons', label: 'Option 2 — Floating Action Button (FAB)', caption: '' },
+            <IdeationToggle items={[
+              { src: assets.ideationFabWireframe, alt: 'Floating action button wireframe', secondSrc: assets.ideationFabComparison, secondAlt: 'FAB pros and cons', label: 'FAB', winner: true },
+              { src: assets.ideationNavDrawerWireframe, alt: 'Dedicated tab in the nav drawer wireframe', secondSrc: assets.ideationNavDrawerComparison, secondAlt: 'Nav drawer pros and cons', label: 'Nav Bar' },
             ]} />
 
-            <Callout
-              label="The Winning Choice"
+            <WinningChoiceCallout
               heading="Floating Action Button"
               body="Always reachable without pulling teachers away from what they're doing."
-              compactBody
-              icon={<WinningChoiceScrollStars className="block size-[72px] shrink-0 md:size-20" />}
             />
+
+            <VisualCard caption="The FAB design we implemented along with a callout to draw attention to the assistant">
+              <div className="relative flex items-center justify-center p-4 sm:p-8">
+                <div className="absolute top-2.5 left-2.5 z-10 px-2 py-0.5 rounded-md text-[11px] font-medium tracking-wide pointer-events-none" style={{ background: 'rgba(0,0,0,0.5)', color: 'white' }}>
+                  GIF
+                </div>
+                <ExpandableImage
+                  src={assets.fabCalloutZoom}
+                  alt="Floating action button with a callout prompting teachers to message the AI assistant"
+                  className="w-full max-w-[720px] h-auto block rounded-xl"
+                />
+              </div>
+            </VisualCard>
 
           </div>
         </section>
@@ -2077,23 +2395,33 @@ export default function FindingFocusAiAssistantCaseStudy() {
           <div className="flex flex-col gap-12">
 
             <Section
-              heading="How should the assistant appear when launched?"
-              body="How the assistant appears on launch had real stakes — would it feel like an interruption, could teachers easily dismiss it without losing progress, and would it give the experience enough room to work?"
+              heading="How should the assistant show up when a teacher opens it?"
+              body="The layout sets the tone for the whole interaction. I wanted to ensure the conversation had enough room to breathe, but also create a design that made it easy for teachers to open and close the conversation without losing their place in the interface."
             />
 
-            <IdeationViewer items={[
-              { src: assets.ideationDisplayFullscreenWireframe, alt: 'Full screen modal wireframe', secondSrc: assets.ideationDisplayFullscreenComparison, secondAlt: 'Full screen modal pros and cons', label: 'Option 1 — Full Screen Modal', caption: '' },
-              { src: assets.ideationDisplayAnchoredWireframe, alt: 'Anchored modal overlay wireframe', secondSrc: assets.ideationDisplayAnchoredComparison, secondAlt: 'Anchored modal pros and cons', label: 'Option 2 — Anchored Modal Overlay', caption: '' },
-              { src: assets.ideationDisplaySplitWireframe, alt: 'Split view wireframe', secondSrc: assets.ideationDisplaySplitComparison, secondAlt: 'Split view pros and cons', label: 'Option 3 — Split View', caption: '' },
+            <IdeationToggle items={[
+              { src: assets.ideationDisplayAnchoredWireframe, alt: 'Anchored modal overlay wireframe', secondSrc: assets.ideationDisplayAnchoredComparison, secondAlt: 'Anchored modal pros and cons', label: 'Modal', winner: true },
+              { src: assets.ideationDisplaySplitWireframe, alt: 'Split view wireframe', secondSrc: assets.ideationDisplaySplitComparison, secondAlt: 'Split view pros and cons', label: 'Split View' },
+              { src: assets.ideationDisplayFullscreenWireframe, alt: 'Full screen modal wireframe', secondSrc: assets.ideationDisplayFullscreenComparison, secondAlt: 'Full screen modal pros and cons', label: 'Full Screen' },
             ]} />
 
-            <Callout
-              label="The Winning Choice"
+            <WinningChoiceCallout
               heading="Anchored Modal Overlay"
               body="Stays present without taking over — enough screen space to have a real conversation, without losing sight of where you are."
-              compactBody
-              icon={<WinningChoiceScrollStars className="block size-[72px] shrink-0 md:size-20" />}
             />
+
+            <VisualCard caption="The assistant lives inside a modal that is anchored to the right side of the screen">
+              <div className="relative flex items-center justify-center p-4 sm:p-8">
+                <div className="absolute top-2.5 left-2.5 z-10 px-2 py-0.5 rounded-md text-[11px] font-medium tracking-wide pointer-events-none" style={{ background: 'rgba(0,0,0,0.5)', color: 'white' }}>
+                  Image
+                </div>
+                <ExpandableImage
+                  src={assets.modalOverlay}
+                  alt="Finding Focus AI Assistant modal anchored to the right side of the screen"
+                  className="w-full max-w-[720px] h-auto block rounded-xl"
+                />
+              </div>
+            </VisualCard>
 
           </div>
         </section>
@@ -2105,23 +2433,33 @@ export default function FindingFocusAiAssistantCaseStudy() {
         <div className="flex flex-col gap-12">
 
           <Section
-            heading="What does a teacher see before the conversation starts?"
-            body="The empty state is the assistant's first impression. Get it wrong and teachers either don't know where to start, or worse — don't trust the tool enough to try. The goal was to give just enough guidance without making the experience feel scripted."
+            heading="What should teachers see before the conversation starts?"
+            body="The empty state carries a lot of weight as the first thing teachers see. Too little direction and they don't know what to ask; too much and it feels scripted. I was looking for the middle ground that gave them a starting point without making the assistant feel rigid."
           />
 
-          <IdeationViewer items={[
-            { src: assets.ideationEmptyBlankWireframe, alt: 'Blank input wireframe', secondSrc: assets.ideationEmptyBlankComparison, secondAlt: 'Blank input pros and cons', label: 'Option 1 — Blank Input · No Suggested Questions', caption: '' },
-            { src: assets.ideationEmptyTilesWireframe, alt: 'Suggested question tiles wireframe', secondSrc: assets.ideationEmptyTilesComparison, secondAlt: 'Suggested question tiles pros and cons', label: 'Option 2 — Suggested Question Tiles', caption: '' },
-            { src: assets.ideationEmptyProactiveWireframe, alt: 'Proactive greeting wireframe', secondSrc: assets.ideationEmptyProactiveComparison, secondAlt: 'Proactive greeting pros and cons', label: 'Option 3 — Proactive Greeting & Response Prompts', caption: '' },
+          <IdeationToggle items={[
+            { src: assets.ideationEmptyTilesWireframe, alt: 'Suggested question tiles wireframe', secondSrc: assets.ideationEmptyTilesComparison, secondAlt: 'Suggested question tiles pros and cons', label: 'Suggested Questions', winner: true },
+            { src: assets.ideationEmptyProactiveWireframe, alt: 'Proactive greeting wireframe', secondSrc: assets.ideationEmptyProactiveComparison, secondAlt: 'Proactive greeting pros and cons', label: 'Proactive Greeting' },
+            { src: assets.ideationEmptyBlankWireframe, alt: 'Blank input wireframe', secondSrc: assets.ideationEmptyBlankComparison, secondAlt: 'Blank input pros and cons', label: 'Blank Input' },
           ]} />
 
-          <Callout
-            label="The Winning Choice"
+          <WinningChoiceCallout
             heading="Suggested Question Tiles"
             body="Question tiles give teachers a clear starting point — and signal what the assistant is actually capable of from the moment it opens."
-            compactBody
-            icon={<WinningChoiceScrollStars className="block size-[72px] shrink-0 md:size-20" />}
           />
+
+          <VisualCard caption="The empty state teachers see before sending their first message">
+            <div className="relative flex items-center justify-center p-4 sm:p-8">
+              <div className="absolute top-2.5 left-2.5 z-10 px-2 py-0.5 rounded-md text-[11px] font-medium tracking-wide pointer-events-none" style={{ background: 'rgba(0,0,0,0.5)', color: 'white' }}>
+                GIF
+              </div>
+              <ExpandableImage
+                src={assets.accessingAssistant}
+                alt="Empty state of the Finding Focus AI Assistant before the first message"
+                className="w-full max-w-[720px] h-auto block rounded-xl"
+              />
+            </div>
+          </VisualCard>
 
         </div>
       </section>
@@ -2132,15 +2470,17 @@ export default function FindingFocusAiAssistantCaseStudy() {
           <Section
             id="section-final-designs"
             eyebrow="Final Designs"
-            heading="Putting it all together."
-            body="The three big decisions shown above — access point, display format, empty state — shaped the core design direction; however, this project also included dozens of smaller decisions that don't each merit their own section, but collectively helped shape the final experience."
+            heading="Putting all of the findings and design decisions together into one cohesive experience"
           />
-          {/* Hero — full width */}
-          <div className="rounded-[20px] overflow-hidden bg-[rgba(220,232,248,0.45)]">
-            <CyclingGif items={[
-              { src: assets.openingChatInterface, alt: 'Opening the chat interface', duration: 6870 },
-              { src: assets.finalDesignsHero, alt: 'Final design in use', duration: 16350 },
-            ]} />
+          {/* Interactive prototype — iframe tall enough for 70% scale (928×0.7) + padding */}
+          <div className="rounded-[24px] overflow-hidden" style={{ background: 'rgba(220,232,248,0.45)' }}>
+            <iframe
+              src="/case-studies/finding-focus-ai-assistant/prototype/index.html?embed=1"
+              title="Finding Focus AI Assistant interactive prototype"
+              className="w-full border-0 block"
+              scrolling="no"
+              style={{ height: 690 }}
+            />
           </div>
           {/* Two-column row — 1:2 ratio on md+, stacked on mobile */}
           <div className="grid gap-4 final-devices-grid">
@@ -2172,11 +2512,13 @@ export default function FindingFocusAiAssistantCaseStudy() {
           <Section
             eyebrow="Outcomes"
             heading="What happened after launch."
-            body="We didn't approach this project with explicit success metrics — the original driver was grant competitiveness. That said, the results were still meaningful: since implementing the assistant, support ticket volume has decreased by 12% compared to previous semesters. The assistant has helped teachers get answers without needing to directly reach out to our team — which was the core promise of the tool."
+            body="After launch, we tracked how teachers actually used the assistant. Engagement was strong out of the gate, and support ticket volume dropped 12% from previous semesters, which was the core promise of the tool: getting teachers answers without having to reach out to our team directly."
           />
           <StatRow
             stats={[
-              { value: '12%', label: 'decrease in support tickets compared to previous semesters' },
+              { value: '18%', label: 'of teachers clicked into the assistant on first use' },
+              { value: '62%', label: 'of teachers who opened it went on to ask a question' },
+              { value: '12%', label: 'fewer support tickets since launch' },
             ]}
           />
         </div>

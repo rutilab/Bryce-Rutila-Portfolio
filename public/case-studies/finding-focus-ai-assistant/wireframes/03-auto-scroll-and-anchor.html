@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Wireframe — Auto-scroll and anchor</title>
+<script>if (/\bembed=1\b/.test(location.search)) document.documentElement.classList.add("embed");</script>
+<style>
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: #e9e9e9;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+}
+
+.page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+/* Case-study embed: scale with zoom (not transform) so scrollTop math stays correct */
+html.embed, html.embed body {
+  background: transparent;
+  overflow: hidden;
+  height: 100%;
+  width: 100%;
+}
+html.embed .page {
+  min-height: 0;
+  width: 100%;
+  height: 100%;
+  padding: 20px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+html.embed .frame {
+  width: 480px;
+  height: 620px;
+  max-width: none;
+  flex-shrink: 0;
+  pointer-events: none;
+  user-select: none;
+}
+
+
+/* ── Lo-fi chat frame: plain grayscale, no branding ─────────────────── */
+.frame {
+  width: 480px;
+  max-width: 100%;
+  height: 620px;
+  background: #fff;
+  border: 1.5px solid #bbb;
+  border-radius: 6px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.frame-header {
+  height: 44px;
+  flex-shrink: 0;
+  border-bottom: 1.5px solid #bbb;
+  display: flex;
+  align-items: center;
+  padding: 0 14px;
+  gap: 8px;
+}
+.frame-header .dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  border: 1.5px solid #999;
+}
+.frame-header .bar {
+  height: 8px;
+  width: 100px;
+  background: #ddd;
+  border-radius: 4px;
+}
+
+.frame-body {
+  flex-grow: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scroll-behavior: smooth;
+  padding: 20px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.msg { display: flex; gap: 10px; align-items: flex-start; opacity: 0; transform: translateY(6px); transition: opacity 0.35s ease-out, transform 0.35s ease-out; }
+.msg.is-visible { opacity: 1; transform: translateY(0); }
+.msg.user { justify-content: flex-end; }
+.msg.ai { justify-content: flex-start; }
+
+.avatar {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 1.5px solid #999;
+  background: #f2f2f2;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.avatar svg { width: 14px; height: 14px; }
+
+.bubble {
+  max-width: 76%;
+  font-size: 14px;
+  line-height: 1.5;
+  color: #222;
+}
+.msg.user .bubble {
+  padding: 10px 14px;
+  border-radius: 14px;
+  background: #ececec;
+  border: 1.5px solid #ccc;
+  border-bottom-right-radius: 4px;
+}
+.msg.ai .bubble {
+  padding: 0;
+}
+
+.typing-dots {
+  display: inline-flex;
+  gap: 4px;
+  padding: 6px 2px;
+}
+.typing-dots span {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #999;
+  animation: bounce 1.1s infinite ease-in-out;
+}
+.typing-dots span:nth-child(2) { animation-delay: 0.15s; }
+.typing-dots span:nth-child(3) { animation-delay: 0.3s; }
+@keyframes bounce {
+  0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
+  30% { transform: translateY(-4px); opacity: 1; }
+}
+
+/* Marks the 24px anchor line each new message settles below, for legibility */
+.anchor-line {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 0;
+  border-top: 1px dashed #ccc;
+  opacity: 0;
+  transition: opacity 0.3s ease-out;
+  pointer-events: none;
+}
+.anchor-line.is-visible { opacity: 1; }
+.frame-scroll-wrap { position: relative; flex-grow: 1; display: flex; overflow: hidden; }
+
+.frame-footer {
+  flex-shrink: 0;
+  border-top: 1.5px solid #bbb;
+  padding: 12px 14px;
+  display: flex;
+  align-items: center;
+}
+.footer-input {
+  flex-grow: 1;
+  height: 34px;
+  border: 1.5px solid #ccc;
+  border-radius: 999px;
+  background: #f5f5f5;
+}
+
+</style>
+</head>
+<body>
+<div class="page">
+  <div>
+
+    <div class="frame">
+      <div class="frame-header">
+        <div class="dot"></div>
+        <div class="bar"></div>
+      </div>
+
+      <div class="frame-scroll-wrap">
+        <div class="anchor-line" id="anchorLine"></div>
+        <div class="frame-body" id="body"></div>
+      </div>
+
+      <div class="frame-footer">
+        <div class="footer-input"></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+(function () {
+  var body = document.getElementById('body');
+  var scrollWrap = document.querySelector('.frame-scroll-wrap');
+  var anchorLine = document.getElementById('anchorLine');
+
+  var ANCHOR_OFFSET = 24; // px below the top of the visible area a new message settles at
+  var THINK_DELAY = 700;
+  var BETWEEN_TURNS = 900;
+  var AFTER_FIRST_RESPONSE = 3585; // gap before the second message appears, giving the first exchange time to read
+  var HOLD_END = 2600;
+  var RESET_GAP = 700;
+
+  var script = [
+    { user: "How does auto-scroll and anchoring work?" },
+    { ai: "When you send a message, the view scrolls so it lands near the top of the screen automatically — keeping your latest message in focus instead of leaving it buried at the bottom." },
+    { user: "What happens if I send another one?" },
+    { ai: "Same thing, every time. The conversation scrolls up and anchors on the newest message, so however long the conversation gets, you always land in a consistent, predictable spot." }
+  ];
+
+  var sparkleSvg = '<svg viewBox="0 0 24 24" fill="#999"><path d="M12 2l1.8 6.2L20 10l-6.2 1.8L12 18l-1.8-6.2L4 10l6.2-1.8L12 2z"/></svg>';
+
+  var spacer = document.createElement('div');
+  spacer.style.flexShrink = '0';
+  body.appendChild(spacer);
+
+  function addRow(el) {
+    body.insertBefore(el, spacer);
+  }
+
+  function addUserMessage(text) {
+    var row = document.createElement('div');
+    row.className = 'msg user';
+    row.innerHTML = '<div class="bubble">' + text + '</div>';
+    addRow(row);
+    requestAnimationFrame(function () { row.classList.add('is-visible'); });
+    return row;
+  }
+
+  function addTyping() {
+    var row = document.createElement('div');
+    row.className = 'msg ai';
+    row.innerHTML =
+      '<div class="avatar">' + sparkleSvg + '</div>' +
+      '<div class="bubble typing-dots"><span></span><span></span><span></span></div>';
+    addRow(row);
+    requestAnimationFrame(function () { row.classList.add('is-visible'); });
+    return row;
+  }
+
+  function replaceWithAiText(row, text) {
+    row.innerHTML =
+      '<div class="avatar">' + sparkleSvg + '</div>' +
+      '<div class="bubble">' + text + '</div>';
+  }
+
+  // Anchors `row` so its top sits ANCHOR_OFFSET below the top of the
+  // scrollable area. A spacer reserves scroll room at the bottom so this
+  // works even when the conversation so far is too short to overflow on
+  // its own.
+  function anchorTo(row) {
+    spacer.style.height = scrollWrap.clientHeight + 'px';
+    anchorLine.style.top = ANCHOR_OFFSET + 'px';
+    anchorLine.classList.add('is-visible');
+    requestAnimationFrame(function () {
+      var wrapRect = scrollWrap.getBoundingClientRect();
+      var rowRect = row.getBoundingClientRect();
+      var delta = (rowRect.top - wrapRect.top) - ANCHOR_OFFSET;
+      body.scrollTop += delta;
+      setTimeout(function () { anchorLine.classList.remove('is-visible'); }, 900);
+    });
+  }
+
+  function wait(ms) { return new Promise(function (res) { setTimeout(res, ms); }); }
+
+  async function run() {
+    // Turn 1 — first message never needs to fight for scroll room, it's
+    // already at the top of an empty conversation.
+    addUserMessage(script[0].user);
+    await wait(BETWEEN_TURNS);
+
+    var typing1 = addTyping();
+    await wait(THINK_DELAY);
+    replaceWithAiText(typing1, script[1].ai);
+    await wait(AFTER_FIRST_RESPONSE);
+
+    // Turn 2 — this is the one that visibly auto-scrolls and anchors.
+    var userRow2 = addUserMessage(script[2].user);
+    anchorTo(userRow2);
+    await wait(700);
+
+    var typing2 = addTyping();
+    await wait(THINK_DELAY);
+    replaceWithAiText(typing2, script[3].ai);
+
+    await wait(HOLD_END);
+    await resetLoop();
+    run();
+  }
+
+  function resetLoop() {
+    return new Promise(function (resolve) {
+      var rows = Array.prototype.slice.call(body.querySelectorAll('.msg'));
+      if (!rows.length) { resolve(); return; }
+      rows.forEach(function (r) { r.style.transition = 'opacity 0.3s ease-out'; r.style.opacity = '0'; });
+      setTimeout(function () {
+        rows.forEach(function (r) { r.remove(); });
+        spacer.style.height = '0px';
+        body.scrollTop = 0;
+        setTimeout(resolve, RESET_GAP);
+      }, 300);
+    });
+  }
+
+  run();
+})();
+</script>
+
+<script>
+(function () {
+  if (!document.documentElement.classList.contains('embed')) return;
+  var page = document.querySelector('.page');
+  var frame = document.querySelector('.frame');
+  if (!page || !frame) return;
+
+  function fit() {
+    var padX = 24, padY = 40;
+    var sw = (page.clientWidth - padX) / 480;
+    var sh = (page.clientHeight - padY) / 620;
+    // Allow >1 so the prototype grows with the taller blue well; padY keeps top/bottom breathing room
+    var s = Math.max(0.25, Math.min(sw, sh));
+    frame.style.zoom = String(s);
+  }
+  fit();
+  if (typeof ResizeObserver !== 'undefined') {
+    new ResizeObserver(fit).observe(page);
+  } else {
+    window.addEventListener('resize', fit);
+  }
+})();
+</script>
+
+</body>
+</html>
