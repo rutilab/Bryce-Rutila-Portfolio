@@ -2887,13 +2887,13 @@ export default function FindingFocusAiAssistantCaseStudy() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
             <div className="rounded-[24px] p-7 flex flex-col gap-3 bg-white" style={{ border: `1px solid ${BORDER}` }}>
               <Eyebrow label="What I Learned" color={ACCENT} />
-              <h4 className="text-[18px] font-semibold leading-[145%] text-[#1a1a1a]">Most of what makes an AI assistant work is invisible.</h4>
+              <h4 className="text-[18px] font-semibold leading-[145%] text-[#1a1a1a]">Most of the work is invisible.</h4>
               <p className="text-[15px] font-normal leading-[175%] text-[#555]">Before this project, an AI assistant was just a chat window to me. Building one meant learning about RAG, vector stores, tool calling, chunking, and a whole lot more. This project greatly increased my understanding and appreciation of LLMs.</p>
             </div>
             <div className="rounded-[24px] p-7 flex flex-col gap-3 bg-white" style={{ border: `1px solid ${BORDER}` }}>
               <Eyebrow label="What Matters Most" color={ACCENT} />
-              <h4 className="text-[18px] font-semibold leading-[145%] text-[#1a1a1a]">A polished interface means nothing if the answers are wrong.</h4>
-              <p className="text-[15px] font-normal leading-[175%] text-[#555]">I could get the entry point, the layout, and the empty state exactly right, and none of it would matter if the assistant was not providing accurate answers. Getting the assistant to consistently provide accurate responses was the most important part of the UX.</p>
+              <h4 className="text-[18px] font-semibold leading-[145%] text-[#1a1a1a]">Good design can&apos;t save bad answers.</h4>
+              <p className="text-[15px] font-normal leading-[175%] text-[#555]">I could get the entry point, layout, and empty state exactly right, and none of it would matter if the answers weren&apos;t accurate. Getting the assistant to respond accurately was the most important part of the UX.</p>
             </div>
           </div>
       </section>
