@@ -309,7 +309,7 @@ function Section({
 
 /**
  * Decision-summary callout — left accent-bar construction matching the Achievements
- * template's Callout, on-brand blue.
+ * template's Callout. Neutral (blue), danger (red wash), or success (green wash).
  */
 function Callout({
   label,
@@ -317,26 +317,30 @@ function Callout({
   body,
   compactBody,
   icon,
+  variant = 'neutral',
 }: {
   label: string;
   heading: string;
   body?: string;
   compactBody?: boolean;
   icon?: ReactNode;
+  variant?: 'neutral' | 'danger' | 'success';
 }) {
+  const bar = variant === 'danger' ? '#fe0000' : variant === 'success' ? '#2a8a50' : ACCENT_DARK;
+  const bg = variant === 'danger' ? '#fceaea' : variant === 'success' ? '#eafaf1' : undefined;
   return (
     <div
-      className="flex max-w-[760px] items-stretch gap-4 sm:gap-5 bg-white rounded-[16px] p-4 sm:p-6"
-      style={{ border: `1px solid ${BORDER}` }}
+      className={`flex max-w-[760px] items-stretch gap-4 sm:gap-5 rounded-[16px] p-4 sm:p-6 ${bg ? '' : 'bg-white'}`}
+      style={bg ? { background: bg } : { border: `1px solid ${BORDER}` }}
     >
-      <div style={{ width: 2, borderRadius: 2, background: ACCENT_DARK, flexShrink: 0 }} />
+      <div style={{ width: 2, borderRadius: 2, background: bar, flexShrink: 0 }} />
       {icon && (
         <div className="flex shrink-0 items-center justify-center" aria-hidden>
           {icon}
         </div>
       )}
       <div className="flex min-w-0 flex-1 flex-col gap-2">
-        <p className="text-[11px] font-medium tracking-[1.5px] uppercase" style={{ color: ACCENT_DARK }}>
+        <p className="text-[11px] font-medium tracking-[1.5px] uppercase" style={{ color: bar }}>
           {label}
         </p>
         <p className="text-[19px] font-semibold leading-[135%] text-[#1a1a1a]">{heading}</p>
@@ -861,6 +865,240 @@ function APIComparisonDiagram() {
       ))}
       <text x="415" y="186" textAnchor="middle" fontSize="10" fill="#272727" fontFamily="Inter, sans-serif">Understands any input</text>
       <text x="415" y="200" textAnchor="middle" fontSize="10" fill="#272727" fontFamily="Inter, sans-serif">Generates contextual responses</text>
+    </svg>
+  );
+}
+
+// ── RetrievalFlowDiagram ─────────────────────────────────────────────────────
+function RetrievalFlowDiagram() {
+  const viewW = 640;
+  const contentW = 600;
+  const left = (viewW - contentW) / 2; // center the block in the viewBox
+  const setup = [
+    { x: left, label: ['Help center', 'content'] },
+    { x: left + 225, label: ['Compiled into one', 'knowledge base'] },
+    { x: left + 450, label: ['Uploaded to a', 'vector store'] },
+  ];
+  const perQ = [
+    { x: left, label: ['Teacher asks', 'question'] },
+    { x: left + 152, label: ['Assistant searches', 'the knowledge base'] },
+    { x: left + 304, label: ['Retrieves the most', 'relevant chunks'] },
+    { x: left + 456, label: ['Answers', 'from them'] },
+  ];
+  const setupW = 150;
+  const perQW = 128;
+  const nodeH = 48;
+  // Same baseline→node gap for both rows (matches Achievements gap-3 feel)
+  const labelGap = 16;
+  const setupY = 40;
+  const perQY = 176;
+  const setupLastCx = setup[2].x + setupW / 2;
+  const searchCx = perQ[1].x + perQW / 2;
+  const midY = perQY - 40;
+  const bottom = perQY + nodeH;
+  const viewH = bottom + 20;
+
+  return (
+    <svg viewBox={`0 0 ${viewW} ${viewH}`} fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full max-w-[640px]">
+      {/* Row labels — same style as Achievements EndOfSessionFlowDiagram */}
+      <text x={left} y={setupY - labelGap} fontSize="15" fill="#4a4a4a" fontFamily="Inter, sans-serif" fontWeight="600">Setup</text>
+      {setup.map((n, i) => (
+        <g key={`s-${i}`}>
+          <rect x={n.x} y={setupY} width={setupW} height={nodeH} rx="8" fill="#F3F4F6" stroke="#D1D5DB" strokeWidth="1.4" />
+          {n.label.map((line, li) => (
+            <text
+              key={li}
+              x={n.x + setupW / 2}
+              y={setupY + 20 + li * 14}
+              textAnchor="middle"
+              fontSize="10"
+              fill="#555"
+              fontFamily="Inter, sans-serif"
+            >
+              {line}
+            </text>
+          ))}
+          {i < setup.length - 1 && (
+            <>
+              <line x1={n.x + setupW} y1={setupY + nodeH / 2} x2={setup[i + 1].x - 6} y2={setupY + nodeH / 2} stroke="#C8C8C8" strokeWidth="1.4" />
+              <polygon
+                points={`${setup[i + 1].x - 6},${setupY + nodeH / 2 - 4} ${setup[i + 1].x},${setupY + nodeH / 2} ${setup[i + 1].x - 6},${setupY + nodeH / 2 + 4}`}
+                fill="#C8C8C8"
+              />
+            </>
+          )}
+        </g>
+      ))}
+
+      {/* Connector: vector store → assistant searches */}
+      <line x1={setupLastCx} y1={setupY + nodeH} x2={setupLastCx} y2={midY} stroke="#C8C8C8" strokeWidth="1.4" />
+      <line x1={setupLastCx} y1={midY} x2={searchCx} y2={midY} stroke="#C8C8C8" strokeWidth="1.4" />
+      <line x1={searchCx} y1={midY} x2={searchCx} y2={perQY} stroke="#C8C8C8" strokeWidth="1.4" />
+      <polygon
+        points={`${searchCx - 4},${perQY} ${searchCx},${perQY + 6} ${searchCx + 4},${perQY}`}
+        fill="#C8C8C8"
+      />
+      <text
+        x={(setupLastCx + searchCx) / 2}
+        y={midY - 6}
+        textAnchor="middle"
+        fontSize="10"
+        fill="#888"
+        fontFamily="Inter, sans-serif"
+        fontWeight="500"
+      >
+        searches
+      </text>
+
+      <text x={left} y={perQY - labelGap} fontSize="15" fill="#4a4a4a" fontFamily="Inter, sans-serif" fontWeight="600">Every Question</text>
+      {perQ.map((n, i) => (
+        <g key={`q-${i}`}>
+          <rect x={n.x} y={perQY} width={perQW} height={nodeH} rx="8" fill="#EEF6FF" stroke="#BFDBFE" strokeWidth="1.4" />
+          {n.label.map((line, li) => (
+            <text
+              key={li}
+              x={n.x + perQW / 2}
+              y={perQY + 20 + li * 14}
+              textAnchor="middle"
+              fontSize="9.5"
+              fill="#006efe"
+              fontFamily="Inter, sans-serif"
+              fontWeight="500"
+            >
+              {line}
+            </text>
+          ))}
+          {i < perQ.length - 1 && (
+            <>
+              <line x1={n.x + perQW} y1={perQY + nodeH / 2} x2={perQ[i + 1].x - 6} y2={perQY + nodeH / 2} stroke="#C8C8C8" strokeWidth="1.4" />
+              <polygon
+                points={`${perQ[i + 1].x - 6},${perQY + nodeH / 2 - 4} ${perQ[i + 1].x},${perQY + nodeH / 2} ${perQ[i + 1].x - 6},${perQY + nodeH / 2 + 4}`}
+                fill="#C8C8C8"
+              />
+            </>
+          )}
+        </g>
+      ))}
+    </svg>
+  );
+}
+
+// ── ChunkAnatomyDiagram: before/after chunk sizing ───────────────────────────
+const CHUNK_TRACK = '#e2e7ee';
+const CHUNK_TRACK_TEXT = '#6b7280';
+
+function ChunkAnatomyDiagram() {
+  const viewW = 616;
+  const viewH = 250;
+  const barX = 13;
+  const barH = 35;
+  const inset = 7;
+  const fullW = 396; // the 750-token chunk
+  const scale = (fullW - inset) / 750;
+  const answerW = 142 * scale;
+  const chipW = 128;
+  const chipH = 22;
+  const chipX = viewW - 13 - chipW;
+  const legendY = viewH - 16; // 16px above the bottom of the container
+
+  // Row y is the bar top; its label sits 11 above the bar.
+  // y 61 → label top ~40px below the container top.
+  // 40px from targeted-bar bottom (185) to legend top (legendY - 9 = 225).
+  const rows = [
+    { label: 'Oversized Chunk', total: '750 tokens', unrelated: 608, chip: 'Relevancy Rank: 3', tone: 'danger' as const, y: 61, trimmed: 0 },
+    { label: 'Semantic Chunk', total: '300 tokens', unrelated: 158, chip: 'Relevancy Rank: 1', tone: 'success' as const, y: 150, trimmed: 450 },
+  ];
+
+  const answerX = barX + inset;
+  const connectorX = [answerX, answerX + answerW];
+  const gapTop = rows[0].y + barH;
+  const gapBottom = rows[1].y;
+
+  return (
+    <svg viewBox={`0 0 ${viewW} ${viewH}`} fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full" style={{ maxWidth: viewW }}>
+      {/* Dashed guides showing the answer is the same size in both chunks */}
+      {connectorX.map((x, i) => (
+        <g key={`c-${i}`} stroke="#ccd4de" strokeWidth="1.1" strokeDasharray="3 3">
+          <line x1={x} y1={gapTop} x2={x} y2={gapTop + 26} />
+          <line x1={x} y1={gapBottom - 7} x2={x} y2={gapBottom} />
+        </g>
+      ))}
+
+      {rows.map(row => {
+        const barW = inset + answerW + row.unrelated * scale;
+        const unrelatedX = answerX + answerW;
+        const unrelatedW = barX + barW - unrelatedX;
+
+        return (
+          <g key={row.label}>
+            <text x={barX} y={row.y - 11} fontSize="13" fill="#1a1a1a" fontFamily="Inter, sans-serif" fontWeight="600">
+              {row.label}:
+              <tspan dx="4" fill="#999" fontWeight="400">{row.total}</tspan>
+            </text>
+
+            <rect x={barX} y={row.y} width={barW} height={barH} rx="9" fill={CHUNK_TRACK} />
+            <rect x={answerX} y={row.y} width={answerW} height={barH} rx="2" fill={ACCENT} />
+            <text x={answerX + answerW / 2} y={row.y + barH / 2 + 4} textAnchor="middle" fontSize="11" fill="#ffffff" fontFamily="Inter, sans-serif" fontWeight="600">
+              142
+            </text>
+            <text x={unrelatedX + unrelatedW / 2} y={row.y + barH / 2 + 4} textAnchor="middle" fontSize="11" fill={CHUNK_TRACK_TEXT} fontFamily="Inter, sans-serif" fontWeight="500">
+              {row.unrelated}
+            </text>
+
+            {row.trimmed > 0 && (
+              <>
+                <rect
+                  x={barX + barW + 9}
+                  y={row.y}
+                  width={fullW - barW - 9}
+                  height={barH}
+                  rx="9"
+                  fill="none"
+                  stroke="#c9d0da"
+                  strokeWidth="1.1"
+                  strokeDasharray="4 3"
+                />
+                <text
+                  x={barX + barW + 9 + (fullW - barW - 9) / 2}
+                  y={row.y + barH / 2 + 4}
+                  textAnchor="middle"
+                  fontSize="10"
+                  fill="#a8b0bb"
+                  fontFamily="Inter, sans-serif"
+                >
+                  trimmed · {row.trimmed} tokens
+                </text>
+              </>
+            )}
+
+            <rect
+              x={chipX}
+              y={row.y + (barH - chipH) / 2}
+              width={chipW}
+              height={chipH}
+              rx={chipH / 2}
+              fill={row.tone === 'success' ? '#eafaf1' : '#fceaea'}
+            />
+            <text
+              x={chipX + chipW / 2}
+              y={row.y + barH / 2 + 4}
+              textAnchor="middle"
+              fontSize="11"
+              fill={row.tone === 'success' ? '#2a8a50' : '#fe0000'}
+              fontFamily="Inter, sans-serif"
+              fontWeight="600"
+            >
+              {row.chip}
+            </text>
+          </g>
+        );
+      })}
+
+      {/* Legend — 16px above the bottom of the container; 40px below the assets */}
+      <rect x="200" y={legendY - 9} width="9" height="9" rx="1.5" fill={ACCENT} />
+      <text x="214" y={legendY} fontSize="11" fill="#666" fontFamily="Inter, sans-serif">Relevant answer</text>
+      <rect x="325" y={legendY - 9} width="9" height="9" rx="1.5" fill={CHUNK_TRACK} />
+      <text x="339" y={legendY} fontSize="11" fill="#666" fontFamily="Inter, sans-serif">Unrelated text</text>
     </svg>
   );
 }
@@ -1586,12 +1824,13 @@ function DesignDeck() {
 
 // ── SectionNav ───────────────────────────────────────────────────────────────
 const NAV_SECTIONS = [
-  { id: 'section-intro',      label: 'Intro' },
-  { id: 'section-overview',   label: 'Overview' },
-  { id: 'section-research',   label: 'Research' },
-  { id: 'section-design',     label: 'Design' },
-  { id: 'section-outcomes',   label: 'Outcomes' },
-  { id: 'section-reflection', label: 'Takeaways' },
+  { id: 'section-intro',          label: 'Intro' },
+  { id: 'section-overview',       label: 'Overview' },
+  { id: 'section-research',       label: 'Research' },
+  { id: 'section-design',         label: 'Design' },
+  { id: 'section-under-the-hood', label: 'Technical' },
+  { id: 'section-outcomes',       label: 'Outcomes' },
+  { id: 'section-reflection',     label: 'Takeaways' },
 ];
 
 function smoothScrollTo(targetY: number) {
@@ -1649,7 +1888,7 @@ function SectionNav() {
   return (
     <nav className="hidden min-[600px]:flex flex-col" style={{
       position: 'fixed', right: 0, top: '50%', transform: 'translateY(-50%)',
-      width: 100, alignItems: 'flex-end', paddingRight: 16,
+      width: 120, alignItems: 'flex-end', paddingRight: 16,
       gap: 4, zIndex: 100, pointerEvents: visible ? 'auto' : 'none',
     }}>
       {NAV_SECTIONS.map(({ id, label }, i) => (
@@ -1935,44 +2174,6 @@ function Divider({ label, id }: { label?: string; id?: string }) {
   );
 }
 
-// ── ClosingCTA ───────────────────────────────────────────────────────────────
-function ClosingCTA() {
-  const [ref, inView] = useInView<HTMLDivElement>(0.35);
-
-  return (
-    <div
-      ref={ref}
-      className="rounded-[24px] px-5 sm:px-14 py-10 sm:py-12 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6"
-      style={{
-        background: '#ffffff',
-        boxShadow: '0 8px 28px rgba(0,13,38,0.08)',
-        opacity: inView ? 1 : 0,
-        transform: inView ? 'translateY(0)' : 'translateY(16px)',
-        transition: 'opacity 0.65s ease, transform 0.65s ease',
-      }}
-    >
-      <div className="flex flex-col gap-2.5">
-        <p className="text-[22px] font-semibold text-[#1a1a1a]">See the assistant in context</p>
-        <p className="text-[16px] font-normal text-[#555]">
-          Shipped to production in 2024 — live at{' '}
-          <a href="https://findingfocus.app" target="_blank" rel="noopener noreferrer" className="hover:underline" style={{ color: ACCENT }}>
-            findingfocus.app
-          </a>
-        </p>
-      </div>
-      <a
-        href="https://findingfocus.app"
-        target="_blank"
-        rel="noopener noreferrer"
-        className="shrink-0 inline-flex items-center gap-2 rounded-full px-7 py-4 text-[16px] font-semibold text-white transition-opacity hover:opacity-85"
-        style={{ background: '#111113' }}
-      >
-        Visit Finding Focus
-      </a>
-    </div>
-  );
-}
-
 // ── Page ─────────────────────────────────────────────────────────────────────
 export default function FindingFocusAiAssistantCaseStudy() {
   const ideationSentinelRef = useRef<HTMLDivElement>(null);
@@ -2057,9 +2258,9 @@ export default function FindingFocusAiAssistantCaseStudy() {
               </p>
               <StatRow
                 stats={[
-                  { value: '18%', label: 'of teachers clicked into the assistant on first use' },
-                  { value: '62%', label: 'of teachers who opened it went on to ask a question' },
-                  { value: '12%', label: 'fewer support tickets since launch' },
+                  { value: '18%', label: 'of first time users clicked into the assistant' },
+                  { value: '62%', label: 'of users who opened it went on to ask a question' },
+                  { value: '12%', label: 'fewer support tickets' },
                 ]}
               />
               <div className="flex justify-center pt-1">
@@ -2504,21 +2705,176 @@ export default function FindingFocusAiAssistantCaseStudy() {
         </div>
       </section>
 
+      <Divider label="Technical" id="section-under-the-hood" />
+
+      {/* ── TECHNICAL ── */}
+      <section className="max-w-[1200px] mx-auto px-5 sm:px-10 md:px-20 pb-14 md:pb-28">
+        <div className="flex flex-col gap-16">
+
+          {/* Opener */}
+          <Section
+            eyebrow="Under the Hood"
+            heading="A well-designed assistant that gives wrong answers is worse than no assistant at all."
+            body="I spent a lot of time designing the assistant and deciding where it lives and how it presents itself. But none of that matters if the assistant did not accurately respond to queries. Teachers didn't lose trust in chatbots because they looked bad, but because they were confidently unhelpful. Once QA started, that stopped being a research finding and became my problem to fix."
+          />
+
+          <Callout
+            label="My Role"
+            heading="I didn't build the backend, but I helped make sure the assistant was accurate."
+            body="Our SWE, Thomas, built and configured the assistant. My job was to define what a good answer looked like from the teacher's side, pressure-test the responses in QA, and flag where they fell short before they reached a classroom."
+            compactBody
+          />
+
+          {/* The Knowledge Base */}
+          <Section
+            eyebrow="The Knowledge Base"
+            heading="For the assistant to be useful, it had to actually know Finding Focus."
+            body="So we built a knowledge base out of our help center content and connected it to the assistant. The idea was simple — before answering a teacher, the assistant searches that knowledge base for the most relevant material and responds from what it finds, rather than from whatever it happened to learn in training."
+          >
+            <VisualCard caption="How a teacher's question becomes an answer grounded in our documentation">
+              <div className="flex items-center justify-center py-12 px-8">
+                <RetrievalFlowDiagram />
+              </div>
+            </VisualCard>
+          </Section>
+
+          {/* The Catch */}
+          <Section
+            eyebrow="Response Accuracy"
+            heading="The flow only works if the assistant actually searches. Often, it didn't."
+            body="When we started testing the assistant, we found that it was giving very generic answers that were not accurate to Finding Focus. This was because the LLM was skipping the search step entirely and answering from its own general knowledge instead of our documentation."
+          >
+            <div className="flex flex-col max-w-[760px]">
+              <Callout
+                variant="danger"
+                label="The Problem"
+                heading="Confidently deciding not to search"
+                body="By default, the model decides for itself whether a question needs a knowledge base search before answering. More often than not, it assumed it already knew enough and answered without ever checking our documentation."
+                compactBody
+              />
+              <div
+                className="flex items-center justify-center"
+                style={{ height: 40 }}
+                aria-hidden="true"
+              >
+                <ArrowDownward sx={{ fontSize: 20, color: '#999' }} />
+              </div>
+              <Callout
+                variant="success"
+                label="The Solution"
+                heading="Making the search mandatory"
+                body="At the API level we were able to require a knowledge base search on every query before the assistant answered. This solution uses more tokens per response, but it ensures the model views the documentation before responding."
+                compactBody
+              />
+            </div>
+          </Section>
+
+          {/* Retrieval quality */}
+          <Section
+            eyebrow="Retrieval Quality"
+            heading="Forcing search was part of the solution, but not the entire one."
+            body="Because OpenAI's search mechanics offered zero visibility into what it was retrieving, we built a Slack channel that logged the exact knowledge base snippets (chunks) the assistant retrieved for every query. Reviewing these logs uncovered a core issue: the assistant was consistently ranking broadly related snippets as more relevant than the specific snippets that actually answered the query. This resulted in responses that were only partially accurate."
+          >
+            <div className="flex flex-col gap-6">
+              <div className="flex flex-col max-w-[760px]">
+                <Callout
+                  variant="danger"
+                  label="The Problem"
+                  heading="Oversized Chunks"
+                  body="By default, OpenAI split our documentation into large, 750-token chunks. Because our docs cover different topics, a brief, highly accurate answer often shared a chunk with unrelated text. This irrelevant text dragged down the chunk’s overall relevance score, often leading to chunks with the correct answer being ranked below chunks that lacked the right answer entirely, but contained more broadly related keywords."
+                  compactBody
+                />
+                <div
+                  className="flex items-center justify-center"
+                  style={{ height: 40 }}
+                  aria-hidden="true"
+                >
+                  <ArrowDownward sx={{ fontSize: 20, color: '#999' }} />
+                </div>
+                <Callout
+                  variant="success"
+                  label="The Solution"
+                  heading="Semantic Chunking"
+                  body="Rather than relying on default character splits, we converted our knowledge base PDFs into clean Markdown and used headers and HTML tags to enforce natural document boundaries. Each chunk was capped at 400 tokens and focused on a single topic, ensuring relevance scores reflected precise answers."
+                  compactBody
+                />
+              </div>
+
+              <VisualCard caption="Real retrieval logs for one query, before and after the chunking changes.">
+                <div className="flex items-center justify-center px-6">
+                  <ChunkAnatomyDiagram />
+                </div>
+              </VisualCard>
+            </div>
+          </Section>
+
+          {/* The Result */}
+          <Section
+            eyebrow="The Result"
+            heading="With these updates, the assistant went from educated guesses to precise answers."
+            body="Mandating a search step got the model to open our knowledge base, but switching to semantic chunking made sure it actually pulled the right information. We were able to greatly improve the output from the assistant by making these two updates."
+          >
+            <div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div
+                  className="rounded-[20px] p-6 sm:p-8 flex flex-col gap-3"
+                  style={{ background: '#fceaea' }}
+                >
+                  <p
+                    className="text-[11px] font-medium tracking-[1.5px] uppercase"
+                    style={{ color: '#fe0000' }}
+                  >
+                    Before Fine-Tuning
+                  </p>
+                  <p className="text-[48px] sm:text-[56px] font-semibold leading-none tracking-[-1.5px] text-[#1a1a1a]">
+                    42%
+                  </p>
+                  <p className="text-[15px] font-normal leading-[160%] text-[#555]">
+                    Response Accuracy Rate
+                  </p>
+                </div>
+                <div
+                  className="rounded-[20px] p-6 sm:p-8 flex flex-col gap-3"
+                  style={{ background: '#eafaf1' }}
+                >
+                  <p
+                    className="text-[11px] font-medium tracking-[1.5px] uppercase"
+                    style={{ color: '#2a8a50' }}
+                  >
+                    After Fine-Tuning
+                  </p>
+                  <p className="text-[48px] sm:text-[56px] font-semibold leading-none tracking-[-1.5px] text-[#1a1a1a]">
+                    88%
+                  </p>
+                  <p className="text-[15px] font-normal leading-[160%] text-[#555]">
+                    Response Accuracy Rate
+                  </p>
+                </div>
+              </div>
+              <p className="text-[13px] text-[#999] text-center mt-3">
+                Based on 100 tested queries pre and post fine-tuning
+              </p>
+            </div>
+          </Section>
+
+        </div>
+      </section>
+
       <Divider label="Outcomes" id="section-outcomes" />
 
       {/* ── OUTCOMES ── */}
       <section className="max-w-[1200px] mx-auto px-5 sm:px-10 md:px-20 pb-12 md:pb-20">
         <div className="flex flex-col gap-10">
           <Section
-            eyebrow="Outcomes"
-            heading="What happened after launch."
-            body="After launch, we tracked how teachers actually used the assistant. Engagement was strong out of the gate, and support ticket volume dropped 12% from previous semesters, which was the core promise of the tool: getting teachers answers without having to reach out to our team directly."
+            eyebrow="Launch Impact"
+            heading="Helping teachers find immediate answers without waiting for support."
+            body="Once live, we monitored how educators interacted with the assistant during onboarding. Strong engagement out of the gate proved teachers trusted the tool, directly easing our team's operational load and delivering on our core promise: instant, reliable self-service support."
           />
           <StatRow
             stats={[
-              { value: '18%', label: 'of teachers clicked into the assistant on first use' },
-              { value: '62%', label: 'of teachers who opened it went on to ask a question' },
-              { value: '12%', label: 'fewer support tickets since launch' },
+              { value: '18%', label: 'of first time users clicked into the assistant' },
+              { value: '62%', label: 'of users who opened it went on to ask a question' },
+              { value: '12%', label: 'fewer support tickets' },
             ]}
           />
         </div>
@@ -2530,31 +2886,16 @@ export default function FindingFocusAiAssistantCaseStudy() {
       <section className="max-w-[1200px] mx-auto px-5 sm:px-10 md:px-20 pb-14 md:pb-28">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
             <div className="rounded-[24px] p-7 flex flex-col gap-3 bg-white" style={{ border: `1px solid ${BORDER}` }}>
-              <Eyebrow label="Design Landscape" color={ACCENT} />
-              <h4 className="text-[18px] font-semibold leading-[145%] text-[#1a1a1a]">LLM chat interfaces are still early — design around your use case, not conventions</h4>
-              <p className="text-[15px] font-normal leading-[175%] text-[#555]">There&apos;s no settled playbook for LLM chat UI yet. Patterns that work for ChatGPT don&apos;t automatically translate to a tool teachers use mid-workflow.</p>
-            </div>
-            <div className="rounded-[24px] p-7 flex flex-col gap-3 bg-white" style={{ border: `1px solid ${BORDER}` }}>
               <Eyebrow label="What I Learned" color={ACCENT} />
-              <h4 className="text-[18px] font-semibold leading-[145%] text-[#1a1a1a]">The depth of what goes into making an LLM actually useful surprised me</h4>
-              <p className="text-[15px] font-normal leading-[175%] text-[#555]">Working hands-on with the Assistants API — vector storage, context windows, system prompt design — gave me a much more grounded picture of what&apos;s actually happening under the hood.</p>
+              <h4 className="text-[18px] font-semibold leading-[145%] text-[#1a1a1a]">Most of what makes an AI assistant work is invisible.</h4>
+              <p className="text-[15px] font-normal leading-[175%] text-[#555]">Before this project, an AI assistant was just a chat window to me. Building one meant learning about RAG, vector stores, tool calling, chunking, and a whole lot more. This project greatly increased my understanding and appreciation of LLMs.</p>
             </div>
             <div className="rounded-[24px] p-7 flex flex-col gap-3 bg-white" style={{ border: `1px solid ${BORDER}` }}>
-              <Eyebrow label="Honest Takeaway" color={ACCENT} />
-              <h4 className="text-[18px] font-semibold leading-[145%] text-[#1a1a1a]">The assistant helps — but it doesn&apos;t replace a person</h4>
-              <p className="text-[15px] font-normal leading-[175%] text-[#555]">Teachers who onboard with a team member still see higher implementation success than those who don&apos;t. The assistant is a support layer, not a replacement for human connection.</p>
-            </div>
-            <div className="rounded-[24px] p-7 flex flex-col gap-3 bg-white" style={{ border: `1px solid ${BORDER}` }}>
-              <Eyebrow label="If I Could Do It Again" color={ACCENT} />
-              <h4 className="text-[18px] font-semibold leading-[145%] text-[#1a1a1a]">I would have invested more in user testing — but it wasn&apos;t in the cards</h4>
-              <p className="text-[15px] font-normal leading-[175%] text-[#555]">Early-stage startup work rarely has runway for structured usability testing before shipping. It made the competitive research more load-bearing — when you can&apos;t test with users, understanding what established products got right becomes your best available signal.</p>
+              <Eyebrow label="What Matters Most" color={ACCENT} />
+              <h4 className="text-[18px] font-semibold leading-[145%] text-[#1a1a1a]">A polished interface means nothing if the answers are wrong.</h4>
+              <p className="text-[15px] font-normal leading-[175%] text-[#555]">I could get the entry point, the layout, and the empty state exactly right, and none of it would matter if the assistant was not providing accurate answers. Getting the assistant to consistently provide accurate responses was the most important part of the UX.</p>
             </div>
           </div>
-      </section>
-
-      {/* ── CLOSING CTA ── */}
-      <section className="max-w-[1200px] mx-auto px-5 sm:px-10 md:px-20 pb-20">
-        <ClosingCTA />
       </section>
 
     </div>
