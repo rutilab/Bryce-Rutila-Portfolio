@@ -25,17 +25,40 @@ const MAX_STEP = 4;
 const LINKEDIN_URL = 'https://www.linkedin.com/in/';
 const EMAIL = 'rutilab@gmail.com';
 
-/**
- * Hatch order cycles the five BRYCE block colors (B-R-Y-C-E). Each is one of the
- * three hero fly shapes recolored, so shape varies alongside color.
- */
-const BR_FLY_SRCS = [
-  '/butterflies/footer/fly-orange.svg',
-  '/butterflies/footer/fly-blue.svg',
-  '/butterflies/footer/fly-yellow.svg',
-  '/butterflies/footer/fly-pink.svg',
-  '/butterflies/footer/fly-green.svg',
+/** Hatch order cycles the five BRYCE block colors (B-R-Y-C-E) */
+const FLY_PALETTE = [
+  { base: '#FF9C12', light: '#FFC46B' }, // B
+  { base: '#12B4FF', light: '#8ADCFF' }, // R
+  { base: '#FFF712', light: '#FFFB8F' }, // Y
+  { base: '#FF12F7', light: '#FF8AFA' }, // C
+  { base: '#31E300', light: '#8DFF62' }, // E
 ] as const;
+
+/**
+ * Butterfly sprite on the same art grid as the caterpillars, so it reads as the
+ * same hand. `#` wing, `L` highlight, `B` body, `A` antenna, `T` antenna tip.
+ * The black keyline is derived, not drawn: any wing cell touching empty space
+ * becomes outline, which is what gives the caterpillars their sticker edge.
+ */
+const BUTTERFLY_ART = [
+  '....T.....T....',
+  '.....A...A.....',
+  '......A.A......',
+  '..#####B#####..',
+  '##LL###B###LL##',
+  '###L###B###L###',
+  '.######B######.',
+  '...####B####...',
+  '..##L##B##L##..',
+  '..#####B#####..',
+  '...####B####...',
+  '....###B###....',
+  '.....##B##.....',
+  '.......B.......',
+] as const;
+
+const FLY_W = BUTTERFLY_ART[0].length * S; // 45px
+const FLY_H = BUTTERFLY_ART.length * S; // 42px
 
 /** Open sky above the branches for the butterflies to climb into */
 const FLY_CEILING = 104;
@@ -98,7 +121,7 @@ interface Scene {
 
 interface HatchedFly {
   id: number;
-  src: string;
+  colorIdx: number;
 }
 
 /** Per-fly flight physics, driven from the rAF loop (CSS px) */
@@ -120,7 +143,6 @@ interface FlyPhys {
   el: HTMLDivElement | null;
 }
 
-const FLY_SIZE = 56;
 /** Velocity ceilings — the pace multiplier only ever scales down from here */
 const FLY_MAX_VX = 1.5;
 const FLY_MAX_VY = 0.9;
@@ -152,12 +174,12 @@ function stepFly(p: FlyPhys, boundsW: number, step: number): boolean {
   p.y += p.vy * p.speedMul * step;
 
   // the ceiling and the branches always turn it back
-  const maxY = FLY_CEILING + SCENE_AH * S - FLY_SIZE - 8;
+  const maxY = FLY_CEILING + SCENE_AH * S - FLY_H - 8;
   if (p.y < 2) { p.y = 2; p.vy = Math.abs(p.vy); }
   if (p.y > maxY) { p.y = maxY; p.vy = -Math.abs(p.vy); }
 
   if (!p.exited) {
-    const maxX = Math.max(4, boundsW - FLY_SIZE - 4);
+    const maxX = Math.max(4, boundsW - FLY_W - 4);
     if (p.x < 4 || p.x > maxX) {
       if (p.departing) {
         p.exited = true; // wandered to the edge on its own — let it carry on out
@@ -170,7 +192,7 @@ function stepFly(p: FlyPhys, boundsW: number, step: number): boolean {
   }
 
   if (p.exited) {
-    return p.x < -FLY_SIZE * 1.5 || p.x > boundsW + FLY_SIZE * 1.5;
+    return p.x < -FLY_W * 1.5 || p.x > boundsW + FLY_W * 1.5;
   }
 
   // occasional whims, like the caterpillar prototype's butterflies
@@ -192,6 +214,67 @@ function applyFlyTransform(p: FlyPhys, tick: number) {
   const bobY = Math.sin(tick * 0.09 + p.phase) * 3 * p.speedMul;
   const bank = Math.max(-14, Math.min(14, p.vx * p.speedMul * 9));
   p.el.style.transform = `translate3d(${p.x}px, ${p.y + bobY}px, 0) rotate(${bank}deg)`;
+}
+
+// ── Butterfly sprite ─────────────────────────────────────────────────────────
+
+type Cell = 'ink' | 'base' | 'light' | null;
+
+/** Resolve the art map once, deriving the keyline from the silhouette */
+const BUTTERFLY_CELLS: Cell[][] = (() => {
+  const h = BUTTERFLY_ART.length;
+  const w = BUTTERFLY_ART[0].length;
+  const at = (x: number, y: number) =>
+    y < 0 || y >= h || x < 0 || x >= w ? '.' : BUTTERFLY_ART[y][x];
+  return BUTTERFLY_ART.map((row, y) =>
+    [...row].map((ch, x): Cell => {
+      if (ch === '.') return null;
+      if (ch === 'B' || ch === 'A') return 'ink';
+      if (ch === 'T') return 'light';
+      const onEdge =
+        at(x - 1, y) === '.' || at(x + 1, y) === '.' ||
+        at(x, y - 1) === '.' || at(x, y + 1) === '.';
+      return onEdge ? 'ink' : ch === 'L' ? 'light' : 'base';
+    }),
+  );
+})();
+
+/** Draws the sprite as merged horizontal runs — ~40 rects instead of 210 */
+function PixelButterfly({ base, light }: { base: string; light: string }) {
+  const h = BUTTERFLY_CELLS.length;
+  const w = BUTTERFLY_CELLS[0].length;
+  const rects: React.ReactElement[] = [];
+  for (let y = 0; y < h; y++) {
+    let x = 0;
+    while (x < w) {
+      const cell = BUTTERFLY_CELLS[y][x];
+      if (!cell) { x++; continue; }
+      let run = 1;
+      while (x + run < w && BUTTERFLY_CELLS[y][x + run] === cell) run++;
+      rects.push(
+        <rect
+          key={`${x}-${y}`}
+          x={x}
+          y={y}
+          width={run}
+          height={1}
+          fill={cell === 'ink' ? INK : cell === 'light' ? light : base}
+        />,
+      );
+      x += run;
+    }
+  }
+  return (
+    <svg
+      viewBox={`0 0 ${w} ${h}`}
+      width={FLY_W}
+      height={FLY_H}
+      shapeRendering="crispEdges"
+      aria-hidden="true"
+    >
+      {rects}
+    </svg>
+  );
 }
 
 // ── Scene state ──────────────────────────────────────────────────────────────
@@ -660,8 +743,8 @@ export default function CaterpillarFooter() {
       bug.ax = Math.max(branch.x + 2, Math.min(bug.ax, branch.x + branch.w - 12));
       setHint((h) => (h === 'crawl' ? 'cocoon' : h));
     } else {
-      // hatch: swap the pixel cocoon for a real BR fly SVG
-      const src = BR_FLY_SRCS[scene.hatchCount % BR_FLY_SRCS.length];
+      // hatch: the cocoon opens into a butterfly in the next BRYCE color
+      const colorIdx = scene.hatchCount % FLY_PALETTE.length;
       scene.hatchCount++;
       scene.bugs = scene.bugs.filter((b) => b.id !== bug.id);
       scene.hoverId = null;
@@ -675,7 +758,7 @@ export default function CaterpillarFooter() {
       }
 
       const flyId = scene.nextId++;
-      const spawnX = Math.max(4, Math.min((bug.ax + 7.5) * S - FLY_SIZE / 2, canvas.width - FLY_SIZE - 4));
+      const spawnX = Math.max(4, Math.min((bug.ax + 7.5) * S - FLY_W / 2, canvas.width - FLY_W - 4));
       const spawnY = Math.max(2, FLY_CEILING + (branch.y - 8) * S);
       flyPhysRef.current.set(flyId, {
         x: spawnX,
@@ -689,7 +772,7 @@ export default function CaterpillarFooter() {
         exited: false,
         el: null,
       });
-      setFlies((prev) => [...prev, { id: flyId, src }]);
+      setFlies((prev) => [...prev, { id: flyId, colorIdx }]);
       setHint((h) => (h === 'cocoon' || h === 'crawl' ? 'hatched' : h));
       // a new caterpillar wanders in from the edge after a bit
       const branchIdx = bug.branchIdx;
@@ -738,8 +821,10 @@ export default function CaterpillarFooter() {
               }
             }}
           >
-            {/* eslint-disable-next-line @next/next/no-img-element -- decorative SVG sprite, next/image adds nothing */}
-            <img src={fly.src} alt="" draggable={false} />
+            <PixelButterfly
+              base={FLY_PALETTE[fly.colorIdx].base}
+              light={FLY_PALETTE[fly.colorIdx].light}
+            />
           </div>
         ))}
         {hint !== 'off' && (
