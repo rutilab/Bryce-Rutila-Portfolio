@@ -11,6 +11,7 @@ import { IdeationChip } from '@/components/IdeationChip';
 import { IridescentText } from '@/components/IridescentText';
 import { IridescentEyebrow } from '@/components/IridescentEyebrow';
 import Loader from '@/components/Loader';
+import CaterpillarFooter from '@/components/CaterpillarFooter';
 import { registerBrFlyRefill } from '@/lib/brFlyRefill';
 
 const BR_FLY_SRCS = [
@@ -1201,6 +1202,8 @@ export default function Home() {
 
         </section>
       </main>
+
+      <CaterpillarFooter />
     </>
   );
 }

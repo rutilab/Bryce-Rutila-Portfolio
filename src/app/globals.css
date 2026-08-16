@@ -1466,3 +1466,180 @@ body.slingshot-dragging .project-card-pair {
 ::-webkit-scrollbar-thumb:hover {
   background: rgba(255, 255, 255, 0.3);
 }
+
+/* ── Landing footer — pixel caterpillar scene + site info ─────────────────── */
+.landing-footer {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  /* the scene's own padding-top is the butterflies' airspace and doubles as
+     the gap above the footer, so no extra margin here */
+  margin-top: 0;
+}
+
+.footer-scene {
+  position: relative;
+  width: 100%;
+  overflow: clip;
+}
+.footer-scene canvas {
+  display: block;
+  width: 100%;
+  height: 168px;
+  image-rendering: pixelated;
+}
+
+.footer-hint {
+  position: absolute;
+  left: 50%;
+  bottom: 8px;
+  transform: translateX(-50%);
+  font-family: var(--font-ibm-plex-mono), monospace;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  color: #757575;
+  white-space: nowrap;
+  pointer-events: none;
+  user-select: none;
+}
+.footer-hint-done {
+  color: #141510;
+  background-color: #fcf7a4; /* #FFF712 at 0.35 on cream */
+  border-radius: 3px;
+  padding: 0 4px;
+}
+
+/* Hatched BR flies — real hero SVGs flying over the scene.
+   The wrapper's translate/bank transform is driven from the rAF loop (JS);
+   CSS handles the pop-in and the continuous wingbeat. */
+.footer-br-fly {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 56px;
+  height: 56px;
+  pointer-events: none;
+  will-change: transform;
+}
+.footer-br-fly img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  animation:
+    footer-fly-pop 0.45s cubic-bezier(0.34, 1.56, 0.64, 1) both,
+    footer-fly-flap 0.4s ease-in-out 0.45s infinite;
+}
+@keyframes footer-fly-pop {
+  from { transform: scale(0) rotate(-30deg); }
+  to   { transform: scale(1) rotate(0deg); }
+}
+/* paper-butterfly wingbeat: fold about the vertical body axis */
+@keyframes footer-fly-flap {
+  0%   { transform: perspective(220px) rotateY(0deg)  scale(1); }
+  25%  { transform: perspective(220px) rotateY(-38deg) scale(0.96); }
+  50%  { transform: perspective(220px) rotateY(0deg)  scale(1); }
+  75%  { transform: perspective(220px) rotateY(34deg) scale(0.97); }
+  100% { transform: perspective(220px) rotateY(0deg)  scale(1); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .footer-br-fly img {
+    animation: none;
+  }
+}
+
+/* Info block */
+.footer-content {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 40px 0 32px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 48px;
+  flex-wrap: wrap;
+}
+.footer-brand {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-width: 360px;
+}
+.footer-brand-name {
+  font-family: var(--font-battambang), sans-serif;
+  font-weight: 700;
+  font-size: 22px;
+  letter-spacing: -0.04em;
+  color: #141510;
+}
+.footer-brand-tagline {
+  font-family: var(--font-inter), sans-serif;
+  font-size: 14px;
+  line-height: 21px;
+  letter-spacing: -0.02em;
+  color: #383b2e;
+  margin: 0;
+}
+.footer-col {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.footer-col-label {
+  font-family: var(--font-ibm-plex-mono), monospace;
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  color: #757575;
+  margin-bottom: 2px;
+}
+.footer-link {
+  font-family: var(--font-ibm-plex-mono), monospace;
+  font-size: 14px;
+  letter-spacing: -0.012em;
+  color: #141510;
+  text-decoration: none;
+  align-self: flex-start;
+  border-radius: 3px;
+  padding: 0 3px;
+  margin: 0 -3px;
+  transition: background-color 0.18s ease;
+}
+.footer-link:hover {
+  background-color: #fcf7a4; /* yellow highlight wash, same as endorsement highlights */
+}
+
+/* Bottom bar */
+.footer-bottom {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 16px 0 28px;
+  border-top: 1px dashed rgba(20, 21, 16, 0.35);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  font-family: var(--font-ibm-plex-mono), monospace;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  color: #757575;
+}
+
+/* Match landing-main horizontal padding at each breakpoint */
+@media (max-width: 1199px) {
+  .footer-content,
+  .footer-bottom {
+    padding-left: 40px;
+    padding-right: 40px;
+  }
+}
+@media (max-width: 799px) {
+  .footer-content,
+  .footer-bottom {
+    padding-left: 24px;
+    padding-right: 24px;
+  }
+  .footer-content {
+    flex-direction: column;
+    gap: 32px;
+  }
+}
