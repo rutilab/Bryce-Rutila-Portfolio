@@ -4,7 +4,18 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Finding Focus AI Assistant — Prototype</title>
-<script>if (/\bembed=1\b/.test(location.search)) document.documentElement.classList.add('embed');</script>
+<script>
+if (/\bembed=1\b/.test(location.search)) {
+  document.documentElement.classList.add('embed');
+  function updateEmbedScale() {
+    var availableWidth = Math.max(0, window.innerWidth - 40);
+    var scale = Math.min(0.7, Math.max(0.25, availableWidth / 725));
+    document.documentElement.style.setProperty('--embed-scale', String(scale));
+  }
+  updateEmbedScale();
+  window.addEventListener('resize', updateEmbedScale);
+}
+</script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600&display=swap');
 
@@ -21,6 +32,12 @@ html, body {
 html.embed, html.embed body {
   background: transparent;
   overflow: hidden;
+}
+
+/* Fallback only — the embed script overrides this on <html> to fit the frame.
+   Must not be declared on body, or it would shadow the inherited script value. */
+html.embed {
+  --embed-scale: 0.7;
 }
 
 /* Page just centers the widget so it's easy to look at while prototyping */
@@ -41,8 +58,8 @@ html.embed .page {
 
 /* Clip box sized to the *visual* scaled widget; chat is scaled inside */
 html.embed .embed-scale {
-  width: calc(725px * 0.7);
-  height: calc(928px * 0.7);
+  width: calc(725px * var(--embed-scale));
+  height: calc(928px * var(--embed-scale));
   overflow: hidden;
   flex-shrink: 0;
   position: relative;
@@ -52,7 +69,7 @@ html.embed .embed-scale .chat-container.css-1fysqw3 {
   position: absolute;
   top: 0;
   left: 0;
-  transform: scale(0.7);
+  transform: scale(var(--embed-scale));
   transform-origin: top left;
   animation: none !important;
   max-width: none !important;
@@ -410,7 +427,9 @@ button, textarea, input { font-family: inherit; }
     if (!scrollArea || !row) return;
     // Embed uses transform: scale(0.7); getBoundingClientRect is visual,
     // scrollTop is layout px — convert before adjusting.
-    var scale = document.documentElement.classList.contains('embed') ? 0.7 : 1;
+    var scale = document.documentElement.classList.contains('embed')
+      ? parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--embed-scale')) || 0.7
+      : 1;
     var areaRect = scrollArea.getBoundingClientRect();
     var rowRect = row.getBoundingClientRect();
     var layoutDelta = (rowRect.top - areaRect.top) / scale;
@@ -433,7 +452,9 @@ button, textarea, input { font-family: inherit; }
   // instead would destroy the scroll range and snap the view back to the
   // top of the conversation.
   function trimSpacer(row) {
-    var scale = document.documentElement.classList.contains('embed') ? 0.7 : 1;
+    var scale = document.documentElement.classList.contains('embed')
+      ? parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--embed-scale')) || 0.7
+      : 1;
     var below = 0;
     var node = row;
     while (node) {

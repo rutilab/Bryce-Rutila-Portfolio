@@ -676,7 +676,7 @@ export function MediaCarouselStage({
 }: {
   items: CaseStudyMediaItem[];
   /** Descriptive text shown below the stage, above the dots. */
-  caption: string;
+  caption: string | ((item: CaseStudyMediaItem, index: number) => string);
   /** Phone / asset max width inside the stage. */
   maxWidth?: number;
   background?: string;
@@ -712,6 +712,8 @@ export function MediaCarouselStage({
 
   const item = items[Math.min(current, items.length - 1)] ?? items[0];
   if (!item) return null;
+
+  const displayCaption = typeof caption === 'function' ? caption(item, current) : caption;
 
   return (
     <>
@@ -757,7 +759,7 @@ export function MediaCarouselStage({
         </div>
 
         <div className="mt-3 flex flex-col items-center gap-2 px-2">
-          <p className="text-[13px] text-[#999] text-center">{caption}</p>
+          <p className="text-[13px] text-[#999] text-center">{displayCaption}</p>
           <CarouselDots
             count={items.length}
             current={current}

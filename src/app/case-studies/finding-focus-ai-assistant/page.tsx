@@ -6,11 +6,15 @@ import { AI_ASSISTANT_CSS, AI_ASSISTANT_HTML } from './ai-assistant-modal';
 import SmsIcon from '@mui/icons-material/Sms';
 import ForumIcon from '@mui/icons-material/Forum';
 import VerticalAlignTopIcon from '@mui/icons-material/VerticalAlignTop';
-import PlaceIcon from '@mui/icons-material/Place';
-import ViewModuleIcon from '@mui/icons-material/ViewModule';
-import InboxIcon from '@mui/icons-material/Inbox';
 import ArrowDownward from '@mui/icons-material/ArrowDownward';
-import { NorthStarAnimatedIcon, WinningChoiceScrollStars } from '@/components/case-study';
+import {
+  CaseStudyMedia,
+  CaseStudyMediaGallery,
+  MediaCarouselStage,
+  NorthStarAnimatedIcon,
+  WinningChoiceScrollStars,
+} from '@/components/case-study';
+import type { CaseStudyMediaItem } from '@/components/case-study';
 import { useBodyScrollLock } from '@/hooks/useBodyScrollLock';
 
 /** Section eyebrows, MUI icons, diagram labels — near-black, matches the Focus Coach Achievements template */
@@ -22,6 +26,11 @@ const ACCENT_DARK = '#0057c2';
 const BORDER = '#e6ecf4';
 /** Solid light container for content cards (Project Goals) */
 const CARD_LIGHT = '#f5f7fa';
+/** Blue media well behind case study visuals */
+const BLOCK_BG = 'rgba(220, 232, 248, 0.45)';
+/** Intrinsic size of the chat widget inside the prototype iframe */
+const PROTOTYPE_WIDTH = 725;
+const PROTOTYPE_HEIGHT = 928;
 
 function useInView<T extends Element>(
   threshold = 0.35,
@@ -83,7 +92,7 @@ function StatRow({ stats }: { stats: { value: string; label: string; icon?: Reac
 const PROJECT_GOALS = [
   { n: '01', title: 'Truly understand queries', body: 'The assistant should understand what teachers are actually asking, with contextual awareness.' },
   { n: '02', title: 'Provide relevant responses', body: 'Teachers should get a real answer to any question about Finding Focus, without being boxed into a limited set of scripted responses.' },
-  { n: '03', title: 'Exceed teacher expectations', body: 'The experience should set a new bar for what an edtech chatbot can feel like.' },
+  { n: '03', title: 'Win over skeptics', body: 'Teachers have been burned by rigid, unhelpful chatbots before. This assistant had to feel meaningfully better from the very first message.' },
 ];
 
 function GoalCards() {
@@ -111,6 +120,47 @@ function GoalCards() {
           </div>
         </div>
       ))}
+    </div>
+  );
+}
+
+/** Outcomes Looking Ahead cards — same chip pattern as Focus Coach Achievements IndicatorCard */
+const LOOKING_AHEAD = [
+  {
+    title: 'Engagement & ticket volume',
+    body: 'Repeat usage of the assistant and year-over-year support ticket volume, semester over semester.',
+    status: 'Monitoring',
+  },
+  {
+    title: 'Answer accuracy',
+    body: 'Periodic spot checks of response accuracy as the knowledge base grows.',
+    status: 'Monitoring',
+  },
+  {
+    title: 'Follow-up research',
+    body: 'Follow-up interviews with the original ten teachers from discovery, plus lightweight in-product feedback (thumbs up/down on responses) as a continuous signal.',
+    status: 'Next',
+  },
+  {
+    title: 'Escalation & source linking',
+    body: "A handoff path to human support when the assistant can't answer confidently, and direct links to relevant help docs within answers.",
+    status: 'Next',
+  },
+] as const;
+
+function OutcomeCard({ title, body, status }: { title: string; body: string; status: string }) {
+  return (
+    <div className="flex flex-col gap-2.5 rounded-[20px] p-6" style={{ background: CARD_LIGHT }}>
+      <div className="flex items-center justify-between gap-3">
+        <p className="text-[16px] font-semibold text-[#1a1a1a]">{title}</p>
+        <span
+          className="shrink-0 rounded-full px-2.5 py-1 text-[10px] font-medium tracking-[1px] uppercase"
+          style={{ color: ACCENT_DARK, background: 'rgba(0,0,0,0.05)' }}
+        >
+          {status}
+        </span>
+      </div>
+      <p className="text-[14px] leading-[165%] text-[#666]">{body}</p>
     </div>
   );
 }
@@ -147,9 +197,6 @@ const assets = {
   metaAiLayout: '/case-studies/finding-focus-ai-assistant/meta-ai-layout.png',
   claudePageBehavior: '/case-studies/finding-focus-ai-assistant/claude-page-behavior.gif',
   geminiPageBehavior: '/case-studies/finding-focus-ai-assistant/gemini-page-behavior.gif',
-  openingChatInterface: '/case-studies/finding-focus-ai-assistant/GIFs/Opening%20Chat%20Interface.gif',
-  emptyStateExample: '/case-studies/finding-focus-ai-assistant/GIFs/Empty%20State%20Example%20Question.gif',
-  alwaysVisible: '/case-studies/finding-focus-ai-assistant/GIFs/Always%20Visible.gif',
   ideationNavDrawerWireframe: '/case-studies/finding-focus-ai-assistant/ideation-nav-drawer-wireframe.png',
   ideationNavDrawerComparison: '/case-studies/finding-focus-ai-assistant/ideation-nav-drawer-comparison.png',
   ideationFabWireframe: '/case-studies/finding-focus-ai-assistant/ideation-fab-wireframe.png',
@@ -166,10 +213,12 @@ const assets = {
   ideationEmptyTilesComparison: '/case-studies/finding-focus-ai-assistant/ideation-empty-tiles-comparison.png',
   ideationEmptyProactiveWireframe: '/case-studies/finding-focus-ai-assistant/ideation-empty-proactive-wireframe.png',
   ideationEmptyProactiveComparison: '/case-studies/finding-focus-ai-assistant/ideation-empty-proactive-comparison.png',
-  finalDesignsHero: '/case-studies/finding-focus-ai-assistant/GIFs/final-designs-hero.gif',
   emptyStateDesign: '/case-studies/finding-focus-ai-assistant/empty-state-design.png',
   iPhoneMockup: '/case-studies/finding-focus-ai-assistant/iphone-mockup.png',
   iMacMockup: '/case-studies/finding-focus-ai-assistant/imac-mockup.png',
+  errorUnableToRespond: '/case-studies/finding-focus-ai-assistant/error-unable-to-respond.png?v=4',
+  errorApiConnection: '/case-studies/finding-focus-ai-assistant/error-api-connection.png?v=4',
+  errorNetwork: '/case-studies/finding-focus-ai-assistant/error-network.png?v=3',
 };
 
 // ── Text scale (explicit, not relying on cs-* classes) ───────────────────────
@@ -181,43 +230,6 @@ const assets = {
 // Eyebrow:            11px medium tracking-wide #272727
 
 // ── Utility components ───────────────────────────────────────────────────────
-
-function StopPlayButton({ stopped, onClick }: { stopped: boolean; onClick: () => void }) {
-  const [hovered, setHovered] = useState(false);
-  return (
-    <div style={{ position: 'absolute', bottom: 10, right: 10, zIndex: 2 }}>
-      {/* Tooltip */}
-      <div style={{
-        position: 'absolute', bottom: 'calc(100% + 6px)', left: '50%', transform: 'translateX(-50%)',
-        background: 'rgba(0,0,0,0.75)', color: 'white',
-        fontSize: 11, fontWeight: 500, padding: '3px 8px', borderRadius: 5,
-        whiteSpace: 'nowrap', pointerEvents: 'none',
-        opacity: hovered ? 1 : 0, transition: 'opacity 0.15s ease',
-      }}>
-        {stopped ? 'Play' : 'Stop'}
-      </div>
-      <button
-        onClick={e => { e.stopPropagation(); onClick(); }}
-        onMouseEnter={() => setHovered(true)}
-        onMouseLeave={() => setHovered(false)}
-        style={{
-          width: 32, height: 32, borderRadius: '50%', flexShrink: 0,
-          background: hovered ? '#f0f0f0' : 'white',
-          border: '1px solid rgba(0,0,0,0.08)',
-          boxShadow: '0 1px 4px rgba(0,0,0,0.1)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          color: '#555', cursor: 'pointer',
-          transition: 'background 0.15s',
-        }}
-      >
-        {stopped
-          ? /* Play */ <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M3 2.2l6.5 3.8L3 9.8V2.2z" fill="currentColor"/></svg>
-          : /* Stop */ <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><rect x="2" y="2" width="8" height="8" rx="1.5" fill="currentColor"/></svg>
-        }
-      </button>
-    </div>
-  );
-}
 
 function Eyebrow({ label, color = EYEBROW_ICON_COLOR }: { label: string; color?: string }) {
   return (
@@ -385,15 +397,18 @@ function VisualCard({
   children,
   caption,
   pill,
+  pad,
 }: {
   children: React.ReactNode;
   caption?: string;
   pill?: string;
+  /** Padding class for grouped media; omit when children bring their own padding. */
+  pad?: string;
 }) {
   return (
     <div>
-      <div className="rounded-[24px] overflow-clip" style={{ background: 'rgba(220,232,248,0.45)' }}>
-        {children}
+      <div className="rounded-[24px] overflow-clip" style={{ background: BLOCK_BG }}>
+        {pad ? <div className={pad}>{children}</div> : children}
       </div>
       {caption && (
         <div className="flex items-center justify-center gap-4 mt-3">
@@ -402,6 +417,138 @@ function VisualCard({
             <span className="cs-pill"><span className="cs-pill-text">{pill}</span></span>
           )}
         </div>
+      )}
+    </div>
+  );
+}
+
+/**
+ * Assets stay side by side until the row no longer fits, then switch to the
+ * carousel (arrows beside the asset, caption + dots below) — the same pattern
+ * the Achievements case study uses for its grouped final-design mockups.
+ */
+function useSideBySide(minWidth: number) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [sideBySide, setSideBySide] = useState(true);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const measure = () => setSideBySide(el.clientWidth >= minWidth);
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [minWidth]);
+
+  return [ref, sideBySide] as const;
+}
+
+/**
+ * Prototype embed. The iframe scales its chat widget to the space available, so the
+ * frame height has to track the same scale to avoid clipping or dead space.
+ */
+function PrototypeEmbed({ caption }: { caption: string }) {
+  const wrapRef = useRef<HTMLDivElement>(null);
+  const [height, setHeight] = useState(690);
+
+  useEffect(() => {
+    const el = wrapRef.current;
+    if (!el) return;
+    const measure = () => {
+      const scale = Math.min(0.7, Math.max(0.25, (el.clientWidth - 40) / PROTOTYPE_WIDTH));
+      setHeight(Math.round(PROTOTYPE_HEIGHT * scale) + 40);
+    };
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
+  return (
+    <div ref={wrapRef}>
+      <VisualCard caption={caption}>
+        <iframe
+          src="/case-studies/finding-focus-ai-assistant/prototype/index.html?embed=1"
+          title="Finding Focus AI Assistant interactive prototype"
+          className="w-full border-0 block"
+          scrolling="no"
+          style={{ height }}
+        />
+      </VisualCard>
+    </div>
+  );
+}
+
+/** Phone + desktop mockups sharing one well. Column ratio keeps both renders the same height. */
+function BreakpointMockups({ caption, items }: { caption: string; items: CaseStudyMediaItem[] }) {
+  const [wrapRef, sideBySide] = useSideBySide(560);
+
+  return (
+    <div ref={wrapRef} className="w-full">
+      {sideBySide ? (
+        <VisualCard caption={caption} pad="p-4 sm:p-6">
+          <div className="mx-auto w-full" style={{ maxWidth: 860 }}>
+            <div className="grid items-center gap-3 sm:gap-4" style={{ gridTemplateColumns: '1fr 2.4fr' }}>
+              {items.map((item) => (
+                <CaseStudyMedia
+                  key={item.src}
+                  src={item.src}
+                  alt={item.alt}
+                  caption={item.caption}
+                />
+              ))}
+            </div>
+          </div>
+        </VisualCard>
+      ) : (
+        <MediaCarouselStage items={items} caption={caption} maxWidth={260} background={BLOCK_BG} />
+      )}
+    </div>
+  );
+}
+
+const ERROR_STATES: CaseStudyMediaItem[] = [
+  {
+    src: assets.errorNetwork,
+    alt: 'Assistant showing a network error with a regenerate action',
+    caption: 'Network error',
+  },
+  {
+    src: assets.errorApiConnection,
+    alt: 'Assistant showing a server connection error with a regenerate action',
+    caption: 'API connection error',
+  },
+  {
+    src: assets.errorUnableToRespond,
+    alt: 'Assistant declining to answer an inappropriate request',
+    caption: 'Query refusal',
+  },
+];
+
+function ErrorStateDesigns() {
+  const [wrapRef, sideBySide] = useSideBySide(640);
+  const groupCaption = 'Error state designs — Network error, API connection error, Query refusal';
+
+  return (
+    <div ref={wrapRef} className="w-full">
+      {sideBySide ? (
+        <VisualCard caption={groupCaption} pad="p-4 sm:p-6">
+          <CaseStudyMediaGallery
+            columns={3}
+            maxWidth={936}
+            gapClassName="gap-3 sm:gap-4"
+            preventStack
+            items={ERROR_STATES}
+          />
+        </VisualCard>
+      ) : (
+        <MediaCarouselStage
+          items={ERROR_STATES}
+          caption={(item) => `Error state designs — ${item.caption ?? item.alt}`}
+          maxWidth={312}
+          background={BLOCK_BG}
+        />
       )}
     </div>
   );
@@ -521,40 +668,6 @@ function IdeationToggle({
               className="max-h-[44%] md:max-h-full md:max-w-[44%] max-w-full w-auto h-auto block flex-shrink-0"
             />
           )}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// Side-by-side image comparison inside a VisualCard
-function ComparisonGrid({
-  left,
-  right,
-}: {
-  left: { src: string; alt: string; label: string; caption: string };
-  right: { src: string; alt: string; label: string; caption: string };
-}) {
-  return (
-    <div>
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-6">
-        <div className="rounded-xl overflow-hidden bg-white">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={left.src} alt={left.alt} className="w-full h-auto block" />
-        </div>
-        <div className="rounded-xl overflow-hidden bg-white">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={right.src} alt={right.alt} className="w-full h-auto block" />
-        </div>
-      </div>
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 px-6 pb-6">
-        <div>
-          <p className="text-[14px] font-semibold text-[#1a1a1a]">{left.label}</p>
-          <p className="text-[14px] font-normal leading-[165%] text-[#777] mt-0.5">{left.caption}</p>
-        </div>
-        <div>
-          <p className="text-[14px] font-semibold text-[#1a1a1a]">{right.label}</p>
-          <p className="text-[14px] font-normal leading-[165%] text-[#777] mt-0.5">{right.caption}</p>
         </div>
       </div>
     </div>
@@ -808,63 +921,6 @@ function ChatbotFlowDiagram() {
       <line x1="572" y1="87" x2="560" y2="99" stroke="#AAAAAA" strokeWidth="2" strokeLinecap="round"/>
       <text x="566" y="112" textAnchor="middle" fontSize="9" fill="#AAAAAA" fontFamily="Inter, sans-serif">conversation</text>
       <text x="566" y="123" textAnchor="middle" fontSize="9" fill="#AAAAAA" fontFamily="Inter, sans-serif">stalls</text>
-    </svg>
-  );
-}
-
-// ── APIComparisonDiagram ─────────────────────────────────────────────────────
-function APIComparisonDiagram() {
-  return (
-    <svg viewBox="0 0 560 220" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full max-w-[560px]">
-      <text x="110" y="18" textAnchor="middle" fontSize="11" fill="#888" fontFamily="Inter, sans-serif" fontWeight="500" letterSpacing="1">RULE-BASED</text>
-      <rect x="62" y="26" width="96" height="36" rx="9" fill="#F3F4F6" stroke="#D1D5DB" strokeWidth="1.5"/>
-      <text x="110" y="49" textAnchor="middle" fontSize="10" fill="#555" fontFamily="Inter, sans-serif">Input</text>
-      <line x1="110" y1="62" x2="110" y2="78" stroke="#C8C8C8" strokeWidth="1.5"/>
-      <line x1="110" y1="78" x2="44" y2="78" stroke="#C8C8C8" strokeWidth="1.5"/>
-      <line x1="110" y1="78" x2="176" y2="78" stroke="#C8C8C8" strokeWidth="1.5"/>
-      <line x1="44" y1="78" x2="44" y2="92" stroke="#C8C8C8" strokeWidth="1.5"/>
-      <line x1="110" y1="78" x2="110" y2="92" stroke="#C8C8C8" strokeWidth="1.5"/>
-      <line x1="176" y1="78" x2="176" y2="92" stroke="#C8C8C8" strokeWidth="1.5"/>
-      {[14, 80, 146].map((x, i) => (
-        <g key={i}>
-          <rect x={x} y="92" width="60" height="28" rx="7" fill={i === 1 ? '#EAFAF1' : '#F9FAFB'} stroke={i === 1 ? '#A8DFBC' : '#D1D5DB'} strokeWidth="1.4"/>
-          <text x={x + 30} y="111" textAnchor="middle" fontSize="9.5" fill={i === 1 ? '#2A8A50' : '#9CA3AF'} fontFamily="Inter, sans-serif">
-            {i === 1 ? 'Match ✓' : '???'}
-          </text>
-        </g>
-      ))}
-      <line x1="110" y1="120" x2="110" y2="134" stroke="#C8C8C8" strokeWidth="1.3"/>
-      <line x1="110" y1="134" x2="80" y2="134" stroke="#C8C8C8" strokeWidth="1.3"/>
-      <line x1="110" y1="134" x2="140" y2="134" stroke="#C8C8C8" strokeWidth="1.3"/>
-      <line x1="80" y1="134" x2="80" y2="144" stroke="#C8C8C8" strokeWidth="1.3"/>
-      <line x1="140" y1="134" x2="140" y2="144" stroke="#C8C8C8" strokeWidth="1.3"/>
-      {[55, 115].map((x, i) => (
-        <rect key={i} x={x} y="144" width="50" height="24" rx="6" fill="#F9FAFB" stroke="#D1D5DB" strokeWidth="1.3"/>
-      ))}
-      <text x="110" y="186" textAnchor="middle" fontSize="10" fill="#9CA3AF" fontFamily="Inter, sans-serif">Rigid decision paths</text>
-      <text x="110" y="200" textAnchor="middle" fontSize="10" fill="#9CA3AF" fontFamily="Inter, sans-serif">Limited to known inputs</text>
-      <line x1="270" y1="10" x2="270" y2="210" stroke="#E5E7EB" strokeWidth="1.5" strokeDasharray="4 3"/>
-      <text x="270" y="214" textAnchor="middle" fontSize="9" fill="#C0C0C0" fontFamily="Inter, sans-serif">VS</text>
-      <text x="415" y="18" textAnchor="middle" fontSize="11" fill="#272727" fontFamily="Inter, sans-serif" fontWeight="500" letterSpacing="1">LLM API</text>
-      <circle cx="415" cy="110" r="32" fill="#EEF9FF" stroke="#B0E0FF" strokeWidth="1.8"/>
-      <text x="415" y="106" textAnchor="middle" fontSize="10" fill="#272727" fontFamily="Inter, sans-serif" fontWeight="600">LLM</text>
-      <text x="415" y="120" textAnchor="middle" fontSize="9" fill="#272727" fontFamily="Inter, sans-serif">model</text>
-      {[
-        { cx: 310, cy: 60, label: 'Query A', color: '#6366F1', bg: '#EEF2FF', border: '#C7D2FE' },
-        { cx: 310, cy: 110, label: 'Query B', color: '#8B5CF6', bg: '#F5F3FF', border: '#DDD6FE' },
-        { cx: 310, cy: 160, label: 'Query C', color: '#3B82F6', bg: '#EFF6FF', border: '#BFDBFE' },
-        { cx: 520, cy: 60, label: 'Reply A', color: '#10B981', bg: '#ECFDF5', border: '#A7F3D0' },
-        { cx: 520, cy: 110, label: 'Reply B', color: '#059669', bg: '#ECFDF5', border: '#A7F3D0' },
-        { cx: 520, cy: 160, label: 'Reply C', color: '#34D399', bg: '#ECFDF5', border: '#A7F3D0' },
-      ].map(({ cx, cy, label, color, bg, border }, i) => (
-        <g key={i}>
-          <line x1={cx < 415 ? cx + 36 : cx - 36} y1={cy} x2={cx < 415 ? 383 : 447} y2={110 + (cy - 110) * 0.6} stroke={border} strokeWidth="1.4"/>
-          <rect x={cx - 28} y={cy - 14} width="56" height="28" rx="8" fill={bg} stroke={border} strokeWidth="1.4"/>
-          <text x={cx} y={cy + 4} textAnchor="middle" fontSize="9.5" fill={color} fontFamily="Inter, sans-serif" fontWeight="500">{label}</text>
-        </g>
-      ))}
-      <text x="415" y="186" textAnchor="middle" fontSize="10" fill="#272727" fontFamily="Inter, sans-serif">Understands any input</text>
-      <text x="415" y="200" textAnchor="middle" fontSize="10" fill="#272727" fontFamily="Inter, sans-serif">Generates contextual responses</text>
     </svg>
   );
 }
@@ -1221,9 +1277,11 @@ function getCardStyle(i: number, progress: number, fadeStart = 0.4): {
 // Below this viewport height the cards won't fit, so fall back to a simple stack.
 const MIN_DECK_HEIGHT = 680;
 // Dead zone at the start: px of scroll after the deck sticks before raw progress ramps (bumper).
-const DESIGN_DECK_DEAD_ZONE = 300;
-// Comparative-analysis ResearchDeck: smaller dead zone so cards snap into place sooner; Design deck unchanged.
 const RESEARCH_DECK_DEAD_ZONE = 160;
+// Fast-scroll pass-through: above these thresholds, skip snap animation and follow raw progress.
+// Tuned so deliberate scrolling never triggers; only clear trackpad/wheel flicks do.
+const FAST_SCROLL_VELOCITY = 0.004; // |ΔrawP| / ms
+const FAST_SCROLL_DELTA = 0.22; // single-event rawP jump
 
 function ResearchDeck() {
   const outerRef = useRef<HTMLDivElement>(null);
@@ -1274,14 +1332,29 @@ function ResearchDeck() {
     // Transitions are fully automatic — any scroll past a boundary triggers the full snap.
     let snappedTo = 0;
     let prevRawP = -1;
+    let prevTime = 0;
 
     function onScroll() {
       if (!outerRef.current) return;
       const rect = outerRef.current.getBoundingClientRect();
       const rawP = Math.max(0, Math.min(2, (-rect.top - RESEARCH_DECK_DEAD_ZONE) / SCROLL_PER_CARD));
+      const now = performance.now();
+      const dt = prevTime > 0 ? Math.max(1, now - prevTime) : 16;
+      const delta = prevRawP < 0 ? 0 : rawP - prevRawP;
+      const velocity = Math.abs(delta) / dt;
       const scrollingForward = prevRawP < 0 || rawP >= prevRawP;
       prevRawP = rawP;
+      prevTime = now;
       state.scrollP = rawP;
+
+      // Fast flick: skip snap sequencing so the user passes through at scroll speed
+      if (velocity >= FAST_SCROLL_VELOCITY || Math.abs(delta) >= FAST_SCROLL_DELTA) {
+        state.animating = false;
+        state.displayP = rawP;
+        setDisplayProgress(rawP);
+        snappedTo = Math.max(0, Math.min(2, Math.round(rawP)));
+        return;
+      }
 
       if (state.animating) {
         // Cancel snap and reverse if user scrolls significantly backward
@@ -1585,14 +1658,28 @@ function InsightsDeck() {
 
     let snappedTo = 0;
     let prevRawP = -1;
+    let prevTime = 0;
 
     function onScroll() {
       if (!outerRef.current) return;
       const rect = outerRef.current.getBoundingClientRect();
       const rawP = Math.max(0, Math.min(2, (-rect.top - RESEARCH_DECK_DEAD_ZONE) / SCROLL_PER_CARD));
+      const now = performance.now();
+      const dt = prevTime > 0 ? Math.max(1, now - prevTime) : 16;
+      const delta = prevRawP < 0 ? 0 : rawP - prevRawP;
+      const velocity = Math.abs(delta) / dt;
       const scrollingForward = prevRawP < 0 || rawP >= prevRawP;
       prevRawP = rawP;
+      prevTime = now;
       state.scrollP = rawP;
+
+      if (velocity >= FAST_SCROLL_VELOCITY || Math.abs(delta) >= FAST_SCROLL_DELTA) {
+        state.animating = false;
+        state.displayP = rawP;
+        setDisplayProgress(rawP);
+        snappedTo = Math.max(0, Math.min(2, Math.round(rawP)));
+        return;
+      }
 
       if (state.animating) {
         if (!scrollingForward && rawP < state.animTarget - 0.5) {
@@ -1672,147 +1759,6 @@ function InsightsDeck() {
                   embedTitle={card.embedTitle}
                   shellHeight={shellHeight}
                 />
-              </div>
-            );
-          })}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ── DesignDeck: same scroll-driven stack animation as ResearchDeck ────────────
-function DesignDeck() {
-  const outerRef = useRef<HTMLDivElement>(null);
-  const [displayProgress, setDisplayProgress] = useState(0);
-  const [deckDisabled, setDeckDisabled] = useState(false);
-  const aniState = useRef({ scrollP: 0, displayP: 0, animating: false, animTarget: 0, animStartP: 0, animStartTime: 0, animId: 0 });
-
-  useEffect(() => {
-    function checkSize() { setDeckDisabled(window.innerHeight < MIN_DECK_HEIGHT || window.innerWidth < 900); }
-    checkSize();
-    window.addEventListener('resize', checkSize);
-    return () => window.removeEventListener('resize', checkSize);
-  }, []);
-
-  useEffect(() => {
-    if (deckDisabled) return;
-    const state = aniState.current;
-
-    function animateTo(target: number) {
-      if (state.animating && state.animTarget === target) return;
-      state.animating = true; state.animTarget = target;
-      state.animStartP = state.displayP; state.animStartTime = Date.now();
-    }
-
-    function tick() {
-      if (state.animating) {
-        const t = Math.min(1, (Date.now() - state.animStartTime) / 700);
-        const eased = t * t * (3 - 2 * t);
-        const newP = state.animStartP + (state.animTarget - state.animStartP) * eased;
-        state.displayP = newP; setDisplayProgress(newP);
-        if (t >= 1) { state.animating = false; state.displayP = state.animTarget; setDisplayProgress(state.animTarget); }
-      }
-      state.animId = requestAnimationFrame(tick);
-    }
-
-    let snappedTo = 0, prevRawP = -1;
-    function onScroll() {
-      if (!outerRef.current) return;
-      const rect = outerRef.current.getBoundingClientRect();
-      const rawP = Math.max(0, Math.min(2, (-rect.top - DESIGN_DECK_DEAD_ZONE) / SCROLL_PER_CARD));
-      const scrollingForward = prevRawP < 0 || rawP >= prevRawP;
-      prevRawP = rawP; state.scrollP = rawP;
-      if (state.animating) {
-        if (!scrollingForward && rawP < state.animTarget - 0.5) {
-          state.animating = false; snappedTo = state.animTarget - 1; animateTo(snappedTo);
-        }
-        return;
-      }
-      if (scrollingForward && rawP > snappedTo && snappedTo < 2) { snappedTo++; animateTo(snappedTo); }
-      else if (!scrollingForward && rawP < snappedTo - 0.5 && snappedTo > 0) { snappedTo--; animateTo(snappedTo); }
-    }
-
-    state.animId = requestAnimationFrame(tick);
-    window.addEventListener('scroll', onScroll, { passive: true });
-    onScroll();
-    return () => { window.removeEventListener('scroll', onScroll); cancelAnimationFrame(state.animId); };
-  }, [deckDisabled]);
-
-  const cards = [
-    {
-      number: 1 as const,
-      icon: <PlaceIcon sx={{ fontSize: 32, color: '#272727' }} />,
-      title: 'Where should teachers access the assistant?',
-      body: "If the assistant requires multiple steps to reach, it stays undiscovered. Placement determines whether the feature becomes a daily habit or a buried tool teachers forget exists.",
-      decision: 'Persistent entry point in the main nav',
-      decisionBody: 'Placing the assistant in the primary navigation means teachers can reach it from anywhere in the platform with a single click — no hunting, no interruption to their workflow.',
-      gifSrc: assets.alwaysVisible,
-      gifAlt: 'Assistant always visible in the navigation',
-    },
-    {
-      number: 2 as const,
-      icon: <ViewModuleIcon sx={{ fontSize: 32, color: '#272727' }} />,
-      title: 'Modal overlay or dedicated page experience?',
-      body: "A modal risks feeling temporary and constrained — ill-suited to the back-and-forth of a real conversation. The container shape needs to match the nature of the interaction.",
-      decision: 'Dedicated full page, accessible from the primary nav',
-      decisionBody: 'A full-page experience signals that the AI assistant is a first-class feature, and gives teachers the uninterrupted space they need for longer, multi-turn conversations.',
-      gifSrc: assets.openingChatInterface,
-      gifAlt: 'Opening the chat interface',
-    },
-    {
-      number: 3 as const,
-      icon: <InboxIcon sx={{ fontSize: 32, color: '#272727' }} />,
-      title: 'What should teachers see when they first open it?',
-      body: "A blank text field with no context is intimidating. If teachers don't immediately understand what to ask, they'll close it without engaging — the empty state is a critical conversion moment.",
-      decision: 'Personalized greeting with contextual example questions',
-      decisionBody: "Greeting teachers by name and surfacing relevant starter questions makes the first interaction feel personal and immediately useful, lowering the barrier to that first message.",
-      gifSrc: assets.emptyStateExample,
-      gifAlt: 'Empty state with example questions',
-    },
-  ];
-
-  const maxGifH = 'min(320px, calc(100vh - 560px))';
-
-  function CardChildren({ gifSrc, gifAlt, decision, decisionBody }: { gifSrc: string; gifAlt: string; decision: string; decisionBody: string }) {
-    return (
-      <div>
-        <div style={{ borderRadius: 16, overflow: 'clip', background: 'rgba(220,232,248,0.45)', maxHeight: deckDisabled ? '380px' : maxGifH }}>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={gifSrc} alt={gifAlt} style={{ width: '100%', height: 'auto', display: 'block' }} />
-        </div>
-        <div style={{ marginTop: 20, paddingTop: 16, borderTop: '1px solid #eeeeee' }}>
-          <p style={{ fontSize: 11, fontWeight: 500, color: '#aaa', textTransform: 'uppercase', letterSpacing: '1.4px', marginBottom: 8 }}>Decision</p>
-          <p style={{ fontSize: 16, fontWeight: 600, color: '#1a1a1a', marginBottom: 6 }}>{decision}</p>
-          <p style={{ fontSize: 14, fontWeight: 400, lineHeight: '170%', color: '#777' }}>{decisionBody}</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (deckDisabled) {
-    return (
-      <div className="flex flex-col gap-16">
-        {cards.map((card, i) => (
-          <ResearchCard key={i} number={card.number} icon={card.icon} title={card.title} body={card.body}>
-            <CardChildren gifSrc={card.gifSrc} gifAlt={card.gifAlt} decision={card.decision} decisionBody={card.decisionBody} />
-          </ResearchCard>
-        ))}
-      </div>
-    );
-  }
-
-  return (
-    <div ref={outerRef} style={{ height: `calc(100vh + ${SCROLL_PER_CARD * 2 + DESIGN_DECK_DEAD_ZONE}px)` }}>
-      <div style={{ position: 'sticky', top: 0, height: '100vh', paddingTop: 80, paddingBottom: 48, overflow: 'clip', display: 'flex', flexDirection: 'column', justifyContent: 'flex-start' }}>
-        <div style={{ position: 'relative', flex: 1 }}>
-          {cards.map((card, i) => {
-            const s = getCardStyle(i, displayProgress);
-            return (
-              <div key={i} style={{ position: i === 0 ? 'relative' : 'absolute', top: 0, left: 0, right: 0, willChange: 'transform, opacity', transform: s.transform, opacity: s.opacity, zIndex: s.zIndex, pointerEvents: s.pointerEvents }}>
-                <ResearchCard number={card.number} icon={card.icon} title={card.title} body={card.body}>
-                  <CardChildren gifSrc={card.gifSrc} gifAlt={card.gifAlt} decision={card.decision} decisionBody={card.decisionBody} />
-                </ResearchCard>
               </div>
             );
           })}
@@ -1914,55 +1860,6 @@ function SectionNav() {
   );
 }
 
-// ── MacBezel ─────────────────────────────────────────────────────────────────
-function MacBezel({ alt, children }: { alt: string; children: ReactNode }) {
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%' }}>
-      {/* Monitor body */}
-      <div role="img" aria-label={alt} style={{
-        background: 'linear-gradient(160deg, #2a2a2c 0%, #1a1a1c 100%)',
-        borderRadius: 14,
-        padding: '10px 10px 20px',
-        boxShadow: '0 2px 0 rgba(255,255,255,0.06) inset, 0 30px 80px rgba(0,0,0,0.35), 0 8px 20px rgba(0,0,0,0.2)',
-        position: 'relative',
-        width: '100%',
-        maxWidth: 760,
-      }}>
-        {/* Camera dot */}
-        <div style={{
-          width: 5, height: 5, borderRadius: '50%',
-          background: '#3a3a3c',
-          margin: '0 auto 8px',
-          boxShadow: '0 0 0 1px rgba(255,255,255,0.06)',
-        }} />
-        {/* Screen */}
-        <div style={{
-          borderRadius: 4,
-          overflow: 'hidden',
-          boxShadow: '0 0 0 1px rgba(0,0,0,0.5) inset',
-        }}>
-          {children}
-        </div>
-      </div>
-      {/* Stand neck */}
-      <div style={{
-        width: 56,
-        height: 38,
-        background: 'linear-gradient(to bottom, #c8c8ca, #a8a8aa)',
-        clipPath: 'polygon(28% 0%, 72% 0%, 82% 100%, 18% 100%)',
-      }} />
-      {/* Stand base */}
-      <div style={{
-        width: 200,
-        height: 10,
-        background: 'linear-gradient(to bottom, #b8b8ba, #a0a0a2)',
-        borderRadius: '0 0 10px 10px',
-        boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-      }} />
-    </div>
-  );
-}
-
 // ── ExpandableImage: click-to-lightbox wrapper for static images ──────────────
 function ExpandableImage({ src, alt, style, className }: { src: string; alt: string; style?: React.CSSProperties; className?: string }) {
   const [open, setOpen] = useState(false);
@@ -2011,150 +1908,6 @@ function ExpandableImage({ src, alt, style, className }: { src: string; alt: str
         </div>,
         document.body
       )}
-    </>
-  );
-}
-
-// ── CyclingGif ───────────────────────────────────────────────────────────────
-type GifItem = { src: string; alt: string; duration: number };
-
-function CyclingGif({ items }: { items: GifItem[] }) {
-  const [current, setCurrent] = useState(0);
-  const [prev, setPrev] = useState<number | null>(null);
-  const [stopped, setStopped] = useState(false);
-  const [lightboxOpen, setLightboxOpen] = useState(false);
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => { setMounted(true); }, []);
-  useBodyScrollLock(lightboxOpen && mounted);
-  const imgRefs = useRef<(HTMLImageElement | null)[]>([]);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const prevTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
-
-  // Auto-advance timer — use GIF duration minus 300ms to prevent frame-0 flash before fade
-  useEffect(() => {
-    if (stopped) return;
-    const t = setTimeout(() => {
-      const next = (current + 1) % items.length;
-      setPrev(current);
-      setCurrent(next);
-      // Clear prev after transition completes
-      clearTimeout(prevTimerRef.current);
-      prevTimerRef.current = setTimeout(() => setPrev(null), 800);
-    }, items[current].duration - 300);
-    return () => clearTimeout(t);
-  }, [current, stopped, items]);
-
-  // Restart current GIF on advance; clear hidden ones
-  useEffect(() => {
-    items.forEach((item, i) => {
-      const img = imgRefs.current[i];
-      if (!img) return;
-      if (i === current) { img.src = ''; img.src = item.src; }
-      else if (i !== prev) img.src = '';
-    });
-  }, [current, prev, items]);
-
-  function captureFrame0(img: HTMLImageElement) {
-    const canvas = canvasRef.current;
-    if (!canvas || img.naturalWidth === 0) return;
-    const dw = img.clientWidth || img.naturalWidth;
-    const dh = img.clientHeight || img.naturalHeight;
-    canvas.width = dw;
-    canvas.height = dh;
-    const ctx = canvas.getContext('2d');
-    if (ctx) ctx.drawImage(img, 0, 0, dw, dh);
-  }
-
-  function handleStop() {
-    const img = imgRefs.current[current];
-    if (img) { captureFrame0(img); img.src = ''; }
-    setStopped(true);
-  }
-
-  function handlePlay() {
-    const img = imgRefs.current[current];
-    if (img) img.src = items[current].src;
-    setStopped(false);
-  }
-
-  function getTransform(i: number) {
-    if (i === current) return 'translateY(0px)';
-    if (i === prev) return 'translateY(-20px)';   // exits upward
-    return 'translateY(24px)';                     // waits below, ready to enter
-  }
-
-  return (
-    <>
-    <div
-      onClick={() => setLightboxOpen(true)}
-      style={{ position: 'relative', borderRadius: 16, overflow: 'hidden', background: 'rgba(220,232,248,0.45)', minHeight: 660, cursor: 'zoom-in' }}
-    >
-      {items.map((item, i) => (
-        <div key={i} style={{
-          position: 'absolute', inset: 0,
-          display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 32,
-          opacity: i === current ? 1 : 0,
-          transform: getTransform(i),
-          transition: 'opacity 0.75s ease, transform 0.75s cubic-bezier(0.25, 0.46, 0.45, 0.94)',
-          pointerEvents: 'none',
-        }}>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            ref={el => { imgRefs.current[i] = el; }}
-            src={item.src}
-            alt={item.alt}
-            onLoad={i === current ? e => captureFrame0(e.currentTarget) : undefined}
-            style={{
-              display: stopped && i === current ? 'none' : 'block',
-              maxWidth: '100%', maxHeight: 580,
-              objectFit: 'contain', borderRadius: 10,
-              boxShadow: '0 8px 40px rgba(0,0,0,0.10)',
-            }}
-          />
-          {i === current && (
-            <canvas ref={canvasRef} style={{
-              display: stopped ? 'block' : 'none',
-              maxWidth: '100%', borderRadius: 10,
-              boxShadow: '0 8px 40px rgba(0,0,0,0.10)',
-            }} />
-          )}
-        </div>
-      ))}
-
-      {/* GIF badge */}
-      <div style={{
-        position: 'absolute', top: 10, left: 10,
-        background: 'rgba(0,0,0,0.5)', color: 'white',
-        fontSize: 11, fontWeight: 500, letterSpacing: '0.05em',
-        padding: '2px 8px', borderRadius: 6, pointerEvents: 'none',
-      }}>GIF</div>
-
-      <div onClick={e => e.stopPropagation()}>
-        <StopPlayButton stopped={stopped} onClick={stopped ? handlePlay : handleStop} />
-      </div>
-    </div>
-    {lightboxOpen && mounted && createPortal(
-      <div
-        onClick={() => setLightboxOpen(false)}
-        style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(8,8,8,0.92)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '40px 32px', cursor: 'zoom-out' }}
-      >
-        <button
-          onClick={() => setLightboxOpen(false)}
-          style={{ position: 'absolute', top: 20, right: 20, width: 36, height: 36, borderRadius: '50%', background: 'rgba(255,255,255,0.1)', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', cursor: 'pointer' }}
-          className="hover:bg-white/20"
-        >
-          <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><path d="M11.5 3.5l-8 8M3.5 3.5l8 8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
-        </button>
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src={items[current].src}
-          alt={items[current].alt}
-          onClick={e => e.stopPropagation()}
-          style={{ maxWidth: 'min(88vw, 1280px)', maxHeight: '82vh', objectFit: 'contain', borderRadius: 14, cursor: 'default', display: 'block' }}
-        />
-      </div>,
-      document.body
-    )}
     </>
   );
 }
@@ -2254,13 +2007,13 @@ export default function FindingFocusAiAssistantCaseStudy() {
                 Finding Focus&apos;s most successful teachers all had one thing in common — hands-on support from
                 our team. With fewer than 5% of sign-ups ever getting that, we designed an LLM-powered assistant to
                 bring the same personalized help to every teacher, on demand. It shipped in 2024 and cut support
-                tickets by 12%.
+                tickets by 12% year-over-year.
               </p>
               <StatRow
                 stats={[
-                  { value: '18%', label: 'of first time users clicked into the assistant' },
+                  { value: '18%', label: 'of first-time users clicked into the assistant' },
                   { value: '62%', label: 'of users who opened it went on to ask a question' },
-                  { value: '12%', label: 'fewer support tickets' },
+                  { value: '12%', label: 'fewer support tickets year-over-year' },
                 ]}
               />
               <div className="flex justify-center pt-1">
@@ -2292,7 +2045,7 @@ export default function FindingFocusAiAssistantCaseStudy() {
         <Section
           eyebrow="Context"
           heading="Finding Focus is an edtech company building attention-training tools for classrooms."
-          body="Teachers use our tools through a dedicated teacher interface where they can share the courses, facilitate classroom activities, and track student progress over time."
+          body="Teachers use our tools through a dedicated teacher interface where they can share courses with students, facilitate classroom activities, and track progress over time."
         >
           <VisualCard caption="The Classroom Dashboard within the teacher interface">
             <div className="flex items-center justify-center p-4 sm:p-8">
@@ -2443,7 +2196,7 @@ export default function FindingFocusAiAssistantCaseStudy() {
                   <img src="/images/case-studies/NLU.svg" alt="" className="w-8 h-8" />
                   <div>
                     <p className="text-[17px] font-semibold text-[#1a1a1a]">Rule-Based NLU APIs</p>
-                    <p className="text-[13px] text-[#999] mt-0.5">Diagflow, Amazon Lex, Rasa</p>
+                    <p className="text-[13px] text-[#999] mt-0.5">Dialogflow, Amazon Lex, Rasa</p>
                   </div>
                   <div className="flex flex-col gap-3">
                     <div>
@@ -2561,6 +2314,11 @@ export default function FindingFocusAiAssistantCaseStudy() {
           <div className="flex flex-col gap-12">
 
             <Section
+              heading="How these decisions got made"
+              body="We didn't have the budget for formal user testing, and waiting for it would have meant not shipping. Instead, I anchored each decision to patterns teachers already knew from the products they use every day and made the call with my best judgement. The launch data would tell us quickly if a bet wasn't landing. For a team our size, that was the right trade."
+            />
+
+            <Section
               heading="Where should teachers access the assistant from?"
               body="Where teachers reach the assistant from shapes how often they actually use it. Put it somewhere prominent and it reads as a core part of the platform; bury it and it feels like an afterthought they'll forget is there."
             />
@@ -2670,38 +2428,29 @@ export default function FindingFocusAiAssistantCaseStudy() {
         <div className="flex flex-col gap-10">
           <Section
             id="section-final-designs"
-            eyebrow="Final Designs"
-            heading="Putting all of the findings and design decisions together into one cohesive experience"
+            eyebrow="Final Design"
+            heading="Putting all of the findings and design decisions together."
           />
-          {/* Interactive prototype — iframe tall enough for 70% scale (928×0.7) + padding */}
-          <div className="rounded-[24px] overflow-hidden" style={{ background: 'rgba(220,232,248,0.45)' }}>
-            <iframe
-              src="/case-studies/finding-focus-ai-assistant/prototype/index.html?embed=1"
-              title="Finding Focus AI Assistant interactive prototype"
-              className="w-full border-0 block"
-              scrolling="no"
-              style={{ height: 690 }}
-            />
-          </div>
-          {/* Two-column row — 1:2 ratio on md+, stacked on mobile */}
-          <div className="grid gap-4 final-devices-grid">
-            {/* Left — iPhone mockup (narrower) */}
-            <div className="bg-[rgba(220,232,248,0.45)] rounded-[20px] flex items-center justify-center py-12 px-6 overflow-hidden">
-              <ExpandableImage
-                src={assets.iPhoneMockup}
-                alt="Mobile view of the AI assistant"
-                style={{ maxHeight: 420, objectFit: 'contain', transform: 'rotate(-5deg)' }}
-              />
-            </div>
-            {/* Right — iMac mockup (wider) */}
-            <div className="bg-[rgba(220,232,248,0.45)] rounded-[20px] flex items-end justify-center overflow-hidden px-10 pt-10">
-              <ExpandableImage
-                src={assets.iMacMockup}
-                alt="Desktop view of the AI assistant"
-                style={{ width: '88%', objectFit: 'contain' }}
-              />
-            </div>
-          </div>
+
+          <PrototypeEmbed caption="What it looks like to chat with the Finding Focus AI Assistant." />
+
+          <BreakpointMockups
+            caption="Mobile and Web breakpoints"
+            items={[
+              {
+                src: assets.iPhoneMockup,
+                alt: 'Mobile breakpoint of the AI assistant',
+                caption: 'Mobile breakpoint',
+              },
+              {
+                src: assets.iMacMockup,
+                alt: 'Web breakpoint of the AI assistant',
+                caption: 'Web breakpoint',
+              },
+            ]}
+          />
+
+          <ErrorStateDesigns />
         </div>
       </section>
 
@@ -2740,7 +2489,7 @@ export default function FindingFocusAiAssistantCaseStudy() {
 
           {/* The Catch */}
           <Section
-            eyebrow="Response Accuracy"
+            eyebrow="Hallucination Mitigation"
             heading="The flow only works if the assistant actually searches. Often, it didn't."
             body="When we started testing the assistant, we found that it was giving very generic answers that were not accurate to Finding Focus. This was because the LLM was skipping the search step entirely and answering from its own general knowledge instead of our documentation."
           >
@@ -2812,7 +2561,7 @@ export default function FindingFocusAiAssistantCaseStudy() {
           <Section
             eyebrow="The Result"
             heading="With these updates, the assistant went from educated guesses to precise answers."
-            body="Mandating a search step got the model to open our knowledge base, but switching to semantic chunking made sure it actually pulled the right information. We were able to greatly improve the output from the assistant by making these two updates."
+            body="Mandating a search step got the model to open our knowledge base, but switching to semantic chunking made sure it actually pulled the right information. Together, these two updates became our core hallucination mitigation and greatly improved the assistant's output."
           >
             <div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -2824,7 +2573,7 @@ export default function FindingFocusAiAssistantCaseStudy() {
                     className="text-[11px] font-medium tracking-[1.5px] uppercase"
                     style={{ color: '#fe0000' }}
                   >
-                    Before Fine-Tuning
+                    Before Retrieval Tuning
                   </p>
                   <p className="text-[48px] sm:text-[56px] font-semibold leading-none tracking-[-1.5px] text-[#1a1a1a]">
                     42%
@@ -2841,7 +2590,7 @@ export default function FindingFocusAiAssistantCaseStudy() {
                     className="text-[11px] font-medium tracking-[1.5px] uppercase"
                     style={{ color: '#2a8a50' }}
                   >
-                    After Fine-Tuning
+                    After Retrieval Tuning
                   </p>
                   <p className="text-[48px] sm:text-[56px] font-semibold leading-none tracking-[-1.5px] text-[#1a1a1a]">
                     88%
@@ -2852,7 +2601,7 @@ export default function FindingFocusAiAssistantCaseStudy() {
                 </div>
               </div>
               <p className="text-[13px] text-[#999] text-center mt-3">
-                Based on 100 tested queries pre and post fine-tuning
+                Based on 100 test queries, graded with an LLM-as-a-judge evaluation before and after the retrieval changes
               </p>
             </div>
           </Section>
@@ -2864,19 +2613,48 @@ export default function FindingFocusAiAssistantCaseStudy() {
 
       {/* ── OUTCOMES ── */}
       <section className="max-w-[1200px] mx-auto px-5 sm:px-10 md:px-20 pb-12 md:pb-20">
-        <div className="flex flex-col gap-10">
+        <div className="flex flex-col gap-16">
+          {/* 5a Launch Impact — benchmarks + teacher reaction */}
           <Section
             eyebrow="Launch Impact"
-            heading="Helping teachers find immediate answers without waiting for support."
-            body="Once live, we monitored how educators interacted with the assistant during onboarding. Strong engagement out of the gate proved teachers trusted the tool, directly easing our team's operational load and delivering on our core promise: instant, reliable self-service support."
-          />
-          <StatRow
-            stats={[
-              { value: '18%', label: 'of first time users clicked into the assistant' },
-              { value: '62%', label: 'of users who opened it went on to ask a question' },
-              { value: '12%', label: 'fewer support tickets' },
-            ]}
-          />
+            heading="The first signals we were able to track."
+            body="After launch, we tracked how teachers engaged with the assistant during onboarding. These are the first numbers we were able to capture, and they set the baseline we'll measure future iterations against."
+          >
+            <div className="flex flex-col gap-8">
+              <StatRow
+                stats={[
+                  { value: '18%', label: 'of first-time users clicked into the assistant' },
+                  { value: '62%', label: 'of users who opened it went on to ask a question' },
+                  { value: '12%', label: 'fewer support tickets, Spring + Fall 2025 vs. the same semesters in 2024' },
+                ]}
+              />
+              <div
+                className="rounded-[16px] p-4 sm:p-6 flex flex-col gap-3 bg-white max-w-[760px]"
+                style={{ border: `1px solid ${BORDER}` }}
+              >
+                <Eyebrow label="Post-Launch Reaction" />
+                <p className="text-[16px] font-normal leading-[165%] text-[#333]">
+                  &ldquo;It was easy to talk to the assistant, I liked that I could ask all of the questions I had about getting set up. It was a lot more convenient than emailing support and waiting for a response.&rdquo;
+                </p>
+                <p className="text-[13px] font-medium text-[#555]">
+                  — Caro Middle School Teacher
+                </p>
+              </div>
+            </div>
+          </Section>
+
+          {/* 5b Looking Ahead — monitoring + next steps */}
+          <Section
+            eyebrow="Looking Ahead"
+            heading="What we're watching, and what comes next."
+            body="The launch numbers were a starting point, not a conclusion. Here is what we are continuing to monitor, and what we plan to build next."
+          >
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {LOOKING_AHEAD.map((card) => (
+                <OutcomeCard key={card.title} {...card} />
+              ))}
+            </div>
+          </Section>
         </div>
       </section>
 
@@ -2888,7 +2666,7 @@ export default function FindingFocusAiAssistantCaseStudy() {
             <div className="rounded-[24px] p-7 flex flex-col gap-3 bg-white" style={{ border: `1px solid ${BORDER}` }}>
               <Eyebrow label="What I Learned" color={ACCENT} />
               <h4 className="text-[18px] font-semibold leading-[145%] text-[#1a1a1a]">Most of the work is invisible.</h4>
-              <p className="text-[15px] font-normal leading-[175%] text-[#555]">Before this project, an AI assistant was just a chat window to me. Building one meant learning about RAG, vector stores, tool calling, chunking, and a whole lot more. This project greatly increased my understanding and appreciation of LLMs.</p>
+              <p className="text-[15px] font-normal leading-[175%] text-[#555]">Before this project, an AI assistant was just a chat window to me. Building one meant learning about RAG, vector stores, tool calling, chunking, hallucination mitigation, and a whole lot more. This project greatly increased my understanding and appreciation of LLMs.</p>
             </div>
             <div className="rounded-[24px] p-7 flex flex-col gap-3 bg-white" style={{ border: `1px solid ${BORDER}` }}>
               <Eyebrow label="What Matters Most" color={ACCENT} />
