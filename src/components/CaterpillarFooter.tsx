@@ -797,6 +797,31 @@ export default function CaterpillarFooter() {
 
   return (
     <footer className="landing-footer">
+      {/* ── Footer info ── */}
+      <div className="footer-content">
+        <div className="footer-brand">
+          <span className="footer-brand-name">BRYCE</span>
+          <p className="footer-brand-tagline">
+            A systems-thinking product designer building memorable digital experiences.
+          </p>
+        </div>
+
+        <nav className="footer-col" aria-label="Footer navigation">
+          <span className="footer-col-label">EXPLORE</span>
+          <Link href="/" className="footer-link">HOME</Link>
+          <Link href="/case-studies" className="footer-link">PROJECTS</Link>
+          <Link href="/about" className="footer-link">ABOUT ME</Link>
+        </nav>
+
+        <div className="footer-col">
+          <span className="footer-col-label">CONNECT</span>
+          <a href={`mailto:${EMAIL}`} className="footer-link">EMAIL</a>
+          <a href={LINKEDIN_URL} target="_blank" rel="noopener noreferrer" className="footer-link">
+            LINKEDIN
+          </a>
+        </div>
+      </div>
+
       {/* ── Interactive branch scene ── */}
       <div className="footer-scene" style={{ paddingTop: FLY_CEILING }}>
         <canvas
@@ -837,34 +862,11 @@ export default function CaterpillarFooter() {
         )}
       </div>
 
-      {/* ── Footer info ── */}
-      <div className="footer-content">
-        <div className="footer-brand">
-          <span className="footer-brand-name">BRYCE</span>
-          <p className="footer-brand-tagline">
-            A systems-thinking product designer building memorable digital experiences.
-          </p>
-        </div>
-
-        <nav className="footer-col" aria-label="Footer navigation">
-          <span className="footer-col-label">EXPLORE</span>
-          <Link href="/" className="footer-link">HOME</Link>
-          <Link href="/case-studies" className="footer-link">PROJECTS</Link>
-          <Link href="/about" className="footer-link">ABOUT ME</Link>
-        </nav>
-
-        <div className="footer-col">
-          <span className="footer-col-label">CONNECT</span>
-          <a href={`mailto:${EMAIL}`} className="footer-link">EMAIL</a>
-          <a href={LINKEDIN_URL} target="_blank" rel="noopener noreferrer" className="footer-link">
-            LINKEDIN
-          </a>
-        </div>
-      </div>
-
       <div className="footer-bottom">
-        <span>© 2026 BRYCE · DESIGNED &amp; BUILT FROM [IDEA] TO [PROD]</span>
-        <span className="footer-bottom-note">NO CATERPILLARS WERE HARMED</span>
+        <span>© 2026 BRYCE</span>
+        <span className="footer-bottom-note">
+          No butterflies were harmed in the making of this site
+        </span>
       </div>
     </footer>
   );
