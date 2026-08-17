@@ -67,6 +67,15 @@ const MAX_FLIES = 4;
 
 // BRYCE palette
 const INK = '#141510';
+/* The footer band is INK, so the scene can no longer use INK as its keyline —
+   every silhouette would sink into the background. Two tokens take over:
+   BARK gives the limb its own material instead of a black cutout, and OUTLINE
+   is the light keyline that lifts each sprite off the dark. INK stays only
+   where a dark mark still reads: the eye pupil, and the butterflies' internal
+   linework, which sits inside bright wings rather than against the backdrop. */
+const BARK = '#7a5230';
+const BARK_LIT = '#a97b4a';
+const OUTLINE = '#faf7f2';
 const GREEN = '#31E300';
 const GREEN_DARK = '#1f9e00';
 const GREEN_LIGHT = '#8dff62';
@@ -105,8 +114,10 @@ interface Sparkle {
   fx: number; // fraction of width
   ay: number;
   color: string;
-  phase: number;
   big: boolean;
+  life: number; // frames elapsed in the current appearance
+  span: number; // how long this appearance lasts
+  wait: number; // frames left before it returns somewhere new (0 = on screen)
 }
 
 interface Scene {
@@ -287,16 +298,57 @@ function computeBranches(aw: number): Branch[] {
   ];
 }
 
-function makeSparkles(): Sparkle[] {
-  const out: Sparkle[] = [];
-  for (let i = 0; i < 16; i++) {
-    out.push({
-      fx: (i + 0.15 + Math.random() * 0.7) / 16,
-      ay: 3 + Math.random() * (SCENE_AH - 14),
-      color: SPARKLE_COLORS[i % SPARKLE_COLORS.length],
-      phase: Math.random() * Math.PI * 2,
-      big: Math.random() < 0.3,
+/* Sparkles are slots, not fixed stars: each one fades up somewhere, fades out,
+   waits in the dark, then returns at a fresh spot. With the gap running longer
+   than the appearance, only a third of the slots are lit at any moment — so 14
+   slots read as roughly four or five stars on screen, drifting around the scene
+   rather than blinking on and off in place. */
+const SPARKLE_COUNT = 14;
+const SPARKLE_SPAN_MIN = 85; // visible frames, fade-in through fade-out
+const SPARKLE_SPAN_MAX = 150;
+const SPARKLE_GAP_MIN = 150; // dark frames before it reappears elsewhere
+const SPARKLE_GAP_MAX = 430;
+const SPARKLE_MIN_DIST = 16; // art px between two lit sparkles
+
+const randRange = (a: number, b: number) => a + Math.random() * (b - a);
+
+/** Send a sparkle to a fresh spot, clear of the ones currently lit. */
+function relocateSparkle(sp: Sparkle, aw: number, others: Sparkle[]) {
+  const yMin = 2;
+  const ySpan = SCENE_AH - 5; // full canvas height, less room for the star arms
+  let ax = aw / 2;
+  let ay = yMin + ySpan / 2;
+  for (let attempt = 0; attempt < 24; attempt++) {
+    ax = 3 + Math.random() * Math.max(1, aw - 6);
+    ay = yMin + Math.random() * ySpan;
+    const clear = others.every((o) => {
+      if (o === sp || o.wait > 0) return true; // only dodge the ones on screen
+      const dx = o.fx * aw - ax;
+      const dy = o.ay - ay;
+      return dx * dx + dy * dy >= SPARKLE_MIN_DIST * SPARKLE_MIN_DIST;
     });
+    if (clear) break;
+  }
+  sp.fx = ax / aw;
+  sp.ay = ay;
+  sp.color = SPARKLE_COLORS[(Math.random() * SPARKLE_COLORS.length) | 0];
+  sp.big = Math.random() < 0.3;
+  sp.life = 0;
+  sp.span = randRange(SPARKLE_SPAN_MIN, SPARKLE_SPAN_MAX);
+  sp.wait = 0;
+}
+
+function makeSparkles(aw: number): Sparkle[] {
+  const out: Sparkle[] = [];
+  for (let i = 0; i < SPARKLE_COUNT; i++) {
+    const sp: Sparkle = {
+      fx: 0, ay: 0, color: '', big: false, life: 0, span: 0, wait: 0,
+    };
+    relocateSparkle(sp, aw, out);
+    // stagger the opening state so they don't all bloom together on first paint
+    if (Math.random() < 0.35) sp.life = Math.random() * sp.span;
+    else sp.wait = Math.random() * SPARKLE_GAP_MAX;
+    out.push(sp);
   }
   return out;
 }
@@ -334,7 +386,7 @@ function initScene(aw: number): Scene {
   const scene: Scene = {
     branches: computeBranches(aw),
     bugs: [],
-    sparkles: makeSparkles(),
+    sparkles: makeSparkles(aw),
     tick: 0,
     hoverId: null,
     nextId: 0,
@@ -381,11 +433,28 @@ function fillPx(
   ctx.fillRect(Math.round(ax * S), Math.round(ay * S), Math.round(aw * S), Math.round(ah * S));
 }
 
-function drawSparkles(ctx: CanvasRenderingContext2D, scene: Scene, aw: number) {
+function drawSparkles(
+  ctx: CanvasRenderingContext2D,
+  scene: Scene,
+  aw: number,
+  step: number,
+) {
   for (const sp of scene.sparkles) {
+    if (sp.wait > 0) {
+      sp.wait -= step;
+      continue;
+    }
+    sp.life += step;
+    if (sp.life >= sp.span) {
+      // it has already faded to nothing — move it on and rest it in the dark
+      relocateSparkle(sp, aw, scene.sparkles);
+      sp.wait = randRange(SPARKLE_GAP_MIN, SPARKLE_GAP_MAX);
+      continue;
+    }
     const x = Math.round(sp.fx * aw);
-    const bright = (Math.sin(scene.tick * 0.03 + sp.phase) + 1) / 2;
-    ctx.globalAlpha = 0.12 + bright * 0.45;
+    // one clean swell across the appearance: nothing → bright → nothing
+    const bright = Math.sin((sp.life / sp.span) * Math.PI);
+    ctx.globalAlpha = Math.max(0, bright) * 0.62;
     const arm = sp.big ? 2 : 1;
     ctx.fillStyle = sp.color;
     ctx.fillRect((x - arm) * S, sp.ay * S, (arm * 2 + 1) * S, S);
@@ -398,10 +467,11 @@ function drawBranch(ctx: CanvasRenderingContext2D, b: Branch) {
   const tipX = b.dir === 1 ? b.x + b.w - 6 : b.x;
   const bodyX = b.dir === 1 ? b.x : b.x + 6;
   const bodyW = b.w - 6;
-  // limb silhouette + tapered tip
-  fillPx(ctx, bodyX, b.y, bodyW, 3.5, INK);
-  fillPx(ctx, tipX, b.y + 0.75, 6, 2, INK);
-  fillPx(ctx, b.dir === 1 ? tipX + 5 : tipX, b.y + 1.1, 1.5, 1.3, INK);
+  // limb + tapered tip, lit along the top edge so it reads as bark not cutout
+  fillPx(ctx, bodyX, b.y, bodyW, 3.5, BARK);
+  fillPx(ctx, bodyX, b.y, bodyW, 0.9, BARK_LIT);
+  fillPx(ctx, tipX, b.y + 0.75, 6, 2, BARK);
+  fillPx(ctx, b.dir === 1 ? tipX + 5 : tipX, b.y + 1.1, 1.5, 1.3, BARK);
   // leaves along the top, with a couple of twigs
   for (let i = 8; i < bodyW - 4; i += 14) {
     const lx = bodyX + i;
@@ -410,7 +480,7 @@ function drawBranch(ctx: CanvasRenderingContext2D, b: Branch) {
   }
   for (let i = 16; i < bodyW - 6; i += 30) {
     const tx = bodyX + i;
-    fillPx(ctx, tx, b.y - 4, 1, 4, INK);
+    fillPx(ctx, tx, b.y - 4, 1, 4, BARK);
     fillPx(ctx, tx - 0.6, b.y - 5.6, 2.2, 2.2, GREEN);
   }
 }
@@ -448,18 +518,18 @@ function drawCaterpillar(
   for (let i = 0; i < 5; i++) {
     const lx = 1.2 + i * 2.5;
     const wave = Math.sin(t * 2.2 + i * 1.35) * 0.55;
-    ld(lx, ay - 0.8 + Math.abs(wave) * 0.3, 0.8, 1.6 - Math.abs(wave) * 0.2, INK);
+    ld(lx, ay - 0.8 + Math.abs(wave) * 0.3, 0.8, 1.6 - Math.abs(wave) * 0.2, OUTLINE);
   }
 
-  // Antennae behind head (black stems, pink tips)
+  // Antennae behind head (light stems, pink tips)
   const hx = 11.2;
   const hy = by + Math.sin(t) * 0.28;
   const a1 = Math.sin(t * 0.75) * 0.55;
   const a2 = Math.cos(t * 0.75) * 0.55;
-  ld(hx + 0.4 + a1, hy - 2.5, 0.55, 2.2, INK);
-  ld(hx + 1.35 + a2, hy - 2.5, 0.55, 2.2, INK);
-  ld(hx + 0.05 + a1, hy - 3.4, 1.05, 1.05, INK);
-  ld(hx + 1 + a2, hy - 3.4, 1.05, 1.05, INK);
+  ld(hx + 0.4 + a1, hy - 2.5, 0.55, 2.2, OUTLINE);
+  ld(hx + 1.35 + a2, hy - 2.5, 0.55, 2.2, OUTLINE);
+  ld(hx + 0.05 + a1, hy - 3.4, 1.05, 1.05, OUTLINE);
+  ld(hx + 1 + a2, hy - 3.4, 1.05, 1.05, OUTLINE);
   ld(hx + 0.2 + a1, hy - 3.25, 0.75, 0.75, PINK);
   ld(hx + 1.15 + a2, hy - 3.25, 0.75, 0.75, PINK);
 
@@ -467,7 +537,7 @@ function drawCaterpillar(
   for (let i = 0; i <= 4; i++) {
     const sx = 0.8 + i * 2.6;
     const wob = Math.sin(t + i * 0.95) * 0.28;
-    ld(sx - 0.45, by + wob - 0.45, 3, 3.4, INK);
+    ld(sx - 0.45, by + wob - 0.45, 3, 3.4, OUTLINE);
   }
   for (let i = 0; i <= 4; i++) {
     const sx = 0.8 + i * 2.6;
@@ -523,12 +593,12 @@ function drawCocoon(
   }
 
   // silk stem, anchoring it to the branch
-  fillPx(ctx, x + 3.6 + sway * 0.4, cy, 0.7, 3.4, INK);
+  fillPx(ctx, x + 3.6 + sway * 0.4, cy, 0.7, 3.4, OUTLINE);
 
   // outline pass — each row slightly proud of the fill beneath it
   for (let i = 0; i < COCOON_POD.length; i++) {
     const [ox, w] = COCOON_POD[i];
-    fillPx(ctx, x + ox - 0.5, top + i - 0.5, w + 1, 2, INK);
+    fillPx(ctx, x + ox - 0.5, top + i - 0.5, w + 1, 2, OUTLINE);
   }
 
   // body
@@ -571,7 +641,7 @@ function renderScene(canvas: HTMLCanvasElement, scene: Scene, step: number) {
   scene.tick += step;
 
   ctx.clearRect(0, 0, canvas.width, canvas.height);
-  drawSparkles(ctx, scene, aw);
+  drawSparkles(ctx, scene, aw, step);
   for (const b of scene.branches) drawBranch(ctx, b);
 
   for (const bug of scene.bugs) {
@@ -799,26 +869,23 @@ export default function CaterpillarFooter() {
     <footer className="landing-footer">
       {/* ── Footer info ── */}
       <div className="footer-content">
-        <div className="footer-brand">
-          <span className="footer-brand-name">BRYCE</span>
-          <p className="footer-brand-tagline">
-            A systems-thinking product designer building memorable digital experiences.
-          </p>
-        </div>
+        {/* the two link columns travel together as one right-hand group, so
+            EXPLORE can't drift into the middle as the viewport widens */}
+        <div className="footer-links">
+          <nav className="footer-col" aria-label="Footer navigation">
+            <span className="footer-col-label">EXPLORE</span>
+            <Link href="/" className="footer-link">HOME</Link>
+            <Link href="/case-studies" className="footer-link">PROJECTS</Link>
+            <Link href="/about" className="footer-link">ABOUT ME</Link>
+          </nav>
 
-        <nav className="footer-col" aria-label="Footer navigation">
-          <span className="footer-col-label">EXPLORE</span>
-          <Link href="/" className="footer-link">HOME</Link>
-          <Link href="/case-studies" className="footer-link">PROJECTS</Link>
-          <Link href="/about" className="footer-link">ABOUT ME</Link>
-        </nav>
-
-        <div className="footer-col">
-          <span className="footer-col-label">CONNECT</span>
-          <a href={`mailto:${EMAIL}`} className="footer-link">EMAIL</a>
-          <a href={LINKEDIN_URL} target="_blank" rel="noopener noreferrer" className="footer-link">
-            LINKEDIN
-          </a>
+          <div className="footer-col">
+            <span className="footer-col-label">CONNECT</span>
+            <a href={`mailto:${EMAIL}`} className="footer-link">EMAIL</a>
+            <a href={LINKEDIN_URL} target="_blank" rel="noopener noreferrer" className="footer-link">
+              LINKEDIN
+            </a>
+          </div>
         </div>
       </div>
 
@@ -863,7 +930,7 @@ export default function CaterpillarFooter() {
       </div>
 
       <div className="footer-bottom">
-        <span>© 2026 BRYCE</span>
+        <span>© 2026 BRYCE RUTILA</span>
         <span className="footer-bottom-note">
           No butterflies were harmed in the making of this site
         </span>

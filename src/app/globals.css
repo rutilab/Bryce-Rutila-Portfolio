@@ -1472,6 +1472,9 @@ body.slingshot-dragging .project-card-pair {
   position: relative;
   z-index: 1;
   width: 100%;
+  /* deep-ink band closing the cream page — the scene's bark and keyline
+     colours are set to match in CaterpillarFooter.tsx */
+  background-color: #141510;
   /* the gap above comes from .landing-main's bottom padding; the scene's own
      padding-top is now purely the butterflies' airspace between the links and
      the branches */
@@ -1482,6 +1485,10 @@ body.slingshot-dragging .project-card-pair {
   position: relative;
   width: 100%;
   overflow: clip;
+  /* The canvas already leaves 62px under the lower branch. The air above the
+     scene — last link down to the upper branch — measures 178px, so add the
+     116px difference to sit the branches in equal space top and bottom. */
+  padding-bottom: 116px;
 }
 .footer-scene canvas {
   display: block;
@@ -1498,7 +1505,7 @@ body.slingshot-dragging .project-card-pair {
   font-family: var(--font-ibm-plex-mono), monospace;
   font-size: 11px;
   letter-spacing: 0.06em;
-  color: #757575;
+  color: #9a9686;
   white-space: nowrap;
   pointer-events: none;
   user-select: none;
@@ -1550,35 +1557,21 @@ body.slingshot-dragging .project-card-pair {
 
 /* Info block */
 .footer-content {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 40px 0 32px;
+  /* full-bleed: the link columns stay pinned 40px off the right edge at every
+     width above the mobile breakpoint, rather than centring in a 1200px well */
+  margin: 0;
+  padding: 40px 40px 32px;
   display: flex;
-  justify-content: space-between;
+  /* the links group is the only child now — hold it against the right edge */
+  justify-content: flex-end;
   align-items: flex-start;
   gap: 48px;
   flex-wrap: wrap;
 }
-.footer-brand {
+/* EXPLORE and CONNECT move as one unit against the right edge */
+.footer-links {
   display: flex;
-  flex-direction: column;
-  gap: 8px;
-  max-width: 360px;
-}
-.footer-brand-name {
-  font-family: var(--font-battambang), sans-serif;
-  font-weight: 700;
-  font-size: 22px;
-  letter-spacing: -0.04em;
-  color: #141510;
-}
-.footer-brand-tagline {
-  font-family: var(--font-inter), sans-serif;
-  font-size: 14px;
-  line-height: 21px;
-  letter-spacing: -0.02em;
-  color: #383b2e;
-  margin: 0;
+  gap: 64px;
 }
 .footer-col {
   display: flex;
@@ -1589,31 +1582,31 @@ body.slingshot-dragging .project-card-pair {
   font-family: var(--font-ibm-plex-mono), monospace;
   font-size: 12px;
   letter-spacing: 0.08em;
-  color: #757575;
+  color: #9a9686;
   margin-bottom: 2px;
 }
 .footer-link {
   font-family: var(--font-ibm-plex-mono), monospace;
   font-size: 14px;
   letter-spacing: -0.012em;
-  color: #141510;
+  color: #faf7f2;
   text-decoration: none;
   align-self: flex-start;
   border-radius: 3px;
   padding: 0 3px;
   margin: 0 -3px;
-  transition: background-color 0.18s ease;
+  transition: background-color 0.18s ease, color 0.18s ease;
 }
 .footer-link:hover {
   background-color: #fcf7a4; /* yellow highlight wash, same as endorsement highlights */
+  color: #141510; /* flip the label dark so it stays legible inside the wash */
 }
 
 /* Bottom bar */
 .footer-bottom {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 16px 0 28px;
-  border-top: 1px dashed rgba(20, 21, 16, 0.35);
+  margin: 0;
+  padding: 16px 40px 28px;
+  border-top: 1px dashed rgba(250, 247, 242, 0.28);
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -1622,17 +1615,10 @@ body.slingshot-dragging .project-card-pair {
   font-family: var(--font-ibm-plex-mono), monospace;
   font-size: 11px;
   letter-spacing: 0.04em;
-  color: #757575;
+  color: #8a8778;
 }
 
-/* Match landing-main horizontal padding at each breakpoint */
-@media (max-width: 1199px) {
-  .footer-content,
-  .footer-bottom {
-    padding-left: 40px;
-    padding-right: 40px;
-  }
-}
+/* 40px is the default at every width; mobile tightens to 24px */
 @media (max-width: 799px) {
   .footer-content,
   .footer-bottom {
@@ -1642,6 +1628,9 @@ body.slingshot-dragging .project-card-pair {
   .footer-content {
     flex-direction: column;
     gap: 32px;
+  }
+  .footer-links {
+    gap: 40px;
   }
 }
 
