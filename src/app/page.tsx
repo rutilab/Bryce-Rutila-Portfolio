@@ -12,6 +12,7 @@ import { IridescentText } from '@/components/IridescentText';
 import { IridescentEyebrow } from '@/components/IridescentEyebrow';
 import Loader from '@/components/Loader';
 import CaterpillarFooter from '@/components/CaterpillarFooter';
+import MagnetCursor from '@/components/MagnetCursor';
 import { registerBrFlyRefill } from '@/lib/brFlyRefill';
 
 const BR_FLY_SRCS = [
@@ -378,7 +379,7 @@ function EndorsementCard({ name, role, company, quote, fullQuote, initials, avat
       {avatarEl}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '1px', minWidth: 0 }}>
         <span className="endorsement-name-wrap">
-          <a href={linkedIn} target="_blank" rel="noopener noreferrer" className="endorsement-name-link" style={{ cursor: 'pointer' }}>{name}</a>
+          <a href={linkedIn} target="_blank" rel="noopener noreferrer" className="endorsement-name-link">{name}</a>
         </span>
         <span style={{ fontFamily: "var(--font-inter), sans-serif", fontWeight: 400, fontStyle: 'italic', fontSize: '12px', lineHeight: '18px', color: '#383b2e' }}>{role} · {company}</span>
       </div>
@@ -430,7 +431,6 @@ function EndorsementCard({ name, role, company, quote, fullQuote, initials, avat
               border: '1px solid #141510',
               borderRadius: '20px',
               padding: '5px 12px',
-              cursor: 'pointer',
               whiteSpace: 'nowrap',
             }}
           >
@@ -467,7 +467,6 @@ function EndorsementCard({ name, role, company, quote, fullQuote, initials, avat
                 border: '1px solid #141510',
                 borderRadius: '50%',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                cursor: 'pointer',
                 fontSize: '13px',
                 color: '#141510',
                 padding: 0, flexShrink: 0,
@@ -561,7 +560,6 @@ function ProjectCard({ title, eyebrow, description, tags, readTime, href, thumbn
         onMouseLeave={leave}
         style={{
           pointerEvents: 'auto',
-          cursor: 'pointer',
           backgroundColor: hovered ? hoverColor : '#fdfbf9',
           transform: hovered ? 'scale(1.025)' : 'scale(1)',
           boxShadow: hovered
@@ -584,7 +582,7 @@ function ProjectCard({ title, eyebrow, description, tags, readTime, href, thumbn
 
       {/* Text */}
       <div className="project-card-text">
-        <div onMouseEnter={enter} onMouseLeave={leave} style={{ cursor: 'pointer', pointerEvents: 'auto' }}>
+        <div onMouseEnter={enter} onMouseLeave={leave} style={{ pointerEvents: 'auto' }}>
           {eyebrow && (
             <p style={{
               fontFamily: "var(--font-battambang), sans-serif",
@@ -668,7 +666,11 @@ export default function Home() {
   // ── Hide system cursor ────────────────────────────────────────────────
   useEffect(() => {
     document.body.style.cursor = 'none';
-    return () => { document.body.style.cursor = ''; };
+    document.body.dataset.magnetCursor = 'true';
+    return () => {
+      document.body.style.cursor = '';
+      delete document.body.dataset.magnetCursor;
+    };
   }, []);
 
   // ── Loader state ──────────────────────────────────────────────────────
@@ -930,7 +932,8 @@ export default function Home() {
       {loaderState === 'showing' && (
         <Loader heroRef={heroSvgRef} onComplete={() => setLoaderState('done')} />
       )}
-      <HalftoneCanvas />
+      <HalftoneCanvas cursorMode="magnet" />
+      <MagnetCursor />
 
       <main className="landing-main">
         {/* ── Butterfly Net (visible during drag) ─────────────────────── */}
@@ -1004,10 +1007,12 @@ export default function Home() {
                   onMouseMove={e => {
                     if (flyDragging === i) return;
                     const hit = flyHitTest(e.currentTarget, e);
-                    e.currentTarget.style.cursor = hit ? 'grab' : 'default';
+                    // 'none' over the transparent part of the sprite so the drawn
+                    // cursor shows there instead of a stray system arrow
+                    e.currentTarget.style.cursor = hit ? 'grab' : 'none';
                   }}
                   style={{
-                    cursor: flyDragging === i ? 'grabbing' : 'default',
+                    cursor: flyDragging === i ? 'grabbing' : 'none',
                     transform: `translate(${flyOffsets[i].x}px, ${flyOffsets[i].y}px)`,
                     transition: flyDragging === i ? 'none' : 'transform 0.7s cubic-bezier(0.34, 1.56, 0.64, 1)',
                   }}

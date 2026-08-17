@@ -1472,8 +1472,9 @@ body.slingshot-dragging .project-card-pair {
   position: relative;
   z-index: 1;
   width: 100%;
-  /* the scene's own padding-top is the butterflies' airspace and doubles as
-     the gap above the footer, so no extra margin here */
+  /* the gap above comes from .landing-main's bottom padding; the scene's own
+     padding-top is now purely the butterflies' airspace between the links and
+     the branches */
   margin-top: 0;
 }
 
@@ -1642,4 +1643,69 @@ body.slingshot-dragging .project-card-pair {
     flex-direction: column;
     gap: 32px;
   }
+}
+
+/* ── Magnet cursor — inverting dot standing in for the pointer on the home page ──
+   The circle is WHITE and blended with `difference`, which subtracts it from the
+   backdrop: on the cream page that lands at near-black, and over dark or saturated
+   content it flips light, so whatever sits beneath stays readable through it.
+   Visibility (not opacity) does the hiding — a fractional opacity would isolate
+   the element into its own group and the blend would have nothing to invert. */
+.magnet-cursor {
+  position: fixed;
+  left: 0;
+  top: 0;
+  z-index: 9999;
+  pointer-events: none;
+  visibility: hidden;
+  mix-blend-mode: difference;
+  will-change: transform;
+}
+.magnet-cursor.is-visible { visibility: visible; }
+/* something draggable underneath is showing its own grab hand — stand down */
+.magnet-cursor.is-hidden { visibility: hidden; }
+
+.magnet-cursor > span {
+  display: block;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #ffffff;
+  transform: translate(-50%, -50%);
+  transition: transform 0.12s ease;
+}
+
+.magnet-cursor.is-down > span {
+  transform: translate(-50%, -50%) scale(0.82);
+}
+
+/* No pointer, no stand-in */
+@media (pointer: coarse) {
+  .magnet-cursor { display: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .magnet-cursor > span { transition: none; }
+}
+
+/* Home draws its own cursor, so suppress the OS one. No !important: inline cursors
+   win, which is exactly what keeps the grab hand on the BRYCE block, the BR flies
+   and the ideation chip, plus the footer's magic wand. */
+body[data-magnet-cursor] * {
+  cursor: none;
+}
+
+/* The sling dash sets grab from a stylesheet rather than inline, so re-assert it
+   above the blanket rule — it is draggable and should say so. */
+body[data-magnet-cursor] .sling-dash { cursor: grab; }
+body[data-magnet-cursor] .sling-dash.is-pulling { cursor: grabbing; }
+
+/* Children of a draggable must INHERIT its hand. `cursor` is inherited, but the
+   blanket `*` rule above targets those children directly and a direct declaration
+   beats inheritance — which left the BRYCE letters (the <path> elements you
+   actually hover) with no cursor at all while only the parent <svg> had grab. */
+body[data-magnet-cursor] .bryce-svg *,
+body[data-magnet-cursor] .sling-dash *,
+body[data-magnet-cursor] .subheader-ideation *,
+body[data-magnet-cursor] .br-fly * {
+  cursor: inherit;
 }
