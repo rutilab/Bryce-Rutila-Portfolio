@@ -697,6 +697,7 @@ label[for] {
   letter-spacing: 0;
   color: #141510;
   margin: 0;
+  /* Needs ≥580px to keep the ideation → [PROD] chips up on line 2. */
   max-width: 600px;
   user-select: none;
 }
@@ -706,10 +707,13 @@ label[for] {
  * so it stays fluid with the tip. White sticker outline under the fill.
  * (Not applied to ideation / [PROD].)
  */
+/*
+ * Plain inline (not inline-grid): an atomic inline box would claim the whole
+ * line, forcing the ideation → [PROD] chips onto a line of their own. Inline
+ * lets them ride up next to "from" whenever there's room.
+ */
 .subheader-iri {
-  display: inline-grid;
-  vertical-align: baseline;
-  max-width: 100%;
+  display: inline;
 }
 
 .subheader-iri > .subheader-iri-base,
@@ -1104,21 +1108,24 @@ body[data-ideation-rotating] * {
   white-space: nowrap;
 }
 
-/* ── Landing main — no horizontal padding at ≥1200px, 40px below, 24px mobile */
+/* ── Landing main — 40px gutter at every width above mobile, 24px mobile.
+   The 40px lives in padding and max-width carries it (border-box), so the
+   inner content still tops out at 1200px. Previously max-width was 1200 with
+   no padding, which left the gutter to whatever centring produced: 40px at
+   1280px viewport collapsing to 0 at exactly 1200px, where content went flush
+   to the window edge. */
 .landing-main {
   position: relative;
   z-index: 1;
-  max-width: 1200px;
+  max-width: 1280px; /* 1200px content + 2 × 40px gutter */
   margin: 0 auto;
-  padding: 152px 0 80px;
+  padding: 152px 40px 80px;
   box-sizing: border-box;
   --fly-w: clamp(213px, 32.3vw, 355px);
   --hero-w: min(600px, 85vw);
 }
 @media (max-width: 1199px) {
   .landing-main {
-    padding-left: 40px;
-    padding-right: 40px;
     --fly-w: clamp(181px, 20.3vw, 243px);
   }
 }
@@ -1233,6 +1240,11 @@ body.slingshot-dragging .project-card-pair {
   margin-bottom: 40px;
 }
 
+/* line-height is kept close to the font size on purpose. At 1.5 (the old
+   120px) each flex row was 40px taller than its glyphs, and once the tiles
+   wrap the trailing "." span sets row 2 to that same tall line box — so
+   align-items:center pushed the 64px tiles a further 28px down. The result was
+   a 44px trench between "In their own" and the tiles. Font size is unchanged. */
 .endorsements-heading {
   display: flex;
   align-items: center;
@@ -1240,14 +1252,14 @@ body.slingshot-dragging .project-card-pair {
   gap: 16px;
   margin: 0;
   padding: 0;
-  line-height: 120px;
+  line-height: 88px;
 }
 
 .endorsements-heading-text {
   font-family: var(--font-battambang), sans-serif;
   font-weight: 400;
   font-size: 80px;
-  line-height: 120px;
+  line-height: 88px;
   letter-spacing: -0.06em;
   color: #000;
 }
@@ -1259,10 +1271,10 @@ body.slingshot-dragging .project-card-pair {
   cursor: default;
 }
 
-/* 3-column card grid */
+/* endorsement card grid — 3-col at ≥950px, 1-col below */
 .endorsements-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: repeat(3, 1fr);
   gap: 24px;
   align-items: start;
 }
@@ -1326,6 +1338,8 @@ body.slingshot-dragging .project-card-pair {
 
 /* Individual endorsement card */
 .endorsement-card {
+  /* Solid cream is the base — the modal reuses this class and stays flat.
+     Grid cards override it with their gradient below. */
   background: #fdfbf9;
   border: 2px solid #000;
   border-radius: 16px;
@@ -1337,8 +1351,27 @@ body.slingshot-dragging .project-card-pair {
   cursor: default;
 }
 
-/* Responsive: 1 column below 950px */
+/* Card background gradient, ported from the Figma "Aug 18th Updates" frame.
+   Figma stores it as a gradientTransform over normalized object space:
+     stop 0 #FFFDFA @ 0.3173, stop 1 <accent> @ 1.0
+   Converted to CSS: the stop percentages (48.04% / 135.14%) are the same at
+   any card size; only the tilt depends on the card's aspect ratio, ranging
+   169deg–174deg across our breakpoints. 172deg matches the desktop card. */
+.endorsements-grid > .endorsement-card {
+  background: linear-gradient(
+    172deg,
+    #FFFDFA 48.04%,
+    var(--endorsement-accent, #31E300) 135.14%
+  );
+}
+
+/* Responsive: 2-col between 640–949px, 1-col below 640px */
 @media (max-width: 949px) {
+  .endorsements-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+@media (max-width: 639px) {
   .endorsements-grid {
     grid-template-columns: 1fr;
   }

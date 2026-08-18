@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useLayoutEffect } from 'react';
 import { createPortal } from 'react-dom';
 import Link from 'next/link';
 import HalftoneCanvas from '@/components/HalftoneCanvas';
@@ -249,6 +249,9 @@ interface Endorsement {
   linkedIn: string;
   highlightPhrases: string[];
   highlightColor: string; // pre-blended opaque hex — no stacking artifacts
+  /** Accent the card's background gradient fades to. From the Figma
+   *  "Aug 18th Updates" frame: green / blue / pink in card order. */
+  gradientAccent: string;
 }
 
 const ENDORSEMENTS: Endorsement[] = [
@@ -263,6 +266,7 @@ const ENDORSEMENTS: Endorsement[] = [
     linkedIn: 'https://www.linkedin.com/in/michael-mrazek-32209b61/',
     // #FFF712 yellow at 0.35 alpha blended onto #faf7f2
     highlightColor: '#fcf7a4',
+    gradientAccent: '#31E300',
     highlightPhrases: [
       'deeply thoughtful designer',
       'nearly every aspect of our product has significantly improved',
@@ -286,59 +290,52 @@ const ENDORSEMENTS: Endorsement[] = [
     ],
     // #FF12F7 pink at 0.35 alpha blended onto #faf7f2
     highlightColor: '#fca7f4',
+    gradientAccent: '#12B4FF',
     highlightPhrases: [
       'meticulously designed every aspect of Finding Focus',
       'responsive, cohesive, and user-friendly experience',
       'dedication, expertise, and collaborative spirit',
     ],
   },
+  {
+    name: 'Nathan Godderis',
+    role: 'Director of Outreach',
+    company: 'Finding Focus',
+    quote: "Bryce is easily one of the most talented UX designers I've ever met. He is attuned to the needs of the user and grounds his designs in a deep understanding of psychology and behavioral science. He is incredibly skilled in infusing the company's ethos, the user's needs, and his own creative vision into one amazing end product.",
+    initials: 'NG',
+    avatarColor: '#31E300',
+    avatarImg: '/endorsements/nathan-godderis.jpeg',
+    linkedIn: 'https://www.linkedin.com/in/nathan-godderis/?skipRedirect=true',
+    fullQuote: [
+      "Bryce is easily one of the most talented UX designers I've ever met. When we worked together, I was amazed by the creativity behind every design he proposed to me, and I would love to come to his desk to see what he was working on. Whenever he showed me his drafts, I often told him \"this is the one!\", not imagining the design could get any better, until he approached me later with a revision that would blow me away. He has the mind of an ambitious professional with the heart of an artist, and he devotes himself deeply to the project he is a part of.",
+      "He is also very attuned to the needs of the user, and grounds his designs in a deep understanding of psychology and behavioral science. He is incredibly skilled in infusing the company's ethos, the user's needs, and his own creative vision into one amazing end product. In our case, we were working on a new feature called \"focus sesh\", and throughout its many iterations, Bryce was highly flexible, timely, and innovative, creating a final product that was better than the team could've anticipated.",
+    ],
+    // #31E300 green at 0.35 alpha blended onto #faf7f2
+    highlightColor: '#b4f09d',
+    gradientAccent: '#FF12F7',
+    highlightPhrases: [
+      'most talented UX designers',
+      'attuned to the needs of the user',
+      'deep understanding of psychology and behavioral science',
+      "infusing the company's ethos, the user's needs, and his own creative vision",
+    ],
+  },
 ];
 
-// ── Highlighted quote renderer ─────────────────────────────────────────────
-function renderHighlightedQuote(
-  text: string,
-  phrases: string[],
-  color: string,
-  active: boolean,
-): React.ReactNode {
-  type Seg = { text: string; hi: boolean };
-  let segs: Seg[] = [{ text, hi: false }];
+/* Bottom padding of an endorsement card. Cards with a full quote grow to the
+   hover value to make room for the "View full quote" button; the height
+   equalizer reserves that larger value up front so hovering never reflows the
+   page (which would push the footer down). */
+const CARD_PAD_BOTTOM = '24px';
+const CARD_PAD_BOTTOM_HOVER = '52px';
 
-  for (const phrase of phrases) {
-    const next: Seg[] = [];
-    for (const seg of segs) {
-      if (seg.hi) { next.push(seg); continue; }
-      const idx = seg.text.indexOf(phrase);
-      if (idx === -1) { next.push(seg); continue; }
-      if (idx > 0) next.push({ text: seg.text.slice(0, idx), hi: false });
-      next.push({ text: phrase, hi: true });
-      const tail = seg.text.slice(idx + phrase.length);
-      if (tail) next.push({ text: tail, hi: false });
-    }
-    segs = next;
-  }
-
-  return (
-    <>
-      {segs.map((seg, i) =>
-        seg.hi ? (
-          <span key={i} style={{
-            backgroundColor: active ? color : 'transparent',
-            borderRadius: '3px',
-            padding: '0 2px',
-            transition: 'background-color 0.2s ease',
-          }}>{seg.text}</span>
-        ) : seg.text
-      )}
-    </>
-  );
-}
 
 // ── Endorsement card ───────────────────────────────────────────────────────
-function EndorsementCard({ name, role, company, quote, fullQuote, initials, avatarColor, avatarImg, linkedIn, highlightPhrases, highlightColor }: Endorsement) {
+function EndorsementCard({ name, role, company, quote, fullQuote, initials, avatarColor, avatarImg, linkedIn, gradientAccent }: Endorsement) {
   const [hovered, setHovered] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
   const [buttonHovered, setButtonHovered] = useState(false);
+  const [closeHovered, setCloseHovered] = useState(false);
 
   useEffect(() => {
     if (!modalOpen) return;
@@ -356,6 +353,7 @@ function EndorsementCard({ name, role, company, quote, fullQuote, initials, avat
       window.removeEventListener('wheel', preventScroll);
       window.removeEventListener('touchmove', preventScroll);
       window.removeEventListener('keydown', onKey);
+      setCloseHovered(false);
     };
   }, [modalOpen]);
 
@@ -392,7 +390,7 @@ function EndorsementCard({ name, role, company, quote, fullQuote, initials, avat
         className="endorsement-card"
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}
-        style={{ position: 'relative', paddingBottom: fullQuote && hovered ? '52px' : '24px', transition: 'padding-bottom 0.2s ease' }}
+        style={{ position: 'relative', paddingBottom: fullQuote && hovered ? CARD_PAD_BOTTOM_HOVER : CARD_PAD_BOTTOM, transition: 'padding-bottom 0.2s ease', ['--endorsement-accent' as string]: gradientAccent } as React.CSSProperties}
       >
         {/* Hover emoji — pops in at top-right */}
         <div style={{
@@ -409,8 +407,8 @@ function EndorsementCard({ name, role, company, quote, fullQuote, initials, avat
         {nameRowEl}
 
         {/* Quote with animated highlights */}
-        <p style={{ fontFamily: "var(--font-inter), sans-serif", fontWeight: 400, fontSize: '14px', lineHeight: '20px', color: '#374133', margin: 0 }}>
-          {renderHighlightedQuote(quote, highlightPhrases, highlightColor, hovered)}
+        <p style={{ fontFamily: "var(--font-inter), sans-serif", fontWeight: 400, fontSize: '16px', lineHeight: '24px', letterSpacing: '-0.48px', color: '#141510', margin: 0 }}>
+          {quote}
         </p>
 
         {/* View full quote button — appears on hover */}
@@ -423,11 +421,11 @@ function EndorsementCard({ name, role, company, quote, fullQuote, initials, avat
               position: 'absolute', bottom: 16, right: 16,
               opacity: hovered ? 1 : 0,
               transform: hovered ? 'translateY(0)' : 'translateY(4px)',
-              transition: 'opacity 0.2s ease, transform 0.2s ease, background-color 0.15s ease, border-color 0.15s ease',
+              transition: 'opacity 0.2s ease, transform 0.2s ease, background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease',
               fontFamily: "var(--font-ibm-plex-mono), monospace",
               fontSize: '11px',
-              color: '#141510',
-              backgroundColor: buttonHovered ? highlightColor : 'transparent',
+              color: buttonHovered ? '#fff' : '#141510',
+              backgroundColor: buttonHovered ? '#141510' : 'transparent',
               border: '1px solid #141510',
               borderRadius: '20px',
               padding: '5px 12px',
@@ -439,8 +437,12 @@ function EndorsementCard({ name, role, company, quote, fullQuote, initials, avat
         )}
       </div>
 
-      {/* Full quote modal */}
-      {modalOpen && fullQuote && (
+      {/* Full quote modal — portaled to <body>. .landing-main is
+          position:relative + z-index:1, which makes it a stacking context, so a
+          modal rendered inside it can never paint above the sibling .landing-footer
+          no matter how high its z-index. Portaling lifts it out to the root
+          stacking context where zIndex 300 actually wins. */}
+      {modalOpen && fullQuote && createPortal(
         <div
           style={{
             position: 'fixed', inset: 0, zIndex: 300,
@@ -460,16 +462,19 @@ function EndorsementCard({ name, role, company, quote, fullQuote, initials, avat
             {/* Close button */}
             <button
               onClick={() => setModalOpen(false)}
+              onMouseEnter={() => setCloseHovered(true)}
+              onMouseLeave={() => setCloseHovered(false)}
               style={{
                 position: 'absolute', top: 14, right: 14,
                 width: 28, height: 28,
-                background: 'transparent',
+                background: closeHovered ? '#141510' : 'transparent',
                 border: '1px solid #141510',
                 borderRadius: '50%',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 fontSize: '13px',
-                color: '#141510',
+                color: closeHovered ? '#fff' : '#141510',
                 padding: 0, flexShrink: 0,
+                transition: 'background 0.15s ease, color 0.15s ease',
               }}
             >✕</button>
 
@@ -477,13 +482,14 @@ function EndorsementCard({ name, role, company, quote, fullQuote, initials, avat
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
               {fullQuote.map((para, i) => (
-                <p key={i} style={{ fontFamily: "var(--font-inter), sans-serif", fontWeight: 400, fontSize: '14px', lineHeight: '20px', color: '#374133', margin: 0 }}>
-                  {renderHighlightedQuote(para, highlightPhrases, highlightColor, false)}
+                <p key={i} style={{ fontFamily: "var(--font-inter), sans-serif", fontWeight: 400, fontSize: '16px', lineHeight: '24px', letterSpacing: '-0.48px', color: '#141510', margin: 0 }}>
+                  {para}
                 </p>
               ))}
             </div>
           </div>
-        </div>
+        </div>,
+        document.body,
       )}
     </>
   );
@@ -671,6 +677,70 @@ export default function Home() {
       document.body.style.cursor = '';
       delete document.body.dataset.magnetCursor;
     };
+  }, []);
+
+  // ── Endorsement card height equalization ─────────────────────────────
+  // Measures the tallest card at natural (un-hovered) size and locks that
+  // as min-height on every card. align-items:start means only the hovered
+  // card grows beyond min-height — siblings stay pinned.
+  // We use a window resize listener (not ResizeObserver on the grid) so
+  // hover-driven growth never triggers a re-measurement.
+  const endorsementsGridRef = useRef<HTMLDivElement>(null);
+  useLayoutEffect(() => {
+    const equalize = () => {
+      const grid = endorsementsGridRef.current;
+      if (!grid) return;
+      // `:scope >` restricts this to the real grid cards. The full-quote modal
+      // reuses .endorsement-card for its styling and is a DOM descendant of the
+      // grid, so an unscoped query would measure it too and lock every card to
+      // the modal's height.
+      const cards = Array.from(grid.querySelectorAll<HTMLElement>(':scope > .endorsement-card'));
+      if (!cards.length) return;
+
+      // padding-bottom is transitioned, so both measurements have to be taken
+      // with transitions off — otherwise offsetHeight reports the pre-transition
+      // height and we'd read the resting size twice.
+      const prevPad = cards.map(c => c.style.paddingBottom);
+      const prevTransition = cards.map(c => c.style.transition);
+      // Both padding values are forced explicitly rather than read from the
+      // current state — a card being hovered while this runs (e.g. the user
+      // resizes mid-hover) would otherwise be measured at its expanded padding
+      // and inflate the resting baseline.
+      cards.forEach(c => {
+        c.style.transition = 'none';
+        c.style.minHeight = '';
+        c.style.paddingBottom = CARD_PAD_BOTTOM;
+      });
+
+      // 1. Resting height — tallest card at its normal (tight) padding. Applied
+      //    to every card so the row reads as one even band at rest.
+      const restH = cards.reduce((m, c) => Math.max(m, c.offsetHeight), 0);
+      cards.forEach(c => { c.style.minHeight = restH + 'px'; });
+
+      // 2. Hovered height — the same cards at the padding they grow to for the
+      //    "View full quote" button.
+      cards.forEach(c => {
+        if (c.querySelector('button')) c.style.paddingBottom = CARD_PAD_BOTTOM_HOVER;
+      });
+      const hoverH = cards.reduce((m, c) => Math.max(m, c.offsetHeight), 0);
+
+      cards.forEach((c, i) => {
+        c.style.paddingBottom = prevPad[i];
+        void c.offsetHeight; // flush the restore before transitions come back
+        c.style.transition = prevTransition[i];
+      });
+
+      // Reserve the hover growth on the grid *row*, not on the cards: the cards
+      // stay tight at rest (align-items:start keeps them top-aligned) and a
+      // hovered card expands into row space that already existed, so the grid
+      // never changes height and the footer never moves. Touch devices can't
+      // hover, so they get no reserve and no extra whitespace.
+      const canHover = window.matchMedia('(hover: hover)').matches;
+      grid.style.gridAutoRows = canHover && hoverH > 0 ? hoverH + 'px' : '';
+    };
+    equalize();
+    window.addEventListener('resize', equalize);
+    return () => window.removeEventListener('resize', equalize);
   }, []);
 
   // ── Loader state ──────────────────────────────────────────────────────
@@ -1141,7 +1211,7 @@ export default function Home() {
           </svg>
 
           <p className="subheader-text">
-            <IridescentText text="A systems-thinking product designer building memorable digital experiences from " />
+            <IridescentText text="A systems-thinking product designer building memorable experiences from " />
             <span className="subheader-inline-chips" style={{ whiteSpace: 'nowrap' }}>
               <IdeationChip />{' '}
               <IridescentText text="to" />{' '}
@@ -1201,7 +1271,7 @@ export default function Home() {
           />
 
           {/* Cards */}
-          <div className="endorsements-grid">
+          <div className="endorsements-grid" ref={endorsementsGridRef}>
             {ENDORSEMENTS.map((e, i) => <EndorsementCard key={i} {...e} />)}
           </div>
 
