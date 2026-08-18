@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import type { Viewport } from 'next';
 import '@/styles/case-study.css';
 import { CaseStudyRouteChrome } from './CaseStudyRouteChrome';
+import CaterpillarFooter from '@/components/CaterpillarFooter';
 
 /** Light browser chrome + edge-to-edge on notched phones; pairs with CaseStudyRouteChrome. */
 export const viewport: Viewport = {
@@ -14,5 +15,12 @@ export default function CaseStudiesLayout({
 }: {
   children: ReactNode;
 }) {
-  return <CaseStudyRouteChrome>{children}</CaseStudyRouteChrome>;
+  // One mount here closes every case-study route — the index and each study —
+  // rather than repeating the footer in seven page files.
+  return (
+    <CaseStudyRouteChrome>
+      {children}
+      <CaterpillarFooter />
+    </CaseStudyRouteChrome>
+  );
 }

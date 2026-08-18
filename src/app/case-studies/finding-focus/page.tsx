@@ -22,8 +22,7 @@ export default function FindingFocus() {
       {/* ── Finding Focus page ── */}
       <div
         style={{
-          position: 'fixed',
-          inset: 0,
+          position: 'relative',
           zIndex: 1,
           background: 'transparent',
           transition: 'opacity 0.45s ease, visibility 0.45s ease',
@@ -32,12 +31,13 @@ export default function FindingFocus() {
         }}
       >
 
-        {/* ── Scroll container — bottom padding accounts for chat bar ── */}
+        {/* ── Fills the viewport, but in flow — the document scrolls, so the
+               footer sits below this rather than under a fixed layer.
+               Bottom padding accounts for the chat bar. ── */}
         <div
           style={{
-            position: 'absolute',
-            inset: 0,
-            overflowY: 'auto',
+            minHeight: '100dvh',
+            boxSizing: 'border-box',
             paddingTop: '120px',
             paddingBottom: '120px',
           }}

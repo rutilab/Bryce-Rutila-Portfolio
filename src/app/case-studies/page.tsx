@@ -290,10 +290,9 @@ export default function CaseStudies() {
   return (
     <>
       <HalftoneCanvas />
-      {/* Fixed background layer */}
+      {/* Page layer — in flow (not fixed) so the footer can follow it */}
       <div style={{
-        position: 'fixed',
-        inset: 0,
+        position: 'relative',
         zIndex: 1,
         background: 'transparent',
         transition: 'opacity 0.45s ease, visibility 0.45s ease',
@@ -301,18 +300,16 @@ export default function CaseStudies() {
         visibility: chatOpen ? 'hidden' : 'visible',
       }}>
 
-        {/* Scroll container — allows vertical scroll on short windows */}
+        {/* Fills the viewport and centres in it; the document does the
+            scrolling now, so the footer is reachable below the fold */}
         <div style={{
-          position: 'absolute',
-          inset: 0,
-          overflowY: 'auto',
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
           justifyContent: 'center',
           paddingTop: '100px',
           paddingBottom: '120px',
-          minHeight: '100%',
+          minHeight: '100dvh',
           boxSizing: 'border-box',
         }}>
 

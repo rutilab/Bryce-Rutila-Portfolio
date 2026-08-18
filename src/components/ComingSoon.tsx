@@ -7,10 +7,13 @@ export default function ComingSoon({ label }: { label: string }) {
   return (
     <>
     <HalftoneCanvas />
+    {/* Fills the viewport and centres in it, but stays in flow rather than
+        `position: fixed` — a fixed overlay pins itself over everything below,
+        so a footer after it could never be scrolled to. */}
     <div
       style={{
-        position: 'fixed',
-        inset: 0,
+        position: 'relative',
+        minHeight: '100dvh',
         background: 'transparent',
         display: 'flex',
         flexDirection: 'column',

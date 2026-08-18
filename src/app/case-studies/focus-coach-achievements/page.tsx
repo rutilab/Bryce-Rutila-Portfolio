@@ -1897,14 +1897,31 @@ function sectionDocumentTop(id: string) {
 }
 
 function SectionNav() {
-  const [visible, setVisible] = useState(false);
+  const [pastHero, setPastHero] = useState(false);
+  /** The footer is on screen. The rail is fixed, so without this it parks on
+      top of the footer's links and copy. */
+  const [atFooter, setAtFooter] = useState(false);
+  const visible = pastHero && !atFooter;
   const [active, setActive] = useState('section-intro');
 
   useEffect(() => {
     const hero = document.getElementById('section-intro');
     if (!hero) return;
-    const obs = new IntersectionObserver(([entry]) => setVisible(!entry.isIntersecting), { threshold: 0 });
+    const obs = new IntersectionObserver(([entry]) => setPastHero(!entry.isIntersecting), { threshold: 0 });
     obs.observe(hero);
+    return () => obs.disconnect();
+  }, []);
+
+  // Stand down as soon as the footer comes into view, so the rail is never
+  // around once the reader reaches it.
+  useEffect(() => {
+    const footer = document.querySelector('.landing-footer');
+    if (!footer) return;
+    const obs = new IntersectionObserver(
+      ([entry]) => setAtFooter(entry.isIntersecting),
+      { threshold: 0 },
+    );
+    obs.observe(footer);
     return () => obs.disconnect();
   }, []);
 

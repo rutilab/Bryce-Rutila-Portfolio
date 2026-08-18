@@ -1500,7 +1500,8 @@ body.slingshot-dragging .project-card-pair {
 .footer-hint {
   position: absolute;
   left: 50%;
-  bottom: 8px;
+  /* 24px of air between the pill and the dashed divider below the scene */
+  bottom: 24px;
   transform: translateX(-50%);
   font-family: var(--font-ibm-plex-mono), monospace;
   font-size: 11px;
@@ -1509,12 +1510,16 @@ body.slingshot-dragging .project-card-pair {
   white-space: nowrap;
   pointer-events: none;
   user-select: none;
+  /* pill: a hairline capsule so the prompt reads as an affordance, not a caption */
+  padding: 5px 12px;
+  border: 1px solid rgba(250, 247, 242, 0.22);
+  border-radius: 9999px;
+  background-color: rgba(250, 247, 242, 0.05);
 }
 .footer-hint-done {
   color: #141510;
   background-color: #fcf7a4; /* #FFF712 at 0.35 on cream */
-  border-radius: 3px;
-  padding: 0 4px;
+  border-color: #fcf7a4;
 }
 
 /* Hatched BR flies — real hero SVGs flying over the scene.
@@ -1526,8 +1531,10 @@ body.slingshot-dragging .project-card-pair {
   top: 0;
   width: 45px;
   height: 42px;
-  pointer-events: none;
   will-change: transform;
+  /* The scene box does the hit-testing and carries the net cursor — a sprite
+     that banks and drifts is the wrong thing to hang :hover off. */
+  pointer-events: none;
 }
 .footer-br-fly > svg {
   display: block;
@@ -1562,11 +1569,26 @@ body.slingshot-dragging .project-card-pair {
   margin: 0;
   padding: 40px 40px 32px;
   display: flex;
-  /* the links group is the only child now — hold it against the right edge */
-  justify-content: flex-end;
+  /* tagline left, link columns right, both on the same 40px gutter */
+  justify-content: space-between;
   align-items: flex-start;
   gap: 48px;
   flex-wrap: wrap;
+}
+/* Left-hand statement, set on the same top line as the EXPLORE/CONNECT labels.
+   Same mono as the rest of the footer, sized up so it reads as a statement
+   rather than a fourth nav column. */
+.footer-tagline {
+  margin: 0;
+  /* Two lines: the cap clears "…grow from" (26ch) but not the following
+     "caterpillars" (39ch), so it breaks with the halves near-even */
+  max-width: 34ch;
+  font-family: var(--font-ibm-plex-mono), monospace;
+  font-weight: 400;
+  font-size: 20px;
+  line-height: 1.35;
+  letter-spacing: -0.02em;
+  color: #faf7f2;
 }
 /* EXPLORE and CONNECT move as one unit against the right edge */
 .footer-links {
@@ -1605,7 +1627,7 @@ body.slingshot-dragging .project-card-pair {
 /* Bottom bar */
 .footer-bottom {
   margin: 0;
-  padding: 16px 40px 28px;
+  padding: 40px;
   border-top: 1px dashed rgba(250, 247, 242, 0.28);
   display: flex;
   justify-content: space-between;
@@ -1687,6 +1709,8 @@ body[data-magnet-cursor] * {
    above the blanket rule — it is draggable and should say so. */
 body[data-magnet-cursor] .sling-dash { cursor: grab; }
 body[data-magnet-cursor] .sling-dash.is-pulling { cursor: grabbing; }
+
+
 
 /* Children of a draggable must INHERIT its hand. `cursor` is inherited, but the
    blanket `*` rule above targets those children directly and a direct declaration

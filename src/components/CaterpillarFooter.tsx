@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import Link from 'next/link';
 
 /**
@@ -21,17 +22,19 @@ const REF_FRAME_MS = 1000 / 120;
 /** Cap the catch-up after a stall (background tab, slow paint) so nothing teleports */
 const MAX_STEP = 4;
 
-// TODO: replace with your real LinkedIn profile URL
-const LINKEDIN_URL = 'https://www.linkedin.com/in/';
+const LINKEDIN_URL = 'https://www.linkedin.com/in/brycerutila/';
 const EMAIL = 'rutilab@gmail.com';
 
-/** Hatch order cycles the five BRYCE block colors (B-R-Y-C-E) */
+/** Hatch order cycles the five BRYCE block colors (B-R-E-C-Y) — green sits
+ *  fourth so it lands inside the initial four caterpillars, not the refill */
 const FLY_PALETTE = [
-  { base: '#FF9C12', light: '#FFC46B' }, // B
-  { base: '#12B4FF', light: '#8ADCFF' }, // R
-  { base: '#FFF712', light: '#FFFB8F' }, // Y
-  { base: '#FF12F7', light: '#FF8AFA' }, // C
-  { base: '#31E300', light: '#8DFF62' }, // E
+  // `dark`/`mid`/`tip` are the caterpillar's shades: a grub wears the colour of
+  // the butterfly it is going to become, so the scene telegraphs the payoff.
+  { base: '#FF9C12', light: '#FFC46B', dark: '#c26a00', mid: '#e08600', tip: '#FF12F7' }, // B
+  { base: '#12B4FF', light: '#8ADCFF', dark: '#0077c2', mid: '#0f9ce0', tip: '#FF12F7' }, // R
+  { base: '#31E300', light: '#8DFF62', dark: '#1f9e00', mid: '#2bc700', tip: '#FF12F7' }, // E
+  { base: '#FF12F7', light: '#FF8AFA', dark: '#c200bb', mid: '#e000d8', tip: '#12B4FF' }, // C
+  { base: '#FFF712', light: '#FFFB8F', dark: '#c2b800', mid: '#e0d900', tip: '#FF12F7' }, // Y
 ] as const;
 
 /**
@@ -78,12 +81,10 @@ const BARK_LIT = '#a97b4a';
 const OUTLINE = '#faf7f2';
 const GREEN = '#31E300';
 const GREEN_DARK = '#1f9e00';
-const GREEN_LIGHT = '#8dff62';
 const ORANGE = '#FF9C12';
 const ORANGE_DARK = '#c26a00';
 const ORANGE_LIGHT = '#ffb44d';
 const YELLOW = '#FFF712';
-const PINK = '#FF12F7';
 const SPARKLE_COLORS = ['#FF9C12', '#12B4FF', '#FF12F7', '#31E300', '#FFF712'] as const;
 
 const CAT_W = 15; // caterpillar art width
@@ -108,6 +109,8 @@ interface Bug {
   speed: number;
   speedRate: number;
   speedPhase: number;
+  /** Index into FLY_PALETTE — worn now as a caterpillar, flown later as a fly */
+  colorIdx: number;
 }
 
 interface Sparkle {
@@ -127,13 +130,26 @@ interface Scene {
   tick: number;
   hoverId: number | null;
   nextId: number;
-  hatchCount: number;
+  /** Cycles the five BRYCE colours across caterpillars as they appear */
+  spawnCount: number;
 }
 
 interface HatchedFly {
   id: number;
   colorIdx: number;
 }
+
+/** A caught butterfly's parting burst — fixed to the viewport, portaled to body */
+interface Burst {
+  id: number;
+  x: number;
+  y: number;
+  colors: readonly string[];
+}
+
+/** Confetti pieces per catch, and how long they live (matches confetti-burst) */
+const BURST_PIECES = 16;
+const BURST_MS = 1000;
 
 /** Per-fly flight physics, driven from the rAF loop (CSS px) */
 interface FlyPhys {
@@ -379,6 +395,7 @@ function spawnBug(scene: Scene, branchIdx: number, fromEdge: boolean) {
     speed: 0.042 + Math.random() * 0.03,
     speedRate: 0.006 + Math.random() * 0.007,
     speedPhase: Math.random() * Math.PI * 2,
+    colorIdx: scene.spawnCount++ % FLY_PALETTE.length,
   });
 }
 
@@ -390,7 +407,7 @@ function initScene(aw: number): Scene {
     tick: 0,
     hoverId: null,
     nextId: 0,
-    hatchCount: 0,
+    spawnCount: 0,
   };
   const perBranch = aw < 150 ? 1 : 2;
   for (let b = 0; b < scene.branches.length; b++) {
@@ -492,8 +509,10 @@ function drawCaterpillar(
   tick: number,
   dir: 1 | -1,
   hovered: boolean,
+  colorIdx: number,
 ) {
   const t = tick * 0.1;
+  const pal = FLY_PALETTE[colorIdx % FLY_PALETTE.length];
   ctx.save();
   if (dir === -1) {
     ctx.translate((ax + CAT_W) * S, 0);
@@ -530,8 +549,8 @@ function drawCaterpillar(
   ld(hx + 1.35 + a2, hy - 2.5, 0.55, 2.2, OUTLINE);
   ld(hx + 0.05 + a1, hy - 3.4, 1.05, 1.05, OUTLINE);
   ld(hx + 1 + a2, hy - 3.4, 1.05, 1.05, OUTLINE);
-  ld(hx + 0.2 + a1, hy - 3.25, 0.75, 0.75, PINK);
-  ld(hx + 1.15 + a2, hy - 3.25, 0.75, 0.75, PINK);
+  ld(hx + 0.2 + a1, hy - 3.25, 0.75, 0.75, pal.tip);
+  ld(hx + 1.15 + a2, hy - 3.25, 0.75, 0.75, pal.tip);
 
   // Body: outline pass, then fills (sticker style)
   for (let i = 0; i <= 4; i++) {
@@ -544,8 +563,8 @@ function drawCaterpillar(
     const wob = Math.sin(t + i * 0.95) * 0.28;
     const sy = by + wob;
     const isHead = i === 4;
-    ld(sx, sy, 2.1, 2.5, isHead ? GREEN_DARK : i % 2 === 0 ? GREEN : '#2bc700');
-    ld(sx + 0.3, sy + 0.25, 0.8, 0.7, GREEN_LIGHT);
+    ld(sx, sy, 2.1, 2.5, isHead ? pal.dark : i % 2 === 0 ? pal.base : pal.mid);
+    ld(sx + 0.3, sy + 0.25, 0.8, 0.7, pal.light);
     if (isHead) {
       ld(sx + 0.85, sy + 0.65, 0.9, 0.9, '#ffffff');
       ld(sx + 1.1, sy + 0.85, 0.55, 0.55, INK);
@@ -660,7 +679,7 @@ function renderScene(canvas: HTMLCanvasElement, scene: Scene, step: number) {
         if (bug.ax < minAx) { bug.ax = minAx; bug.dir = 1; }
         if (bug.ax > maxAx) { bug.ax = maxAx; bug.dir = -1; }
       }
-      drawCaterpillar(ctx, bug.ax, branch.y, bug.tick, bug.dir, hovered);
+      drawCaterpillar(ctx, bug.ax, branch.y, bug.tick, bug.dir, hovered, bug.colorIdx);
     } else {
       bug.tick += step;
       drawCocoon(ctx, bug.ax + 4, branch.y, bug.tick, hovered);
@@ -690,18 +709,29 @@ export default function CaterpillarFooter() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const sceneRef = useRef<Scene | null>(null);
   const flyPhysRef = useRef<Map<number, FlyPhys>>(new Map());
+  /** The scene box — a element that never moves, so it can own the cursor */
+  const sceneRef2 = useRef<HTMLDivElement>(null);
+  /** Last pointer position in scene coords, or null when the pointer is away */
+  const pointerRef = useRef<[number, number] | null>(null);
+  /** Which butterfly the pointer is currently over, re-tested every frame */
+  const hoverFlyRef = useRef<number | null>(null);
   const sceneWRef = useRef(0);
   const rafRef = useRef(0);
   const timeoutsRef = useRef<number[]>([]);
   const reducedRef = useRef(false);
-  const [cursor, setCursor] = useState('none');
+  /* undefined = "no inline cursor". The home page's blanket
+     `body[data-magnet-cursor] *` rule then hides the OS pointer so the magnet dot
+     can lead; pages without that attribute keep their normal arrow. Hard-coding
+     'none' here would blank the pointer on every page that draws no cursor. */
+  const [cursor, setCursor] = useState<string | undefined>(undefined);
   const [flies, setFlies] = useState<HatchedFly[]>([]);
-  const [hint, setHint] = useState<'crawl' | 'cocoon' | 'hatched' | 'off'>('crawl');
-  // SSR renders CLICK; suppressHydrationWarning on the hint covers the touch case
+  const [bursts, setBursts] = useState<Burst[]>([]);
+  const [hint, setHint] = useState<'crawl' | 'hatched' | 'off'>('crawl');
+  // SSR renders Click; suppressHydrationWarning on the hint covers the touch case
   const [verb] = useState(() =>
     typeof window !== 'undefined' && window.matchMedia('(pointer: coarse)').matches
-      ? 'TAP'
-      : 'CLICK',
+      ? 'Tap'
+      : 'Click',
   );
 
   // fade the "metamorphosis complete" hint out after a moment
@@ -754,6 +784,10 @@ export default function CaterpillarFooter() {
             for (const id of removed) flyPhysRef.current.delete(id);
             setFlies((prev) => prev.filter((f) => !removed.includes(f.id)));
           }
+          // The butterflies move under the pointer, so hover can change without
+          // any mouse event. Re-test each frame — the browser will not repaint
+          // the cursor on its own when the target moves and the mouse does not.
+          if (pointerRef.current) applyCursorRef.current();
         }
         rafRef.current = requestAnimationFrame(loop);
       };
@@ -768,7 +802,7 @@ export default function CaterpillarFooter() {
   }, []);
 
   // ── Interaction (plain handlers — they only touch refs and setState) ─────
-  const toArtCoords = (e: React.MouseEvent<HTMLCanvasElement>): [number, number] => {
+  const toArtCoords = (e: React.MouseEvent<HTMLElement>): [number, number] => {
     const canvas = canvasRef.current!;
     const rect = canvas.getBoundingClientRect();
     return [
@@ -777,31 +811,50 @@ export default function CaterpillarFooter() {
     ];
   };
 
-  const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
+  /** Pointer in scene-box coords — the frame the flies are positioned in */
+  const toSceneCoords = (e: React.MouseEvent<HTMLElement>): [number, number] => {
+    const rect = sceneRef2.current!.getBoundingClientRect();
+    return [e.clientX - rect.left, e.clientY - rect.top];
+  };
+
+  const handleMouseMove = (e: React.MouseEvent<HTMLElement>) => {
     const scene = sceneRef.current;
     if (!scene) return;
+    pointerRef.current = toSceneCoords(e);
+
     const [ax, ay] = toArtCoords(e);
     const hit = scene.bugs.find((b) => hitTest(scene, b, ax, ay)) ?? null;
     const newId = hit ? hit.id : null;
     if (newId !== scene.hoverId) {
       scene.hoverId = newId;
-      setCursor(newId !== null ? 'url(/cursors/magic-wand-32.png) 2 2, pointer' : 'none');
       if (reducedRef.current && canvasRef.current) {
         renderScene(canvasRef.current, scene, 0);
       }
     }
+    applyCursor();
   };
 
   const handleMouseLeave = () => {
     const scene = sceneRef.current;
     if (scene) scene.hoverId = null;
-    setCursor('none');
+    pointerRef.current = null;
+    hoverFlyRef.current = null;
+    setCursor(undefined);
   };
 
-  const handleClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
+  const handleClick = (e: React.MouseEvent<HTMLElement>) => {
     const canvas = canvasRef.current;
     const scene = sceneRef.current;
     if (!canvas || !scene) return;
+
+    // a butterfly under the pointer takes the click before the branch does
+    pointerRef.current = toSceneCoords(e);
+    const caught = flyUnderPointer();
+    if (caught) {
+      handleCatchFly(caught);
+      return;
+    }
+
     const [ax, ay] = toArtCoords(e);
     const bug = scene.bugs.find((b) => hitTest(scene, b, ax, ay));
     if (!bug) return;
@@ -811,14 +864,12 @@ export default function CaterpillarFooter() {
       bug.state = 'cocoon';
       // keep the cocoon fully on the branch
       bug.ax = Math.max(branch.x + 2, Math.min(bug.ax, branch.x + branch.w - 12));
-      setHint((h) => (h === 'crawl' ? 'cocoon' : h));
     } else {
-      // hatch: the cocoon opens into a butterfly in the next BRYCE color
-      const colorIdx = scene.hatchCount % FLY_PALETTE.length;
-      scene.hatchCount++;
+      // hatch: the butterfly arrives in the colour the caterpillar was wearing
+      const colorIdx = bug.colorIdx;
       scene.bugs = scene.bugs.filter((b) => b.id !== bug.id);
       scene.hoverId = null;
-      setCursor('none');
+      setCursor(undefined);
       // At capacity, the longest-resident butterfly takes its leave — it keeps
       // flying as normal and slips out whenever it next drifts to a side.
       // Map preserves insertion order, so the first non-departing entry is the oldest.
@@ -843,7 +894,7 @@ export default function CaterpillarFooter() {
         el: null,
       });
       setFlies((prev) => [...prev, { id: flyId, colorIdx }]);
-      setHint((h) => (h === 'cocoon' || h === 'crawl' ? 'hatched' : h));
+      setHint((h) => (h === 'crawl' ? 'hatched' : h));
       // a new caterpillar wanders in from the edge after a bit
       const branchIdx = bug.branchIdx;
       timeoutsRef.current.push(
@@ -858,17 +909,85 @@ export default function CaterpillarFooter() {
     if (reducedRef.current) renderScene(canvas, scene, 0);
   };
 
-  const hintText =
-    hint === 'crawl'
-      ? `[ ${verb} A CATERPILLAR ]`
-      : hint === 'cocoon'
-        ? `[ NOW ${verb} THE COCOON ]`
-        : '[ METAMORPHOSIS COMPLETE ]';
+  /**
+   * Which butterfly is under the pointer, tested against the flight physics
+   * rather than the DOM. The wrappers bank up to 14°, so the browser's own hit
+   * test misses the corners of what looks like a solid sprite; and because this
+   * runs from the rAF loop it also catches a butterfly drifting into a pointer
+   * that is holding still, which `:hover` alone will not repaint for.
+   */
+  const flyUnderPointer = (): HatchedFly | null => {
+    const p = pointerRef.current;
+    const scene = sceneRef.current;
+    if (!p || !scene) return null;
+    const [px, py] = p;
+    // topmost first: later flies are painted over earlier ones
+    for (let i = flies.length - 1; i >= 0; i--) {
+      const fly = flies[i];
+      const phys = flyPhysRef.current.get(fly.id);
+      if (!phys) continue;
+      const bobY = Math.sin(scene.tick * 0.09 + phys.phase) * 3 * phys.speedMul;
+      const y = phys.y + bobY;
+      if (px >= phys.x && px <= phys.x + FLY_W && py >= y && py <= y + FLY_H) return fly;
+    }
+    return null;
+  };
+
+  /** Net over a butterfly, wand over a caterpillar, nothing over bare scene */
+  const applyCursor = () => {
+    const fly = flyUnderPointer();
+    hoverFlyRef.current = fly ? fly.id : null;
+    if (fly) {
+      setCursor('url(/cursors/butterfly-net-32.png) 11 7, pointer');
+    } else if (sceneRef.current?.hoverId != null) {
+      setCursor('url(/cursors/magic-wand-32.png) 2 2, pointer');
+    } else {
+      setCursor(undefined);
+    }
+  };
+  const applyCursorRef = useRef(applyCursor);
+  applyCursorRef.current = applyCursor;
+
+  /** Net a butterfly out of the air: it pops into confetti in its own colours. */
+  const handleCatchFly = (fly: HatchedFly) => {
+    const phys = flyPhysRef.current.get(fly.id);
+    const sceneRect = sceneRef2.current?.getBoundingClientRect();
+    flyPhysRef.current.delete(fly.id);
+    setFlies((prev) => prev.filter((f) => f.id !== fly.id));
+    hoverFlyRef.current = null;
+    setCursor(undefined);
+
+    // reduced motion: the catch still lands, it just doesn't throw confetti
+    if (reducedRef.current || !phys || !sceneRect) return;
+    const pal = FLY_PALETTE[fly.colorIdx];
+    const burstId = fly.id;
+    setBursts((prev) => [
+      ...prev,
+      {
+        id: burstId,
+        x: sceneRect.left + phys.x + FLY_W / 2,
+        y: sceneRect.top + phys.y + FLY_H / 2,
+        // led by the butterfly's own two shades, so the burst reads as *it*
+        colors: [pal.base, pal.light, ...SPARKLE_COLORS],
+      },
+    ]);
+    timeoutsRef.current.push(
+      window.setTimeout(() => {
+        setBursts((prev) => prev.filter((b) => b.id !== burstId));
+      }, BURST_MS),
+    );
+  };
+
+  const hintText = hint === 'crawl' ? `${verb} on a caterpillar` : 'Metamorphosis complete';
 
   return (
     <footer className="landing-footer">
       {/* ── Footer info ── */}
       <div className="footer-content">
+        <p className="footer-tagline">
+          Helping products grow from caterpillars into butterflies.
+        </p>
+
         {/* the two link columns travel together as one right-hand group, so
             EXPLORE can't drift into the middle as the viewport widens */}
         <div className="footer-links">
@@ -890,13 +1009,25 @@ export default function CaterpillarFooter() {
       </div>
 
       {/* ── Interactive branch scene ── */}
-      <div className="footer-scene" style={{ paddingTop: FLY_CEILING }}>
+      {/* The scene box owns the pointer: it covers the branches AND the airspace
+          the butterflies fly in, and unlike the sprites it never moves, so the
+          cursor it carries repaints reliably. */}
+      <div
+        className="footer-scene"
+        ref={sceneRef2}
+        style={{ paddingTop: FLY_CEILING, cursor }}
+        onMouseMove={handleMouseMove}
+        onMouseLeave={handleMouseLeave}
+        onClick={handleClick}
+      >
+        {/* The canvas carries the same cursor as its parent. It cannot simply
+            inherit it: `body[data-magnet-cursor] *` sets `cursor: none` on every
+            descendant, and a directly-matched rule beats an inherited value, so
+            the branch half of the scene would drop the wand and the net. An
+            inline value outranks that blanket rule, as its comment intends. */}
         <canvas
           ref={canvasRef}
           style={{ cursor }}
-          onMouseMove={handleMouseMove}
-          onMouseLeave={handleMouseLeave}
-          onClick={handleClick}
           aria-label="Interactive scene: click the caterpillars to watch them become butterflies"
           role="img"
         />
@@ -926,6 +1057,39 @@ export default function CaterpillarFooter() {
           >
             {hintText}
           </span>
+        )}
+
+        {/* Catch confetti — portaled to body so the scene's `overflow: clip`
+            can't crop the burst at the footer's edges */}
+        {bursts.map((burst) =>
+          createPortal(
+            <div
+              key={burst.id}
+              className="confetti-container"
+              style={{ left: burst.x, top: burst.y }}
+            >
+              {Array.from({ length: BURST_PIECES }, (_, i) => {
+                const angle = (i / BURST_PIECES) * Math.PI * 2 + Math.random() * 0.5;
+                const dist = 40 + Math.random() * 60;
+                return (
+                  <span
+                    key={i}
+                    className="confetti-piece"
+                    style={
+                      {
+                        backgroundColor: burst.colors[i % burst.colors.length],
+                        '--cx': `${Math.cos(angle) * dist}px`,
+                        '--cy': `${Math.sin(angle) * dist - 30}px`,
+                        '--cr': `${Math.random() * 720 - 360}deg`,
+                        animationDelay: `${Math.random() * 0.1}s`,
+                      } as React.CSSProperties
+                    }
+                  />
+                );
+              })}
+            </div>,
+            document.body,
+          ),
         )}
       </div>
 
