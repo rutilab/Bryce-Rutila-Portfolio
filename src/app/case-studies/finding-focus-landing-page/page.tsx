@@ -315,7 +315,7 @@ function ZoomableLightboxImage({
       style={{
         maxWidth: 'min(88vw, 1280px)',
         width: '100%',
-        cursor: 'default',
+        cursor: 'none',
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
@@ -530,7 +530,7 @@ function ExpandableImage({
                 maxHeight: 'calc(100vh - 80px)',
                 display: 'flex',
                 flexDirection: 'column',
-                cursor: 'default',
+                cursor: 'none',
                 overflow: 'hidden',
                 background: 'transparent',
                 boxShadow: 'none',
@@ -568,7 +568,7 @@ function ExpandableImage({
               style={{
                 maxWidth: 'min(88vw, 1280px)',
                 width: '100%',
-                cursor: 'default',
+                cursor: 'none',
                 display: 'flex',
                 flexDirection: 'column',
                 alignItems: 'center',
@@ -581,7 +581,7 @@ function ExpandableImage({
                 style={{
                   width: '100%',
                   maxHeight: hasCaption ? 'min(74vh, 82vh)' : '82vh',
-                  objectFit: 'contain', borderRadius: 14, cursor: 'default', display: 'block',
+                  objectFit: 'contain', borderRadius: 14, cursor: 'none', display: 'block',
                 }}
               />
               {hasCaption ? <LightboxCaptionBar caption={caption} subcaption={subcaption} /> : null}
@@ -782,7 +782,7 @@ function IdeationViewer({
               display: 'flex',
               flexDirection: 'column',
               alignItems: 'center',
-              cursor: 'default',
+              cursor: 'none',
               maxHeight: 'calc(100vh - 80px)',
               overflow: 'auto',
             }}
@@ -839,7 +839,7 @@ function IdeationViewer({
               maxHeight: 'calc(100vh - 80px)',
               display: 'flex',
               flexDirection: 'column',
-              cursor: 'default',
+              cursor: 'none',
               overflow: 'hidden',
               background: 'transparent',
               boxShadow: 'none',

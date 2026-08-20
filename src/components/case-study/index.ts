@@ -15,3 +15,5 @@ export { PersonalBestScreen } from './PersonalBestScreen';
 export { ReflectionScreen } from './ReflectionScreen';
 export { CompletionWeekTrackerScreen, CompletionQuoteScreen } from './CompletionScreen';
 export { EndOfSessionFlow } from './EndOfSessionFlow';
+export { ThemeModeToggle } from './ThemeModeToggle';
+export { BackToTopButton } from './BackToTopButton';

@@ -12,7 +12,6 @@ import { IridescentText } from '@/components/IridescentText';
 import { IridescentEyebrow } from '@/components/IridescentEyebrow';
 import Loader from '@/components/Loader';
 import CaterpillarFooter from '@/components/CaterpillarFooter';
-import MagnetCursor from '@/components/MagnetCursor';
 import { registerBrFlyRefill } from '@/lib/brFlyRefill';
 
 const BR_FLY_SRCS = [
@@ -532,25 +531,39 @@ function ClockIcon() {
 
 // ── Project card ───────────────────────────────────────────────────────────
 function ProjectCard({ title, eyebrow, description, tags, readTime, href, thumbnailContent }: Project) {
-  const hoverCount = useRef(0);
+  /** Mirrors `hovered` for the handlers, which run outside React's render pass. */
+  const hoveredRef = useRef(false);
+  /** Pending un-hover, cancelled if the pointer lands on the card's other half. */
+  const leaveTimer = useRef(0);
   const [hovered, setHovered] = useState(false);
   const [hoverColor, setHoverColor] = useState<string>(PROJECT_HOVER_COLORS[0]);
   const highlightBg = solidHighlight(hoverColor, 0.38);
 
+  useEffect(() => () => {
+    if (leaveTimer.current) window.clearTimeout(leaveTimer.current);
+  }, []);
+
   const enter = () => {
-    hoverCount.current++;
-    // Only advance color on a fresh hover (not when moving between thumbnail ↔ text)
-    if (hoverCount.current === 1) {
-      setHoverColor(nextProjectHoverColor());
-      setHovered(true);
+    if (leaveTimer.current) {
+      window.clearTimeout(leaveTimer.current);
+      leaveTimer.current = 0;
     }
+    // Only advance the colour on a fresh hover, never when crossing between the
+    // artwork and the copy — a re-roll mid-card is the flicker this avoids.
+    if (hoveredRef.current) return;
+    hoveredRef.current = true;
+    setHoverColor(nextProjectHoverColor());
+    setHovered(true);
   };
   const leave = () => {
-    hoverCount.current--;
-    if (hoverCount.current <= 0) {
-      hoverCount.current = 0;
+    if (leaveTimer.current) window.clearTimeout(leaveTimer.current);
+    // Deferred by a beat: leaving one half fires before entering the other, so an
+    // immediate un-hover would blink the highlight off between them.
+    leaveTimer.current = window.setTimeout(() => {
+      leaveTimer.current = 0;
+      hoveredRef.current = false;
       setHovered(false);
-    }
+    }, 90);
   };
 
   return (
@@ -588,7 +601,7 @@ function ProjectCard({ title, eyebrow, description, tags, readTime, href, thumbn
 
       {/* Text */}
       <div className="project-card-text">
-        <div onMouseEnter={enter} onMouseLeave={leave} style={{ pointerEvents: 'auto' }}>
+        <div className="project-card-copy" onMouseEnter={enter} onMouseLeave={leave} style={{ pointerEvents: 'auto' }}>
           {eyebrow && (
             <p style={{
               fontFamily: "var(--font-battambang), sans-serif",
@@ -669,16 +682,6 @@ function ProjectCard({ title, eyebrow, description, tags, readTime, href, thumbn
 
 // ── Page ───────────────────────────────────────────────────────────────────
 export default function Home() {
-  // ── Hide system cursor ────────────────────────────────────────────────
-  useEffect(() => {
-    document.body.style.cursor = 'none';
-    document.body.dataset.magnetCursor = 'true';
-    return () => {
-      document.body.style.cursor = '';
-      delete document.body.dataset.magnetCursor;
-    };
-  }, []);
-
   // ── Endorsement card height equalization ─────────────────────────────
   // Measures the tallest card at natural (un-hovered) size and locks that
   // as min-height on every card. align-items:start means only the hovered
@@ -1003,7 +1006,6 @@ export default function Home() {
         <Loader heroRef={heroSvgRef} onComplete={() => setLoaderState('done')} />
       )}
       <HalftoneCanvas cursorMode="magnet" />
-      <MagnetCursor />
 
       <main className="landing-main">
         {/* ── Butterfly Net (visible during drag) ─────────────────────── */}

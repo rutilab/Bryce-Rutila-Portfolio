@@ -1613,9 +1613,10 @@ body.slingshot-dragging .project-card-pair {
    rather than a fourth nav column. */
 .footer-tagline {
   margin: 0;
-  /* Two lines: the cap clears "…grow from" (26ch) but not the following
-     "caterpillars" (39ch), so it breaks with the halves near-even */
-  max-width: 34ch;
+  /* Two lines: the cap clears "Transforming products" (21ch) but not the following
+     "one" (25ch), so the phrase breaks at its own hinge rather than stranding
+     "at a time" on the second line, which is where 31ch put it. */
+  max-width: 22ch;
   font-family: var(--font-ibm-plex-mono), monospace;
   font-weight: 400;
   font-size: 20px;
@@ -1699,7 +1700,9 @@ body.slingshot-dragging .project-card-pair {
   position: fixed;
   left: 0;
   top: 0;
-  z-index: 9999;
+  /* above every overlay on the site — lightboxes sit at 9999, a couple of modals
+     at 10000, and the dot has to paint over whatever it is standing in for */
+  z-index: 2147483000;
   pointer-events: none;
   visibility: hidden;
   mix-blend-mode: difference;
@@ -1731,9 +1734,10 @@ body.slingshot-dragging .project-card-pair {
   .magnet-cursor > span { transition: none; }
 }
 
-/* Home draws its own cursor, so suppress the OS one. No !important: inline cursors
-   win, which is exactly what keeps the grab hand on the BRYCE block, the BR flies
-   and the ideation chip, plus the footer's magic wand. */
+/* The site draws its own cursor, so suppress the OS one everywhere. No !important:
+   inline cursors win, which is exactly what keeps the grab hand on the BRYCE block,
+   the BR flies and the ideation chip, the footer's magic wand, and the zoom glass
+   over expandable case-study media — MagnetCursor hides the dot at each of those. */
 body[data-magnet-cursor] * {
   cursor: none;
 }
@@ -1754,4 +1758,383 @@ body[data-magnet-cursor] .sling-dash *,
 body[data-magnet-cursor] .subheader-ideation *,
 body[data-magnet-cursor] .br-fly * {
   cursor: inherit;
+}
+
+/* Same problem, general case: a control is one target, so its contents must show
+   the control's cursor. Without this, an icon button reads `pointer` at the rim
+   and `none` over the glyph — the hand blinks out and the dot lands on top of the
+   icon it is supposed to be pointing at. Inheriting keeps one cursor per control,
+   whichever it is: the hand on media buttons, the dot on the pill toggles. */
+body[data-magnet-cursor] button *,
+body[data-magnet-cursor] a *,
+body[data-magnet-cursor] summary *,
+body[data-magnet-cursor] [role='button'] * {
+  cursor: inherit;
+}
+
+/* ── Case-study pill toggles ──────────────────────────────────────────────────
+   Shared by every segmented control across the case studies (media tabs, the
+   Final Design new/old switch). Both states live here rather than in inline
+   styles so the hover wash can darken either one — an inline background would
+   outrank these rules. */
+.cs-toggle-pill {
+  color: #545454;
+  font-weight: 500;
+  background-color: transparent;
+  transition: background-color 0.18s ease, color 0.18s ease;
+}
+.cs-toggle-pill:hover {
+  /* subtle ink wash — reads as "pressable" without competing with the selected pill */
+  background-color: rgba(20, 21, 16, 0.06);
+  color: #1a1a1a;
+}
+.cs-toggle-pill[data-active='true'] {
+  background-color: rgba(0, 110, 254, 0.12);
+  color: #0057c2;
+  font-weight: 600;
+}
+.cs-toggle-pill[data-active='true']:hover {
+  background-color: rgba(0, 110, 254, 0.2);
+  color: #0057c2;
+}
+
+/* ── Theme-toggle feature callout ─────────────────────────────────────────────
+   First-visit tip pointing at the light/dark control on case-study cards. Shown
+   once ever (see ThemeModeToggle), so it animates in gently and gets out of the
+   way on scroll-past, on the X, or the moment the control is used. */
+.theme-toggle-callout {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  width: max-content;
+  max-width: 236px;
+  padding: 10px 10px 10px 12px;
+  border-radius: 10px;
+  background: #111113;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.28);
+  opacity: 0;
+  transform: translateY(-6px) scale(0.96);
+  transform-origin: top right;
+  transition: opacity 0.26s ease, transform 0.26s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.theme-toggle-callout[data-entered='true'] {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+.theme-toggle-callout-caret {
+  position: absolute;
+  top: -4px;
+  right: 12px;
+  width: 9px;
+  height: 9px;
+  background: #111113;
+  transform: rotate(45deg);
+  border-radius: 1px;
+}
+.theme-toggle-callout-copy {
+  margin: 0;
+  color: #ffffff;
+  font-size: 12.5px;
+  font-weight: 500;
+  line-height: 1.4;
+}
+.theme-toggle-callout-close {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  margin-top: 1px;
+  border-radius: 5px;
+  color: rgba(255, 255, 255, 0.6);
+  transition: background-color 0.16s ease, color 0.16s ease;
+}
+.theme-toggle-callout-close:hover {
+  background: rgba(255, 255, 255, 0.14);
+  color: #ffffff;
+}
+@media (prefers-reduced-motion: reduce) {
+  .theme-toggle-callout {
+    transform: none;
+    transition: opacity 0.26s ease;
+  }
+  .theme-toggle-callout[data-entered='true'] {
+    transform: none;
+  }
+}
+
+/* ── Competitor audit table — drag to pan ────────────────────────────────────
+   The table is wider than its frame. Touch and trackpad users find that by
+   swiping; a mouse user has only the cursor to go on, so the scroller wears a
+   grab hand whenever there is something to scroll to. Children must inherit it:
+   `body[data-magnet-cursor] *` sets `cursor: none` on every descendant directly,
+   and a direct declaration beats an inherited one. */
+.audit-scroller[data-draggable='true'] {
+  cursor: grab;
+}
+.audit-scroller[data-draggable='true'] * {
+  cursor: inherit;
+}
+.audit-scroller[data-draggable='true'].is-dragging,
+.audit-scroller[data-draggable='true'].is-dragging * {
+  cursor: grabbing;
+  /* a drag across the table shouldn't leave a trail of selected row labels */
+  user-select: none;
+}
+
+/* ── Case-study media controls ───────────────────────────────────────────────
+   Carousel arrows, lightbox arrows, dots and expandable media share one set of
+   states so every control in a case study answers the pointer the same way.
+   Colours live here rather than inline, since an inline background would outrank
+   the hover rule. Focus rings are the keyboard equivalent of those hovers. */
+.cs-media-btn {
+  background: #ffffff;
+  color: #555555;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+  transition: background-color 0.16s ease, color 0.16s ease, box-shadow 0.16s ease,
+    border-color 0.16s ease;
+}
+.cs-media-btn:hover {
+  background: #e6e7ea;
+  color: #1a1a1a;
+  border-color: rgba(0, 0, 0, 0.14);
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.16);
+}
+.cs-media-btn:active {
+  background: #d9dade;
+}
+.cs-media-btn:focus-visible,
+.cs-dot-btn:focus-visible,
+.cs-lightbox-close:focus-visible,
+.cs-expandable:focus-visible {
+  outline: 2px solid #006efe;
+  outline-offset: 3px;
+}
+
+/* Lightbox arrows sit on a dark backdrop and carry a heavier shadow */
+.cs-media-btn.is-lightbox {
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+}
+.cs-media-btn.is-lightbox:hover {
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.45);
+}
+
+.cs-dot-btn {
+  background: rgba(0, 0, 0, 0.12);
+  transition: background-color 0.16s ease, width 0.25s ease;
+}
+.cs-dot-btn:hover {
+  background: rgba(0, 0, 0, 0.34);
+}
+.cs-dot-btn[data-active='true'] {
+  background: #272727;
+}
+.cs-dot-btn[data-active='true']:hover {
+  background: #000000;
+}
+
+/* Bare X on the lightbox backdrop — hover gives it a target to land on */
+.cs-lightbox-close {
+  color: rgba(255, 255, 255, 0.92);
+  background: transparent;
+  border-radius: 50%;
+  transition: color 0.15s ease, background-color 0.15s ease, transform 0.15s ease;
+}
+.cs-lightbox-close:hover {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.16);
+  transform: scale(1.08);
+}
+.cs-lightbox-close:active {
+  background: rgba(255, 255, 255, 0.24);
+  transform: scale(1);
+}
+
+/* Click-to-expand media: a slight dim confirms the whole tile is the target.
+   `.cs-expandable-img` is for images that are the target themselves rather than
+   sitting inside one (the gallery's own zoomable frame). */
+.cs-expandable img,
+.cs-expandable canvas,
+.cs-expandable-img {
+  transition: filter 0.18s ease;
+}
+.cs-expandable:hover img,
+.cs-expandable:hover canvas,
+.cs-expandable-img:hover {
+  filter: brightness(0.94);
+}
+/* Whole-tile targets (the logic diagram is DOM, not an image) dim more gently —
+   the same 6% over that much area would read as the section greying out. */
+.cs-expandable-tile {
+  transition: filter 0.18s ease;
+}
+.cs-expandable-tile:hover {
+  filter: brightness(0.975);
+}
+.cs-expandable-tile:focus-visible {
+  outline: 2px solid #006efe;
+  outline-offset: 3px;
+}
+
+/* Right-hand section nav — hovering a section should feel reachable. Both states
+   are declared here so the hover isn't outranked by an inline colour. */
+.cs-toc-btn {
+  color: #aaaaaa;
+  font-weight: 400;
+}
+.cs-toc-btn:hover {
+  color: #1a1a1a;
+}
+.cs-toc-btn[data-active='true'] {
+  color: #1a1a1a;
+  font-weight: 600;
+}
+.cs-toc-btn:focus-visible {
+  outline: 2px solid #006efe;
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cs-media-btn,
+  .cs-dot-btn,
+  .cs-lightbox-close,
+  .cs-expandable img,
+  .cs-expandable canvas,
+  .cs-expandable-img,
+  .cs-expandable-tile {
+    transition: none;
+  }
+  .cs-lightbox-close:hover {
+    transform: none;
+  }
+}
+
+/* Translucent round close chip used by the AI-assistant lightboxes. Declared here
+   because its background used to be inline, which silently outranked the
+   `hover:bg-white/20` class it was paired with — the hover never fired. */
+.cs-lightbox-chip {
+  background: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+.cs-lightbox-chip:hover {
+  background: rgba(255, 255, 255, 0.24);
+}
+.cs-lightbox-chip:active {
+  background: rgba(255, 255, 255, 0.32);
+}
+.cs-lightbox-chip:focus-visible {
+  outline: 2px solid #ffffff;
+  outline-offset: 3px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .cs-lightbox-chip {
+    transition: none;
+  }
+}
+
+/* ── Case-study back-to-top ──────────────────────────────────────────────────
+   Ink disc in the site's own black, matching the "Try the Prototype" CTA rather
+   than the white media chrome — it belongs to the page, not to a card. Rises
+   into place on the same signal as the section rail and parks above the footer
+   (its `bottom` is set inline as the footer comes up). */
+/* The anchor owns the position and the footer parking; the button owns the
+   entrance and hover. Splitting them keeps the two transforms from fighting —
+   and the anchor's is deliberately untransitioned, since it tracks the scroll. */
+.cs-back-to-top-anchor {
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  z-index: 90;
+  pointer-events: none;
+  will-change: transform;
+}
+.cs-back-to-top {
+  display: flex;
+  width: 48px;
+  height: 48px;
+  border: none;
+  border-radius: 50%;
+  background: #141510;
+  color: #faf7f2;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  opacity: 0;
+  transform: translateY(10px);
+  pointer-events: none;
+  box-shadow: 0 6px 20px rgba(20, 21, 16, 0.28);
+  transition: opacity 0.35s ease, transform 0.35s ease, background-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+.cs-back-to-top[data-visible='true'] {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+/* Lifts toward the top it will take you to, and the arrow leads the way */
+.cs-back-to-top[data-visible='true']:hover {
+  background: #2b2d24;
+  transform: translateY(-3px);
+  box-shadow: 0 12px 28px rgba(20, 21, 16, 0.34);
+}
+.cs-back-to-top[data-visible='true']:active {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(20, 21, 16, 0.3);
+}
+.cs-back-to-top-arrow {
+  transition: transform 0.2s ease;
+}
+.cs-back-to-top:hover .cs-back-to-top-arrow {
+  transform: translateY(-2px);
+}
+.cs-back-to-top:focus-visible {
+  outline: 2px solid #006efe;
+  outline-offset: 3px;
+}
+/* Icon control, so it shows the hand rather than letting the dot sit on the
+   arrow. Needs to outrank `body[data-magnet-cursor] *`, hence the body prefix. */
+body[data-magnet-cursor] .cs-back-to-top {
+  cursor: pointer;
+}
+/* Matches the section rail, which is itself hidden below this width */
+@media (max-width: 599px) {
+  .cs-back-to-top-anchor {
+    display: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .cs-back-to-top,
+  .cs-back-to-top-arrow {
+    transition: opacity 0.35s ease;
+  }
+  .cs-back-to-top[data-visible='true']:hover,
+  .cs-back-to-top[data-visible='true']:active {
+    transform: none;
+  }
+  .cs-back-to-top:hover .cs-back-to-top-arrow {
+    transform: none;
+  }
+}
+
+/* The card's artwork and its copy are two separate hover zones (the link itself
+   stays pointer-transparent so it can't swallow clicks meant for the halftone
+   canvas behind it). That leaves the pair's 16px flex gap as dead space, and a
+   pointer crossing it drops the hover. Reaching the copy's hit area back into the
+   gap — padding out, margin in, so nothing moves — makes the two zones touch. */
+.project-card-copy {
+  padding-top: 16px;
+  margin-top: -16px;
+}
+/* 800–949px the copy sits beside the artwork, so the gap to cover is horizontal */
+@media (min-width: 800px) and (max-width: 949px) {
+  .project-card-copy {
+    padding-top: 0;
+    margin-top: 0;
+    padding-left: 16px;
+    margin-left: -16px;
+  }
 }

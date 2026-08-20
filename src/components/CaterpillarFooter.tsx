@@ -985,7 +985,7 @@ export default function CaterpillarFooter() {
       {/* ── Footer info ── */}
       <div className="footer-content">
         <p className="footer-tagline">
-          Helping products grow from caterpillars into butterflies.
+          Transforming products one idea at a time.
         </p>
 
         {/* the two link columns travel together as one right-hand group, so
