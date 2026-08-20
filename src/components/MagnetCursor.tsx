@@ -3,28 +3,29 @@
 import { useEffect, useRef } from 'react';
 
 /**
- * Circle that stands in for the pointer on the home page, where the OS cursor is
- * hidden. It is painted white and blended with `difference`, so it inverts what
- * is beneath it — reading black on the cream background while never hiding the
- * content it passes over.
+ * Circle that stands in for the pointer site-wide, where the OS cursor is hidden.
+ * It is painted white and blended with `difference`, so it inverts what is beneath
+ * it — reading black on the cream background while never hiding the content it
+ * passes over.
  *
- * Anything the page marks as draggable (the BRYCE block, the BR flies, the sling
- * dash, the ideation chip) keeps its own grab hand; the circle steps aside there
- * rather than drawing two cursors at once.
+ * Mounted once in the root layout, so it covers the home page, the case studies
+ * and anything added later. The rule for standing down is simple: wherever the
+ * page has asked for a cursor of its own, that cursor wins and the circle hides —
+ * the grab hand on the BRYCE block and the BR flies, the footer's magic wand, the
+ * zoom glass over expandable case-study media. Everywhere else the page renders
+ * `cursor: none` (see `body[data-magnet-cursor] *`) and the circle is the pointer.
  */
-
-/** The page is already drawing a pointer here — a grab hand or a custom image */
-function pageDrawsItsOwnCursor(cursor: string) {
-  return (
-    cursor.includes('url(') ||
-    cursor === 'grab' ||
-    cursor === 'grabbing' ||
-    cursor === 'move'
-  );
-}
-
 export default function MagnetCursor() {
   const rootRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    document.body.style.cursor = 'none';
+    document.body.dataset.magnetCursor = 'true';
+    return () => {
+      document.body.style.cursor = '';
+      delete document.body.dataset.magnetCursor;
+    };
+  }, []);
 
   useEffect(() => {
     const el = rootRef.current;
@@ -33,13 +34,24 @@ export default function MagnetCursor() {
 
     let shown = false;
 
-    /** True when something under the pointer is showing a grab hand of its own */
+    /**
+     * True when the page is drawing its own pointer here.
+     *
+     * The topmost hit-testable element is the one whose `cursor` the browser
+     * actually paints, so it is the only one worth asking. `none` means the
+     * blanket rule is in force and the circle is on duty; anything else — a grab
+     * hand, a zoom glass, a custom image, a plain arrow — is a deliberate choice
+     * by the page and takes precedence.
+     */
     const yieldsToPage = (x: number, y: number) => {
-      for (const node of document.elementsFromPoint(x, y)) {
-        if (!(node instanceof Element)) continue;
-        if (pageDrawsItsOwnCursor(getComputedStyle(node).cursor)) return true;
-      }
-      return false;
+      const top = document
+        .elementsFromPoint(x, y)
+        .find((node): node is Element => node instanceof Element && node.tagName !== 'HTML');
+      if (!top) return false;
+      // an iframe runs its own cursor and swallows mousemove, which would strand
+      // the circle at the frame's edge — better to hand the pointer over
+      if (top.tagName === 'IFRAME') return true;
+      return getComputedStyle(top).cursor !== 'none';
     };
 
     const onMove = (e: MouseEvent) => {

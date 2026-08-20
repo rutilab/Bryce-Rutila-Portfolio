@@ -607,12 +607,8 @@ function IdeationToggle({
               <button
                 key={it.label}
                 onClick={() => switchTab(i)}
-                className="shrink-0 whitespace-nowrap px-3 sm:px-4 py-2 rounded-full text-[12px] sm:text-[13px] transition-colors"
-                style={
-                  on
-                    ? { background: 'rgba(0,110,254,0.12)', color: ACCENT_DARK, fontWeight: 600 }
-                    : { color: '#545454', fontWeight: 500 }
-                }
+                data-active={on}
+                className="cs-toggle-pill shrink-0 whitespace-nowrap px-3 sm:px-4 py-2 rounded-full text-[12px] sm:text-[13px]"
               >
                 {it.label}
               </button>
@@ -730,12 +726,8 @@ function ToggleMedia({
               <button
                 key={it.label}
                 onClick={() => switchTab(i)}
-                className="shrink-0 whitespace-nowrap px-3 sm:px-4 py-2 rounded-full text-[12px] sm:text-[13px] transition-colors"
-                style={
-                  on
-                    ? { background: 'rgba(0,110,254,0.12)', color: ACCENT_DARK, fontWeight: 600 }
-                    : { color: '#545454', fontWeight: 500 }
-                }
+                data-active={on}
+                className="cs-toggle-pill shrink-0 whitespace-nowrap px-3 sm:px-4 py-2 rounded-full text-[12px] sm:text-[13px]"
               >
                 {it.label}
               </button>
@@ -762,6 +754,7 @@ function ToggleMedia({
           tabIndex={0}
           onClick={() => setLightboxOpen(true)}
           onKeyDown={e => e.key === 'Enter' && setLightboxOpen(true)}
+          className="cs-expandable"
           style={{
             position: 'relative',
             width: '100%',
@@ -815,11 +808,11 @@ function ToggleMedia({
             style={{
               position: 'fixed', top: 20, right: 20,
               width: 36, height: 36, borderRadius: '50%',
-              background: 'rgba(255,255,255,0.1)', border: 'none',
+              border: 'none',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              color: 'white', cursor: 'pointer', transition: 'background 0.15s',
+              cursor: 'pointer',
             }}
-            className="hover:bg-white/20"
+            className="cs-lightbox-chip"
           >
             <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
               <path d="M11.5 3.5l-8 8M3.5 3.5l8 8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
@@ -834,7 +827,7 @@ function ToggleMedia({
               display: 'flex',
               flexDirection: 'column',
               alignItems: 'center',
-              cursor: 'default',
+              cursor: 'none',
               maxHeight: 'calc(100vh - 80px)',
               overflow: 'auto',
             }}
@@ -1858,12 +1851,12 @@ function SectionNav() {
         <button
           key={id}
           onClick={() => goTo(id)}
+          className="cs-toc-btn"
+          data-active={active === id}
           style={{
             background: 'none', border: 'none', padding: '5px 0',
             textAlign: 'right', cursor: 'pointer',
             fontSize: 13,
-            fontWeight: active === id ? 600 : 400,
-            color: active === id ? '#1a1a1a' : '#aaa',
             opacity: visible ? 1 : 0,
             transform: visible ? 'translateX(0)' : 'translateX(12px)',
             transition: 'opacity 0.35s ease, transform 0.35s ease, color 0.2s ease, font-weight 0.2s ease',
@@ -1888,7 +1881,8 @@ function ExpandableImage({ src, alt, style, className }: { src: string; alt: str
     <>
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
-        src={src} alt={alt} style={{ ...style, cursor: 'zoom-in' }} className={className}
+        src={src} alt={alt} style={{ ...style, cursor: 'zoom-in' }}
+        className={`cs-expandable-img ${className ?? ''}`}
         onClick={() => setOpen(true)}
       />
       {open && mounted && createPortal(
@@ -1906,11 +1900,11 @@ function ExpandableImage({ src, alt, style, className }: { src: string; alt: str
             style={{
               position: 'absolute', top: 20, right: 20,
               width: 36, height: 36, borderRadius: '50%',
-              background: 'rgba(255,255,255,0.1)', border: 'none',
+              border: 'none',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              color: 'white', cursor: 'pointer',
+              cursor: 'pointer',
             }}
-            className="hover:bg-white/20"
+            className="cs-lightbox-chip"
           >
             <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
               <path d="M11.5 3.5l-8 8M3.5 3.5l8 8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
@@ -1920,7 +1914,7 @@ function ExpandableImage({ src, alt, style, className }: { src: string; alt: str
           <img
             src={src} alt={alt}
             onClick={e => e.stopPropagation()}
-            style={{ maxWidth: 'min(88vw, 1280px)', maxHeight: '82vh', objectFit: 'contain', borderRadius: 14, cursor: 'default', display: 'block' }}
+            style={{ maxWidth: 'min(88vw, 1280px)', maxHeight: '82vh', objectFit: 'contain', borderRadius: 14, cursor: 'none', display: 'block' }}
           />
         </div>,
         document.body

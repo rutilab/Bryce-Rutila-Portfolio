@@ -91,7 +91,6 @@ export function LightboxIconButton({
   /** Button diameter. Prefer ~32 on narrow viewports so arrows don't dwarf the image. */
   size?: number;
 }) {
-  const [hover, setHover] = useState(false);
   return (
     <button
       type="button"
@@ -100,22 +99,16 @@ export function LightboxIconButton({
         e.stopPropagation();
         onClick();
       }}
-      onMouseEnter={() => setHover(true)}
-      onMouseLeave={() => setHover(false)}
+      className="cs-media-btn is-lightbox"
       style={{
         position: 'fixed',
         width: size,
         height: size,
         borderRadius: '50%',
-        background: hover ? '#e9e9ec' : '#ffffff',
-        border: '1px solid rgba(0,0,0,0.08)',
-        boxShadow: '0 4px 14px rgba(0,0,0,0.35)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        color: '#3f3f46',
         cursor: 'pointer',
-        transition: 'background 0.15s ease',
         zIndex: 2,
         ...position,
       }}
@@ -127,7 +120,6 @@ export function LightboxIconButton({
 
 /** Bare close control — no container; a larger, high-contrast X sitting directly on the backdrop. */
 export function LightboxCloseButton({ onClose }: { onClose: () => void }) {
-  const [hover, setHover] = useState(false);
   return (
     <button
       type="button"
@@ -136,8 +128,7 @@ export function LightboxCloseButton({ onClose }: { onClose: () => void }) {
         e.stopPropagation();
         onClose();
       }}
-      onMouseEnter={() => setHover(true)}
-      onMouseLeave={() => setHover(false)}
+      className="cs-lightbox-close"
       style={{
         position: 'fixed',
         top: 20,
@@ -147,13 +138,9 @@ export function LightboxCloseButton({ onClose }: { onClose: () => void }) {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        background: 'transparent',
         border: 'none',
         padding: 0,
         cursor: 'pointer',
-        color: hover ? '#ffffff' : 'rgba(255,255,255,0.92)',
-        transform: hover ? 'scale(1.08)' : 'scale(1)',
-        transition: 'color 0.15s ease, transform 0.15s ease',
         zIndex: 2,
       }}
     >
@@ -259,7 +246,7 @@ export function CaseStudyMedia({
           setOpen(true);
         }
       }}
-      className={`relative overflow-hidden ${rounded}`}
+      className={`cs-expandable relative overflow-hidden ${rounded}`}
       style={{ cursor: 'zoom-in', ...style }}
     >
       {showBadge ? <MediaTypeBadge type={mediaType} /> : null}
@@ -311,7 +298,7 @@ export function CaseStudyMedia({
               display: 'flex',
               flexDirection: 'column',
               alignItems: 'center',
-              cursor: 'default',
+              cursor: 'none',
               maxHeight: 'calc(100vh - 80px)',
               overflow: 'auto',
             }}
@@ -465,7 +452,7 @@ export function CaseStudyMediaGallery({
 
           <div
             onClick={(e) => e.stopPropagation()}
-            style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', cursor: 'default', maxWidth: 'min(88vw, 1200px)' }}
+            style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', cursor: 'none', maxWidth: 'min(88vw, 1200px)' }}
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
@@ -506,13 +493,9 @@ const CAROUSEL_ARROW: CSSProperties = {
   width: 32,
   height: 32,
   borderRadius: '50%',
-  background: 'white',
-  border: '1px solid rgba(0,0,0,0.08)',
-  boxShadow: '0 1px 4px rgba(0,0,0,0.1)',
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
-  color: '#555',
   cursor: 'pointer',
   zIndex: 2,
   padding: 0,
@@ -534,6 +517,7 @@ function CarouselArrowButton({
       type="button"
       aria-label={label}
       onClick={onClick}
+      className="cs-media-btn"
       style={{
         ...CAROUSEL_ARROW,
         position: 'relative',
@@ -573,12 +557,12 @@ function CarouselDots({
           type="button"
           aria-label={`${labelPrefix} ${i + 1}`}
           onClick={() => onSelect(i)}
+          className="cs-dot-btn"
+          data-active={i === current}
           style={{
             height: 5,
             borderRadius: 3,
             width: i === current ? 20 : 5,
-            transition: 'width 0.25s',
-            background: i === current ? '#272727' : 'rgba(0,0,0,0.12)',
             border: 'none',
             cursor: 'pointer',
             padding: 0,
@@ -804,7 +788,7 @@ export function MediaCarouselStage({
           ) : null}
           <div
             onClick={(e) => e.stopPropagation()}
-            style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', cursor: 'default', maxWidth: 'min(88vw, 1200px)' }}
+            style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', cursor: 'none', maxWidth: 'min(88vw, 1200px)' }}
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
@@ -848,7 +832,7 @@ function GalleryThumb({
       type="button"
       onClick={onOpen}
       aria-label={`Expand image: ${mockup.alt}`}
-      className={`overflow-hidden ${rounded} p-0 border-0 bg-transparent`}
+      className={`cs-expandable overflow-hidden ${rounded} p-0 border-0 bg-transparent`}
       style={{ cursor: 'zoom-in' }}
     >
       {/* eslint-disable-next-line @next/next/no-img-element */}

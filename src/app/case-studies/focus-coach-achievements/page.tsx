@@ -1,16 +1,12 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import type { CSSProperties, MutableRefObject, ReactNode, RefObject } from 'react';
 import { createPortal } from 'react-dom';
 import KeyboardDoubleArrowDownOutlined from '@mui/icons-material/KeyboardDoubleArrowDownOutlined';
 import ArrowDownward from '@mui/icons-material/ArrowDownward';
 import Check from '@mui/icons-material/Check';
-import DarkMode from '@mui/icons-material/DarkMode';
-import DarkModeOutlined from '@mui/icons-material/DarkModeOutlined';
-import LightMode from '@mui/icons-material/LightMode';
-import LightModeOutlined from '@mui/icons-material/LightModeOutlined';
-import { CaseStudyMedia, CaseStudyMediaGallery, CaseStudyMediaPlaceholder, CompletionQuoteScreen, CompletionWeekTrackerScreen, EndOfSessionFlow, FocusStreakScreen, LightboxCloseButton, LightboxIconButton, LiveScreenFit, MediaCarouselStage, MilestoneHeroScreen, NorthStarAnimatedIcon, PersonalBestScreen, ReflectionScreen } from '@/components/case-study';
+import { CaseStudyMedia, CaseStudyMediaGallery, CaseStudyMediaPlaceholder, CompletionQuoteScreen, CompletionWeekTrackerScreen, EndOfSessionFlow, FocusStreakScreen, LightboxCloseButton, LightboxIconButton, LiveScreenFit, MediaCarouselStage, MilestoneHeroScreen, NorthStarAnimatedIcon, PersonalBestScreen, ReflectionScreen, ThemeModeToggle } from '@/components/case-study';
 import type { CaseStudyMediaItem } from '@/components/case-study';
 import { useBodyScrollLock } from '@/hooks/useBodyScrollLock';
 
@@ -131,86 +127,6 @@ function VisualCard({
         <div className={pad}>{children}</div>
       </div>
       {caption && <p className="text-[13px] text-[#999] text-center mt-3">{caption}</p>}
-    </div>
-  );
-}
-
-/**
- * Sun/moon control that swaps the card's assets between modes.
- * Shows an outline icon of the mode you'll switch *to*, fills it on hover/focus,
- * and reveals a matching tooltip. Matches the white media-control chrome used by
- * the ImageViewer arrows elsewhere on the page.
- */
-function ThemeModeToggle({
-  mode,
-  onToggle,
-}: {
-  mode: ThemeMode;
-  onToggle: () => void;
-}) {
-  const [active, setActive] = useState(false);
-  const goingDark = mode === 'light';
-  const label = goingDark ? 'View dark mode' : 'View light mode';
-  const OutlineIcon = goingDark ? DarkModeOutlined : LightModeOutlined;
-  const FilledIcon = goingDark ? DarkMode : LightMode;
-
-  return (
-    <div className="relative flex justify-end">
-      <button
-        type="button"
-        onClick={onToggle}
-        onMouseEnter={() => setActive(true)}
-        onMouseLeave={() => setActive(false)}
-        onFocus={() => setActive(true)}
-        onBlur={() => setActive(false)}
-        aria-label={label}
-        className="inline-flex items-center justify-center rounded-full focus-visible:outline-none"
-        style={{
-          padding: 4,
-          background: '#ffffff',
-          border: `1px solid ${active ? 'rgba(0,110,254,0.35)' : 'rgba(0,0,0,0.08)'}`,
-          boxShadow: active ? '0 3px 12px rgba(0,110,254,0.20)' : '0 1px 4px rgba(0,0,0,0.10)',
-          color: active ? ACCENT : '#555555',
-          transform: active ? 'scale(1.06)' : 'scale(1)',
-          transition: 'transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease, color 0.18s ease',
-        }}
-      >
-        {/* Crossfade outline → filled without shifting layout */}
-        <span className="relative inline-flex" style={{ width: 18, height: 18 }}>
-          <OutlineIcon
-            sx={{ fontSize: 18, position: 'absolute', inset: 0, opacity: active ? 0 : 1, transition: 'opacity 0.18s ease' }}
-          />
-          <FilledIcon
-            sx={{ fontSize: 18, position: 'absolute', inset: 0, opacity: active ? 1 : 0, transition: 'opacity 0.18s ease' }}
-          />
-        </span>
-      </button>
-
-      <span
-        role="tooltip"
-        aria-hidden="true"
-        style={{
-          position: 'absolute',
-          top: 'calc(100% + 8px)',
-          right: 0,
-          whiteSpace: 'nowrap',
-          background: '#111113',
-          color: '#ffffff',
-          fontSize: 12,
-          fontWeight: 500,
-          lineHeight: 1,
-          padding: '6px 9px',
-          borderRadius: 7,
-          pointerEvents: 'none',
-          boxShadow: '0 6px 18px rgba(0,0,0,0.20)',
-          opacity: active ? 1 : 0,
-          transform: active ? 'translateY(0)' : 'translateY(-3px)',
-          transition: 'opacity 0.18s ease, transform 0.18s ease',
-          zIndex: 20,
-        }}
-      >
-        {label}
-      </span>
     </div>
   );
 }
@@ -452,7 +368,7 @@ function ImageViewer({ items }: { items: { src: string; alt: string; label: stri
               }}
               src={item.src}
               alt={item.alt}
-              className="max-h-full max-w-full w-auto h-auto block rounded-md select-none"
+              className="cs-expandable-img max-h-full max-w-full w-auto h-auto block rounded-md select-none"
               style={{ cursor: 'zoom-in' }}
               draggable={false}
             />
@@ -465,13 +381,13 @@ function ImageViewer({ items }: { items: { src: string; alt: string; label: stri
               e.stopPropagation();
               setCurrent((c) => c - 1);
             }}
+            className="cs-media-btn"
             style={{
               visibility: current > 0 ? 'visible' : 'hidden',
               position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)',
-              width: 32, height: 32, borderRadius: '50%', background: 'white',
-              border: '1px solid rgba(0,0,0,0.08)', boxShadow: '0 1px 4px rgba(0,0,0,0.1)',
+              width: 32, height: 32, borderRadius: '50%',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              color: '#555', cursor: 'pointer', zIndex: 2,
+              cursor: 'pointer', zIndex: 2,
             }}
           >
             <svg width="13" height="13" viewBox="0 0 14 14" fill="none">
@@ -485,13 +401,13 @@ function ImageViewer({ items }: { items: { src: string; alt: string; label: stri
               e.stopPropagation();
               setCurrent((c) => c + 1);
             }}
+            className="cs-media-btn"
             style={{
               visibility: current < items.length - 1 ? 'visible' : 'hidden',
               position: 'absolute', right: 16, top: '50%', transform: 'translateY(-50%)',
-              width: 32, height: 32, borderRadius: '50%', background: 'white',
-              border: '1px solid rgba(0,0,0,0.08)', boxShadow: '0 1px 4px rgba(0,0,0,0.1)',
+              width: 32, height: 32, borderRadius: '50%',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              color: '#555', cursor: 'pointer', zIndex: 2,
+              cursor: 'pointer', zIndex: 2,
             }}
           >
             <svg width="13" height="13" viewBox="0 0 14 14" fill="none">
@@ -510,11 +426,11 @@ function ImageViewer({ items }: { items: { src: string; alt: string; label: stri
                   type="button"
                   aria-label={`Go to image ${i + 1}`}
                   onClick={() => setCurrent(i)}
+                  className="cs-dot-btn"
+                  data-active={i === current}
                   style={{
                     height: 5, borderRadius: 3,
                     width: i === current ? 20 : 5,
-                    transition: 'width 0.25s',
-                    background: i === current ? EYEBROW_ICON_COLOR : 'rgba(0,0,0,0.12)',
                     border: 'none', cursor: 'pointer', padding: 0, flexShrink: 0,
                   }}
                 />
@@ -581,7 +497,7 @@ function ImageViewer({ items }: { items: { src: string; alt: string; label: stri
 
           <div
             onClick={(e) => e.stopPropagation()}
-            style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', cursor: 'default', maxWidth: 'min(92vw, 1200px)' }}
+            style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', cursor: 'none', maxWidth: 'min(92vw, 1200px)' }}
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
@@ -1350,7 +1266,7 @@ function EndOfSessionFlowDiagram() {
             setOpen(true);
           }
         }}
-        className="rounded-[24px] overflow-hidden w-full"
+        className="cs-expandable-tile rounded-[24px] overflow-hidden w-full"
         style={{
           background: BLOCK_BG,
           height: innerHeight > 0 ? innerHeight * scale : undefined,
@@ -1395,7 +1311,7 @@ function EndOfSessionFlowDiagram() {
             style={{
               /* Solid fill in lightbox — frosted BLOCK_BG reads as transparent on the dark overlay */
               background: '#e8eef8',
-              cursor: 'default',
+              cursor: 'none',
               maxWidth: FLOW_DIAGRAM_MIN_W,
               height: lightboxInnerHeight > 0 ? lightboxInnerHeight * lightboxScale : undefined,
             }}
@@ -1660,12 +1576,8 @@ function SegmentedMedia({
               <button
                 key={tab.label}
                 onClick={() => switchTab(i)}
-                className="shrink-0 whitespace-nowrap px-3 sm:px-4 py-2 rounded-full text-[12px] sm:text-[13px] transition-colors"
-                style={
-                  on
-                    ? { background: 'rgba(0,110,254,0.12)', color: ACCENT_DARK, fontWeight: 600 }
-                    : { color: '#545454', fontWeight: 500 }
-                }
+                data-active={on}
+                className="cs-toggle-pill shrink-0 whitespace-nowrap px-3 sm:px-4 py-2 rounded-full text-[12px] sm:text-[13px]"
               >
                 {tab.label}
               </button>
@@ -1693,6 +1605,143 @@ function SegmentedMedia({
             />
           ) : (
             <PlaceholderVisual description={t.description} minHeight={320} />
+          )}
+        </VisualCard>
+      </div>
+    </div>
+  );
+}
+
+// ── FinalDesignVersions: new flow vs. the old one it replaced ─────────────────
+const OLD_FLOW_SRC = '/case-studies/focus-coach-achievements/old-session-flow.gif?v=2';
+
+const FINAL_DESIGN_VERSIONS = [
+  {
+    key: 'new' as const,
+    label: 'New Design',
+    caption: 'The end of session flow users see after completing their first session',
+  },
+  {
+    key: 'old' as const,
+    label: 'Old Design',
+    caption:
+      'The end of session flow this replaced — a reflection slider and a check-in graph that stayed empty for most students',
+  },
+];
+
+/**
+ * Hands back an object URL for `src` plus a `replay()` that mints a fresh one, so an
+ * animated GIF restarts at frame one each time it is shown.
+ *
+ * Neither remounting the <img> nor varying the query is enough on its own: Chrome
+ * runs one animation timeline per image *resource*, and both the Hypothesis section
+ * and any previously-cached URL variant keep theirs alive — a new element on a URL
+ * either of those touched simply joins the loop in progress. A blob URL is a
+ * resource nothing else has ever animated. The file is fetched once and re-wrapped
+ * per showing, and each URL is revoked when it goes out of use.
+ */
+function useGifReplaySrc(src: string) {
+  const blobRef = useRef<Blob | null>(null);
+  const liveUrlRef = useRef<string | null>(null);
+  const [replaySrc, setReplaySrc] = useState<string | null>(null);
+
+  /** Mint a new URL for the next showing and drop the one it replaces. */
+  const replay = useCallback(() => {
+    if (!blobRef.current) return;
+    if (liveUrlRef.current) URL.revokeObjectURL(liveUrlRef.current);
+    const url = URL.createObjectURL(blobRef.current);
+    liveUrlRef.current = url;
+    setReplaySrc(url);
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch(src)
+      .then((r) => (r.ok ? r.blob() : null))
+      .then((b) => {
+        if (cancelled || !b) return;
+        blobRef.current = b;
+        replay();
+      })
+      .catch(() => {
+        /* fall back to the plain URL */
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [src, replay]);
+
+  useEffect(
+    () => () => {
+      if (liveUrlRef.current) URL.revokeObjectURL(liveUrlRef.current);
+    },
+    [],
+  );
+
+  return { replaySrc: replaySrc ?? src, replay };
+}
+
+/**
+ * Pill tabs that swap the live end-of-session flow for the old flow GIF from the
+ * Hypothesis section, so the before/after can be read side by side in time.
+ *
+ * Only the selected version is mounted, so the card sizes to whichever asset is
+ * showing, and every switch remounts under a fresh `run` key — the flow restarts
+ * at the session player and the GIF restarts at frame one, rather than resuming
+ * mid-animation where it was left.
+ */
+function FinalDesignVersions() {
+  const [version, setVersion] = useState<'new' | 'old'>('new');
+  const [run, setRun] = useState(0);
+  const showNew = version === 'new';
+  const { replaySrc: oldFlowSrc, replay: replayOldFlow } = useGifReplaySrc(OLD_FLOW_SRC);
+  const active = FINAL_DESIGN_VERSIONS.find((v) => v.key === version) ?? FINAL_DESIGN_VERSIONS[0];
+
+  function select(next: 'new' | 'old') {
+    if (next === version) return;
+    setVersion(next);
+    setRun((n) => n + 1);
+    // fresh object URL per showing, so the GIF replays instead of resuming
+    if (next === 'old') replayOldFlow();
+  }
+
+  return (
+    <div className="flex flex-col items-center gap-6">
+      <div
+        role="tablist"
+        aria-label="End of session flow version"
+        className="inline-flex flex-nowrap items-center gap-1 rounded-full bg-white p-1"
+        style={{ border: `1px solid ${BORDER}` }}
+      >
+        {FINAL_DESIGN_VERSIONS.map((v) => {
+          const on = v.key === version;
+          return (
+            <button
+              key={v.key}
+              type="button"
+              role="tab"
+              aria-selected={on}
+              onClick={() => select(v.key)}
+              data-active={on}
+              className="cs-toggle-pill shrink-0 whitespace-nowrap px-3 sm:px-4 py-2 rounded-full text-[12px] sm:text-[13px]"
+            >
+              {v.label}
+            </button>
+          );
+        })}
+      </div>
+
+      <div className="w-full">
+        <VisualCard caption={active.caption}>
+          {showNew ? (
+            <EndOfSessionFlow key={`new-${run}`} />
+          ) : (
+            <CaseStudyMedia
+              key={`old-${run}`}
+              src={oldFlowSrc}
+              alt="The original end of session flow, including the focus rating and completion screen"
+              caption="The previous end of session flow. If students did not have a check-in the graph provided no value"
+            />
           )}
         </VisualCard>
       </div>
@@ -1968,9 +2017,10 @@ function SectionNav() {
         <button
           key={id}
           onClick={() => goTo(id)}
+          className="cs-toc-btn"
+          data-active={active === id}
           style={{
             background: 'none', border: 'none', padding: '5px 0', textAlign: 'right', cursor: 'pointer', fontSize: 13,
-            fontWeight: active === id ? 600 : 400, color: active === id ? '#1a1a1a' : '#aaa',
             opacity: visible ? 1 : 0, transform: visible ? 'translateX(0)' : 'translateX(12px)',
             transition: 'opacity 0.35s ease, transform 0.35s ease, color 0.2s ease, font-weight 0.2s ease',
             transitionDelay: visible ? `${i * 55}ms` : '0ms',
@@ -2061,6 +2111,57 @@ function CompetitiveAuditTable() {
     };
   }, [FEATURE_W, COL_W, CARD_W]);
 
+  /**
+   * Drag the table sideways with the mouse, the way the scrollbar or a trackpad
+   * swipe would. The grab hand (see `.audit-scroller` in globals.css) is the only
+   * hint that the table continues past the frame on a mouse-only setup, where
+   * there is no swipe to discover it with.
+   */
+  useEffect(() => {
+    const el = scrollerRef.current;
+    if (!el) return;
+
+    let startX = 0;
+    let startLeft = 0;
+    let pointer: number | null = null;
+
+    const onPointerDown = (e: PointerEvent) => {
+      // touch and pen already pan natively; a secondary button is not a drag
+      if (e.pointerType !== 'mouse' || e.button !== 0) return;
+      if (el.scrollWidth - el.clientWidth <= 1) return;
+      pointer = e.pointerId;
+      startX = e.clientX;
+      startLeft = el.scrollLeft;
+      el.setPointerCapture(e.pointerId);
+      el.classList.add('is-dragging');
+    };
+
+    const onPointerMove = (e: PointerEvent) => {
+      if (pointer !== e.pointerId) return;
+      el.scrollLeft = startLeft - (e.clientX - startX);
+      // stops the drag from turning into a text selection halfway across
+      e.preventDefault();
+    };
+
+    const endDrag = (e: PointerEvent) => {
+      if (pointer !== e.pointerId) return;
+      pointer = null;
+      if (el.hasPointerCapture(e.pointerId)) el.releasePointerCapture(e.pointerId);
+      el.classList.remove('is-dragging');
+    };
+
+    el.addEventListener('pointerdown', onPointerDown);
+    el.addEventListener('pointermove', onPointerMove);
+    el.addEventListener('pointerup', endDrag);
+    el.addEventListener('pointercancel', endDrag);
+    return () => {
+      el.removeEventListener('pointerdown', onPointerDown);
+      el.removeEventListener('pointermove', onPointerMove);
+      el.removeEventListener('pointerup', endDrag);
+      el.removeEventListener('pointercancel', endDrag);
+    };
+  }, []);
+
   // One cell of the grid. First two columns (Feature + Finding Focus) are sticky.
   const cellStyle = (col: number, isHeader: boolean, rowIdx: number): CSSProperties => {
     const sticky = col <= 1;
@@ -2124,7 +2225,12 @@ function CompetitiveAuditTable() {
     <div className="rounded-[24px] p-3 sm:p-8" style={{ background: BLOCK_BG }}>
       {/* Rounded frame clips the scroll area, so its corners stay rounded even when the table is scrolled and cut off. */}
       <div className="relative mx-auto w-full" style={{ maxWidth: CARD_W, borderRadius: 16, background: '#ffffff', overflow: 'hidden' }}>
-        <div ref={scrollerRef} className="audit-scroller" style={{ overflowX: 'auto', overflowY: 'hidden', WebkitOverflowScrolling: 'touch' }}>
+        <div
+          ref={scrollerRef}
+          className="audit-scroller"
+          data-draggable={overflowing}
+          style={{ overflowX: 'auto', overflowY: 'hidden', WebkitOverflowScrolling: 'touch' }}
+        >
           <div
             style={{
               display: 'grid',
@@ -2574,9 +2680,7 @@ export default function FocusCoachAchievementsCaseStudy() {
             eyebrow="Final Design"
             heading="The complete end of session flow – all together."
           >
-            <VisualCard caption="The end of session flow users see after completing their first session">
-              <EndOfSessionFlow />
-            </VisualCard>
+            <FinalDesignVersions />
           </Section>
 
           <ThemedVisualCard
