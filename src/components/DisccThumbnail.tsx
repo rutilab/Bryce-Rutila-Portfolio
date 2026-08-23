@@ -1,24 +1,34 @@
 'use client';
 
+import { useEffect, useRef } from 'react';
+
 /**
  * Home page card thumbnail for the Discc case study.
  *
  * Two layers with distinct jobs: the leather texture is the *stage* — it fills
- * the card edge to edge and never moves — and the phone bezel GIF is the
- * *subject*, floating above it on its own shadow.
+ * the card edge to edge and never moves — and the phone bezel is the *subject*,
+ * floating above it on its own shadow.
+ *
+ * The bezel is a muted video rather than the GIF it was cut from. A GIF cannot
+ * be paused — it animates from the moment it decodes until the tab closes — and
+ * at 6MB it arrived only once you had already scrolled to it. The same footage
+ * as H.264 is ~430KB at twice the resolution and twice the frame rate, small
+ * enough to fetch eagerly while the BRYCE splash plays, and it can be stopped
+ * when nobody is looking at it.
  */
 
-const BEZEL_SRC = '/case-studies/discc/phone-bezel.gif';
+const BEZEL_SRC = '/case-studies/discc/phone-bezel.mp4';
+const BEZEL_POSTER = '/case-studies/discc/phone-bezel-poster.webp';
 
-/** Intrinsic GIF dimensions — the device fills the canvas with a ~5px margin. */
-const BEZEL_RATIO = '260 / 532';
+/** Intrinsic video dimensions — the device fills the frame with a small margin. */
+const BEZEL_RATIO = '540 / 1104';
 
 /**
- * The GIF's corners are opaque black, not transparent, so they'd read as a dark
- * rectangle behind the device. Clipping to the phone's own corner radius (~47px
- * at 260px wide) removes them. Expressed as a horizontal/vertical percentage
- * pair — 47/260 and 47/532 — so the ellipse stays circular in absolute terms at
- * every card size.
+ * The footage has opaque black corners, not transparent ones, so they'd read as
+ * a dark rectangle behind the device. Clipping to the phone's own corner radius
+ * removes them. Expressed as a horizontal/vertical percentage pair so the
+ * ellipse stays circular in absolute terms at every card size — and, being
+ * relative, it holds regardless of what resolution the asset is encoded at.
  */
 const BEZEL_RADIUS = '18.1% / 8.8%';
 
@@ -33,6 +43,49 @@ const BEZEL_HEIGHT = '103%';
 const BEZEL_DROP = 'translateY(6.8%)';
 
 export function DisccThumbnail() {
+  const videoRef = useRef<HTMLVideoElement>(null);
+
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    // Someone who has asked for less motion gets the poster frame and nothing
+    // more — the card still reads, it just doesn't move.
+    const motion = window.matchMedia('(prefers-reduced-motion: reduce)');
+    if (motion.matches) return;
+
+    /** True only while the card is on screen AND the tab is frontmost. */
+    let onScreen = false;
+
+    const sync = () => {
+      const shouldPlay = onScreen && !document.hidden;
+      if (shouldPlay) {
+        // Rejects if the browser declines autoplay; muted + playsInline should
+        // satisfy every current policy, and the poster covers us if not.
+        video.play().catch(() => {});
+      } else {
+        video.pause();
+      }
+    };
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        onScreen = entry.isIntersecting;
+        sync();
+      },
+      // Any sliver on screen counts — the card is tall, and waiting for a
+      // fraction of it would leave the phone frozen through the scroll in.
+      { threshold: 0 },
+    );
+    observer.observe(video);
+    document.addEventListener('visibilitychange', sync);
+
+    return () => {
+      observer.disconnect();
+      document.removeEventListener('visibilitychange', sync);
+    };
+  }, []);
+
   return (
     <div
       style={{
@@ -64,21 +117,32 @@ export function DisccThumbnail() {
         }}
       />
 
-      <img
-        src={BEZEL_SRC}
-        alt=""
-        loading="lazy"
+      <video
+        ref={videoRef}
+        // No `autoPlay`: the observer above owns playback, so the video never
+        // runs while it is off screen. `preload="auto"` still fetches it right
+        // away — the card mounts behind the splash, which is the point.
+        preload="auto"
+        poster={BEZEL_POSTER}
+        muted
+        loop
+        playsInline
+        disablePictureInPicture
+        aria-hidden
         style={{
           position: 'relative',
           display: 'block',
           height: BEZEL_HEIGHT,
           width: 'auto',
           aspectRatio: BEZEL_RATIO,
+          objectFit: 'cover',
           transform: BEZEL_DROP,
           borderRadius: BEZEL_RADIUS,
           boxShadow: '0 18px 40px rgba(0,0,0,0.6)',
         }}
-      />
+      >
+        <source src={BEZEL_SRC} type="video/mp4" />
+      </video>
     </div>
   );
 }
