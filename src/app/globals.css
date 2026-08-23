@@ -1719,11 +1719,97 @@ body.slingshot-dragging .project-card-pair {
   border-radius: 50%;
   background: #ffffff;
   transform: translate(-50%, -50%);
-  transition: transform 0.12s ease;
+  transition: transform 0.12s ease, opacity 0.12s ease;
 }
 
 .magnet-cursor.is-down > span {
   transform: translate(-50%, -50%) scale(0.82);
+}
+
+/* ── Label mode ───────────────────────────────────────────────────────────────
+   An element carrying `data-cursor-label` swaps the dot for a tag naming what
+   would happen there. Used by the Discc card, which is not clickable yet and so
+   has no hover state of its own to say so.
+
+   `difference` has to go: it is what lets a white dot read as black ink on the
+   cream page, but run over a translucent dark pill it would invert the fill to
+   near-white and eat the text. The tag is legible on its own terms instead. */
+.magnet-cursor.has-label {
+  mix-blend-mode: normal;
+}
+.magnet-cursor.has-label > span {
+  opacity: 0;
+  transform: translate(-50%, -50%) scale(0.4);
+}
+
+.magnet-cursor-label {
+  position: absolute;
+  top: 0;
+  left: 0;
+  /* Trails below-right of the hotspot rather than sitting under it, so the tag
+     never covers the thing it is describing. */
+  transform: translate(14px, 14px) scale(0.9);
+  transform-origin: 0 0;
+  opacity: 0;
+  display: block;
+  white-space: nowrap;
+  font-family: var(--font-ibm-plex-mono), monospace;
+  font-style: normal;
+  font-size: 13px;
+  line-height: 1;
+  letter-spacing: -0.012em;
+  color: #f7f5f0;
+  background: rgba(16, 17, 13, 0.72);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 999px;
+  padding: 8px 14px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.32);
+  transition: opacity 0.16s ease, transform 0.16s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.magnet-cursor.has-label .magnet-cursor-label {
+  opacity: 1;
+  transform: translate(14px, 14px) scale(1);
+}
+
+/* ── Toast ────────────────────────────────────────────────────────────────────
+   Touch's answer to the cursor tag above — same ink, same mono, same pill, so
+   the two read as one idea shown two ways. Pinned to the viewport rather than
+   the card that raised it, and portalled out so no `overflow: hidden` clips it. */
+.toast-pill {
+  position: fixed;
+  left: 50%;
+  bottom: calc(32px + env(safe-area-inset-bottom, 0px));
+  /* Just under the cursor layer — nothing else on the page sits this high */
+  z-index: 2147482000;
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+  white-space: nowrap;
+  font-family: var(--font-ibm-plex-mono), monospace;
+  font-size: 14px;
+  line-height: 1;
+  letter-spacing: -0.012em;
+  color: #f7f5f0;
+  background: rgba(16, 17, 13, 0.82);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 999px;
+  padding: 12px 20px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.38);
+  transform: translate(-50%, 0);
+  animation: toast-rise 0.24s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+@keyframes toast-rise {
+  from { opacity: 0; transform: translate(-50%, 12px) scale(0.96); }
+  to   { opacity: 1; transform: translate(-50%, 0)    scale(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .toast-pill { animation: none; }
 }
 
 /* No pointer, no stand-in */
@@ -1731,7 +1817,8 @@ body.slingshot-dragging .project-card-pair {
   .magnet-cursor { display: none; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .magnet-cursor > span { transition: none; }
+  .magnet-cursor > span,
+  .magnet-cursor-label { transition: none; }
 }
 
 /* The site draws its own cursor, so suppress the OS one everywhere. No !important:

@@ -17,6 +17,7 @@ import { useEffect, useRef } from 'react';
  */
 export default function MagnetCursor() {
   const rootRef = useRef<HTMLDivElement>(null);
+  const labelRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
     document.body.style.cursor = 'none';
@@ -32,7 +33,11 @@ export default function MagnetCursor() {
     if (!el) return;
     if (!window.matchMedia('(pointer: fine)').matches) return;
 
+    const labelEl = labelRef.current;
+    if (!labelEl) return;
+
     let shown = false;
+    let currentLabel: string | null = null;
 
     /**
      * True when the page is drawing its own pointer here.
@@ -54,13 +59,38 @@ export default function MagnetCursor() {
       return getComputedStyle(top).cursor !== 'none';
     };
 
+    /**
+     * The label an element under the pointer has asked the cursor to carry, if
+     * any. Read from the nearest `[data-cursor-label]` ancestor of the topmost
+     * element, so a whole card can claim the cursor without every child of it
+     * needing the attribute.
+     */
+    const labelAt = (x: number, y: number) => {
+      const top = document
+        .elementsFromPoint(x, y)
+        .find((node): node is Element => node instanceof Element && node.tagName !== 'HTML');
+      return top?.closest('[data-cursor-label]')?.getAttribute('data-cursor-label') ?? null;
+    };
+
     const onMove = (e: MouseEvent) => {
       el.style.transform = `translate3d(${e.clientX}px, ${e.clientY}px, 0)`;
       if (!shown) { shown = true; el.classList.add('is-visible'); }
       el.classList.toggle('is-hidden', yieldsToPage(e.clientX, e.clientY));
+
+      const label = labelAt(e.clientX, e.clientY);
+      // Only touch the DOM on an actual change — this runs on every mousemove.
+      if (label !== currentLabel) {
+        currentLabel = label;
+        if (label) labelEl.textContent = label;
+        el.classList.toggle('has-label', label !== null);
+      }
     };
 
-    const onLeave = () => { shown = false; el.classList.remove('is-visible'); };
+    const onLeave = () => {
+      shown = false;
+      currentLabel = null;
+      el.classList.remove('is-visible', 'has-label');
+    };
     const onDown = () => el.classList.add('is-down');
     const onUp = () => el.classList.remove('is-down');
 
@@ -80,6 +110,7 @@ export default function MagnetCursor() {
   return (
     <div ref={rootRef} className="magnet-cursor" aria-hidden="true">
       <span />
+      <em ref={labelRef} className="magnet-cursor-label" />
     </div>
   );
 }

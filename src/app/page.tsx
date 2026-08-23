@@ -7,12 +7,15 @@ import HalftoneCanvas from '@/components/HalftoneCanvas';
 import HalftoneFly from '@/components/HalftoneFly';
 import { AIAssistantThumbnail } from '@/components/AIAssistantThumbnail';
 import { MilestoneThumbnail } from '@/components/MilestoneThumbnail';
+import { DisccThumbnail } from '@/components/DisccThumbnail';
 import { IdeationChip } from '@/components/IdeationChip';
 import { IridescentText } from '@/components/IridescentText';
 import { IridescentEyebrow } from '@/components/IridescentEyebrow';
 import Loader from '@/components/Loader';
 import CaterpillarFooter from '@/components/CaterpillarFooter';
 import { registerBrFlyRefill } from '@/lib/brFlyRefill';
+import { Toast } from '@/components/Toast';
+import { useCanPrimaryHover } from '@/hooks/useCanPrimaryHover';
 
 const BR_FLY_SRCS = [
   '/butterflies/updated-br-fly-1.svg',
@@ -70,9 +73,20 @@ interface Project {
   tags: string[];
   readTime: string;
   cardColor: string;
-  href: string;
+  /** Omitted for projects with nothing to link to yet — see `comingSoon`. */
+  href?: string;
   thumbnailContent: React.ReactNode;
+  /**
+   * Marks a card with no case study behind it. Such a card drops every hover
+   * affordance — it must not look pressable — and says so on contact instead:
+   * a tag on the cursor where there is a pointer, a toast on tap where there
+   * isn't.
+   */
+  comingSoon?: boolean;
 }
+
+/** Shown by the cursor tag and the touch toast alike, so both say one thing. */
+const COMING_SOON_LABEL = 'Coming Soon 👀';
 
 const PROJECTS: Project[] = [
   {
@@ -115,6 +129,19 @@ const PROJECTS: Project[] = [
         borderRadius: '5px',
       }} />
     ),
+  },
+  {
+    title: 'Discc',
+    eyebrow: 'PERSONAL PROJECT • 2026',
+    description:
+      'Building a collectible library for curating, showing off, and sharing Spotify listening history',
+    // 'iOS' keeps its proper-noun casing — the tags carry no text-transform, and
+    // 'IOS' among the all-caps neighbours reads as a typo rather than a platform.
+    tags: ['PRODUCT DESIGN', 'iOS', 'SOCIAL'],
+    readTime: 'COMING SOON',
+    cardColor: '#ff12f7',
+    thumbnailContent: <DisccThumbnail />,
+    comingSoon: true,
   },
 ];
 
@@ -530,13 +557,15 @@ function ClockIcon() {
 }
 
 // ── Project card ───────────────────────────────────────────────────────────
-function ProjectCard({ title, eyebrow, description, tags, readTime, href, thumbnailContent }: Project) {
+function ProjectCard({ title, eyebrow, description, tags, readTime, href, thumbnailContent, comingSoon }: Project) {
   /** Mirrors `hovered` for the handlers, which run outside React's render pass. */
   const hoveredRef = useRef(false);
   /** Pending un-hover, cancelled if the pointer lands on the card's other half. */
   const leaveTimer = useRef(0);
   const [hovered, setHovered] = useState(false);
   const [hoverColor, setHoverColor] = useState<string>(PROJECT_HOVER_COLORS[0]);
+  const [toastOpen, setToastOpen] = useState(false);
+  const canHover = useCanPrimaryHover();
   const highlightBg = solidHighlight(hoverColor, 0.38);
 
   useEffect(() => () => {
@@ -566,17 +595,32 @@ function ProjectCard({ title, eyebrow, description, tags, readTime, href, thumbn
     }, 90);
   };
 
-  return (
-    <Link
-      href={href}
-      className="project-card-pair"
-      style={{ textDecoration: 'none', pointerEvents: 'none' }}
-    >
+  // A coming-soon card is inert: no navigation, and none of the hover wiring
+  // below, so `hovered` stays false and every hover style resolves to its
+  // resting value. The tag on the cursor is what tells you where you are.
+  const hoverProps = comingSoon ? {} : { onMouseEnter: enter, onMouseLeave: leave };
+
+  /**
+   * The artwork alone answers for a coming-soon card. The copy beneath it is
+   * plain text — no tag on the cursor, no toast on tap — so nothing below the
+   * card behaves like a link.
+   */
+  const comingSoonProps = comingSoon
+    ? {
+        'data-cursor-label': COMING_SOON_LABEL,
+        // Touch has no hover to read the tag, so the same message arrives after
+        // the tap instead. On a mouse the tag has already said it.
+        onClick: canHover ? undefined : () => setToastOpen(true),
+      }
+    : {};
+
+  const body = (
+    <>
       {/* Outer card — white by default, fills with rotating BRYCE color on hover */}
       <div
         className="project-card-outer"
-        onMouseEnter={enter}
-        onMouseLeave={leave}
+        {...hoverProps}
+        {...comingSoonProps}
         style={{
           pointerEvents: 'auto',
           backgroundColor: hovered ? hoverColor : '#fdfbf9',
@@ -601,7 +645,7 @@ function ProjectCard({ title, eyebrow, description, tags, readTime, href, thumbn
 
       {/* Text */}
       <div className="project-card-text">
-        <div className="project-card-copy" onMouseEnter={enter} onMouseLeave={leave} style={{ pointerEvents: 'auto' }}>
+        <div className="project-card-copy" {...hoverProps} style={{ pointerEvents: 'auto' }}>
           {eyebrow && (
             <p style={{
               fontFamily: "var(--font-battambang), sans-serif",
@@ -676,6 +720,31 @@ function ProjectCard({ title, eyebrow, description, tags, readTime, href, thumbn
           </span>
         </div>
       </div>
+    </>
+  );
+
+  if (comingSoon) {
+    return (
+      <>
+        <div className="project-card-pair" style={{ pointerEvents: 'none' }}>
+          {body}
+        </div>
+        <Toast
+          message={COMING_SOON_LABEL}
+          open={toastOpen}
+          onDismiss={() => setToastOpen(false)}
+        />
+      </>
+    );
+  }
+
+  return (
+    <Link
+      href={href ?? '#'}
+      className="project-card-pair"
+      style={{ textDecoration: 'none', pointerEvents: 'none' }}
+    >
+      {body}
     </Link>
   );
 }
