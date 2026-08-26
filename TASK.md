@@ -23,7 +23,7 @@
 - [ ] Commit Focus Coach changes on a feature branch (currently uncommitted on `main`)
 - [ ] Sync Figma Bryce Active frame to latest page copy if still divergent
 - [ ] Decide whether to delete unused `team-meeting-huddle.png`
-- [ ] Ensure `chrome/` (Chrome for Testing) stays out of git commits
+- [x] Ensure `chrome/` (Chrome for Testing) stays out of git commits — added to `.gitignore` and the 341MB folder deleted
 
 ---
 

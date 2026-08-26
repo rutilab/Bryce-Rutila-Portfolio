@@ -51,3 +51,12 @@ next-env.d.ts
 /landing-page-case-study.tsx
 /landing-page-case-study-wireframe.md
 /DESIGN.md
+
+# browser binary downloaded by tooling — never commit (341MB)
+/chrome/
+
+# working notes / reference docs (local only)
+/case-study-reference/
+/worklog-2026-05-12.md
+/PRD-ai-assistant-case-study-alignment.md
+/TODO-ai-assistant-case-study-updates.md
