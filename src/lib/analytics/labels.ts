@@ -14,6 +14,7 @@ const KNOWN: Record<string, string> = {
   '/case-studies': 'Case studies',
   '/case-studies/finding-focus': 'Finding Focus',
   '/case-studies/finding-focus-ai-assistant': 'Finding Focus · AI assistant',
+  '/case-studies/finding-focus-instant-access': 'Finding Focus · Instant access',
   '/case-studies/finding-focus-landing-page': 'Finding Focus · Landing page',
   '/case-studies/personal-projects': 'Personal projects',
 };

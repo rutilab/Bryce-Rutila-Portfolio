@@ -348,3 +348,18 @@
     opacity: 1;
   }
 }
+
+/* ── Diagram zoom viewports ──────────────────────────────────────────────────
+   The viewport sets its own cursor inline (it changes with zoom/drag state), and
+   an inline cursor already outranks the blanket `body[data-magnet-cursor] *`
+   rule. Its children do not: that rule hits them directly, and a direct
+   declaration beats inheritance. globals.css has a `button *` inherit rule that
+   covers the inline figure, but nothing covers a plain div, so restate it here.
+   Class + attribute (0,2,0) is needed to outrank `body[data-magnet-cursor] *`. */
+.cs-zoom-viewport[data-mode] * {
+  cursor: inherit;
+}
+.cs-zoom-viewport[data-mode='dragging'] * {
+  /* a drag shouldn't leave a trail of selected diagram labels */
+  user-select: none;
+}

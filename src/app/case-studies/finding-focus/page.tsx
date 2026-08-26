@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { ChatContainer } from '@/components/chat';
 import HalftoneCanvas from '@/components/HalftoneCanvas';
+import { InstantAccessThumbnail } from '@/components/InstantAccessThumbnail';
 
 export default function FindingFocus() {
   const [chatOpen, setChatOpen] = useState(false);
@@ -503,6 +504,83 @@ export default function FindingFocus() {
                       }}
                     >
                       End-to-end redesign of a marketing landing page — shifting from student-centered to teacher-first.
+                    </div>
+                  </div>
+                </div>
+              </Link>
+
+              {/* Card 4 — Instant Access */}
+              <Link
+                href="/case-studies/finding-focus-instant-access"
+                style={{ flex: 1, textDecoration: 'none' }}
+              >
+                <div
+                  style={{
+                    background: '#fcfcfc',
+                    border: '2px solid #d8d8d8',
+                    borderRadius: '16px',
+                    overflow: 'hidden',
+                    cursor: 'pointer',
+                    transition: 'transform 0.2s ease, border-color 0.2s ease',
+                  }}
+                  onMouseEnter={e => {
+                    e.currentTarget.style.transform = 'scale(1.01)';
+                    e.currentTarget.style.borderColor = '#bbbbbb';
+                  }}
+                  onMouseLeave={e => {
+                    e.currentTarget.style.transform = 'scale(1)';
+                    e.currentTarget.style.borderColor = '#d8d8d8';
+                  }}
+                >
+                  {/* Thumbnail */}
+                  <div
+                    style={{
+                      position: 'relative',
+                      width: '100%',
+                      height: '200px',
+                      background: 'rgba(220, 232, 248, 0.45)',
+                      padding: '16px',
+                      boxSizing: 'border-box',
+                    }}
+                  >
+                    <InstantAccessThumbnail />
+                  </div>
+                  {/* Text */}
+                  <div style={{ padding: '20px 24px 24px' }}>
+                    <div
+                      style={{
+                        fontFamily: 'Inter, sans-serif',
+                        fontSize: '11px',
+                        fontWeight: 500,
+                        color: '#aaaaaa',
+                        letterSpacing: '0.08em',
+                        marginBottom: '8px',
+                      }}
+                    >
+                      CASE STUDY
+                    </div>
+                    <div
+                      style={{
+                        fontFamily: 'Inter, sans-serif',
+                        fontSize: '18px',
+                        fontWeight: 600,
+                        color: '#141510',
+                        lineHeight: '26px',
+                        marginBottom: '6px',
+                      }}
+                    >
+                      Instant Access
+                    </div>
+                    <div
+                      style={{
+                        fontFamily: 'Inter, sans-serif',
+                        fontSize: '13px',
+                        fontWeight: 400,
+                        color: '#666666',
+                        lineHeight: '19px',
+                      }}
+                    >
+                      Turning manual account verification from a gate into a background task, cutting signup drop-off by 82%.
                     </div>
                   </div>
                 </div>

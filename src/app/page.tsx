@@ -8,6 +8,7 @@ import HalftoneFly from '@/components/HalftoneFly';
 import { AIAssistantThumbnail } from '@/components/AIAssistantThumbnail';
 import { MilestoneThumbnail } from '@/components/MilestoneThumbnail';
 import { DisccThumbnail } from '@/components/DisccThumbnail';
+import { InstantAccessThumbnail } from '@/components/InstantAccessThumbnail';
 import { IdeationChip } from '@/components/IdeationChip';
 import { IridescentText } from '@/components/IridescentText';
 import { IridescentEyebrow } from '@/components/IridescentEyebrow';
@@ -110,6 +111,17 @@ const PROJECTS: Project[] = [
     cardColor: '#ff9c12',
     href: '/case-studies/finding-focus-ai-assistant',
     thumbnailContent: <AIAssistantThumbnail />,
+  },
+  {
+    title: 'Instant Access',
+    eyebrow: 'FINDING FOCUS • 2023',
+    description:
+      'Flipping manual account verification from a gate into a background task, cutting signup drop-off by 82%',
+    tags: ['PRODUCT DESIGN', 'SYSTEMS THINKING', 'ONBOARDING'],
+    readTime: '10 MIN READ',
+    cardColor: '#fff712',
+    href: '/case-studies/finding-focus-instant-access',
+    thumbnailContent: <InstantAccessThumbnail />,
   },
   {
     title: 'Landing Page Redesign',
