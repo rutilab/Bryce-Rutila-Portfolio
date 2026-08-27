@@ -2519,21 +2519,21 @@ export default function FocusCoachAchievementsCaseStudy() {
                 stats={[
                   {
                     value: '75%',
-                    label: 'of first-time users returning for a second session',
+                    label: 'of first-time users returning for a second session, up from 61%',
                   },
                   {
                     value: '30%',
-                    label: 'ceiling on the share of all sessions completed by the top 1% of users',
+                    label: 'ceiling on the share of all sessions completed by the top 1% of users, down from 55%',
                   },
                   {
                     value: '15%',
-                    label: 'of new users completing 10+ sessions within 30 days',
+                    label: 'of new users completing 10+ sessions within 30 days, up from 6%',
                   },
                 ]}
               />
               <div style={{ height: 1, background: BORDER }} />
               <div className="px-5 sm:px-6 pt-5 sm:pt-6">
-                <Eyebrow label="Early Signals" />
+                <Eyebrow label="Early Signal" />
               </div>
               <StatRow
                 divided
