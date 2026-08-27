@@ -2535,8 +2535,8 @@ export default function FocusCoachAchievementsCaseStudy() {
         <div className="flex flex-col gap-16">
           <Section
             eyebrow="Launch Status"
-            heading="This project shipped during the summer. We’ll measure the impact this fall."
-            body="Since this project launched in July (2026), when most students are out of school and classroom usage is naturally lower, we do not have enough data to draw any conclusions yet. To determine if we successfully improved the end of session experience, I set up clear goals to track performance for the Fall semester."
+            heading="Early signals are promising, we will get more data this fall."
+            body="Since this launched in July (2026), a naturally low-usage period for us, our data sample is small. However, early signals are promising: initial retention trends show strong momentum in getting first-time users to stick with the Focus Coach. We’ve established tracking to continuously evaluate performance against our targets throughout the upcoming Fall semester."
           >
             <div className="flex flex-col gap-8">
               <IndicatorGroup label="Leading Indicators — early usability & engagement" indicators={LEADING_INDICATORS} />
