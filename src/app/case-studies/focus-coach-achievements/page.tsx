@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import type { CSSProperties, MutableRefObject, ReactNode, RefObject } from 'react';
 import { createPortal } from 'react-dom';
 import KeyboardDoubleArrowDownOutlined from '@mui/icons-material/KeyboardDoubleArrowDownOutlined';
+import KeyboardDoubleArrowUpOutlined from '@mui/icons-material/KeyboardDoubleArrowUpOutlined';
 import ArrowDownward from '@mui/icons-material/ArrowDownward';
 import Check from '@mui/icons-material/Check';
 import { CaseStudyMedia, CaseStudyMediaGallery, CaseStudyMediaPlaceholder, CompletionQuoteScreen, CompletionWeekTrackerScreen, EndOfSessionFlow, FocusStreakScreen, LightboxCloseButton, LiveScreenFit, MediaCarouselStage, MilestoneHeroScreen, NorthStarAnimatedIcon, PersonalBestScreen, ReflectionScreen, ThemeModeToggle } from '@/components/case-study';
@@ -2112,10 +2113,14 @@ export default function FocusCoachAchievementsCaseStudy() {
               <StatRow
                 stats={[
                   { value: '89', label: 'students surveyed on rewards and motivation' },
-                  { value: '3', label: 'achievement types, each with its own animated screen' },
                   {
-                    value: '22%',
-                    label: 'less time spent rating focus at the end of a session',
+                    value: '21%',
+                    label: 'increase in users returning after one session (from 61% to 74%)',
+                    icon: <KeyboardDoubleArrowUpOutlined sx={{ fontSize: 24, color: ACCENT }} />,
+                  },
+                  {
+                    value: '38%',
+                    label: 'decrease in session concentration among power users (from 55% to 34%)',
                     icon: <KeyboardDoubleArrowDownOutlined sx={{ fontSize: 24, color: ACCENT }} />,
                   },
                 ]}
@@ -2168,8 +2173,8 @@ export default function FocusCoachAchievementsCaseStudy() {
           >
             <SmallStatRow
               stats={[
-                { value: '39.3%', label: 'of users only ever completed one Focus Session' },
-                { value: '54.6%', label: 'of all sessions were completed by the top 1% of users' },
+                { value: '39%', label: 'of users only ever completed one Focus Session' },
+                { value: '55%', label: 'of all sessions were completed by the top 1% of users' },
               ]}
             />
           </Section>
