@@ -2128,6 +2128,206 @@ body[data-magnet-cursor] [role='button'] * {
    than the white media chrome — it belongs to the page, not to a card. Rises
    into place on the same signal as the section rail and parks above the footer
    (its `bottom` is set inline as the footer comes up). */
+/* ── Case study nav ────────────────────────────────────────────────────────
+   One light pill, no filled state anywhere: the surface is the only fill, and
+   which half you're on is said in text colour alone. Sits above the section
+   rail and the back-to-top so its menu can open over them. */
+.cs-nav {
+  position: fixed;
+  top: 20px;
+  left: 50%;
+  z-index: 200;
+  transform: translateX(-50%);
+  transition: opacity 0.3s ease, transform 0.3s ease;
+  max-width: calc(100vw - 24px);
+}
+.cs-nav[data-visible='false'] {
+  opacity: 0;
+  transform: translate(-50%, -140%);
+  pointer-events: none;
+}
+.cs-nav-pill {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 100%;
+  padding: 7px 15px 7px 9px;
+  border: 1px solid rgba(20, 21, 16, 0.07);
+  border-radius: 9999px;
+  background: rgba(247, 246, 243, 0.88);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  box-shadow: 0 4px 16px rgba(20, 21, 16, 0.06);
+  font-family: var(--font-inter), system-ui, sans-serif;
+  font-size: 14px;
+  line-height: 1;
+}
+
+/* ── Left half: home ── */
+.cs-nav-home {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  flex: none;
+  padding: 3px 4px;
+  border-radius: 9999px;
+  color: #141510;
+  font-weight: 500;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: color 0.2s ease;
+}
+.cs-nav-home:hover {
+  color: #006efe;
+}
+.cs-nav-fly {
+  width: 21px;
+  height: auto;
+  flex: none;
+  /* Nudged off the text baseline — the art sits high in its own box */
+  margin-top: -1px;
+  transition: transform 0.2s ease;
+}
+.cs-nav-home:hover .cs-nav-fly {
+  transform: rotate(-8deg) scale(1.08);
+}
+
+/* ── Separator ── */
+.cs-nav-caret {
+  flex: none;
+  color: #c3c1bb;
+}
+
+/* ── Right half: which study, and the way to the others ── */
+.cs-nav-switch {
+  position: relative;
+  min-width: 0;
+}
+.cs-nav-current {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 100%;
+  padding: 3px 4px;
+  border: none;
+  border-radius: 9999px;
+  background: none;
+  color: #77756e;
+  font: inherit;
+  font-weight: 400;
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+.cs-nav-switch:hover .cs-nav-current,
+.cs-nav-current[aria-expanded='true'] {
+  color: #141510;
+}
+.cs-nav-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.cs-nav-chevron {
+  flex: none;
+  transition: transform 0.2s ease;
+}
+.cs-nav-current[aria-expanded='true'] .cs-nav-chevron {
+  transform: rotate(180deg);
+}
+.cs-nav-current:focus-visible {
+  outline: 2px solid #006efe;
+  outline-offset: 2px;
+}
+.cs-nav-home:focus-visible {
+  outline: 2px solid #006efe;
+  outline-offset: 2px;
+}
+
+/* ── The menu ── */
+.cs-nav-menu {
+  position: absolute;
+  top: calc(100% + 10px);
+  left: -4px;
+  min-width: max(100%, 210px);
+  padding: 5px;
+  border: 1px solid rgba(20, 21, 16, 0.07);
+  border-radius: 14px;
+  background: rgba(247, 246, 243, 0.94);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  box-shadow: 0 10px 30px rgba(20, 21, 16, 0.12);
+  opacity: 0;
+  transform: translateY(-6px);
+  pointer-events: none;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+.cs-nav-menu[data-open='true'] {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+/* Bridges the gap to the pill so the pointer never crosses dead space */
+.cs-nav-menu::before {
+  content: '';
+  position: absolute;
+  inset: -10px 0 100% 0;
+}
+.cs-nav-menu-item {
+  display: block;
+  padding: 8px 11px;
+  border-radius: 9999px;
+  color: #77756e;
+  font-size: 13.5px;
+  line-height: 1.3;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: color 0.2s ease, background-color 0.2s ease;
+}
+.cs-nav-menu-item:hover,
+.cs-nav-menu-item:focus-visible {
+  background: rgba(20, 21, 16, 0.05);
+  color: #141510;
+  outline: none;
+}
+
+/* Icon controls, so the magnet dot doesn't sit on the text */
+body[data-magnet-cursor] .cs-nav-home,
+body[data-magnet-cursor] .cs-nav-current,
+body[data-magnet-cursor] .cs-nav-menu-item {
+  cursor: pointer;
+}
+
+@media (max-width: 599px) {
+  .cs-nav {
+    top: max(12px, env(safe-area-inset-top));
+  }
+  .cs-nav-pill {
+    gap: 6px;
+    padding: 6px 12px 6px 7px;
+    font-size: 13px;
+  }
+  .cs-nav-fly {
+    width: 18px;
+  }
+  /* The name stays — it's half of what the bar is for. The study title is the
+     one that gives way, since the page it names is right underneath it. */
+  .cs-nav-title {
+    max-width: 40vw;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cs-nav,
+  .cs-nav-menu,
+  .cs-nav-fly,
+  .cs-nav-chevron {
+    transition: opacity 0.2s ease;
+  }
+  .cs-nav-home:hover .cs-nav-fly {
+    transform: none;
+  }
+}
+
 /* The anchor owns the position and the footer parking; the button owns the
    entrance and hover. Splitting them keeps the two transforms from fighting —
    and the anchor's is deliberately untransitioned, since it tracks the scroll. */

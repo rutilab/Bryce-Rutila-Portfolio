@@ -3,7 +3,7 @@ import type { Viewport } from 'next';
 import '@/styles/case-study.css';
 import { CaseStudyRouteChrome } from './CaseStudyRouteChrome';
 import CaterpillarFooter from '@/components/CaterpillarFooter';
-import { BackToTopButton, ScrollCue } from '@/components/case-study';
+import { BackToTopButton, ScrollCue, CaseStudyNav } from '@/components/case-study';
 
 /** Light browser chrome + edge-to-edge on notched phones; pairs with CaseStudyRouteChrome. */
 export const viewport: Viewport = {
@@ -20,6 +20,7 @@ export default function CaseStudiesLayout({
   // rather than repeating the footer in seven page files.
   return (
     <CaseStudyRouteChrome>
+      <CaseStudyNav />
       {children}
       <CaterpillarFooter />
       {/* Both show themselves only where there's a hero — see the components */}

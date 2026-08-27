@@ -18,3 +18,4 @@ export { EndOfSessionFlow } from './EndOfSessionFlow';
 export { ThemeModeToggle } from './ThemeModeToggle';
 export { BackToTopButton } from './BackToTopButton';
 export { ScrollCue } from './ScrollCue';
+export { CaseStudyNav } from './CaseStudyNav';
