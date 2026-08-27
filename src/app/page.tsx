@@ -1249,7 +1249,7 @@ export default function Home() {
           </svg>
 
           <p className="subheader-text">
-            <IridescentText text="A systems-thinking product designer building memorable experiences from " />
+            <IridescentText text="A systems-thinking UX designer building end-to-end experiences from " />
             <span className="subheader-inline-chips" style={{ whiteSpace: 'nowrap' }}>
               <IdeationChip />{' '}
               <IridescentText text="to" />{' '}
