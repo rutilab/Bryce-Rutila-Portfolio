@@ -1133,7 +1133,7 @@ export default function Home() {
         {/* ── Hero ──────────────────────────────────────────────────────── */}
         <section style={{ marginBottom: '64px' }}>
 
-          <h1 className="howdy-heading">Howdy, I'm</h1>
+          <h1 className="howdy-heading">Hello, I'm</h1>
 
           <svg
             ref={heroSvgRef}
