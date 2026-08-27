@@ -261,19 +261,32 @@ html.embed .frame {
       '<div class="bubble">' + text + '</div>';
   }
 
-  // Anchors `row` so its top sits ANCHOR_OFFSET below the top of the
-  // scrollable area. A spacer reserves scroll room at the bottom so this
-  // works even when the conversation so far is too short to overflow on
+  // Anchors `row` near the top of the scrollable area, with everything before
+  // it scrolled fully out of sight. A spacer reserves scroll room at the bottom
+  // so this works even when the conversation so far is too short to overflow on
   // its own.
+  //
+  // Measured with offsetTop rather than getBoundingClientRect, for two reasons.
+  // The embed scales the frame with `zoom`, and under zoom a client rect comes
+  // back in scaled pixels while scrollTop is set in unscaled ones — so a rect
+  // delta under-scrolls by exactly the zoom factor, which is why the previous
+  // message stayed on screen in the case study but not at full size. offsetTop
+  // is also immune to the row's entrance transform, which was skewing the
+  // landing by another 6px.
   function anchorTo(row) {
     spacer.style.height = scrollWrap.clientHeight + 'px';
     anchorLine.style.top = ANCHOR_OFFSET + 'px';
     anchorLine.classList.add('is-visible');
     requestAnimationFrame(function () {
-      var wrapRect = scrollWrap.getBoundingClientRect();
-      var rowRect = row.getBoundingClientRect();
-      var delta = (rowRect.top - wrapRect.top) - ANCHOR_OFFSET;
-      body.scrollTop += delta;
+      var target = row.offsetTop - ANCHOR_OFFSET;
+      // The point of the anchor is that the last exchange is gone, so if the
+      // resting offset would leave any of the previous message showing, scroll
+      // past its bottom edge instead.
+      var prev = row.previousElementSibling;
+      if (prev && prev.classList.contains('msg')) {
+        target = Math.max(target, prev.offsetTop + prev.offsetHeight);
+      }
+      body.scrollTop = Math.max(0, target);
       setTimeout(function () { anchorLine.classList.remove('is-visible'); }, 900);
     });
   }

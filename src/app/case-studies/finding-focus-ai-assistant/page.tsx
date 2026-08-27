@@ -7,6 +7,7 @@ import SmsIcon from '@mui/icons-material/Sms';
 import ForumIcon from '@mui/icons-material/Forum';
 import VerticalAlignTopIcon from '@mui/icons-material/VerticalAlignTop';
 import ArrowDownward from '@mui/icons-material/ArrowDownward';
+import CodeIcon from '@mui/icons-material/Code';
 import {
   CaseStudyMedia,
   CaseStudyMediaGallery,
@@ -24,6 +25,8 @@ const ACCENT = '#006efe';
 const ACCENT_DARK = '#0057c2';
 /** Hairline border on white cards (TL;DR, Callout, Takeaways) */
 const BORDER = '#e6ecf4';
+/** Dashes are mostly gaps, so they need more contrast than a solid rule to read. */
+const BORDER_STRONG = '#a9bcd2';
 /** Solid light container for content cards (Project Goals) */
 const CARD_LIGHT = '#f5f7fa';
 /** Blue media well behind case study visuals */
@@ -56,13 +59,38 @@ function useInView<T extends Element>(
 }
 
 // ── StatRow: headline numbers with a blue underline tick ──────────────────────
-function StatRow({ stats }: { stats: { value: string; label: string; icon?: ReactNode }[] }) {
+function StatRow({
+  stats,
+  divided,
+}: {
+  stats: { value: string; label: string; icon?: ReactNode }[];
+  /** Ruled cells instead of gapped columns, for a StatRow inside a card.
+      Stacked on small screens, so the rules turn horizontal with the layout. */
+  divided?: boolean;
+}) {
   const [ref, inView] = useInView<HTMLDivElement>(0.45);
 
   return (
-    <div ref={ref} className="grid grid-cols-1 sm:grid-cols-3 gap-8 sm:gap-10 max-w-[820px]">
+    <div
+      ref={ref}
+      className={
+        divided
+          ? 'grid grid-cols-1 sm:grid-cols-3'
+          : 'grid grid-cols-1 sm:grid-cols-3 gap-8 sm:gap-10 max-w-[820px]'
+      }
+    >
       {stats.map((s, i) => (
-        <div key={i}>
+        <div
+          key={i}
+          // Rules on the cells themselves rather than Tailwind's `divide-*`,
+          // which sets the colour but not the width under v4. Horizontal while
+          // the stats are stacked, vertical once they sit side by side.
+          className={
+            divided
+              ? 'p-5 sm:p-6 border-[#e6ecf4] border-t first:border-t-0 sm:border-t-0 sm:border-l sm:first:border-l-0'
+              : undefined
+          }
+        >
           <div className="flex flex-col w-fit">
             <div className="flex items-center gap-1">
               {s.icon}
@@ -330,22 +358,54 @@ function Callout({
   compactBody,
   icon,
   variant = 'neutral',
+  hideBar,
+  outlined,
 }: {
   label: string;
   heading: string;
-  body?: string;
+  /** A node, not just a string, so body copy can carry an inline link. */
+  body?: ReactNode;
   compactBody?: boolean;
   icon?: ReactNode;
   variant?: 'neutral' | 'danger' | 'success';
+  /** Drops the left accent bar, for a callout that leads with its icon instead. */
+  hideBar?: boolean;
+  /** Unfilled, dashed outline — an aside the reader may take or leave, rather
+      than a card carrying findings. */
+  outlined?: boolean;
 }) {
   const bar = variant === 'danger' ? '#fe0000' : variant === 'success' ? '#2a8a50' : ACCENT_DARK;
   const bg = variant === 'danger' ? '#fceaea' : variant === 'success' ? '#eafaf1' : undefined;
   return (
     <div
-      className={`flex max-w-[760px] items-stretch gap-4 sm:gap-5 rounded-[16px] p-4 sm:p-6 ${bg ? '' : 'bg-white'}`}
-      style={bg ? { background: bg } : { border: `1px solid ${BORDER}` }}
+      className={`flex max-w-[760px] items-stretch gap-4 sm:gap-5 rounded-[16px] p-4 sm:p-6 ${outlined ? 'relative' : ''} ${bg || outlined ? '' : 'bg-white'}`}
+      style={
+        outlined
+          ? { background: 'transparent' }
+          : bg
+            ? { background: bg }
+            : { border: `1px solid ${BORDER}` }
+      }
     >
-      <div style={{ width: 2, borderRadius: 2, background: bar, flexShrink: 0 }} />
+      {/* The dashed edge is drawn rather than bordered: CSS `border-style:
+          dashed` gives no control over dash length or gap — the browser derives
+          both from the border width — and this one wants airier spacing than
+          that formula allows. An SVG stroke exposes both. */}
+      {outlined && (
+        <svg className="cs-dashed-frame" aria-hidden focusable="false">
+          <rect
+            width="100%"
+            height="100%"
+            rx="16"
+            ry="16"
+            fill="none"
+            stroke={BORDER_STRONG}
+            strokeWidth="1"
+            strokeDasharray="3 6"
+          />
+        </svg>
+      )}
+      {!hideBar && <div style={{ width: 2, borderRadius: 2, background: bar, flexShrink: 0 }} />}
       {icon && (
         <div className="flex shrink-0 items-center justify-center" aria-hidden>
           {icon}
@@ -1239,22 +1299,38 @@ function ResearchCard({
 }
 
 // ── Scroll-driven deck animation ─────────────────────────────────────────────
-const SCROLL_PER_CARD = 600;
+const SCROLL_PER_CARD = 350;
+
+/**
+ * Degrees a card tilts as it flies off. The sign alternates so consecutive
+ * exits lean opposite ways — the deck throws cards rather than sliding them,
+ * and a rigid vertical slide is what read as mechanical.
+ */
+const CARD_EXIT_TILT = 7;
 
 function getCardStyle(i: number, progress: number, fadeStart = 0.4): {
   transform: string; opacity: number; zIndex: number; pointerEvents: 'auto' | 'none';
 } {
+  const tilt = i % 2 === 0 ? -CARD_EXIT_TILT : CARD_EXIT_TILT;
   if (progress >= i + 1) {
-    return { transform: 'translateY(-130%) scale(0.92)', opacity: 0, zIndex: 0, pointerEvents: 'none' };
+    return { transform: `translateY(-130%) scale(0.92) rotate(${tilt}deg)`, opacity: 0, zIndex: 0, pointerEvents: 'none' };
   }
   if (progress > i) {
     const t = progress - i;
-    const eased = t * t; // ease-in: starts slow, accelerates away
+    // Linear in progress on purpose. The exit's shaping lives in
+    // magnetizeProgress now; easing again here would square that curve and the
+    // card would crawl out of the frame before whipping away.
+    const eased = t;
     return {
-      transform: `translateY(${eased * -130}%) scale(${1 - eased * 0.08})`,
+      transform: `translateY(${eased * -130}%) scale(${1 - eased * 0.08}) rotate(${eased * tilt}deg)`,
       // Stays fully visible until fadeStart, then fades over the remaining range
       opacity: Math.max(0, 1 - Math.max(0, (t - fadeStart) / (1 - fadeStart))),
-      zIndex: 30, pointerEvents: 'none',
+      zIndex: 30,
+      // Scrubbing means the deck almost never rests on a whole card, so the
+      // frontmost card is usually a fraction into its exit. Keep it clickable
+      // through the first half of that — otherwise the media toggles inside it
+      // are dead from the first pixel of scroll onward.
+      pointerEvents: t < 0.5 ? 'auto' : 'none',
     };
   }
   // At rest in the deck — peek from below with 36px per depth step
@@ -1269,18 +1345,286 @@ function getCardStyle(i: number, progress: number, fadeStart = 0.4): {
 
 // Below this viewport height the cards won't fit, so fall back to a simple stack.
 const MIN_DECK_HEIGHT = 680;
-// Dead zone at the start: px of scroll after the deck sticks before raw progress ramps (bumper).
+// How far into a card's exit its fade begins. Insight cards hold on longer:
+// their wireframes are the point, so they stay readable most of the way out.
+const RESEARCH_FADE_START = 0.4;
+const INSIGHTS_FADE_START = 0.72;
+// Dead zone at the start: px of scroll after the deck sticks before progress ramps (bumper).
 const RESEARCH_DECK_DEAD_ZONE = 160;
-// Fast-scroll pass-through: above these thresholds, skip snap animation and follow raw progress.
-// Tuned so deliberate scrolling never triggers; only clear trackpad/wheel flicks do.
-const FAST_SCROLL_VELOCITY = 0.004; // |ΔrawP| / ms
-const FAST_SCROLL_DELTA = 0.22; // single-event rawP jump
+/**
+ * Half-width of the flat zone around each whole card index.
+ *
+ * Small on purpose: just enough to keep a resting card from twitching on stray
+ * sub-pixel scroll, and gone the instant the reader actually scrolls. A wide
+ * plateau is a force threshold to break through, which is the opposite of
+ * effortless.
+ */
+const DECK_MAGNET_PLATEAU = 0.05;
+/**
+ * A frame delta this large is a fling, not a scroll.
+ *
+ * Normal trackpad and wheel input lands well under it, so ordinary scrolling is
+ * never touched — it moves the deck 1:1 from the first frame, with nothing to
+ * push through. Only input above this gets held to a single card, so one hard
+ * swipe advances one card instead of three.
+ */
+const DECK_SWIPE_DELTA = 0.15;
+/**
+ * How far from its resting card the deck must have travelled for a scroll to
+ * count as an advance.
+ *
+ * This is what makes one notch move one card. Round-to-nearest would need half
+ * a card of scroll before it committed, so a light flick would creep forward
+ * and then slide back to where it started — technically correct and completely
+ * unsatisfying. Instead any movement past this small threshold commits a whole
+ * step in the direction it was going.
+ *
+ * At 0.10 of a 350px card this is ~35px of scroll: under a single wheel notch,
+ * over an accidental nudge.
+ */
+const DECK_STEP_COMMIT = 0.1;
+/** Per-frame delta under which the scroll counts as stopped. */
+const DECK_IDLE_DELTA = 0.0015;
+/** Frames of quiet before the deck settles onto the nearest whole card. */
+const DECK_IDLE_FRAMES = 6;
+
+/**
+ * Bends raw scroll progress so whole cards are magnetic.
+ *
+ * Around every integer sits a flat zone: scroll within it and progress does not
+ * move at all. That is the groove a card rests in — trailing trackpad momentum
+ * that carries a little past a landing gets absorbed instead of lifting the
+ * next card by a few percent. Between the grooves the curve has to cover a full
+ * card in the narrower band that is left, so the card crosses the frame briskly
+ * rather than hanging in the middle of it.
+ *
+ * Smoothstep is what joins the two: its slope is zero at both ends, so the card
+ * leaves a groove and settles into the next one without a visible kick at the
+ * boundary. A plain power curve would meet the flat zones at an angle and snap
+ * into motion.
+ */
+function magnetizeProgress(raw: number, cardCount: number): number {
+  const index = Math.floor(raw);
+  const f = raw - index;
+  if (f <= DECK_MAGNET_PLATEAU) return index;
+  if (f >= 1 - DECK_MAGNET_PLATEAU) return Math.min(cardCount - 1, index + 1);
+  const u = (f - DECK_MAGNET_PLATEAU) / (1 - 2 * DECK_MAGNET_PLATEAU);
+  return Math.min(cardCount - 1, index + u * u * (3 - 2 * u));
+}
+
+/**
+ * Spring constants for the deck.
+ *
+ * Critical damping for this stiffness is 2·√320 ≈ 35.8, so damping 28 puts the
+ * ratio near 0.78 — stiff, with just enough left under critical to arrive with
+ * intent rather than drift in. The spring still does its filtering job: wheel
+ * and trackpad deltas come in uneven lumps, and binding transforms to them 1:1
+ * hands that unevenness straight to the cards.
+ */
+const DECK_SPRING_STIFFNESS = 320;
+const DECK_SPRING_DAMPING = 28;
+/** Fixed integration step (s). Sub-stepping keeps the spring stable on long frames. */
+const DECK_SPRING_STEP = 1 / 120;
+/** Close enough, slow enough: settle onto the target and stop the loop. */
+const DECK_SPRING_EPSILON = 0.0004;
+
+/**
+ * Scrubs a card deck against scroll position, through a spring.
+ *
+ * Scroll offset sets a continuous target progress — fractional, bound 1:1 to
+ * the scroll — and the cards follow a critically damped spring chasing it. The
+ * spring is a smoothing filter, not an animation: it takes the uneven lumps a
+ * wheel or trackpad actually delivers and hands the cards a clean signal,
+ * without lagging behind the scroll or overshooting it.
+ *
+ * Nothing is committed and nothing is queued, so scroll input can never be
+ * ignored — which is what went wrong in the version this descends from, a snap
+ * that ran on a fixed 700ms clock and dropped scroll events for its duration.
+ * There is no fast-scroll case to detect here and no velocity thresholds: a
+ * flick simply moves the target further.
+ *
+ * Styles go straight to the DOM rather than through state, for the reason
+ * BackToTopButton gives: a render before the paint is a frame late, and a frame
+ * late on every frame is what jank is. The old version pushed progress through
+ * setState each frame, re-rendering three cards of GIFs and live iframes sixty
+ * times a second.
+ */
+function useScrollDeck(cardCount: number, fadeStart: number, disabled: boolean) {
+  const outerRef = useRef<HTMLDivElement>(null);
+  /** The stack's direct children are the cards, in order — no per-card refs needed. */
+  const stackRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (disabled) return;
+
+    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    let frame = 0;
+    let lastTime = 0;
+    /** Where the scroll says we are. */
+    let target = 0;
+    /** Where the cards actually are — lags `target`, springs toward it. */
+    let current = 0;
+    let velocity = 0;
+    /** Scroll-mapping state: see readTarget. */
+    let prevRaw = -1;
+    let braked = 0;
+    /** The card the deck last came to rest on — what a fling is held to one step of. */
+    let stepAnchor = 0;
+    /** Consecutive quiet frames, for the settle-to-nearest-card rule. */
+    let idleFrames = 0;
+
+    /**
+     * Scroll position, as a continuous card index — magnetised, and braked.
+     *
+     * Scrolling moves the deck one-for-one, immediately: there is no threshold
+     * to break through and no compression eating pixels. Two light touches sit
+     * on top. A fling — and only a fling — is held to a single card from
+     * wherever the deck last rested, so one hard swipe advances one card rather
+     * than three. And when scrolling stops, the deck lands on a whole card.
+     *
+     * Holding to one step can leave the deck behind the scrollbar, so both ends
+     * of the runway re-pin: the first and last cards are always reachable.
+     */
+    const readTarget = () => {
+      const outer = outerRef.current;
+      if (!outer) return target;
+      const top = outer.getBoundingClientRect().top;
+      const raw = Math.max(
+        0,
+        Math.min(cardCount - 1, (-top - RESEARCH_DECK_DEAD_ZONE) / SCROLL_PER_CARD),
+      );
+
+      if (prevRaw < 0) {
+        prevRaw = raw;
+        braked = raw;
+        stepAnchor = Math.round(raw);
+      }
+      const delta = raw - prevRaw;
+      prevRaw = raw;
+
+      // Ordinary scrolling moves the deck one-for-one from the first frame —
+      // no threshold to break through, nothing shaved off the delta. A fling is
+      // the only input treated differently, and only to hold it to one card.
+      let next = braked + delta;
+      if (Math.abs(delta) > DECK_SWIPE_DELTA) {
+        const limit = stepAnchor + Math.sign(delta);
+        next = delta > 0 ? Math.min(next, limit) : Math.max(next, limit);
+      }
+      braked = Math.max(0, Math.min(cardCount - 1, next));
+
+      // A fling can leave the deck behind where the scrollbar sits. Re-pin at
+      // the runway's ends so the first and last cards are always reachable.
+      if (raw <= 0) braked = 0;
+      else if (raw >= cardCount - 1) braked = cardCount - 1;
+
+      // Scroll has stopped: commit to a whole card, and take it as the anchor the
+      // next gesture is measured from.
+      if (Math.abs(delta) < DECK_IDLE_DELTA) {
+        idleFrames++;
+        if (idleFrames >= DECK_IDLE_FRAMES) {
+          const moved = braked - stepAnchor;
+          const settled = Math.abs(moved) >= 1
+            // Travelled a card or more: whichever card it ended nearest is the
+            // one the reader means.
+            ? Math.round(braked)
+            : Math.abs(moved) >= DECK_STEP_COMMIT
+              // A light scroll: take the whole step it was reaching for.
+              ? stepAnchor + Math.sign(moved)
+              // Barely moved: fall back to where it started.
+              : stepAnchor;
+          braked = Math.max(0, Math.min(cardCount - 1, settled));
+          stepAnchor = braked;
+        }
+      } else {
+        idleFrames = 0;
+      }
+
+      return magnetizeProgress(braked, cardCount);
+    };
+
+    const draw = () => {
+      const stack = stackRef.current;
+      if (!stack) return;
+      for (let i = 0; i < stack.children.length; i++) {
+        const el = stack.children[i] as HTMLElement;
+        const style = getCardStyle(i, current, fadeStart);
+        el.style.transform = style.transform;
+        el.style.opacity = String(style.opacity);
+        el.style.zIndex = String(style.zIndex);
+        el.style.pointerEvents = style.pointerEvents;
+      }
+    };
+
+    const tick = (now: number) => {
+      // Cap the step so a stalled tab doesn't hand the spring a huge dt and launch it.
+      const dt = Math.min(0.05, lastTime ? (now - lastTime) / 1000 : DECK_SPRING_STEP);
+      lastTime = now;
+      target = readTarget();
+
+      let remaining = dt;
+      while (remaining > 0) {
+        const step = Math.min(DECK_SPRING_STEP, remaining);
+        remaining -= step;
+        const accel = (target - current) * DECK_SPRING_STIFFNESS - velocity * DECK_SPRING_DAMPING;
+        velocity += accel * step;
+        current += velocity * step;
+      }
+
+      draw();
+
+      // Keep running while the spring still has somewhere to go — and while the
+      // deck is still mid-exit, so the idle settle above always gets its frames.
+      if (
+        Math.abs(target - current) > DECK_SPRING_EPSILON
+        || Math.abs(velocity) > DECK_SPRING_EPSILON
+        || !Number.isInteger(target)
+      ) {
+        frame = requestAnimationFrame(tick);
+      } else {
+        frame = 0;
+        lastTime = 0;
+        current = target;
+        velocity = 0;
+        draw();
+      }
+    };
+
+    const start = () => {
+      if (frame) return;
+      lastTime = 0;
+      frame = requestAnimationFrame(tick);
+    };
+
+    const onScroll = () => {
+      if (reduced) {
+        // No spring, no overshoot — follow the scroll exactly.
+        current = readTarget();
+        velocity = 0;
+        if (!frame) frame = requestAnimationFrame(() => { frame = 0; draw(); });
+        return;
+      }
+      start();
+    };
+
+    // Land wherever the scroll already is instead of springing in from the top.
+    current = target = readTarget();
+    draw();
+
+    window.addEventListener('scroll', onScroll, { passive: true });
+    window.addEventListener('resize', onScroll);
+    return () => {
+      if (frame) cancelAnimationFrame(frame);
+      window.removeEventListener('scroll', onScroll);
+      window.removeEventListener('resize', onScroll);
+    };
+  }, [cardCount, fadeStart, disabled]);
+
+  return { outerRef, stackRef };
+}
 
 function ResearchDeck() {
-  const outerRef = useRef<HTMLDivElement>(null);
-  const [displayProgress, setDisplayProgress] = useState(0);
   const [deckDisabled, setDeckDisabled] = useState(false);
-  const aniState = useRef({ scrollP: 0, displayP: 0, animating: false, animTarget: 0, animStartP: 0, animStartTime: 0, animId: 0 });
+  const { outerRef, stackRef } = useScrollDeck(3, RESEARCH_FADE_START, deckDisabled);
 
   // Enable/disable deck based on viewport height AND width
   useEffect(() => {
@@ -1291,94 +1635,6 @@ function ResearchDeck() {
     window.addEventListener('resize', checkSize);
     return () => window.removeEventListener('resize', checkSize);
   }, []);
-
-  useEffect(() => {
-    if (deckDisabled) return;
-    const state = aniState.current;
-
-    function animateTo(target: number) {
-      if (state.animating && state.animTarget === target) return;
-      state.animating = true;
-      state.animTarget = target;
-      state.animStartP = state.displayP;
-      state.animStartTime = Date.now();
-    }
-
-    // Persistent tick loop — only does work when animating
-    function tick() {
-      if (state.animating) {
-        const t = Math.min(1, (Date.now() - state.animStartTime) / 700);
-        const eased = t * t * (3 - 2 * t); // smoothstep
-        const newP = state.animStartP + (state.animTarget - state.animStartP) * eased;
-        state.displayP = newP;
-        setDisplayProgress(newP);
-        if (t >= 1) {
-          state.animating = false;
-          state.displayP = state.animTarget;
-          setDisplayProgress(state.animTarget);
-        }
-      }
-      state.animId = requestAnimationFrame(tick);
-    }
-
-    // snappedTo: which card is currently committed (0, 1, or 2).
-    // Transitions are fully automatic — any scroll past a boundary triggers the full snap.
-    let snappedTo = 0;
-    let prevRawP = -1;
-    let prevTime = 0;
-
-    function onScroll() {
-      if (!outerRef.current) return;
-      const rect = outerRef.current.getBoundingClientRect();
-      const rawP = Math.max(0, Math.min(2, (-rect.top - RESEARCH_DECK_DEAD_ZONE) / SCROLL_PER_CARD));
-      const now = performance.now();
-      const dt = prevTime > 0 ? Math.max(1, now - prevTime) : 16;
-      const delta = prevRawP < 0 ? 0 : rawP - prevRawP;
-      const velocity = Math.abs(delta) / dt;
-      const scrollingForward = prevRawP < 0 || rawP >= prevRawP;
-      prevRawP = rawP;
-      prevTime = now;
-      state.scrollP = rawP;
-
-      // Fast flick: skip snap sequencing so the user passes through at scroll speed
-      if (velocity >= FAST_SCROLL_VELOCITY || Math.abs(delta) >= FAST_SCROLL_DELTA) {
-        state.animating = false;
-        state.displayP = rawP;
-        setDisplayProgress(rawP);
-        snappedTo = Math.max(0, Math.min(2, Math.round(rawP)));
-        return;
-      }
-
-      if (state.animating) {
-        // Cancel snap and reverse if user scrolls significantly backward
-        if (!scrollingForward && rawP < state.animTarget - 0.5) {
-          state.animating = false;
-          snappedTo = state.animTarget - 1;
-          animateTo(snappedTo);
-        }
-        return;
-      }
-
-      // Forward: snap immediately on any scroll past the current card boundary
-      if (scrollingForward && rawP > snappedTo && snappedTo < 2) {
-        snappedTo++;
-        animateTo(snappedTo);
-      }
-      // Backward: snap back when user scrolls 50%+ past the previous card boundary
-      else if (!scrollingForward && rawP < snappedTo - 0.5 && snappedTo > 0) {
-        snappedTo--;
-        animateTo(snappedTo);
-      }
-    }
-
-    state.animId = requestAnimationFrame(tick);
-    window.addEventListener('scroll', onScroll, { passive: true });
-    onScroll();
-    return () => {
-      window.removeEventListener('scroll', onScroll);
-      cancelAnimationFrame(state.animId);
-    };
-  }, [deckDisabled]);
 
   const cards = [
     {
@@ -1443,10 +1699,13 @@ function ResearchDeck() {
         flexDirection: 'column',
         justifyContent: 'flex-start',
       }}>
-        {/* Card stack — relative so absolute cards are positioned against it */}
-        <div style={{ position: 'relative', flex: 1 }}>
+        {/* Card stack — relative so absolute cards are positioned against it.
+            Its direct children are what useScrollDeck writes transforms to, so
+            nothing else may be rendered here. Inline styles are the at-rest
+            first frame; from then on the hook owns them. */}
+        <div ref={stackRef} style={{ position: 'relative', flex: 1 }}>
           {cards.map((card, i) => {
-            const s = getCardStyle(i, displayProgress);
+            const s = getCardStyle(i, 0, RESEARCH_FADE_START);
             return (
               <div key={i} style={{
                 position: i === 0 ? 'relative' : 'absolute',
@@ -1558,12 +1817,10 @@ function InsightsCard({
 }
 
 function InsightsDeck() {
-  const outerRef = useRef<HTMLDivElement>(null);
-  const [displayProgress, setDisplayProgress] = useState(0);
   const [deckDisabled, setDeckDisabled] = useState(false);
   // Equal shell height for even peeks — sized from the sticky viewport like ToggleMedia
   const [shellHeight, setShellHeight] = useState(640);
-  const aniState = useRef({ scrollP: 0, displayP: 0, animating: false, animTarget: 0, animStartP: 0, animStartTime: 0, animId: 0 });
+  const { outerRef, stackRef } = useScrollDeck(3, INSIGHTS_FADE_START, deckDisabled);
 
   const wireBase = '/case-studies/finding-focus-ai-assistant/wireframes';
   const cards = [
@@ -1621,85 +1878,6 @@ function InsightsDeck() {
     return () => window.removeEventListener('resize', updateShell);
   }, [deckDisabled]);
 
-  useEffect(() => {
-    if (deckDisabled) return;
-    const state = aniState.current;
-
-    function animateTo(target: number) {
-      if (state.animating && state.animTarget === target) return;
-      state.animating = true;
-      state.animTarget = target;
-      state.animStartP = state.displayP;
-      state.animStartTime = Date.now();
-    }
-
-    function tick() {
-      if (state.animating) {
-        const t = Math.min(1, (Date.now() - state.animStartTime) / 700);
-        const eased = t * t * (3 - 2 * t);
-        const newP = state.animStartP + (state.animTarget - state.animStartP) * eased;
-        state.displayP = newP;
-        setDisplayProgress(newP);
-        if (t >= 1) {
-          state.animating = false;
-          state.displayP = state.animTarget;
-          setDisplayProgress(state.animTarget);
-        }
-      }
-      state.animId = requestAnimationFrame(tick);
-    }
-
-    let snappedTo = 0;
-    let prevRawP = -1;
-    let prevTime = 0;
-
-    function onScroll() {
-      if (!outerRef.current) return;
-      const rect = outerRef.current.getBoundingClientRect();
-      const rawP = Math.max(0, Math.min(2, (-rect.top - RESEARCH_DECK_DEAD_ZONE) / SCROLL_PER_CARD));
-      const now = performance.now();
-      const dt = prevTime > 0 ? Math.max(1, now - prevTime) : 16;
-      const delta = prevRawP < 0 ? 0 : rawP - prevRawP;
-      const velocity = Math.abs(delta) / dt;
-      const scrollingForward = prevRawP < 0 || rawP >= prevRawP;
-      prevRawP = rawP;
-      prevTime = now;
-      state.scrollP = rawP;
-
-      if (velocity >= FAST_SCROLL_VELOCITY || Math.abs(delta) >= FAST_SCROLL_DELTA) {
-        state.animating = false;
-        state.displayP = rawP;
-        setDisplayProgress(rawP);
-        snappedTo = Math.max(0, Math.min(2, Math.round(rawP)));
-        return;
-      }
-
-      if (state.animating) {
-        if (!scrollingForward && rawP < state.animTarget - 0.5) {
-          state.animating = false;
-          snappedTo = state.animTarget - 1;
-          animateTo(snappedTo);
-        }
-        return;
-      }
-
-      if (scrollingForward && rawP > snappedTo && snappedTo < 2) {
-        snappedTo++;
-        animateTo(snappedTo);
-      } else if (!scrollingForward && rawP < snappedTo - 0.5 && snappedTo > 0) {
-        snappedTo--;
-        animateTo(snappedTo);
-      }
-    }
-
-    state.animId = requestAnimationFrame(tick);
-    window.addEventListener('scroll', onScroll, { passive: true });
-    onScroll();
-    return () => {
-      window.removeEventListener('scroll', onScroll);
-      cancelAnimationFrame(state.animId);
-    };
-  }, [deckDisabled]);
 
   if (deckDisabled) {
     return (
@@ -1727,9 +1905,10 @@ function InsightsDeck() {
         flexDirection: 'column',
         justifyContent: 'flex-start',
       }}>
-        <div style={{ position: 'relative', flex: 1 }}>
+        {/* Direct children only — see ResearchDeck's stack */}
+        <div ref={stackRef} style={{ position: 'relative', flex: 1 }}>
           {cards.map((card, i) => {
-            const s = getCardStyle(i, displayProgress, 0.72);
+            const s = getCardStyle(i, 0, INSIGHTS_FADE_START);
             return (
               <div key={i} style={{
                 position: i === 0 ? 'relative' : 'absolute',
@@ -2483,11 +2662,36 @@ export default function FindingFocusAiAssistantCaseStudy() {
             body="I spent a lot of time designing the assistant and deciding where it lives and how it presents itself. But none of that matters if the assistant did not accurately respond to queries. Teachers didn't lose trust in chatbots because they looked bad, but because they were confidently unhelpful. Once QA started, that stopped being a research finding and became my problem to fix."
           />
 
+          {/* Heads up: the most technical stretch of the page, so it offers the
+              reader the door before asking for the commitment. */}
           <Callout
-            label="My Role"
-            heading="I didn't build the backend, but I helped make sure the assistant was accurate."
-            body="Our SWE, Thomas, built and configured the assistant. My job was to define what a good answer looked like from the teacher's side, pressure-test the responses in QA, and flag where they fell short before they reached a classroom."
+            label="Heads Up"
+            heading="Technical Deep-Dive Ahead"
+            hideBar
+            outlined
+            icon={<CodeIcon sx={{ fontSize: 30, color: EYEBROW_ICON_COLOR }} />}
             compactBody
+            body={
+              <>
+                Below is a look at the technical architecture and API implementation behind the assistant. While
+                written from a product designer&rsquo;s perspective, it covers technical mechanics. Prefer the
+                high-level impact? Feel free to{' '}
+                <button
+                  type="button"
+                  className="cs-inline-jump"
+                  onClick={() => {
+                    const el = document.getElementById('section-outcomes');
+                    if (!el) return;
+                    smoothScrollTo(el.getBoundingClientRect().top + window.scrollY - 40);
+                  }}
+                >
+                  skip to the outcomes
+                  <span className="cs-inline-jump-arrow" aria-hidden="true">
+                    →
+                  </span>
+                </button>
+              </>
+            }
           />
 
           {/* The Knowledge Base */}
@@ -2636,18 +2840,22 @@ export default function FindingFocusAiAssistantCaseStudy() {
             heading="The first signals we were able to track."
             body="After launch, we tracked how teachers engaged with the assistant during onboarding. These are the first numbers we were able to capture, and they set the baseline we'll measure future iterations against."
           >
-            <div className="flex flex-col gap-8">
+            {/* Numbers and the teacher's reaction to them are one result, so they
+                share a card and are separated by rules rather than by space. */}
+            <div
+              className="rounded-[16px] bg-white max-w-[820px] overflow-hidden"
+              style={{ border: `1px solid ${BORDER}` }}
+            >
               <StatRow
+                divided
                 stats={[
                   { value: '18%', label: 'of first-time users clicked into the assistant' },
                   { value: '62%', label: 'of users who opened it went on to ask a question' },
                   { value: '12%', label: 'fewer support tickets, Spring + Fall 2025 vs. the same semesters in 2024' },
                 ]}
               />
-              <div
-                className="rounded-[16px] p-4 sm:p-6 flex flex-col gap-3 bg-white max-w-[760px]"
-                style={{ border: `1px solid ${BORDER}` }}
-              >
+              <div style={{ height: 1, background: BORDER }} />
+              <div className="p-5 sm:p-6 flex flex-col gap-3">
                 <Eyebrow label="Post-Launch Reaction" />
                 <p className="text-[16px] font-normal leading-[165%] text-[#333]">
                   &ldquo;It was easy to talk to the assistant, I liked that I could ask all of the questions I had about getting set up. It was a lot more convenient than emailing support and waiting for a response.&rdquo;
