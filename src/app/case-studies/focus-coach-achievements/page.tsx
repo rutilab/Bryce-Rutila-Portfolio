@@ -1180,30 +1180,37 @@ function AnatomyCards() {
   );
 }
 
-// ── Outcomes: leading (early usability) vs. lagging (core retention) indicators ──
-const LEADING_INDICATORS = [
+// ── Outcomes: what has moved so far, then what Fall has to confirm ──
+// Titles are deliberately repeated across the two groups: each signal sits
+// above the goal it answers to, so a reader can pair them without a legend.
+const EARLY_SIGNALS = [
   {
-    title: 'Reflection friction',
-    body: 'Time spent rating focus is already down 22% — an early signal that simplifying the reflection screen lowered the cognitive load.',
+    title: 'First-session retention',
+    body: 'Users coming back after their first session rose from 61% to 74% — a 21% increase, and the clearest sign so far that the new flow gives people a reason to return.',
     status: 'Observed',
+  },
+  {
+    title: 'Session distribution',
+    body: 'Sessions concentrated among power users fell from 55% to 34%, a 38% drop. Study time is spreading across the class instead of piling up in a handful of students.',
+    status: 'Observed',
+  },
+] as const;
+
+const FALL_GOALS = [
+  {
+    title: 'First-session retention',
+    body: 'Hold retention above 75%, which puts single-session abandonment under 25%.',
+    status: 'Target',
+  },
+  {
+    title: 'Session distribution',
+    body: 'Bring the share of all sessions completed by the top 1% of users under 30%.',
+    status: 'Target',
   },
   {
     title: 'Focus Streak completion',
     body: 'Track the percentage of students who achieve their first Focus Streak to confirm that the reward is both attainable and motivating.',
     status: 'Tracking',
-  },
-] as const;
-
-const LAGGING_INDICATORS = [
-  {
-    title: 'First-session retention',
-    body: 'Reduce the baseline 39.3% single-session abandonment rate to under 25%.',
-    status: 'Target',
-  },
-  {
-    title: 'Session distribution',
-    body: 'Reduce the percentage of total sessions completed by the top 1% from 54.6% to under 30%.',
-    status: 'Target',
   },
 ] as const;
 
@@ -2539,8 +2546,8 @@ export default function FocusCoachAchievementsCaseStudy() {
             body="Since this launched in July (2026), a naturally low-usage period for us, our data sample is small. However, early signals are promising: initial retention trends show strong momentum in getting first-time users to stick with the Focus Coach. We’ve established tracking to continuously evaluate performance against our targets throughout the upcoming Fall semester."
           >
             <div className="flex flex-col gap-8">
-              <IndicatorGroup label="Leading Indicators — early usability & engagement" indicators={LEADING_INDICATORS} />
-              <IndicatorGroup label="Lagging Indicators — core retention metrics" indicators={LAGGING_INDICATORS} />
+              <IndicatorGroup label="Early signals — first weeks after launch" indicators={EARLY_SIGNALS} />
+              <IndicatorGroup label="Goals — what the Fall semester has to confirm" indicators={FALL_GOALS} />
             </div>
           </Section>
         </div>
