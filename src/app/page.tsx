@@ -7,7 +7,6 @@ import HalftoneCanvas from '@/components/HalftoneCanvas';
 import HalftoneFly from '@/components/HalftoneFly';
 import { AIAssistantThumbnail } from '@/components/AIAssistantThumbnail';
 import { MilestoneThumbnail } from '@/components/MilestoneThumbnail';
-import { DisccThumbnail } from '@/components/DisccThumbnail';
 import { IdeationChip } from '@/components/IdeationChip';
 import { IridescentText } from '@/components/IridescentText';
 import { IridescentEyebrow } from '@/components/IridescentEyebrow';
@@ -110,38 +109,6 @@ const PROJECTS: Project[] = [
     cardColor: '#ff9c12',
     href: '/case-studies/finding-focus-ai-assistant',
     thumbnailContent: <AIAssistantThumbnail />,
-  },
-  {
-    title: 'Landing Page Redesign',
-    eyebrow: 'FINDING FOCUS • 2026',
-    description:
-      "Redesigning the Finding Focus marketing site to improve conversion and communicate value across teacher and student personas",
-    tags: ['UX DESIGN', 'VISUAL DESIGN', 'MARKETING'],
-    readTime: '8 MIN READ',
-    cardColor: '#12b4ff',
-    href: '/case-studies/finding-focus-landing-page',
-    thumbnailContent: (
-      <img src="/case-studies/landing-page/header-and-hero.png" alt="" style={{
-        position: 'absolute', inset: '8px',
-        width: 'calc(100% - 16px)', height: 'calc(100% - 16px)',
-        objectFit: 'cover', objectPosition: 'top center',
-        display: 'block',
-        borderRadius: '5px',
-      }} />
-    ),
-  },
-  {
-    title: 'Discc',
-    eyebrow: 'PERSONAL PROJECT • 2026',
-    description:
-      'Building a collectible library for curating, showing off, and sharing Spotify listening history',
-    // 'iOS' keeps its proper-noun casing — the tags carry no text-transform, and
-    // 'IOS' among the all-caps neighbours reads as a typo rather than a platform.
-    tags: ['PRODUCT DESIGN', 'iOS', 'SOCIAL'],
-    readTime: 'COMING SOON',
-    cardColor: '#ff12f7',
-    thumbnailContent: <DisccThumbnail />,
-    comingSoon: true,
   },
 ];
 

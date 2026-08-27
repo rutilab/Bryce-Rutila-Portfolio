@@ -2,7 +2,7 @@ import type { Metadata, Viewport } from 'next';
 import { Suspense } from 'react';
 import { Geist, Geist_Mono, Inter, Battambang, IBM_Plex_Mono } from 'next/font/google';
 import { AnalyticsProvider } from '@/components/analytics/AnalyticsProvider';
-import { Navigation, BackgroundImage } from '@/components/layout';
+import { BackgroundImage } from '@/components/layout';
 import MagnetCursor from '@/components/MagnetCursor';
 import './globals.css';
 
@@ -71,6 +71,13 @@ const ogImage = {
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
+  // Unlisted single-employer copy — keep it out of every index and cache.
+  robots: {
+    index: false,
+    follow: false,
+    nocache: true,
+    googleBot: { index: false, follow: false, noimageindex: true },
+  },
   title: "Bryce's Portfolio",
   description:
     'A product designer who loves turning ideas into reality. Chat with BAR 9000 to learn more about my work.',
@@ -108,7 +115,6 @@ export default function RootLayout({
       >
         <BackgroundImage />
         <MagnetCursor />
-        <Navigation />
         <Suspense fallback={null}>
           <AnalyticsProvider />
         </Suspense>
