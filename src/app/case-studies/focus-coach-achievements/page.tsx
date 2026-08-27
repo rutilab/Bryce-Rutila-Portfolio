@@ -2519,15 +2519,15 @@ export default function FocusCoachAchievementsCaseStudy() {
                 stats={[
                   {
                     value: '75%',
-                    label: 'of first-time users returning for a second session, up from 61%',
+                    label: 'of first-time users returning for a second session (baseline 61%)',
                   },
                   {
                     value: '30%',
-                    label: 'ceiling on the share of all sessions completed by the top 1% of users, down from 55%',
+                    label: 'ceiling on the share of all sessions completed by the top 1% of users (baseline 55%)',
                   },
                   {
                     value: '15%',
-                    label: 'of new users completing 10+ sessions within 30 days, up from 6%',
+                    label: 'of new users completing 10+ sessions within 30 days (baseline 6%)',
                   },
                 ]}
               />
@@ -2544,6 +2544,13 @@ export default function FocusCoachAchievementsCaseStudy() {
                   },
                 ]}
               />
+              {/* Pulled up against the cell's own padding so it reads as a
+                  footnote to the stat rather than a second row. */}
+              <div className="px-5 sm:px-6 pb-5 sm:pb-6 -mt-2">
+                <p className="text-[11px] leading-[150%] text-[#8b8b8b]">
+                  *based on limited data from 2026 summer cohort compared to 25-26 school year
+                </p>
+              </div>
             </div>
           </Section>
         </div>
