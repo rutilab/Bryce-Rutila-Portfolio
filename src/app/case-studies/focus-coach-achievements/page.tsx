@@ -3,7 +3,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import type { CSSProperties, MutableRefObject, ReactNode, RefObject } from 'react';
 import { createPortal } from 'react-dom';
-import KeyboardDoubleArrowDownOutlined from '@mui/icons-material/KeyboardDoubleArrowDownOutlined';
 import KeyboardDoubleArrowUpOutlined from '@mui/icons-material/KeyboardDoubleArrowUpOutlined';
 import ArrowDownward from '@mui/icons-material/ArrowDownward';
 import Check from '@mui/icons-material/Check';
@@ -542,6 +541,13 @@ function FocusStreakWeekCard() {
   );
 }
 
+/** Column counts for a StatRow, written out in full so Tailwind can see them. */
+const STAT_COLS: Record<number, string> = {
+  1: 'sm:grid-cols-1',
+  2: 'sm:grid-cols-2',
+  3: 'sm:grid-cols-3',
+};
+
 // ── StatRow: three headline numbers with a blue underline tick ────────────────
 function StatRow({
   stats,
@@ -557,10 +563,12 @@ function StatRow({
   return (
     <div
       ref={ref}
+      // Columns follow the stat count, so dropping a stat closes the gap it
+      // left rather than parking the rest against an empty column.
       className={
         divided
-          ? 'grid grid-cols-1 sm:grid-cols-3'
-          : 'grid grid-cols-1 sm:grid-cols-3 gap-8 sm:gap-10 max-w-[820px]'
+          ? `grid grid-cols-1 ${STAT_COLS[Math.min(stats.length, 3)]}`
+          : `grid grid-cols-1 ${STAT_COLS[Math.min(stats.length, 3)]} gap-8 sm:gap-10 max-w-[820px]`
       }
     >
       {stats.map((s, i) => (
@@ -2076,14 +2084,9 @@ export default function FocusCoachAchievementsCaseStudy() {
                 stats={[
                   { value: '89', label: 'students surveyed on rewards and motivation' },
                   {
-                    value: '21%',
-                    label: 'increase in users returning after one session (from 61% to 74%)',
+                    value: '18%',
+                    label: 'increase in users returning after one session (from 61% to 72%)',
                     icon: <KeyboardDoubleArrowUpOutlined sx={{ fontSize: 24, color: ACCENT }} />,
-                  },
-                  {
-                    value: '38%',
-                    label: 'decrease in session concentration among power users (from 55% to 34%)',
-                    icon: <KeyboardDoubleArrowDownOutlined sx={{ fontSize: 24, color: ACCENT }} />,
                   },
                 ]}
               />
@@ -2500,28 +2503,44 @@ export default function FocusCoachAchievementsCaseStudy() {
             heading="Early signals are promising, we will get more data this fall."
             body="Since this launched in July (2026), a naturally low-usage period for us, our data sample is small. However, early signals are promising: initial retention trends show strong momentum in getting first-time users to stick with the Focus Coach. We’ve established tracking to continuously evaluate performance against our targets throughout the upcoming Fall semester."
           >
-            {/* What moved and what it's measured against are one result, so they
-                share a card and are separated by rules rather than by space.
-                No icons here: the direction is already in each label, and the
-                underline ticks stay the same width across all three cells. */}
+            {/* Goals first, then the one thing that has actually moved — the
+                order the section reads in while the sample is still this small.
+                One card, ruled rows, so a signal is never shown apart from the
+                target it answers to. */}
             <div
               className="rounded-[16px] bg-white max-w-[820px] overflow-hidden"
               style={{ border: `1px solid ${BORDER}` }}
             >
+              <div className="px-5 sm:px-6 pt-5 sm:pt-6">
+                <Eyebrow label="Goals for the Fall Semester" />
+              </div>
               <StatRow
                 divided
                 stats={[
                   {
-                    value: '21%',
-                    label: 'more first-time users come back for a second session, up from 61% to 74%',
+                    value: '75%',
+                    label: 'of first-time users returning for a second session',
                   },
                   {
-                    value: '38%',
-                    label: 'less concentration among power users, down from 55% of all sessions to 34%',
+                    value: '30%',
+                    label: 'ceiling on the share of all sessions completed by the top 1% of users',
                   },
                   {
-                    value: 'Fall',
-                    label: 'the first full semester of real usage, measured against a 75% retention floor, a 30% concentration ceiling, and first-streak completion',
+                    value: '15%',
+                    label: 'of new users completing 10+ sessions within 30 days',
+                  },
+                ]}
+              />
+              <div style={{ height: 1, background: BORDER }} />
+              <div className="px-5 sm:px-6 pt-5 sm:pt-6">
+                <Eyebrow label="Early Signals" />
+              </div>
+              <StatRow
+                divided
+                stats={[
+                  {
+                    value: '18%',
+                    label: 'more first-time users come back for a second session, up from 61% to 72%',
                   },
                 ]}
               />
