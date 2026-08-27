@@ -543,13 +543,38 @@ function FocusStreakWeekCard() {
 }
 
 // ── StatRow: three headline numbers with a blue underline tick ────────────────
-function StatRow({ stats }: { stats: { value: string; label: string; icon?: ReactNode }[] }) {
+function StatRow({
+  stats,
+  divided,
+}: {
+  stats: { value: string; label: string; icon?: ReactNode }[];
+  /** Ruled cells instead of gapped columns, for a StatRow inside a card.
+      Stacked on small screens, so the rules turn horizontal with the layout. */
+  divided?: boolean;
+}) {
   const [ref, inView] = useInView<HTMLDivElement>(0.45);
 
   return (
-    <div ref={ref} className="grid grid-cols-1 sm:grid-cols-3 gap-8 sm:gap-10 max-w-[820px]">
+    <div
+      ref={ref}
+      className={
+        divided
+          ? 'grid grid-cols-1 sm:grid-cols-3'
+          : 'grid grid-cols-1 sm:grid-cols-3 gap-8 sm:gap-10 max-w-[820px]'
+      }
+    >
       {stats.map((s, i) => (
-        <div key={i}>
+        <div
+          key={i}
+          // Rules on the cells themselves rather than Tailwind's `divide-*`,
+          // which sets the colour but not the width under v4. Horizontal while
+          // the stats are stacked, vertical once they sit side by side.
+          className={
+            divided
+              ? 'p-5 sm:p-6 border-[#e6ecf4] border-t first:border-t-0 sm:border-t-0 sm:border-l sm:first:border-l-0'
+              : undefined
+          }
+        >
           <div className="flex flex-col w-fit">
             <div className="flex items-center gap-1">
               {s.icon}
@@ -1176,76 +1201,6 @@ function AnatomyCards() {
           <p className="text-[13px] font-normal leading-[160%] text-[#555]">{a.body}</p>
         </div>
       ))}
-    </div>
-  );
-}
-
-// ── Outcomes: what has moved so far, then what Fall has to confirm ──
-// Titles are deliberately repeated across the two groups: each signal sits
-// above the goal it answers to, so a reader can pair them without a legend.
-const EARLY_SIGNALS = [
-  {
-    title: 'First-session retention',
-    body: 'Users coming back after their first session rose from 61% to 74% — a 21% increase, and the clearest sign so far that the new flow gives people a reason to return.',
-    status: 'Observed',
-  },
-  {
-    title: 'Session distribution',
-    body: 'Sessions concentrated among power users fell from 55% to 34%, a 38% drop. Study time is spreading across the class instead of piling up in a handful of students.',
-    status: 'Observed',
-  },
-] as const;
-
-const FALL_GOALS = [
-  {
-    title: 'First-session retention',
-    body: 'Hold retention above 75%, which puts single-session abandonment under 25%.',
-    status: 'Target',
-  },
-  {
-    title: 'Session distribution',
-    body: 'Bring the share of all sessions completed by the top 1% of users under 30%.',
-    status: 'Target',
-  },
-  {
-    title: 'Focus Streak completion',
-    body: 'Track the percentage of students who achieve their first Focus Streak to confirm that the reward is both attainable and motivating.',
-    status: 'Tracking',
-  },
-] as const;
-
-function IndicatorCard({ title, body, status }: { title: string; body: string; status: string }) {
-  return (
-    <div className="flex flex-col gap-2.5 rounded-[20px] p-6" style={{ background: CARD_LIGHT }}>
-      <div className="flex items-center justify-between gap-3">
-        <p className="text-[16px] font-semibold text-[#1a1a1a]">{title}</p>
-        <span
-          className="shrink-0 rounded-full px-2.5 py-1 text-[10px] font-medium tracking-[1px] uppercase"
-          style={{ color: ACCENT_DARK, background: 'rgba(0,0,0,0.05)' }}
-        >
-          {status}
-        </span>
-      </div>
-      <p className="text-[14px] leading-[165%] text-[#666]">{body}</p>
-    </div>
-  );
-}
-
-function IndicatorGroup({
-  label,
-  indicators,
-}: {
-  label: string;
-  indicators: ReadonlyArray<{ title: string; body: string; status: string }>;
-}) {
-  return (
-    <div className="flex flex-col gap-4">
-      <p className="text-[12px] font-medium tracking-[1px] uppercase" style={{ color: EYEBROW_ICON_COLOR }}>{label}</p>
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        {indicators.map(indicator => (
-          <IndicatorCard key={indicator.title} {...indicator} />
-        ))}
-      </div>
     </div>
   );
 }
@@ -2545,9 +2500,31 @@ export default function FocusCoachAchievementsCaseStudy() {
             heading="Early signals are promising, we will get more data this fall."
             body="Since this launched in July (2026), a naturally low-usage period for us, our data sample is small. However, early signals are promising: initial retention trends show strong momentum in getting first-time users to stick with the Focus Coach. We’ve established tracking to continuously evaluate performance against our targets throughout the upcoming Fall semester."
           >
-            <div className="flex flex-col gap-8">
-              <IndicatorGroup label="Early signals — first weeks after launch" indicators={EARLY_SIGNALS} />
-              <IndicatorGroup label="Goals — what the Fall semester has to confirm" indicators={FALL_GOALS} />
+            {/* What moved and what it's measured against are one result, so they
+                share a card and are separated by rules rather than by space.
+                No icons here: the direction is already in each label, and the
+                underline ticks stay the same width across all three cells. */}
+            <div
+              className="rounded-[16px] bg-white max-w-[820px] overflow-hidden"
+              style={{ border: `1px solid ${BORDER}` }}
+            >
+              <StatRow
+                divided
+                stats={[
+                  {
+                    value: '21%',
+                    label: 'more first-time users come back for a second session, up from 61% to 74%',
+                  },
+                  {
+                    value: '38%',
+                    label: 'less concentration among power users, down from 55% of all sessions to 34%',
+                  },
+                  {
+                    value: 'Fall',
+                    label: 'the first full semester of real usage, measured against a 75% retention floor, a 30% concentration ceiling, and first-streak completion',
+                  },
+                ]}
+              />
             </div>
           </Section>
         </div>
