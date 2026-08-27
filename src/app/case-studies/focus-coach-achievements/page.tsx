@@ -6,7 +6,7 @@ import { createPortal } from 'react-dom';
 import KeyboardDoubleArrowDownOutlined from '@mui/icons-material/KeyboardDoubleArrowDownOutlined';
 import ArrowDownward from '@mui/icons-material/ArrowDownward';
 import Check from '@mui/icons-material/Check';
-import { CaseStudyMedia, CaseStudyMediaGallery, CaseStudyMediaPlaceholder, CompletionQuoteScreen, CompletionWeekTrackerScreen, EndOfSessionFlow, FocusStreakScreen, LightboxCloseButton, LightboxIconButton, LiveScreenFit, MediaCarouselStage, MilestoneHeroScreen, NorthStarAnimatedIcon, PersonalBestScreen, ReflectionScreen, ThemeModeToggle } from '@/components/case-study';
+import { CaseStudyMedia, CaseStudyMediaGallery, CaseStudyMediaPlaceholder, CompletionQuoteScreen, CompletionWeekTrackerScreen, EndOfSessionFlow, FocusStreakScreen, LightboxCloseButton, LiveScreenFit, MediaCarouselStage, MilestoneHeroScreen, NorthStarAnimatedIcon, PersonalBestScreen, ReflectionScreen, ThemeModeToggle } from '@/components/case-study';
 import type { CaseStudyMediaItem } from '@/components/case-study';
 import { useBodyScrollLock } from '@/hooks/useBodyScrollLock';
 
@@ -286,246 +286,6 @@ function PlaceholderVisual({
 }) {
   return (
     <CaseStudyMediaPlaceholder description={description} minHeight={minHeight} style={style} />
-  );
-}
-
-/** Manual image carousel — same chrome as ImageViewer on the Finding Focus landing case study. */
-function ImageViewer({ items }: { items: { src: string; alt: string; label: string }[] }) {
-  const [current, setCurrent] = useState(0);
-  const [lightboxOpen, setLightboxOpen] = useState(false);
-  const [mounted, setMounted] = useState(false);
-  const [viewport, setViewport] = useState<'xs' | 'sm' | 'md'>('md');
-  const item = items[current];
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  useEffect(() => {
-    const update = () => {
-      const w = window.innerWidth;
-      if (w < 640) setViewport('xs');
-      else if (w < 768) setViewport('sm');
-      else setViewport('md');
-    };
-    update();
-    window.addEventListener('resize', update);
-    return () => window.removeEventListener('resize', update);
-  }, []);
-
-  useBodyScrollLock(lightboxOpen && mounted);
-
-  useEffect(() => {
-    if (!lightboxOpen) return;
-    function onKey(e: KeyboardEvent) {
-      if (e.key === 'Escape') setLightboxOpen(false);
-      if (e.key === 'ArrowLeft') setCurrent((c) => (c - 1 + items.length) % items.length);
-      if (e.key === 'ArrowRight') setCurrent((c) => (c + 1) % items.length);
-    }
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [lightboxOpen, items.length]);
-
-  const stageHeight = viewport === 'xs' ? 260 : viewport === 'sm' ? 400 : 420;
-  const stagePad = viewport === 'xs' ? 16 : 32;
-
-  useEffect(() => {
-    // Self-reveal for mobile fade CSS (same system as CaseStudyMedia)
-    const imgs = document.querySelectorAll('.case-study-content-layer img');
-    imgs.forEach((el) => {
-      const img = el as HTMLImageElement;
-      const show = () => {
-        img.classList.add('case-study-img-visible');
-        img.dataset.csReveal = '1';
-      };
-      if (img.complete) show();
-      else {
-        img.addEventListener('load', show, { once: true });
-        img.addEventListener('error', show, { once: true });
-      }
-    });
-  }, [current, item.src]);
-
-  return (
-    <>
-      <div>
-        <div
-          className="rounded-[24px] overflow-hidden relative"
-          style={{ background: BLOCK_BG, height: stageHeight }}
-        >
-          <div className="absolute inset-0 flex items-center justify-center" style={{ padding: stagePad }}>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              role="button"
-              tabIndex={0}
-              aria-label={`Expand image: ${item.alt}`}
-              onClick={() => setLightboxOpen(true)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' || e.key === ' ') {
-                  e.preventDefault();
-                  setLightboxOpen(true);
-                }
-              }}
-              src={item.src}
-              alt={item.alt}
-              className="cs-expandable-img max-h-full max-w-full w-auto h-auto block rounded-md select-none"
-              style={{ cursor: 'zoom-in' }}
-              draggable={false}
-            />
-          </div>
-
-          <button
-            type="button"
-            aria-label="Previous image"
-            onClick={(e) => {
-              e.stopPropagation();
-              setCurrent((c) => c - 1);
-            }}
-            className="cs-media-btn"
-            style={{
-              visibility: current > 0 ? 'visible' : 'hidden',
-              position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)',
-              width: 32, height: 32, borderRadius: '50%',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              cursor: 'pointer', zIndex: 2,
-            }}
-          >
-            <svg width="13" height="13" viewBox="0 0 14 14" fill="none">
-              <path d="M9 11L4 7l5-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-          </button>
-          <button
-            type="button"
-            aria-label="Next image"
-            onClick={(e) => {
-              e.stopPropagation();
-              setCurrent((c) => c + 1);
-            }}
-            className="cs-media-btn"
-            style={{
-              visibility: current < items.length - 1 ? 'visible' : 'hidden',
-              position: 'absolute', right: 16, top: '50%', transform: 'translateY(-50%)',
-              width: 32, height: 32, borderRadius: '50%',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              cursor: 'pointer', zIndex: 2,
-            }}
-          >
-            <svg width="13" height="13" viewBox="0 0 14 14" fill="none">
-              <path d="M5 3l5 4-5 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-          </button>
-        </div>
-
-        <div className="mt-3 flex flex-col items-center gap-2 px-2">
-          <p className="text-[13px] text-[#999] text-center">{item.label}</p>
-          {items.length > 1 && (
-            <div className="flex items-center gap-1.5">
-              {items.map((_, i) => (
-                <button
-                  key={i}
-                  type="button"
-                  aria-label={`Go to image ${i + 1}`}
-                  onClick={() => setCurrent(i)}
-                  className="cs-dot-btn"
-                  data-active={i === current}
-                  style={{
-                    height: 5, borderRadius: 3,
-                    width: i === current ? 20 : 5,
-                    border: 'none', cursor: 'pointer', padding: 0, flexShrink: 0,
-                  }}
-                />
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
-
-      {lightboxOpen && mounted && createPortal(
-        <div
-          onClick={() => setLightboxOpen(false)}
-          style={{
-            position: 'fixed',
-            inset: 0,
-            zIndex: 9999,
-            background: 'rgba(6, 6, 9, 0.96)',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center',
-            /* Tight side padding on XS so arrows don't steal width from the image */
-            padding: viewport === 'xs' ? '56px 12px 32px' : '64px 84px 40px',
-            boxSizing: 'border-box',
-            cursor: 'zoom-out',
-            overflow: 'hidden',
-          }}
-        >
-          <LightboxCloseButton onClose={() => setLightboxOpen(false)} />
-          {items.length > 1 ? (
-            <>
-              <LightboxIconButton
-                label="Previous"
-                size={viewport === 'xs' ? 32 : 44}
-                onClick={() => setCurrent((c) => (c - 1 + items.length) % items.length)}
-                position={{
-                  top: '50%',
-                  transform: 'translateY(-50%)',
-                  left: viewport === 'xs' ? 6 : 20,
-                  visibility: current > 0 ? 'visible' : 'hidden',
-                }}
-              >
-                <svg width={viewport === 'xs' ? 13 : 16} height={viewport === 'xs' ? 13 : 16} viewBox="0 0 14 14" fill="none">
-                  <path d="M9 11L4 7l5-4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-              </LightboxIconButton>
-              <LightboxIconButton
-                label="Next"
-                size={viewport === 'xs' ? 32 : 44}
-                onClick={() => setCurrent((c) => (c + 1) % items.length)}
-                position={{
-                  top: '50%',
-                  transform: 'translateY(-50%)',
-                  right: viewport === 'xs' ? 6 : 20,
-                  visibility: current < items.length - 1 ? 'visible' : 'hidden',
-                }}
-              >
-                <svg width={viewport === 'xs' ? 13 : 16} height={viewport === 'xs' ? 13 : 16} viewBox="0 0 14 14" fill="none">
-                  <path d="M5 3l5 4-5 4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-              </LightboxIconButton>
-            </>
-          ) : null}
-
-          <div
-            onClick={(e) => e.stopPropagation()}
-            style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', cursor: 'none', maxWidth: 'min(92vw, 1200px)' }}
-          >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={item.src}
-              alt={item.alt}
-              style={{
-                maxWidth: '100%',
-                maxHeight: 'min(72vh, calc(100vh - 210px))',
-                width: 'auto',
-                height: 'auto',
-                objectFit: 'contain',
-                borderRadius: 14,
-                display: 'block',
-              }}
-            />
-            <p style={{ marginTop: 18, maxWidth: 'min(760px, 90vw)', textAlign: 'center', fontSize: 14, lineHeight: 1.55, color: 'rgba(255,255,255,0.85)' }}>
-              {item.label}
-            </p>
-            {items.length > 1 ? (
-              <p style={{ marginTop: 8, fontSize: 12, letterSpacing: '0.02em', color: 'rgba(255,255,255,0.4)' }}>
-                {current + 1} / {items.length}
-              </p>
-            ) : null}
-          </div>
-        </div>,
-        document.body,
-      )}
-    </>
   );
 }
 
@@ -1810,7 +1570,7 @@ function ClosingCTA() {
           className="hidden min-[600px]:inline-flex shrink-0 items-center gap-2 rounded-full px-7 py-4 text-[16px] font-semibold text-white transition-opacity hover:opacity-85"
           style={{ background: '#111113' }}
         >
-          Try the Prototype
+          Interactive Prototype
         </button>
       </div>
 
@@ -2499,22 +2259,34 @@ export default function FocusCoachAchievementsCaseStudy() {
               'My team was in full support so I got to work creating designs and a spec sheet of the full system – trigger logic, thresholds, priority rules, and the copy.',
             ]}
           >
-            <ImageViewer
-              items={[
+            {/* Pill tabs rather than a carousel: these three specs are the content
+                types the copy just named, so the reader should be able to go
+                straight to the one they want instead of paging to find it. */}
+            <SegmentedMedia
+              tabs={[
                 {
+                  label: 'Personal Bests',
+                  type: 'Image',
                   src: '/case-studies/focus-coach-achievements/personal-best-spec.png',
                   alt: 'Slack canvas screenshot documenting Personal Best achievement rules, logic, and copy',
-                  label: 'Screenshot from a Slack canvas documenting Personal Best criteria — trigger logic, thresholds, and copy.',
+                  caption: 'Screenshot from a Slack canvas documenting Personal Best criteria — trigger logic, thresholds, and copy.',
+                  description: 'Personal Best criteria — trigger logic, thresholds, and copy.',
                 },
                 {
+                  label: 'Focus Streaks',
+                  type: 'Image',
                   src: '/case-studies/focus-coach-achievements/streaks-logic-spec.png',
                   alt: 'Slack canvas screenshot documenting Focus Streak logic for how full weeks are tracked and celebrated',
-                  label: 'Screenshot from a Slack canvas documenting Focus Streak logic — how full weeks are tracked and celebrated.',
+                  caption: 'Screenshot from a Slack canvas documenting Focus Streak logic — how full weeks are tracked and celebrated.',
+                  description: 'Focus Streak logic — how full weeks are tracked and celebrated.',
                 },
                 {
+                  label: 'Milestones',
+                  type: 'Image',
                   src: '/case-studies/focus-coach-achievements/milestone-logic-spec.png',
                   alt: 'Slack canvas screenshot proposing milestone thresholds and copy options across Sessions, Hours, and Check-ins',
-                  label: 'Screenshot from a Slack canvas proposing milestone thresholds and rotating copy options across Sessions, Hours, and Check-ins.',
+                  caption: 'Screenshot from a Slack canvas proposing milestone thresholds and rotating copy options across Sessions, Hours, and Check-ins.',
+                  description: 'Milestone thresholds and rotating copy across Sessions, Hours, and Check-ins.',
                 },
               ]}
             />

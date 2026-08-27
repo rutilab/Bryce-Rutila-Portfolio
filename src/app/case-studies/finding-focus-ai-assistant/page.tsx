@@ -511,6 +511,30 @@ function useSideBySide(minWidth: number) {
 function PrototypeEmbed({ caption }: { caption: string }) {
   const wrapRef = useRef<HTMLDivElement>(null);
   const [height, setHeight] = useState(690);
+  /**
+   * The prototype starts its conversation the moment its document loads, so
+   * loading it on sight is what holds the animation back — by the time a reader
+   * arrives it is mid-reply otherwise, and the streaming answer that is the
+   * whole point of the embed has already happened. The card reserves its height
+   * either way, so nothing shifts when the frame arrives.
+   */
+  const [loadFrame, setLoadFrame] = useState(false);
+
+  useEffect(() => {
+    const el = wrapRef.current;
+    if (!el) return;
+    const obs = new IntersectionObserver(
+      ([entry]) => {
+        if (!entry.isIntersecting) return;
+        setLoadFrame(true);
+        obs.disconnect(); // once started, it stays — no restart on scroll-by
+      },
+      // A sliver on screen is enough; the reader is arriving.
+      { threshold: 0.15 },
+    );
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, []);
 
   useEffect(() => {
     const el = wrapRef.current;
@@ -528,13 +552,17 @@ function PrototypeEmbed({ caption }: { caption: string }) {
   return (
     <div ref={wrapRef}>
       <VisualCard caption={caption}>
-        <iframe
-          src="/case-studies/finding-focus-ai-assistant/prototype/index.html?embed=1"
-          title="Finding Focus AI Assistant interactive prototype"
-          className="w-full border-0 block"
-          scrolling="no"
-          style={{ height }}
-        />
+        {loadFrame ? (
+          <iframe
+            src="/case-studies/finding-focus-ai-assistant/prototype/index.html?embed=1"
+            title="Finding Focus AI Assistant interactive prototype"
+            className="w-full border-0 block"
+            scrolling="no"
+            style={{ height }}
+          />
+        ) : (
+          <div className="w-full" style={{ height }} aria-hidden />
+        )}
       </VisualCard>
     </div>
   );

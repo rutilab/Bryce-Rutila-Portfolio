@@ -2124,7 +2124,7 @@ body[data-magnet-cursor] [role='button'] * {
 }
 
 /* ── Case-study back-to-top ──────────────────────────────────────────────────
-   Ink disc in the site's own black, matching the "Try the Prototype" CTA rather
+   Ink disc in the site's own black, matching the "Interactive Prototype" CTA rather
    than the white media chrome — it belongs to the page, not to a card. Rises
    into place on the same signal as the section rail and parks above the footer
    (its `bottom` is set inline as the footer comes up). */

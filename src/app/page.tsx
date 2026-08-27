@@ -106,7 +106,7 @@ const PROJECTS: Project[] = [
     description:
       "Leveraging OpenAI's Chat Completions API to build an AI Assistant that scales 1:1 support across our entire teacher base.",
     tags: ['AI', 'UX DESIGN', 'UX RESEARCH'],
-    readTime: '12 MIN READ',
+    readTime: '12-15 MIN READ',
     cardColor: '#ff9c12',
     href: '/case-studies/finding-focus-ai-assistant',
     thumbnailContent: <AIAssistantThumbnail />,
