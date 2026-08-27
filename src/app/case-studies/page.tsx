@@ -342,7 +342,7 @@ export default function CaseStudies() {
                 leftPct: '51%',
               },
               {
-                title: 'Focus Coach Achievements',
+                title: 'FF EOS Flow',
                 subtitle: 'Session completion redesign',
                 thumbnailContent: ACHIEVEMENTS_THUMBNAIL,
                 rotation: 2,

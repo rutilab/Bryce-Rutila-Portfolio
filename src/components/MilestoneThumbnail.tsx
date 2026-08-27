@@ -59,7 +59,7 @@ export function MilestoneThumbnail() {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        backgroundColor: '#f0f1f2',
+        backgroundColor: '#fafafa',
       }}
     >
       <div

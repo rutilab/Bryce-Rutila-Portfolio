@@ -90,10 +90,10 @@ const COMING_SOON_LABEL = 'Coming Soon 👀';
 
 const PROJECTS: Project[] = [
   {
-    title: 'Focus Coach Achievements',
+    title: 'Focus Coach End-of-Session Flow',
     eyebrow: 'FINDING FOCUS • 2026',
     description:
-      'Redesigning the session completion flow to celebrate users progress and help reduce churn rates.',
+      "Redesigning a study tool's end-of-session flow to celebrate progress and turn first-time users into daily habit-builders.",
     tags: ['UX DESIGN', 'GAMIFICATION', 'ANIMATION'],
     readTime: '10-12 MIN READ',
     cardColor: '#31e300',
@@ -101,10 +101,10 @@ const PROJECTS: Project[] = [
     thumbnailContent: <MilestoneThumbnail />,
   },
   {
-    title: 'AI Chat Assistant',
+    title: 'Finding Focus AI Assistant',
     eyebrow: 'FINDING FOCUS • 2024',
     description:
-      "Leveraging Open AI's Chat Completions API to create an AI Assistant that ultimately helped reduce support ticket volume by 12%",
+      "Leveraging OpenAI's Chat Completions API to build an AI Assistant that scales 1:1 support across our entire teacher base.",
     tags: ['AI', 'UX DESIGN', 'UX RESEARCH'],
     readTime: '12 MIN READ',
     cardColor: '#ff9c12',

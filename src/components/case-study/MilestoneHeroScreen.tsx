@@ -200,7 +200,7 @@ export function MilestoneHeroScreen({
     >
       <div
         className={[
-          'relative w-full overflow-hidden bg-[#f0f1f2]',
+          'relative w-full overflow-hidden bg-[#fafafa]',
           // Height matches content: the mountain (and its padding) shrinks below
           // 600px, so the container does too — otherwise XS is left with dead
           // space below the Continue button.

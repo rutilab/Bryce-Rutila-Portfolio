@@ -1470,7 +1470,7 @@ export default function LandingPageCaseStudy() {
           </div>
 
           {/* Title */}
-          <h1 className="text-[28px] sm:text-[34px] md:text-[40px] font-semibold leading-[110%] tracking-[-1px] text-[#1a1a1a] mb-4 max-w-[680px]">
+          <h1 className="text-[26px] sm:text-[30px] md:text-[36px] font-semibold leading-[110%] tracking-[-1px] text-[#1a1a1a] mb-4 max-w-[680px]">
             Landing Page Redesign
           </h1>
 

@@ -17,3 +17,4 @@ export { CompletionWeekTrackerScreen, CompletionQuoteScreen } from './Completion
 export { EndOfSessionFlow } from './EndOfSessionFlow';
 export { ThemeModeToggle } from './ThemeModeToggle';
 export { BackToTopButton } from './BackToTopButton';
+export { ScrollCue } from './ScrollCue';

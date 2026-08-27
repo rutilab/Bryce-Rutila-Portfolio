@@ -1981,9 +1981,14 @@ export default function FindingFocusAiAssistantCaseStudy() {
           </div>
 
           {/* Title */}
-          <h1 className="text-[28px] sm:text-[34px] md:text-[40px] font-semibold leading-[110%] tracking-[-1px] text-[#1a1a1a] mb-10 max-w-[680px]">
-            Finding Focus Assistant
+          <h1 className="text-[26px] sm:text-[30px] md:text-[36px] font-semibold leading-[110%] tracking-[-1px] text-[#1a1a1a] mb-4 max-w-[680px]">
+            Finding Focus AI Assistant
           </h1>
+
+          <p className="text-[15px] md:text-[18px] font-normal leading-[170%] text-[#555] max-w-[800px] mb-10">
+            Leveraging OpenAI&apos;s Chat Completions API to build an AI Assistant that scales 1:1 support across our
+            entire teacher base.
+          </p>
 
           {/* Hero illustration */}
           <HeroIllustration />

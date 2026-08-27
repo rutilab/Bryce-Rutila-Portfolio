@@ -297,7 +297,7 @@ export default function FindingFocus() {
                         marginBottom: '6px',
                       }}
                     >
-                      Focus Coach Achievements
+                      Focus Coach End-of-Session Flow
                     </div>
                     <div
                       style={{

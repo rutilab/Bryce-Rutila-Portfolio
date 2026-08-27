@@ -2302,11 +2302,20 @@ export default function FocusCoachAchievementsCaseStudy() {
             <span className="text-[14px] sm:text-[15px] font-semibold text-[#000] tracking-[-0.1px]">Finding Focus • Edtech • Product Design</span>
           </div>
 
-          <h1 className="text-[28px] sm:text-[34px] md:text-[40px] font-semibold leading-[110%] tracking-[-1px] text-[#1a1a1a] mb-10 max-w-[680px]">
-            Rebuilding the Focus Coach&rsquo;s End of Session Experience
+          <h1 className="text-[26px] sm:text-[30px] md:text-[36px] font-semibold leading-[110%] tracking-[-1px] text-[#1a1a1a] mb-4 max-w-[680px]">
+            Focus Coach End-of-Session Flow
           </h1>
 
-          <MilestoneHeroScreen />
+          <p className="text-[15px] md:text-[18px] font-normal leading-[170%] text-[#555] max-w-[800px] mb-10">
+            Redesigning a study tool&apos;s end-of-session flow to celebrate progress and turn first-time users into
+            daily habit-builders.
+          </p>
+
+          {/* Framed like every other case study's hero — the frosted card is
+              what marks the asset as a screen being shown, not page chrome. */}
+          <VisualCard>
+            <MilestoneHeroScreen />
+          </VisualCard>
 
           {/* Meta row */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 sm:gap-10 mt-10 text-center">
@@ -2335,9 +2344,10 @@ export default function FocusCoachAchievementsCaseStudy() {
             >
               <Eyebrow label="TL;DR" />
               <p className="text-[16px] font-normal leading-[150%] text-[#333] max-w-[880px]">
-                Students weren&apos;t coming back to the Focus Coach — and the end of a session was where we lost them.
-                I redesigned it into a guided flow with a simpler reflection, celebratory achievements, and a brand-new
-                completion screen, built to motivate without manipulative tactics.
+                Students weren&apos;t coming back to the Focus Coach — Finding Focus&apos;s AI assisted study tool — and
+                the end of a study session was where we lost them. I redesigned the end of session experience into a
+                guided flow with a simpler reflection, celebratory achievements, and a brand-new completion screen,
+                built to motivate without manipulative tactics.
               </p>
               <StatRow
                 stats={[

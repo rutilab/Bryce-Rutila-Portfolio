@@ -2225,3 +2225,79 @@ body[data-magnet-cursor] .cs-back-to-top {
     margin-left: -16px;
   }
 }
+
+/* Scroll cue — the "there's more below" hint at the top of a case study.
+   Bottom-centre so it clears the back-to-top button and the theme toggle, and
+   sits under the fold's centre of gravity rather than beside it. */
+.cs-scroll-cue-anchor {
+  position: fixed;
+  left: 50%;
+  bottom: calc(24px + env(safe-area-inset-bottom, 0px));
+  transform: translateX(-50%);
+  z-index: 90;
+  pointer-events: none;
+}
+.cs-scroll-cue {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 16px;
+  border: none;
+  border-radius: 999px;
+  /* Same ink as the back-to-top button — the two affordances read as a pair */
+  background: #141510;
+  color: #faf7f2;
+  cursor: pointer;
+  opacity: 0;
+  /* Rises into place, the same direction it's asking you to look */
+  transform: translateY(8px);
+  pointer-events: none;
+  box-shadow: 0 6px 20px rgba(20, 21, 16, 0.28);
+  transition: opacity 0.45s ease, transform 0.45s ease, background-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+.cs-scroll-cue[data-visible='true'] {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+.cs-scroll-cue-label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  line-height: 1;
+}
+/* The bob is the whole point — a static arrow reads as a label, not an invitation */
+.cs-scroll-cue-arrow {
+  animation: cs-scroll-cue-bob 1.8s ease-in-out infinite;
+}
+@keyframes cs-scroll-cue-bob {
+  0%, 100% { transform: translateY(-2px); }
+  50% { transform: translateY(2px); }
+}
+.cs-scroll-cue[data-visible='true']:hover {
+  background: #2b2d24;
+  box-shadow: 0 12px 28px rgba(20, 21, 16, 0.34);
+}
+.cs-scroll-cue:focus-visible {
+  outline: 2px solid #006efe;
+  outline-offset: 3px;
+}
+/* Icon control, so the dot cursor gives way to the hand — same reasoning as
+   .cs-back-to-top, and it needs the same body prefix to outrank the global rule. */
+body[data-magnet-cursor] .cs-scroll-cue {
+  cursor: pointer;
+}
+@media (prefers-reduced-motion: reduce) {
+  .cs-scroll-cue {
+    transition: opacity 0.45s ease;
+    transform: none;
+  }
+  .cs-scroll-cue[data-visible='true'] {
+    transform: none;
+  }
+  .cs-scroll-cue-arrow {
+    animation: none;
+  }
+}
