@@ -22,10 +22,19 @@ project, and delete this section.
 | Branch | Vercel project | Address | Public |
 |---|---|---|---|
 | `main` | the original | brycerutila.com | yes |
-| `cvs-ux-job` | separate project, no domain | `*.vercel.app` | unlisted, no-index |
+| `cvs-ux-job` | `bryce-rutila-work` | `bryce-rutila-work.vercel.app` | unlisted, no-index |
 
 One repo, one source of truth. Branches are versions; Vercel projects are just
 windows onto them. `main` is always the real portfolio.
+
+Both projects are connected to the same GitHub repo, so they look alike in the
+Vercel dashboard. Tell them apart by **Domains**: the original lists
+brycerutila.com, `bryce-rutila-work` lists only its `.vercel.app` address. Check
+that before touching the production branch — pointing the original at
+`cvs-ux-job` would serve the tailored site at brycerutila.com.
+
+Send the bare `bryce-rutila-work.vercel.app`. Vercel also exposes a git-branch
+alias with `cvs-ux-job` written into the hostname; don't share that one.
 
 ## Conventions
 
