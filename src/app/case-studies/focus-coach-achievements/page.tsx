@@ -3,7 +3,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import type { CSSProperties, MutableRefObject, ReactNode, RefObject } from 'react';
 import { createPortal } from 'react-dom';
-import KeyboardDoubleArrowDownOutlined from '@mui/icons-material/KeyboardDoubleArrowDownOutlined';
 import ArrowDownward from '@mui/icons-material/ArrowDownward';
 import Check from '@mui/icons-material/Check';
 import { CaseStudyMedia, CaseStudyMediaGallery, CaseStudyMediaPlaceholder, CompletionQuoteScreen, CompletionWeekTrackerScreen, EndOfSessionFlow, FocusStreakScreen, LightboxCloseButton, LiveScreenFit, MediaCarouselStage, MilestoneHeroScreen, NorthStarAnimatedIcon, PersonalBestScreen, ReflectionScreen, ThemeModeToggle } from '@/components/case-study';
@@ -542,13 +541,44 @@ function FocusStreakWeekCard() {
 }
 
 // ── StatRow: three headline numbers with a blue underline tick ────────────────
-function StatRow({ stats }: { stats: { value: string; label: string; icon?: ReactNode }[] }) {
+function StatRow({
+  stats,
+  divided,
+}: {
+  stats: { value: string; label: string; icon?: ReactNode }[];
+  /** Ruled cells instead of gapped columns, for a StatRow inside a card.
+      Stacked on small screens, so the rules turn horizontal with the layout. */
+  divided?: boolean;
+}) {
   const [ref, inView] = useInView<HTMLDivElement>(0.45);
 
   return (
-    <div ref={ref} className="grid grid-cols-1 sm:grid-cols-3 gap-8 sm:gap-10 max-w-[820px]">
+    <div
+      ref={ref}
+      className={
+        divided
+          ? 'grid grid-cols-1 sm:grid-cols-3'
+          : 'grid grid-cols-1 sm:grid-cols-3 gap-8 sm:gap-10 max-w-[820px]'
+      }
+    >
       {stats.map((s, i) => (
-        <div key={i}>
+        <div key={i} className={divided ? 'relative p-5 sm:p-6' : undefined}>
+          {/* Rules drawn as inset elements rather than cell borders, so they
+              stop short of the card edges and read as separators instead of
+              full-height column dividers. Horizontal while the stats are
+              stacked, vertical once they sit side by side. */}
+          {divided && i > 0 && (
+            <>
+              <span
+                aria-hidden
+                className="absolute left-5 right-5 top-0 h-px bg-[#e6ecf4] sm:hidden"
+              />
+              <span
+                aria-hidden
+                className="absolute left-0 top-6 bottom-6 w-px bg-[#e6ecf4] hidden sm:block"
+              />
+            </>
+          )}
           <div className="flex flex-col w-fit">
             <div className="flex items-center gap-1">
               {s.icon}
@@ -1180,68 +1210,6 @@ function AnatomyCards() {
 }
 
 // ── Outcomes: leading (early usability) vs. lagging (core retention) indicators ──
-const LEADING_INDICATORS = [
-  {
-    title: 'Reflection friction',
-    body: 'Time spent rating focus is already down 22% — an early signal that simplifying the reflection screen lowered the cognitive load.',
-    status: 'Observed',
-  },
-  {
-    title: 'Focus Streak completion',
-    body: 'Track the percentage of students who achieve their first Focus Streak to confirm that the reward is both attainable and motivating.',
-    status: 'Tracking',
-  },
-] as const;
-
-const LAGGING_INDICATORS = [
-  {
-    title: 'First-session retention',
-    body: 'Reduce the baseline 39.3% single-session abandonment rate to under 25%.',
-    status: 'Target',
-  },
-  {
-    title: 'Session distribution',
-    body: 'Reduce the percentage of total sessions completed by the top 1% from 54.6% to under 30%.',
-    status: 'Target',
-  },
-] as const;
-
-function IndicatorCard({ title, body, status }: { title: string; body: string; status: string }) {
-  return (
-    <div className="flex flex-col gap-2.5 rounded-[20px] p-6" style={{ background: CARD_LIGHT }}>
-      <div className="flex items-center justify-between gap-3">
-        <p className="text-[16px] font-semibold text-[#1a1a1a]">{title}</p>
-        <span
-          className="shrink-0 rounded-full px-2.5 py-1 text-[10px] font-medium tracking-[1px] uppercase"
-          style={{ color: ACCENT_DARK, background: 'rgba(0,0,0,0.05)' }}
-        >
-          {status}
-        </span>
-      </div>
-      <p className="text-[14px] leading-[165%] text-[#666]">{body}</p>
-    </div>
-  );
-}
-
-function IndicatorGroup({
-  label,
-  indicators,
-}: {
-  label: string;
-  indicators: ReadonlyArray<{ title: string; body: string; status: string }>;
-}) {
-  return (
-    <div className="flex flex-col gap-4">
-      <p className="text-[12px] font-medium tracking-[1px] uppercase" style={{ color: EYEBROW_ICON_COLOR }}>{label}</p>
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        {indicators.map(indicator => (
-          <IndicatorCard key={indicator.title} {...indicator} />
-        ))}
-      </div>
-    </div>
-  );
-}
-
 const TAKEAWAYS = [
   {
     eyebrow: 'Restraint',
@@ -2112,12 +2080,8 @@ export default function FocusCoachAchievementsCaseStudy() {
               <StatRow
                 stats={[
                   { value: '89', label: 'students surveyed on rewards and motivation' },
-                  { value: '3', label: 'achievement types, each with its own animated screen' },
-                  {
-                    value: '22%',
-                    label: 'less time spent rating focus at the end of a session',
-                    icon: <KeyboardDoubleArrowDownOutlined sx={{ fontSize: 24, color: ACCENT }} />,
-                  },
+                  { value: '5', label: 'unique screens created' },
+                  { value: '6', label: 'end-of-session paths' },
                 ]}
               />
               <div className="flex justify-center pt-1">
@@ -2164,12 +2128,12 @@ export default function FocusCoachAchievementsCaseStudy() {
           <Section
             eyebrow="The Problem"
             heading="Users were not coming back to the Focus Coach."
-            body="39.3% of our users were one and done after completing their first session – meaning almost 2 in 5 of our users completed a single Focus Session and then abandoned the tool."
+            body="39.3% of our users who completed a Focus Session were one and done — almost 2 in 5 students tried the Focus Coach once and never came back."
           >
             <SmallStatRow
               stats={[
-                { value: '39.3%', label: 'of users only ever completed one Focus Session' },
-                { value: '54.6%', label: 'of all sessions were completed by the top 1% of users' },
+                { value: '39%', label: 'of users who completed a Focus Session never came back for a second' },
+                { value: '55%', label: 'of all sessions were completed by the top 1% of users' },
               ]}
             />
           </Section>
@@ -2530,12 +2494,31 @@ export default function FocusCoachAchievementsCaseStudy() {
         <div className="flex flex-col gap-16">
           <Section
             eyebrow="Launch Status"
-            heading="This project shipped during the summer. We’ll measure the impact this fall."
-            body="Since this project launched in July (2026), when most students are out of school and classroom usage is naturally lower, we do not have enough data to draw any conclusions yet. To determine if we successfully improved the end of session experience, I set up clear goals to track performance for the Fall semester."
+            heading="Early signals are promising, we will get more data this fall."
+            body="Since this launched in July (2026), a naturally low-usage period for us, our data sample is small. However, early signals are promising: initial retention trends show strong momentum in getting first-time users to stick with the Focus Coach. We&rsquo;ve established tracking to continuously evaluate performance against our targets throughout the upcoming Fall semester."
           >
-            <div className="flex flex-col gap-8">
-              <IndicatorGroup label="Leading Indicators — early usability & engagement" indicators={LEADING_INDICATORS} />
-              <IndicatorGroup label="Lagging Indicators — core retention metrics" indicators={LAGGING_INDICATORS} />
+            {/* Targets and their baselines are one result, so they share a card
+                and are separated by rules rather than by space. */}
+            <div
+              className="rounded-[16px] bg-white max-w-[820px] overflow-hidden"
+              style={{ border: `1px solid ${BORDER}` }}
+            >
+              <div className="px-5 pt-5 sm:px-6 sm:pt-6 flex flex-col gap-2">
+                <Eyebrow label="Goals for the Fall Semester" />
+                {/* The population is a property of the whole card, so it is
+                    stated once here rather than repeated in every label. */}
+                <p className="text-[13px] font-normal leading-[160%] text-[#666]">
+                  Among students who completed at least one Focus Session
+                </p>
+              </div>
+              <StatRow
+                divided
+                stats={[
+                  { value: '75%', label: 'returning for a second session (baseline 61%)' },
+                  { value: '30%', label: 'ceiling on the share of all sessions completed by the top 1% of users (baseline 55%)' },
+                  { value: '15%', label: 'completing 10+ sessions within 30 days (baseline 6%)' },
+                ]}
+              />
             </div>
           </Section>
         </div>
