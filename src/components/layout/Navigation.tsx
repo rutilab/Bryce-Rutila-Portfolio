@@ -3,7 +3,10 @@
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import SourceOutlined from '@mui/icons-material/SourceOutlined';
+import BadgeOutlined from '@mui/icons-material/BadgeOutlined';
 import { cn } from '@/lib/utils';
+import { FlyIcon } from '@/components/icons/FlyIcon';
 import { useCanPrimaryHover } from '@/hooks/useCanPrimaryHover';
 
 const navItems = [
@@ -41,13 +44,8 @@ export function Navigation() {
 
   const isLightPage = pathname === '/';
 
-  const navStyle = {
-    background: isLightPage ? 'rgba(0, 0, 0, 0.08)' : 'rgba(0, 0, 0, 0.25)',
-    backdropFilter: 'blur(20px)',
-    WebkitBackdropFilter: 'blur(20px)',
-    borderRadius: '9999px',
-    padding: '0.25rem',
-  };
+  /** Resting label and icon, per the design — the same on every page. */
+  const restingColor = 'rgba(0, 0, 0, 0.35)';
 
   return (
     <nav
@@ -56,29 +54,54 @@ export function Navigation() {
         visible ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-full pointer-events-none'
       )}
     >
-      <div className="flex items-center gap-1" style={navStyle}>
+      <div
+        className="flex items-center rounded-full p-1"
+        style={{
+          background: isLightPage ? 'rgba(0, 0, 0, 0.10)' : 'rgba(0, 0, 0, 0.25)',
+          backdropFilter: 'blur(20px)',
+          WebkitBackdropFilter: 'blur(20px)',
+        }}
+      >
         {navItems.map((item) => {
-          const isActive = pathname === item.href ||
-            (item.href !== '/' && pathname.startsWith(item.href));
+          const isActive =
+            pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href));
 
           return (
             <Link
               key={item.href}
               href={item.href}
+              aria-current={isActive ? 'page' : undefined}
               className={cn(
-                'px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 whitespace-nowrap',
-                isActive
-                  ? 'bg-black text-white'
-                  : isLightPage
-                    ? canPrimaryHover
-                      ? 'text-black/60 hover:text-black hover:bg-black/10'
-                      : 'text-black/60'
-                    : canPrimaryHover
-                      ? 'text-white/80 hover:text-white hover:bg-white/10'
-                      : 'text-white/80'
+                'group flex h-12 items-center gap-1 rounded-full px-4 sm:px-6',
+                'whitespace-nowrap transition-colors duration-200',
+                !isActive && canPrimaryHover && 'hover:bg-black/10'
               )}
+              style={{
+                // Left unset when resting so the hover class isn't outranked.
+                ...(isActive ? { background: '#141510' } : null),
+                color: isActive ? '#ffffff' : restingColor,
+              }}
             >
-              {item.label}
+              <span className="flex h-6 w-6 shrink-0 items-center justify-center">
+                {item.label === 'Home' ? (
+                  <FlyIcon active={isActive} width={22.68} height={21.06} />
+                ) : item.label === 'Projects' ? (
+                  <SourceOutlined sx={{ fontSize: 24, color: 'inherit' }} />
+                ) : (
+                  <BadgeOutlined sx={{ fontSize: 24, color: 'inherit' }} />
+                )}
+              </span>
+              <span
+                style={{
+                  fontFamily: 'var(--font-sf-pro)',
+                  fontSize: 17,
+                  fontWeight: 600,
+                  lineHeight: '22px',
+                  letterSpacing: '-0.43px',
+                }}
+              >
+                {item.label}
+              </span>
             </Link>
           );
         })}
