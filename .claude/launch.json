@@ -5,6 +5,13 @@
       "name": "bar9000-dev",
       "port": 3000,
       "url": "http://localhost:3000"
+    },
+    {
+      "name": "bar9000-worktree",
+      "runtimeExecutable": "./node_modules/.bin/next",
+      "runtimeArgs": ["dev", "--webpack", "--port", "3100"],
+      "port": 3100,
+      "url": "http://localhost:3100"
     }
   ]
 }

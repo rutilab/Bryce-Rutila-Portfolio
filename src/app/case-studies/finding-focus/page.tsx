@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { ChatContainer } from '@/components/chat';
 import HalftoneCanvas from '@/components/HalftoneCanvas';
 
 export default function FindingFocus() {

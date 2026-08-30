@@ -1074,7 +1074,7 @@ export default function Home() {
       {loaderState === 'showing' && (
         <Loader heroRef={heroSvgRef} onComplete={() => setLoaderState('done')} />
       )}
-      <HalftoneCanvas cursorMode="magnet" />
+      <HalftoneCanvas />
 
       <main className="landing-main">
         {/* ── Butterfly Net (visible during drag) ─────────────────────── */}

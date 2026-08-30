@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { ChatContainer } from '@/components/chat';
 import { useCanPrimaryHover } from '@/hooks/useCanPrimaryHover';
 import HalftoneCanvas from '@/components/HalftoneCanvas';
 

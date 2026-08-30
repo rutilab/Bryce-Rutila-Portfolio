@@ -7,23 +7,15 @@ const GRID     = 10;
 const R_BG     = 0.9;
 const COLOR_BG = '#D8D8D8';
 
-// ── Cursor radial glow ─────────────────────────────────────────────────────
-const HIGHLIGHT_R        = 48;
-const HIGHLIGHT_EXTRA_BG = 2.5;
-const COLOR_HIGHLIGHT    = '#141510';
-
 // ── Spring / damping ───────────────────────────────────────────────────────
 const SPRING_K = 0.055;
 const DAMPING  = 0.82;
 
 // ── Cursor repulsion ──────────────────────────────────────────────────────
-const REPEL_R = 60;
-const REPEL_F = 6.5;
-
-// Magnet mode: the displacement is the whole effect rather than something hidden
-// under a blob, so it pushes gently — dots lean away instead of evacuating.
-const MAGNET_R = 50;
-const MAGNET_F = 1.8;
+// The displacement is the whole effect, so it pushes gently — dots lean away
+// from the drawn cursor rather than evacuating.
+const CURSOR_R = 50;
+const CURSOR_F = 1.8;
 
 // ── Slam ripple ────────────────────────────────────────────────────────────
 const WAVE_SPEED      = 450;
@@ -67,16 +59,16 @@ function makeGrid(cols: number, rows: number): Grid {
 // ── Component ──────────────────────────────────────────────────────────────
 interface Props {
   rippleTrigger?: number;
-  /**
-   * 'halftone' — dots near the pointer darken and swell into a blob (the default,
-   * used on the case-study pages where the OS cursor is still visible).
-   * 'magnet'   — no blob; dots are only shoved aside, so a drawn cursor can lead.
-   */
-  cursorMode?: 'halftone' | 'magnet';
 }
 
-export default function HalftoneCanvas({ rippleTrigger = 0, cursorMode = 'halftone' }: Props) {
-  const magnet = cursorMode === 'magnet';
+/**
+ * The page's dot field. Dots lean away from the pointer and settle back on a
+ * spring; a ripple can be fired through them from the centre.
+ *
+ * The collected BR flies draw their own halftone art — see HalftoneFly — which
+ * is a separate canvas with its own scatter, unrelated to this one.
+ */
+export default function HalftoneCanvas({ rippleTrigger = 0 }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const rippleRef = useRef<{ time: number; ox: number; oy: number } | null>(null);
 
@@ -98,7 +90,7 @@ export default function HalftoneCanvas({ rippleTrigger = 0, cursorMode = 'halfto
     let alive = true;
     let grid: Grid | null = null;
     let rafId = 0;
-    const mouse = { x: -9999, y: -9999, overClickable: false, inHalftone: false };
+    const mouse = { x: -9999, y: -9999 };
 
     const resize = () => {
       const dpr = window.devicePixelRatio || 1;
@@ -112,22 +104,13 @@ export default function HalftoneCanvas({ rippleTrigger = 0, cursorMode = 'halfto
     // ── Frame ──────────────────────────────────────────────────────────────
     const frame = (ts: number) => {
       if (!alive) return;
-      if (document.body.dataset.modalOpen) {
-        mouse.overClickable = false; mouse.inHalftone = false;
-      }
       const dpr       = window.devicePixelRatio || 1;
       const g         = grid;
-      const HR2       = HIGHLIGHT_R * HIGHLIGHT_R;
       // Offset dots by scroll position (mod GRID) so they scroll with the page
       const scrollOff = (window.scrollY % GRID) * dpr;
       // Dots are drawn scrollOff higher than their grid position, so compare the
       // pointer in grid space — otherwise the effect trails the cursor by up to one cell.
       const mouseYG = mouse.y + scrollOff / dpr;
-      // Ideation rotate drag suppresses glow even between mousemove events
-      const suppressGlow =
-        mouse.overClickable ||
-        mouse.inHalftone ||
-        !!document.body.dataset.ideationRotating;
 
       const ripple      = rippleRef.current;
       const waveRadius  = ripple ? WAVE_SPEED * (ts - ripple.time) / 1000 : -1;
@@ -157,19 +140,14 @@ export default function HalftoneCanvas({ rippleTrigger = 0, cursorMode = 'halfto
             }
           }
 
-          // Cursor repulsion — in magnet mode this is the whole effect, so it keeps
-          // working over links and anywhere else the blob used to switch itself off.
-          if (magnet || !suppressGlow) {
-            const radius = magnet ? MAGNET_R : REPEL_R;
-            const force = magnet ? MAGNET_F : REPEL_F;
-            const dx = dotX - mouse.x;
-            const dy = dotY - mouseYG;
-            const d2 = dx * dx + dy * dy;
-            if (d2 < radius * radius && d2 > 0.01) {
-              const d = Math.sqrt(d2);
-              g.vx[i] += (dx / d) * (1 - d / radius) * force;
-              g.vy[i] += (dy / d) * (1 - d / radius) * force;
-            }
+          // Cursor repulsion — runs everywhere, including over links.
+          const dx = dotX - mouse.x;
+          const dy = dotY - mouseYG;
+          const d2 = dx * dx + dy * dy;
+          if (d2 < CURSOR_R * CURSOR_R && d2 > 0.01) {
+            const d = Math.sqrt(d2);
+            g.vx[i] += (dx / d) * (1 - d / CURSOR_R) * CURSOR_F;
+            g.vy[i] += (dy / d) * (1 - d / CURSOR_R) * CURSOR_F;
           }
 
           g.vx[i] += -SPRING_K * g.ox[i];
@@ -180,53 +158,25 @@ export default function HalftoneCanvas({ rippleTrigger = 0, cursorMode = 'halfto
           g.oy[i] += g.vy[i];
         };
 
-        // ── Pass 1: Background dots ──────────────────────────────────────
         ctx.fillStyle = COLOR_BG;
         ctx.beginPath();
         for (let i = 0; i < g.n; i++) {
           // A dot at rest has no offset or velocity, so it would never be stepped and
           // never feel the cursor. Wake the ones the pointer is close enough to shove.
           const nearCursor =
-            magnet &&
-            Math.abs(g.gx[i] - mouse.x) < MAGNET_R &&
-            Math.abs(g.gy[i] - mouseYG) < MAGNET_R;
+            Math.abs(g.gx[i] - mouse.x) < CURSOR_R &&
+            Math.abs(g.gy[i] - mouseYG) < CURSOR_R;
           if (g.ox[i] !== 0 || g.oy[i] !== 0 || g.vx[i] !== 0 || g.vy[i] !== 0 || rippleActive || nearCursor) {
             stepPhysics(i);
           }
 
-          const dotX = g.gx[i] + g.ox[i];
-          const dotY = g.gy[i] + g.oy[i];
-          const hdx  = dotX - mouse.x, hdy = dotY - mouseYG;
-          if (!magnet && !suppressGlow && hdx * hdx + hdy * hdy < HR2) continue;
-
           const r  = g.br[i] * dpr;
-          const cx = dotX * dpr, cy = dotY * dpr - scrollOff;
+          const cx = (g.gx[i] + g.ox[i]) * dpr;
+          const cy = (g.gy[i] + g.oy[i]) * dpr - scrollOff;
           ctx.moveTo(cx + r, cy);
           ctx.arc(cx, cy, r, 0, Math.PI * 2);
         }
         ctx.fill();
-
-        // ── Pass 2: Highlight zone ───────────────────────────────────────
-        if (!magnet && !suppressGlow && mouse.x > -999) {
-          ctx.fillStyle = COLOR_HIGHLIGHT;
-          ctx.beginPath();
-          for (let i = 0; i < g.n; i++) {
-            const dotX = g.gx[i] + g.ox[i];
-            const dotY = g.gy[i] + g.oy[i];
-            const dx   = dotX - mouse.x;
-            const dy   = dotY - mouseYG;
-            const d2   = dx * dx + dy * dy;
-            if (d2 >= HR2) continue;
-
-            const tf    = 1 - d2 / HR2;
-            const extra = HIGHLIGHT_EXTRA_BG * tf * tf;
-            const r     = (g.br[i] + extra) * dpr;
-            const cx    = dotX * dpr, cy = dotY * dpr - scrollOff;
-            ctx.moveTo(cx + r, cy);
-            ctx.arc(cx, cy, r, 0, Math.PI * 2);
-          }
-          ctx.fill();
-        }
       }
 
       rafId = requestAnimationFrame(frame);
@@ -247,64 +197,8 @@ export default function HalftoneCanvas({ rippleTrigger = 0, cursorMode = 'halfto
     init();
 
     // ── Events ─────────────────────────────────────────────────────────────
-    const CLICKABLE_SEL =
-      'a, button, [role="button"], select, input, label, .bryce-svg, .subheader-ideation, [data-suppress-halftone]';
-
-    const cursorSuppressesHighlight = (cursor: string) =>
-      cursor === 'pointer' ||
-      cursor === 'grab' ||
-      cursor === 'grabbing' ||
-      cursor.includes('url(') ||
-      cursor.includes('grab');
-
-    /** Prefer elements under the pointer — window event targets can miss rotated/inline chips. */
-    const isOverClickable = (clientX: number, clientY: number, fallbackTarget: EventTarget | null) => {
-      const stack = document.elementsFromPoint(clientX, clientY);
-      for (const node of stack) {
-        if (!(node instanceof Element)) continue;
-        if (node.closest(CLICKABLE_SEL)) return true;
-        if (cursorSuppressesHighlight(getComputedStyle(node).cursor)) return true;
-      }
-      const el = fallbackTarget instanceof Element ? fallbackTarget : null;
-      if (el?.closest(CLICKABLE_SEL)) return true;
-      if (el && cursorSuppressesHighlight(getComputedStyle(el).cursor)) return true;
-      return false;
-    };
-
-    const onMove  = (e: MouseEvent) => {
-      if (document.body.dataset.modalOpen) {
-        mouse.x = e.clientX; mouse.y = e.clientY;
-        mouse.overClickable = false; mouse.inHalftone = false;
-        return;
-      }
-      mouse.x = e.clientX; mouse.y = e.clientY;
-      // Active ideation rotate drag — suppress glow for the whole gesture.
-      if (document.body.dataset.ideationRotating) {
-        mouse.overClickable = true;
-        mouse.inHalftone = false;
-        return;
-      }
-      mouse.overClickable = isOverClickable(e.clientX, e.clientY, e.target);
-
-      const els = document.querySelectorAll('.br-fly-collected');
-      let hit = false;
-      for (let i = 0; i < els.length; i++) {
-        const r = els[i].getBoundingClientRect();
-        if (e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom) {
-          hit = true; break;
-        }
-      }
-      mouse.inHalftone = hit;
-    };
-    const onLeave = () => { mouse.x = -9999; mouse.y = -9999; mouse.overClickable = false; mouse.inHalftone = false; };
-    const onOver  = (e: MouseEvent) => {
-      if (document.body.dataset.modalOpen) return;
-      if (document.body.dataset.ideationRotating) {
-        mouse.overClickable = true;
-        return;
-      }
-      mouse.overClickable = isOverClickable(e.clientX, e.clientY, e.target);
-    };
+    const onMove  = (e: MouseEvent) => { mouse.x = e.clientX; mouse.y = e.clientY; };
+    const onLeave = () => { mouse.x = -9999; mouse.y = -9999; };
 
     let resizeTimer: ReturnType<typeof setTimeout>;
     const onResize = () => {
@@ -313,7 +207,6 @@ export default function HalftoneCanvas({ rippleTrigger = 0, cursorMode = 'halfto
     };
 
     window.addEventListener('mousemove',    onMove,   { passive: true });
-    window.addEventListener('mouseover',    onOver,   { passive: true });
     document.addEventListener('mouseleave', onLeave);
     window.addEventListener('resize',       onResize);
 
@@ -322,11 +215,10 @@ export default function HalftoneCanvas({ rippleTrigger = 0, cursorMode = 'halfto
       cancelAnimationFrame(rafId);
       clearTimeout(resizeTimer);
       window.removeEventListener('mousemove',    onMove);
-      window.removeEventListener('mouseover',    onOver);
       document.removeEventListener('mouseleave', onLeave);
       window.removeEventListener('resize',       onResize);
     };
-  }, [magnet]);
+  }, []);
 
   return (
     <canvas
