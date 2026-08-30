@@ -108,21 +108,6 @@ label[for] {
   padding: 0.25rem;
 }
 
-/* Background image container */
-.background-container {
-  position: fixed;
-  inset: 0;
-  z-index: -1;
-  overflow: hidden;
-}
-
-.background-image {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  transition: opacity 1s ease-in-out;
-}
-
 /* Chip/Quick question styles - from Figma design */
 .chip {
   background: rgba(0, 0, 0, 0.05);
@@ -2362,4 +2347,266 @@ body[data-magnet-cursor] .cs-inline-jump {
   height: 100%;
   pointer-events: none;
   overflow: visible;
+}
+
+/* ── About page: the letter that unfolds ───────────────────────────────────
+   Three joints nested inside one another so their rotations compound the way a
+   real accordion does — a flat row of siblings just separates, because a
+   transform never moves the element after it. Each joint keeps its 3D
+   transform on its own node and clips one level down, since `overflow: hidden`
+   forces `transform-style` back to flat on whatever element carries it.
+   Heights arrive as custom properties from FoldedLetter.tsx. */
+@property --fold-progress {
+  syntax: '<number>';
+  inherits: true;
+  initial-value: 0;
+}
+
+.letter-3d-stage {
+  position: relative;
+  /* Folding shortens the panels, so the box shortens with them — otherwise the
+     letter leaves a tall blank gap above whatever follows it. */
+  /* The driver measures the painted fold and sets --fold-h each frame; the
+     linear ramp is the pre-hydration and no-JS fallback. */
+  height: var(--fold-h, calc(var(--full-h) * (0.35 + (var(--fold-progress) * 0.65))));
+  margin-bottom: 2rem;
+  perspective: 1200px;
+}
+
+.fold-joint {
+  position: relative;
+  width: 100%;
+  height: var(--slice-h);
+  transform-style: preserve-3d;
+  transform-origin: top center;
+}
+
+/* Each rotation is relative to the joint above it, so they accumulate: the
+   middle folds back under the top, the bottom folds forward again. */
+.top-joint {
+  transform: rotateX(calc((1 - var(--fold-progress)) * -18deg));
+}
+.middle-joint {
+  transform: rotateX(calc((1 - var(--fold-progress)) * -144deg));
+}
+.bottom-joint {
+  transform: rotateX(calc((1 - var(--fold-progress)) * 144deg));
+}
+
+/* Clipping node — deliberately not the node carrying preserve-3d. */
+.fold-clip {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  height: var(--slice-h);
+  overflow: hidden;
+  /* Shows through wherever a panel has turned its back on us — the reverse of
+     a sheet of paper is blank paper, not mirrored text. */
+  background-image: url(/about/paper-texture.jpg);
+  background-size: cover;
+  background-position: center;
+}
+
+/* A nested joint sits behind the face of the joint that contains it. */
+.fold-joint .fold-joint {
+  z-index: 1;
+}
+
+/* Once a panel folds past edge-on you are looking at its back, so hide the
+   printing and let the clip's blank paper show instead. Culling on the clip
+   rather than the joint: a joint contains the joint nested inside it, so
+   hiding one would take the panels below it out with it. */
+.fold-clip,
+.fold-sheet {
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+/* Only the outer corners round; the creases stay square edge to edge. */
+.top-joint > .fold-clip {
+  border-radius: 8px 8px 0 0;
+}
+.bottom-joint > .fold-clip {
+  border-radius: 0 0 8px 8px;
+}
+
+.fold-sheet {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  will-change: transform;
+}
+
+/* Crease shading — deepest while folded, gone once flat. The middle shades
+   upward so the creases read as alternating mountain and valley. */
+.fold-clip::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: calc(1 - var(--fold-progress));
+}
+.top-joint > .fold-clip::after {
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.4) 0%, transparent 100%);
+}
+.bottom-joint > .fold-clip::after {
+  background: linear-gradient(to bottom, rgba(0, 0, 0, 0.5) 0%, transparent 100%);
+}
+.middle-joint > .fold-clip::after {
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.5) 0%, transparent 100%);
+}
+
+/* No script means nothing ever advances --fold-progress, so serve it flat
+   rather than leaving a permanently folded card overlapping the next section. */
+@media (scripting: none) {
+  .letter-3d-stage {
+    height: var(--full-h);
+  }
+  .top-joint,
+  .middle-joint,
+  .bottom-joint {
+    transform: none;
+  }
+  .fold-clip::after {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .letter-3d-stage {
+    height: var(--full-h);
+  }
+  .top-joint,
+  .middle-joint,
+  .bottom-joint {
+    transform: none !important;
+  }
+  .fold-clip::after {
+    display: none !important;
+  }
+}
+
+/* ── About page: the fly signing off the letter ────────────────────────────
+   A 24px target around a 22.68px glyph — the size of the slot it occupies in
+   the design — so the click area clears the minimum without moving the rules
+   either side of it. */
+.letter-fly {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+}
+
+/* `body[data-magnet-cursor] *` blanks the OS cursor site-wide so the drawn dot
+   can stand in for it. Re-assert the hand here the way .sling-dash does for its
+   grab: MagnetCursor stands its dot down wherever a real cursor is showing, so
+   this is what makes the fly announce itself as pressable. Its contents inherit
+   via the generic `body[data-magnet-cursor] button *` rule below. */
+body[data-magnet-cursor] .letter-fly {
+  cursor: pointer;
+}
+
+.letter-fly:focus-visible {
+  outline: 2px solid #201006;
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+@keyframes letter-fly-spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+.letter-fly-spinning > svg {
+  animation: letter-fly-spin 700ms cubic-bezier(0.34, 1.12, 0.62, 1);
+}
+
+/* A deliberate tap is gentler than motion that starts on its own, but a full
+   revolution is still spin — hold it still and let the click be a no-op. */
+@media (prefers-reduced-motion: reduce) {
+  .letter-fly-spinning > svg {
+    animation: none;
+  }
+}
+
+/* ── About page: CDs in their sleeves ──────────────────────────────────────
+   Rebuilt from the design's layers — see CdSleeve.tsx for why the flat export
+   could not be used. The sleeve faces are translucent, so the dark fabric of
+   the card shows through them exactly as it does in Figma. */
+.cd-tile {
+  position: absolute;
+  width: 164px;
+  height: 164px;
+  perspective: 700px;
+}
+
+.cd-tile-inner {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  /* Stands in for Figma's Mask rectangle: the sleeve layers and the disc are
+     clipped to the tile, so a drifting disc can never escape its sleeve. */
+  overflow: hidden;
+  transition: transform 180ms cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: transform;
+}
+
+.cd-sleeve-back {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+/* Figma exports the pocket 12px larger a side, the room it leaves for the drop
+   shadow, so it is pulled back by that much to seat on the tile. The explicit
+   size and `max-width: none` matter: the preflight `img { max-width: 100% }`
+   otherwise clamps it to the tile and shrinks the pocket inside it. */
+.cd-sleeve-front {
+  position: absolute;
+  top: -12px;
+  left: -12px;
+  width: 188px;
+  height: 186px;
+  max-width: none;
+  pointer-events: none;
+}
+
+.cd-disc-wrap {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 180ms cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: transform;
+}
+
+.cd-disc {
+  width: 162px;
+  height: 162px;
+  border-radius: 50%;
+  /* Figma renders the disc against the page, so its square corners come back
+     cream; the circle clips them away. */
+  object-fit: cover;
+}
+
+.cd-hole {
+  position: absolute;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: #414141;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cd-tile-inner,
+  .cd-disc-wrap {
+    transition: none;
+    transform: none !important;
+  }
 }
