@@ -1218,6 +1218,33 @@ body[data-ideation-rotating] * {
   margin-top: 48px;
 }
 
+/* Empty slot in a project grid — a card that isn't there yet.
+   Matches the artwork box (.project-card-outer), not the whole grid item: the
+   copy and tags under a real card are what make the item tall, and there is no
+   copy here. Same 4/3 ratio, so the two sit on one line across the top. */
+.project-empty-slot {
+  align-self: start;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px dashed #c9c5bd;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.35);
+  box-sizing: border-box;
+  padding: 24px;
+  text-align: center;
+}
+
+.project-empty-slot-text {
+  font-family: var(--font-ibm-plex-mono), monospace;
+  font-size: 14px;
+  line-height: 24px;
+  letter-spacing: -0.012em;
+  color: #8a857c;
+}
+
 /* ── About page shell ─────────────────────────────────────────────────────
    Deliberately the same box as .landing-main: a 1280px frame with 40px
    gutters, so the content column below it lands on the same 1200px measure

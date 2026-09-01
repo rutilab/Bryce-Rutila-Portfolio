@@ -19,14 +19,20 @@ export default function PersonalProjectsPage() {
           <div className="folder-page">
             {/* ── Info card ── */}
             <FolderIntro eyebrow="Personal Projects">
-              Work I picked up on my own time, for no reason other than wanting the thing to exist.
-              No brief, no stakeholders — just an idea worth chasing far enough to find out whether
-              it held up.
+              These are side projects I built from scratch to bring my own ideas to life. I use
+              them to fix everyday annoyances and experiment with what new AI tools can actually do
+              in practice.
             </FolderIntro>
 
             {/* ── Projects ── */}
             <div className="projects-grid folder-page-grid">
               {PERSONAL_PROJECTS.map(p => <ProjectCard key={p.title} {...p} />)}
+
+              {/* Says the shelf isn't finished, rather than leaving the row to
+                  trail off after the last real card. */}
+              <div className="project-empty-slot" aria-hidden>
+                <span className="project-empty-slot-text">More coming soon</span>
+              </div>
             </div>
           </div>
         </div>
