@@ -7,7 +7,9 @@ import { DiscCloseUp, type SourceRect } from '@/components/disc/DiscCloseUp';
 /**
  * Grid positions of the four sleeves inside the 427×344 fabric card, and the
  * record each one is. `artistImage` is the artist's own picture on Spotify,
- * served from Spotify's image CDN.
+ * kept in `public/` rather than hotlinked: those CDN URLs are only stable while
+ * the artist keeps that photo, and a swap out from under us would either break
+ * the avatar or quietly show someone else's.
  */
 const CDS = [
   {
@@ -20,7 +22,7 @@ const CDS = [
       albumUrl: 'https://open.spotify.com/album/2xkZV2Hl1Omi8rk2D7t5lN',
       artist: 'The Strokes',
       artistUrl: 'https://open.spotify.com/artist/0epOFNiUfyON9EYx7Tpr6V',
-      artistImage: 'https://i.scdn.co/image/ab6761610000517498856eea770468af6dd999d9',
+      artistImage: '/about/cds/artists/the-strokes.jpg',
     },
   },
   {
@@ -33,7 +35,7 @@ const CDS = [
       albumUrl: 'https://open.spotify.com/album/6DlLdXBGCsSDPOV8R2pCl7',
       artist: 'Mk.gee',
       artistUrl: 'https://open.spotify.com/artist/7tr9pbgNEKtG0GQTKe08Tz',
-      artistImage: 'https://i.scdn.co/image/ab676161000051742dc02311bf9829215cedd18d',
+      artistImage: '/about/cds/artists/mkgee.jpg',
     },
   },
   {
@@ -46,7 +48,7 @@ const CDS = [
       albumUrl: 'https://open.spotify.com/album/4E691gbRgo2Zb6ToII2DWO',
       artist: 'Dijon',
       artistUrl: 'https://open.spotify.com/artist/0knGpCTbmG4ctl1wzYRZs4',
-      artistImage: 'https://i.scdn.co/image/ab6761610000517473479e6db034c4a43d4aee04',
+      artistImage: '/about/cds/artists/dijon.jpg',
     },
   },
   {
@@ -59,7 +61,7 @@ const CDS = [
       albumUrl: 'https://open.spotify.com/album/6geXPbIGVA3lSoA9CrQGhR',
       artist: 'Vegyn',
       artistUrl: 'https://open.spotify.com/artist/5iUnvXddCpOrbWKm7QMr6o',
-      artistImage: 'https://i.scdn.co/image/ab676161000051749e782711ee76bb0df5ad15c3',
+      artistImage: '/about/cds/artists/vegyn.jpg',
     },
   },
 ];
