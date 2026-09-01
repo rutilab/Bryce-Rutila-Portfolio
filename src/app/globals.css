@@ -2579,6 +2579,87 @@ body[data-magnet-cursor] .letter-fly {
   }
 }
 
+/* ── The disc close-up: what record you are looking at ─────────────────────
+   Sits under the disc on the dark scrim. The album takes the display face the
+   headings use, the artist line the body one, and both are links out to
+   Spotify — so both need a hand, including under the drawn cursor. */
+/* Inline, not block: a block link would stretch the full width of the disc and
+   stay hoverable well past the end of the title — and past the end of the short
+   second line when one wraps. Inline boxes hug the text on every line. */
+.disc-release-album {
+  display: inline;
+  font-family: var(--font-battambang), sans-serif;
+  font-weight: 700;
+  font-size: 30px;
+  line-height: 1.2;
+  letter-spacing: -0.03em;
+  color: #faf7f2;
+  text-decoration: none;
+  transition: color 0.15s ease;
+}
+
+.disc-release-artist {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 12px;
+  /* Clears the anonymous block the inline title above sits in. */
+  clear: both;
+  font-family: var(--font-inter), sans-serif;
+  font-size: 15px;
+  line-height: 1.3;
+  color: rgba(250, 247, 242, 0.72);
+  text-decoration: none;
+  transition: color 0.15s ease;
+  /* The row is only as wide as its contents, so the hover target stops at the
+     name rather than running the width of the disc. */
+  width: fit-content;
+}
+
+/* Spotify's artist pictures are square; the mask is what makes them read as a
+   person rather than a tile. */
+.disc-release-artist img {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+  background: rgba(250, 247, 242, 0.12);
+}
+
+.disc-release-album:hover,
+.disc-release-artist:hover {
+  color: #ffffff;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.disc-release-album:focus-visible,
+.disc-release-artist:focus-visible {
+  outline: 2px solid #006efe;
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+
+.disc-release-album,
+.disc-release-artist,
+body[data-magnet-cursor] .disc-release-album,
+body[data-magnet-cursor] .disc-release-artist {
+  cursor: pointer;
+}
+
+/* Narrow screens: the disc is already most of the width, so the type steps down
+   with it rather than wrapping to three lines. */
+@media (max-width: 639px) {
+  .disc-release-album {
+    font-size: 22px;
+  }
+  .disc-release-artist {
+    font-size: 14px;
+    margin-top: 10px;
+  }
+}
+
 /* ── About page: CDs in their sleeves ──────────────────────────────────────
    Rebuilt from the design's layers — see CdSleeve.tsx for why the flat export
    could not be used. The sleeve faces are translucent, so the dark fabric of

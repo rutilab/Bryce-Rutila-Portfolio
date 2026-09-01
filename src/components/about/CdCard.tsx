@@ -4,12 +4,64 @@ import { useCallback, useRef, useState } from 'react';
 import { CdSleeve } from './CdSleeve';
 import { DiscCloseUp, type SourceRect } from '@/components/disc/DiscCloseUp';
 
-/** Grid positions of the four sleeves inside the 427×344 fabric card. */
+/**
+ * Grid positions of the four sleeves inside the 427×344 fabric card, and the
+ * record each one is. `artistImage` is the artist's own picture on Spotify,
+ * served from Spotify's image CDN.
+ */
 const CDS = [
-  { src: '/about/cds/disc-1.jpg', alt: 'CD in its sleeve', left: 40, top: 24 },
-  { src: '/about/cds/disc-2.jpg', alt: 'CD in its sleeve', left: 223, top: 24 },
-  { src: '/about/cds/disc-3.jpg', alt: 'CD in its sleeve', left: 40, top: 212 },
-  { src: '/about/cds/disc-4.jpg', alt: 'CD in its sleeve', left: 223, top: 212 },
+  {
+    src: '/about/cds/disc-1.jpg',
+    alt: 'The New Abnormal by The Strokes',
+    left: 40,
+    top: 24,
+    release: {
+      album: 'The New Abnormal',
+      albumUrl: 'https://open.spotify.com/album/2xkZV2Hl1Omi8rk2D7t5lN',
+      artist: 'The Strokes',
+      artistUrl: 'https://open.spotify.com/artist/0epOFNiUfyON9EYx7Tpr6V',
+      artistImage: 'https://i.scdn.co/image/ab6761610000517498856eea770468af6dd999d9',
+    },
+  },
+  {
+    src: '/about/cds/disc-2.jpg',
+    alt: 'Two Star & The Dream Police by Mk.gee',
+    left: 223,
+    top: 24,
+    release: {
+      album: 'Two Star & The Dream Police',
+      albumUrl: 'https://open.spotify.com/album/6DlLdXBGCsSDPOV8R2pCl7',
+      artist: 'Mk.gee',
+      artistUrl: 'https://open.spotify.com/artist/7tr9pbgNEKtG0GQTKe08Tz',
+      artistImage: 'https://i.scdn.co/image/ab676161000051742dc02311bf9829215cedd18d',
+    },
+  },
+  {
+    src: '/about/cds/disc-3.jpg',
+    alt: 'Absolutely by Dijon',
+    left: 40,
+    top: 212,
+    release: {
+      album: 'Absolutely',
+      albumUrl: 'https://open.spotify.com/album/4E691gbRgo2Zb6ToII2DWO',
+      artist: 'Dijon',
+      artistUrl: 'https://open.spotify.com/artist/0knGpCTbmG4ctl1wzYRZs4',
+      artistImage: 'https://i.scdn.co/image/ab6761610000517473479e6db034c4a43d4aee04',
+    },
+  },
+  {
+    src: '/about/cds/disc-4.jpg',
+    alt: 'The Road to Hell is Paved With Good Intentions by Vegyn',
+    left: 223,
+    top: 212,
+    release: {
+      album: 'The Road to Hell is Paved With Good Intentions',
+      albumUrl: 'https://open.spotify.com/album/6geXPbIGVA3lSoA9CrQGhR',
+      artist: 'Vegyn',
+      artistUrl: 'https://open.spotify.com/artist/5iUnvXddCpOrbWKm7QMr6o',
+      artistImage: 'https://i.scdn.co/image/ab676161000051749e782711ee76bb0df5ad15c3',
+    },
+  },
 ];
 
 /**
@@ -68,6 +120,7 @@ export function CdCard() {
           src={CDS[open.index].src}
           alt={CDS[open.index].alt}
           from={open.from}
+          release={CDS[open.index].release}
           closing={closing}
           onClose={() => setClosing(true)}
           onClosed={finish}

@@ -77,6 +77,20 @@ type Tween = { from: number; to: number; t0: number; duration: number; ease: (t:
 
 export type SourceRect = { x: number; y: number; size: number };
 
+/** What the close-up says about the record it is showing. */
+export type DiscRelease = {
+  album: string;
+  albumUrl: string;
+  artist: string;
+  artistUrl: string;
+  /** The artist's own Spotify picture. */
+  artistImage: string;
+};
+
+/** Room kept under the disc for the album and artist, when there is one. */
+const CAPTION_H = 132;
+const CAPTION_GAP = 28;
+
 type Pose = {
   progress: number;
   spin: number;
@@ -93,6 +107,7 @@ export function DiscCloseUp({
   onClose,
   onClosed,
   closing,
+  release,
 }: {
   src: string;
   alt?: string;
@@ -102,6 +117,8 @@ export function DiscCloseUp({
   onClosed: () => void;
   /** Flipped by the parent to start the return journey. */
   closing: boolean;
+  /** Omit and the disc is shown on its own, as it was. */
+  release?: DiscRelease;
 }) {
   const canHover = useCanPrimaryHover();
   const [reduced, setReduced] = useState(false);
@@ -144,10 +161,15 @@ export function DiscCloseUp({
   }, []);
 
   /** Close-up diameter. The brief's 359 is a 375-wide phone; on the web this has
-   *  to answer the viewport, so the ratios hold and the number doesn't. */
-  const size = Math.max(180, Math.min(viewport.w * 0.78, viewport.h * 0.66, 520));
+   *  to answer the viewport, so the ratios hold and the number doesn't. The
+   *  album and artist are part of the composition, not an overlay on top of it,
+   *  so the height they need comes off the disc's before it is sized — and the
+   *  pair is centred together rather than the disc alone. */
+  const captionH = release ? CAPTION_H : 0;
+  const stageH = viewport.h - captionH;
+  const size = Math.max(180, Math.min(viewport.w * 0.78, stageH * 0.66, 520));
   const centreX = viewport.w / 2;
-  const centreY = viewport.h / 2;
+  const centreY = stageH / 2;
   const fromCX = from.x + from.size / 2;
   const fromCY = from.y + from.size / 2;
   const liftedCY = fromCY - from.size * LIFT;
@@ -466,13 +488,25 @@ export function DiscCloseUp({
   const glareOpacity = interpolate(p, [SLIDE, 0.75], [0, 1]);
   const shadowOpacity = interpolate(p, [0, SLIDE], [0, 1]);
   const chrome = interpolate(p, [0.7, 1], [0, 1]);
+  /** Chrome is clickable only once it is actually legible. */
+  const linksLive = chrome > 0.5;
 
   // A dip in scale mid-flip reads as the disc passing through the light.
   const flipDip = 1 - 0.07 * Math.sin(Math.PI * pose.flip);
 
   return createPortal(
     <div
-      style={{ position: 'fixed', inset: 0, zIndex: 300, touchAction: 'none', cursor: grip }}
+      style={{
+        position: 'fixed',
+        inset: 0,
+        zIndex: 300,
+        touchAction: 'none',
+        /* Only speak up for the disc itself. Naming a cursor at rest — even
+           'default' — counts as the page asking for one, which stands the site's
+           drawn dot down and puts the OS arrow on the scrim instead. Saying
+           nothing lets `body[data-magnet-cursor] *` blank it and the dot return. */
+        ...(grip === 'default' ? null : { cursor: grip }),
+      }}
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}
       onPointerUp={onPointerUp}
@@ -541,10 +575,56 @@ export function DiscCloseUp({
         }}
       />
 
+      {/* Album and artist, left-aligned to the disc's own left edge rather than
+          centred under it, so the two lines start on one axis. Its pointer
+          events are its own: the overlay treats a click on the backdrop as a
+          dismiss, and these are links. */}
+      {release && (
+        <div
+          onPointerDown={(e) => e.stopPropagation()}
+          onPointerUp={(e) => e.stopPropagation()}
+          style={{
+            position: 'absolute',
+            left: centreX - size / 2,
+            top: centreY + size / 2 + CAPTION_GAP,
+            width: size,
+            opacity: chrome,
+            /* The band is as wide as the disc but the words are not, so it stays
+               transparent to the pointer and the two links take their own hits.
+               Otherwise the empty half of this box swallows clicks that should
+               have reached the backdrop and dismissed. Events still bubble from
+               the links, so the handlers above keep working. */
+            pointerEvents: 'none',
+          }}
+        >
+          <a
+            href={release.albumUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="disc-release-album"
+            style={{ pointerEvents: linksLive ? 'auto' : 'none' }}
+          >
+            {release.album}
+          </a>
+
+          <a
+            href={release.artistUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="disc-release-artist"
+            style={{ pointerEvents: linksLive ? 'auto' : 'none' }}
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={release.artistImage} alt="" width={32} height={32} />
+            <span>{release.artist}</span>
+          </a>
+        </div>
+      )}
+
       {/* The site's one lightbox close button. It positions itself, so this
           wrapper only carries the fade — the chrome is held back until the disc
           has nearly arrived (§7). */}
-      <div style={{ opacity: chrome, pointerEvents: chrome > 0.5 ? 'auto' : 'none' }}>
+      <div style={{ opacity: chrome, pointerEvents: linksLive ? 'auto' : 'none' }}>
         <LightboxCloseButton onClose={onClose} />
       </div>
     </div>,
