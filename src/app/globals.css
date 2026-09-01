@@ -1126,6 +1126,98 @@ body[data-ideation-rotating] * {
   }
 }
 
+/* ── Folder pages (Finding Focus, Personal Projects) ──────────────────────
+   The same measure as the home page's project section, because they now carry
+   the same cards — 1200px of content inside 40px gutters. The old 880px frame
+   was sized for the smaller bespoke cards these replaced, and would have put
+   two full project cards in a column meant for one. */
+.folder-page {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 40px;
+  box-sizing: border-box;
+}
+@media (max-width: 799px) {
+  .folder-page {
+    padding: 0 24px;
+  }
+}
+
+/* The card at the top that says what the folder is. */
+.folder-page-intro {
+  background: #fcfcfc;
+  border: 2px solid #d8d8d8;
+  border-radius: 16px;
+  padding: 24px;
+}
+
+.folder-page-eyebrow {
+  font-family: var(--font-inter), sans-serif;
+  font-size: 11px;
+  font-weight: 500;
+  color: #aaaaaa;
+  line-height: 16px;
+  letter-spacing: 0.08em;
+  margin-bottom: 6px;
+  text-transform: uppercase;
+}
+
+.folder-page-blurb {
+  font-family: var(--font-inter), sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  color: #666666;
+  line-height: 21px;
+  margin: 0;
+}
+
+/* The fact row: company, role, timeline. Stacks on narrow screens, which used
+   to be a JS width listener on the Finding Focus page. */
+.folder-intro-facts {
+  display: flex;
+  flex-direction: row;
+  gap: 32px;
+}
+@media (max-width: 679px) {
+  .folder-intro-facts {
+    flex-direction: column;
+    gap: 20px;
+  }
+}
+
+.folder-intro-fact {
+  flex: 1;
+}
+
+.folder-intro-fact-label {
+  font-family: var(--font-inter), sans-serif;
+  font-size: 11px;
+  font-weight: 500;
+  color: #aaaaaa;
+  line-height: 16px;
+  letter-spacing: 0.08em;
+  margin-bottom: 6px;
+  text-transform: uppercase;
+}
+
+.folder-intro-fact-value {
+  font-family: var(--font-inter), sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  color: #444444;
+  line-height: 20px;
+}
+
+.folder-intro-rule {
+  height: 1px;
+  background-color: #d8d8d8;
+  margin: 24px 0;
+}
+
+.folder-page-grid {
+  margin-top: 48px;
+}
+
 /* ── About page shell ─────────────────────────────────────────────────────
    Deliberately the same box as .landing-main: a 1280px frame with 40px
    gutters, so the content column below it lands on the same 1200px measure

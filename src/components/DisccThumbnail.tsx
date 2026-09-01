@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useRef } from 'react';
+import { useVideoWhenVisible } from '@/hooks/useVideoWhenVisible';
 
 /**
  * Home page card thumbnail for the Discc case study.
@@ -44,47 +45,7 @@ const BEZEL_DROP = 'translateY(6.8%)';
 
 export function DisccThumbnail() {
   const videoRef = useRef<HTMLVideoElement>(null);
-
-  useEffect(() => {
-    const video = videoRef.current;
-    if (!video) return;
-
-    // Someone who has asked for less motion gets the poster frame and nothing
-    // more — the card still reads, it just doesn't move.
-    const motion = window.matchMedia('(prefers-reduced-motion: reduce)');
-    if (motion.matches) return;
-
-    /** True only while the card is on screen AND the tab is frontmost. */
-    let onScreen = false;
-
-    const sync = () => {
-      const shouldPlay = onScreen && !document.hidden;
-      if (shouldPlay) {
-        // Rejects if the browser declines autoplay; muted + playsInline should
-        // satisfy every current policy, and the poster covers us if not.
-        video.play().catch(() => {});
-      } else {
-        video.pause();
-      }
-    };
-
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        onScreen = entry.isIntersecting;
-        sync();
-      },
-      // Any sliver on screen counts — the card is tall, and waiting for a
-      // fraction of it would leave the phone frozen through the scroll in.
-      { threshold: 0 },
-    );
-    observer.observe(video);
-    document.addEventListener('visibilitychange', sync);
-
-    return () => {
-      observer.disconnect();
-      document.removeEventListener('visibilitychange', sync);
-    };
-  }, []);
+  useVideoWhenVisible(videoRef);
 
   return (
     <div

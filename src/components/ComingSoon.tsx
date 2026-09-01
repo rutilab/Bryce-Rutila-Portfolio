@@ -3,7 +3,17 @@
 import Link from 'next/link';
 import HalftoneCanvas from '@/components/HalftoneCanvas';
 
-export default function ComingSoon({ label }: { label: string }) {
+export default function ComingSoon({
+  label,
+  backHref = '/',
+  backLabel = 'Back to home',
+}: {
+  label: string;
+  /** Where the way out goes. A folder that is still empty sends you back to the
+   *  shelf you opened it from, not all the way home. */
+  backHref?: string;
+  backLabel?: string;
+}) {
   return (
     <>
     <HalftoneCanvas />
@@ -87,7 +97,7 @@ export default function ComingSoon({ label }: { label: string }) {
 
         {/* Back link */}
         <Link
-          href="/"
+          href={backHref}
           style={{
             display: 'inline-flex',
             alignItems: 'center',
@@ -104,7 +114,7 @@ export default function ComingSoon({ label }: { label: string }) {
           <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
             <path d="M11 7H3M3 7L6.5 3.5M3 7L6.5 10.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
           </svg>
-          Back to home
+          {backLabel}
         </Link>
       </div>
     </div>

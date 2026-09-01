@@ -4,6 +4,10 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useCanPrimaryHover } from '@/hooks/useCanPrimaryHover';
 import HalftoneCanvas from '@/components/HalftoneCanvas';
+import { AIAssistantThumbnail } from '@/components/AIAssistantThumbnail';
+import { MilestoneThumbnail } from '@/components/MilestoneThumbnail';
+import { DisccThumbnail } from '@/components/DisccThumbnail';
+import { ScreenRecordingThumbnail } from '@/components/ScreenRecordingThumbnail';
 
 // ── SVG path constants ────────────────────────────────────────────────────────
 
@@ -83,49 +87,31 @@ function MiniCard({
   );
 }
 
-// ── Thumbnail contents — mirrors the actual card thumbnails exactly ───────────
-const AI_ASSISTANT_THUMBNAIL = (
-  <>
-    <img src="/case-studies/finding-focus-ai-assistant/imac-mockup.png" alt="" style={{
-      position: 'absolute', left: '8px', top: '50%',
-      transform: 'translateY(calc(-50% + 3px))',
-      width: '58%', height: 'auto',
-    }} />
-    <img src="/case-studies/finding-focus-ai-assistant/iphone-mockup.png" alt="" style={{
-      position: 'absolute', right: '8px', top: '50%',
-      transform: 'translateY(calc(-50% + 6px))',
-      width: '24%', height: 'auto',
-    }} />
-  </>
+// ── Thumbnail contents ───────────────────────────────────────────────────────
+// The same artwork the real project cards carry, not lookalikes of it. Each of
+// these scales itself to whatever box it is handed, so the mini card gets the
+// genuine article at folder size.
+const AI_ASSISTANT_THUMBNAIL = <AIAssistantThumbnail />;
+
+const ACHIEVEMENTS_THUMBNAIL = <MilestoneThumbnail />;
+
+const DISCC_THUMBNAIL = <DisccThumbnail />;
+
+const PROGRAM_SEARCH_THUMBNAIL = (
+  <ScreenRecordingThumbnail
+    src="/case-studies/lastinger/program-search.mp4"
+    poster="/case-studies/lastinger/program-search-poster.webp"
+  />
 );
 
-// Placeholder — swap for final asset: milestone achievement screen with summit illustration
-const ACHIEVEMENTS_THUMBNAIL = (
-  <div style={{
-    width: '100%',
-    height: '100%',
-    borderRadius: '5px',
-    border: '1.5px dashed #31e300',
-    background: 'rgba(49, 227, 0, 0.1)',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: '6px',
-    boxSizing: 'border-box',
-  }}>
-    <span style={{
-      fontFamily: 'Inter, sans-serif',
-      fontSize: '6.5px',
-      fontWeight: 500,
-      color: '#1e8a00',
-      lineHeight: '9px',
-      textAlign: 'center',
-      letterSpacing: '0.04em',
-      textTransform: 'uppercase',
-    }}>
-      Placeholder · Milestone screen
-    </span>
-  </div>
+const COURSE_ONBOARDING_THUMBNAIL = (
+  <ScreenRecordingThumbnail
+    src="/case-studies/lastinger/course-onboarding.mp4"
+    poster="/case-studies/lastinger/course-onboarding-poster.webp"
+    // This capture is wider than the card and its content hugs the left edge,
+    // so centring the crop cuts the logo and the headline in half.
+    objectPosition="top left"
+  />
 );
 
 const LANDING_PAGE_THUMBNAIL = (
@@ -142,12 +128,15 @@ const LANDING_PAGE_THUMBNAIL = (
 function FolderItem({
   href,
   label,
+  dates,
   cards,
   folderWidth,
   canHover,
 }: {
   href: string;
   label: string;
+  /** When the work in this folder happened — sits under the folder's name. */
+  dates: string;
   folderWidth: string;
   canHover: boolean;
   cards: {
@@ -260,6 +249,19 @@ function FolderItem({
       }}>
         {label}
       </span>
+
+      <span style={{
+        fontFamily: 'Inter, sans-serif',
+        fontSize: '14px',
+        fontWeight: 400,
+        lineHeight: '20px',
+        color: '#757575',
+        marginTop: '2px',
+        paddingLeft: '8px',
+        whiteSpace: 'nowrap',
+      }}>
+        {dates}
+      </span>
     </Link>
   );
 }
@@ -267,24 +269,29 @@ function FolderItem({
 // ── Page ──────────────────────────────────────────────────────────────────────
 export default function CaseStudies() {
   const [chatOpen, setChatOpen] = useState(false);
-  const [isStacked, setIsStacked] = useState(false);
+  /** Three folders across, or one under the other. There is no middle. */
+  const [stacked, setStacked] = useState(false);
   const canHover = useCanPrimaryHover();
 
   useEffect(() => {
-    // Stack folders when the viewport can no longer fit both at 40px margins each side.
-    // Side-by-side: 2×400px + 40px gap + 80px margins = 920px breakpoint.
-    const STACK_BP = 640;
-    const check = () => setIsStacked(window.innerWidth < STACK_BP);
+    /**
+     * The row holds all three down to 940px, where each folder is still ~260px
+     * — wide enough for "Lastinger Center for Learning" to sit under it. Below
+     * that they go straight to a single column rather than passing through a
+     * two-across step: two folders side by side with a third alone underneath
+     * reads as a mistake, not a layout.
+     */
+    const check = () => setStacked(window.innerWidth < 940);
     check();
     window.addEventListener('resize', check);
     return () => window.removeEventListener('resize', check);
   }, []);
 
-  // Side-by-side: holds 400px until 40px margins remain on each side, then scales.
-  // formula: (100vw - 40px gap - 80px margins) / 2
-  const folderWidth = isStacked
+  // Holds 400px until 40px margins remain on each side, then scales down.
+  // formula: (100vw - gaps - 80px margins) / columns
+  const folderWidth = stacked
     ? 'min(400px, calc(100vw - 80px))'
-    : 'min(400px, calc((100vw - 120px) / 2))';
+    : 'min(400px, calc((100vw - 160px) / 3))';
 
   return (
     <>
@@ -315,19 +322,28 @@ export default function CaseStudies() {
         {/* ── Folders ── */}
         <div style={{
           display: 'flex',
-          flexDirection: isStacked ? 'column' : 'row',
-          alignItems: isStacked ? 'center' : 'flex-start',
-          gap: '40px',
+          flexDirection: stacked ? 'column' : 'row',
+          flexWrap: 'nowrap',
+          justifyContent: 'center',
+          alignItems: stacked ? 'center' : 'flex-start',
+          columnGap: '40px',
+          /* Cards rise ~130px out of a folder, well past its own top edge, so a
+             stacked folder would open straight over the label of the one above
+             it. The extra row gap is only owed where folders actually open — a
+             touch device never hovers, and would just be scrolling past dead
+             space. */
+          rowGap: canHover ? '150px' : '40px',
         }}>
 
           <FolderItem
             href="/case-studies/finding-focus"
             label="Finding Focus"
+            dates="2022 – 2026"
             folderWidth={folderWidth}
             canHover={canHover}
             cards={[
               {
-                title: 'FF AI Assistant',
+                title: 'Finding Focus AI Assistant',
                 subtitle: 'LLM-powered educator support',
                 thumbnailContent: AI_ASSISTANT_THUMBNAIL,
                 rotation: -9,
@@ -341,7 +357,7 @@ export default function CaseStudies() {
                 leftPct: '51%',
               },
               {
-                title: 'FF EOS Flow',
+                title: 'Focus Coach End-of-Session Flow',
                 subtitle: 'Session completion redesign',
                 thumbnailContent: ACHIEVEMENTS_THUMBNAIL,
                 rotation: 2,
@@ -353,20 +369,41 @@ export default function CaseStudies() {
           <FolderItem
             href="/case-studies/personal-projects"
             label="Personal Projects"
+            dates="2026"
             folderWidth={folderWidth}
             canHover={canHover}
             cards={[
               {
-                title: 'Coming Soon',
-                subtitle: 'More projects on the way',
-                thumbnailContent: <div style={{ width: '100%', height: '100%', background: 'rgba(137,255,18,0.18)' }} />,
+                title: 'Discc',
+                subtitle: 'A collectible Spotify library',
+                thumbnailContent: DISCC_THUMBNAIL,
+                // One card, so it rises from the middle of the folder and sits
+                // straight — the tilt is what makes a pile read as a pile, and
+                // there is no pile here yet.
+                rotation: 0,
+                leftPct: '28.5%',
+              },
+            ]}
+          />
+
+          <FolderItem
+            href="/case-studies/lastinger-center"
+            label="Lastinger Center for Learning"
+            dates="2020 – 2022"
+            folderWidth={folderWidth}
+            canHover={canHover}
+            cards={[
+              {
+                title: 'Program Search & Selection',
+                subtitle: 'Filtering and context-rich cards',
+                thumbnailContent: PROGRAM_SEARCH_THUMBNAIL,
                 rotation: -9,
                 leftPct: '6%',
               },
               {
-                title: 'Coming Soon',
-                subtitle: 'More projects on the way',
-                thumbnailContent: <div style={{ width: '100%', height: '100%', background: 'rgba(255,156,18,0.18)' }} />,
+                title: 'Course Onboarding',
+                subtitle: 'Join codes and instant access',
+                thumbnailContent: COURSE_ONBOARDING_THUMBNAIL,
                 rotation: 9,
                 leftPct: '51%',
               },
