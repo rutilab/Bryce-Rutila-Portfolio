@@ -164,10 +164,6 @@ export function FoldedLetter() {
       return;
     }
 
-    // Panels can fold upward, so the lowest painted edge is not always the last
-    // one in the tree — check them all.
-    const clips = Array.from(stage.querySelectorAll<HTMLElement>('.fold-clip'));
-
     let frame = 0;
     let ticking = false;
 
@@ -186,22 +182,6 @@ export function FoldedLetter() {
       const span = Math.max(start - end, 1);
       const progress = Math.max(0, Math.min(1, (start - top) / span));
       stage.style.setProperty('--fold-progress', progress.toFixed(4));
-
-      /**
-       * Collapse the box onto the fold. The folded footprint is a sum of
-       * cosines inflated by the perspective divide — nothing like the straight
-       * line from folded to flat — so a linear formula leaves the letter
-       * overhanging its own box through the whole middle of the scroll. Read
-       * what actually got painted instead. Safe to read here: the clips hang off
-       * the stage's top edge, which this height never moves.
-       */
-      if (clips.length) {
-        const lowest = Math.max(...clips.map((c) => c.getBoundingClientRect().bottom));
-        // Never collapse below the top slice, so the heading and the opening
-        // lines are always framed before the reader scrolls.
-        const floor = clips[0].getBoundingClientRect().height + 16;
-        stage.style.setProperty('--fold-h', `${Math.round(Math.max(lowest - top, floor))}px`);
-      }
     };
 
     const onScroll = () => {
@@ -222,7 +202,7 @@ export function FoldedLetter() {
   }, []);
 
   return (
-    <div className="mx-auto mt-6 w-full max-w-[1440px] px-6 xl:px-20">
+    <div className="about-section mt-6">
       <div
         ref={stageRef}
         className="letter-3d-stage mx-auto w-[640px] max-w-full"

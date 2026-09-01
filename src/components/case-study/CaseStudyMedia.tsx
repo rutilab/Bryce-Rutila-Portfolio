@@ -200,6 +200,7 @@ export function CaseStudyMedia({
   caption,
   rounded = 'rounded-lg',
   showBadge = false,
+  lightboxSrc,
 }: {
   src: string;
   alt: string;
@@ -213,6 +214,10 @@ export function CaseStudyMedia({
   rounded?: string;
   /** Prefer putting the badge on the blue VisualCard; off by default. */
   showBadge?: boolean;
+  /** A different asset to open full screen — for a preview that is a crop, a
+   *  frame, or a thumbnail of the thing rather than the thing itself. Defaults
+   *  to `src`, which is the usual case. */
+  lightboxSrc?: string;
 }) {
   const mediaType = inferType(src, type);
   const [open, setOpen] = useState(false);
@@ -305,7 +310,7 @@ export function CaseStudyMedia({
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              src={src}
+              src={lightboxSrc ?? src}
               alt={alt}
               style={{
                 maxWidth: '100%',
@@ -866,6 +871,10 @@ export function CaseStudyMediaPlaceholder({
   children?: ReactNode;
   /** Prefer putting the badge on the blue VisualCard; off by default. */
   showBadge?: boolean;
+  /** A different asset to open full screen — for a preview that is a crop, a
+   *  frame, or a thumbnail of the thing rather than the thing itself. Defaults
+   *  to `src`, which is the usual case. */
+  lightboxSrc?: string;
 }) {
   return (
     <div

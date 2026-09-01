@@ -19,15 +19,18 @@ const ENTER_DELAY = 1100;
  * The bookend to BackToTopButton, and gated the same way: mounted once for every
  * case-study route, and `#section-intro` is what marks a page as a case study
  * with a hero. Routes without one — the index, personal projects — never see it.
+ *
+ * Pages that mount it themselves rather than through the layout have already
+ * decided they want it, so they pass `gateId={null}` and skip the check.
  */
-export function ScrollCue() {
+export function ScrollCue({ gateId = 'section-intro' }: { gateId?: string | null } = {}) {
   const [mounted, setMounted] = useState(false);
   const [visible, setVisible] = useState(false);
   /** Once the reader scrolls, the cue is spent — this keeps it from coming back. */
   const doneRef = useRef(false);
 
   useEffect(() => {
-    if (!document.getElementById('section-intro')) return;
+    if (gateId && !document.getElementById(gateId)) return;
     // Landing mid-page (a refresh, a #section link) means the reader is already
     // past the point of needing to be told, so the cue never shows at all.
     if (window.scrollY > DISMISS_AT) return;
@@ -56,7 +59,7 @@ export function ScrollCue() {
       if (frame) window.cancelAnimationFrame(frame);
       window.removeEventListener('scroll', onScroll);
     };
-  }, []);
+  }, [gateId]);
 
   const scrollDown = useCallback(() => {
     doneRef.current = true;

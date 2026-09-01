@@ -1126,6 +1126,38 @@ body[data-ideation-rotating] * {
   }
 }
 
+/* ── About page shell ─────────────────────────────────────────────────────
+   Deliberately the same box as .landing-main: a 1280px frame with 40px
+   gutters, so the content column below it lands on the same 1200px measure
+   and the two pages share one left edge at every width. The bottom is 160px
+   because that is what home adds up to — 80px on the last section plus 80px
+   on the main. */
+.about-main {
+  position: relative;
+  z-index: 1;
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 152px 40px 160px;
+  box-sizing: border-box;
+}
+@media (max-width: 799px) {
+  .about-main {
+    padding-left: 24px;
+    padding-right: 24px;
+  }
+}
+
+/* The content measure inside that shell — the counterpart to
+   .projects-section and .endorsements-section. Centred with the two side
+   margins rather than the `margin` shorthand: the shorthand also writes
+   margin-top, and it would land after the Tailwind spacing utilities and quietly
+   reset the vertical rhythm the sections set on themselves. */
+.about-section {
+  max-width: 1200px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
 /* ── Project section wrapper ──────────────────────────────────────────────── */
 .projects-section {
   max-width: 1200px;
@@ -1220,8 +1252,10 @@ body.slingshot-dragging .project-card-pair {
   padding-bottom: 80px;
 }
 
-/* Heading row: "In their own [W][O][R][D][S]." */
-.endorsements-heading-wrap {
+/* Heading row: "In their own [W][O][R][D][S]." — shared with the About page's
+   heading so the display type sits on the same trench either side. */
+.endorsements-heading-wrap,
+.display-heading-wrap {
   margin-bottom: 40px;
 }
 
@@ -1240,7 +1274,10 @@ body.slingshot-dragging .project-card-pair {
   line-height: 88px;
 }
 
-.endorsements-heading-text {
+/* The big display heading. Shared with the About page's "Life outside work."
+   so the two read as one typographic voice and step down together. */
+.endorsements-heading-text,
+.display-heading {
   font-family: var(--font-battambang), sans-serif;
   font-weight: 400;
   font-size: 80px;
@@ -1254,6 +1291,11 @@ body.slingshot-dragging .project-card-pair {
   line-height: 0;
   vertical-align: middle;
   cursor: default;
+}
+
+h2.display-heading {
+  margin: 0;
+  padding: 0;
 }
 
 /* endorsement card grid — 3-col at ≥950px, 1-col below */
@@ -1360,7 +1402,8 @@ body.slingshot-dragging .project-card-pair {
   .endorsements-grid {
     grid-template-columns: 1fr;
   }
-  .endorsements-heading-text {
+  .endorsements-heading-text,
+  .display-heading {
     font-size: 56px;
     line-height: 80px;
   }
@@ -1378,7 +1421,8 @@ body.slingshot-dragging .project-card-pair {
   .endorsements-grid {
     grid-template-columns: 1fr;
   }
-  .endorsements-heading-text {
+  .endorsements-heading-text,
+  .display-heading {
     font-size: 40px;
     line-height: 60px;
   }
@@ -2364,11 +2408,12 @@ body[data-magnet-cursor] .cs-inline-jump {
 
 .letter-3d-stage {
   position: relative;
-  /* Folding shortens the panels, so the box shortens with them — otherwise the
-     letter leaves a tall blank gap above whatever follows it. */
-  /* The driver measures the painted fold and sets --fold-h each frame; the
-     linear ramp is the pre-hydration and no-JS fallback. */
-  height: var(--fold-h, calc(var(--full-h) * (0.35 + (var(--fold-progress) * 0.65))));
+  /* Reserved at the unfolded height for the whole scroll. The box used to
+     shrink onto the fold, which meant everything below it — the "Life outside
+     work" heading especially — rode up and down as the reader scrolled. The
+     section under it is meant to be an anchor, so the letter unfolds into space
+     that was already spoken for. */
+  height: var(--full-h);
   margin-bottom: 2rem;
   perspective: 1200px;
 }
@@ -2543,6 +2588,16 @@ body[data-magnet-cursor] .letter-fly {
   width: 164px;
   height: 164px;
   perspective: 700px;
+}
+
+/* Only the sleeves that open say so — a tile rendered without an onOpen has no
+   role and stays a picture. The drawn dot gives way to the hand here the same
+   way it does on any other control; the sleeve's own layers inherit it through
+   the generic `[role='button'] *` rule above, so the cursor never flickers
+   between the pocket and the disc inside it. */
+.cd-tile[role='button'],
+body[data-magnet-cursor] .cd-tile[role='button'] {
+  cursor: pointer;
 }
 
 .cd-tile-inner {

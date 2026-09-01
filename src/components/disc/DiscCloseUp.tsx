@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useCanPrimaryHover } from '@/hooks/useCanPrimaryHover';
+import { LightboxCloseButton } from '@/components/case-study/CaseStudyMedia';
 import { Disc } from './Disc';
 
 /**
@@ -105,6 +106,13 @@ export function DiscCloseUp({
   const canHover = useCanPrimaryHover();
   const [reduced, setReduced] = useState(false);
   const [viewport, setViewport] = useState({ w: 0, h: 0 });
+  /**
+   * The disc is hit-tested mathematically rather than by the DOM, so the cursor
+   * has to be told what the maths already knows: an open hand over the face
+   * once it has settled, a closed one while it is being turned, and the plain
+   * arrow out on the backdrop, which is a dismiss target and not a grab.
+   */
+  const [grip, setGrip] = useState<'default' | 'grab' | 'grabbing'>('default');
   const [pose, setPose] = useState<Pose>({
     progress: 0,
     spin: 0,
@@ -327,6 +335,7 @@ export function DiscCloseUp({
     s.dragging = false;
     s.driven = false;
     s.spinVel = 0;
+    setGrip('default');
     s.spinTween = {
       from: s.spin,
       to: Math.round(s.spin / TURN) * TURN,
@@ -380,6 +389,7 @@ export function DiscCloseUp({
     s.grabTime = performance.now();
     s.targetX = clamp1((e.clientY - centreY) / radius);
     s.targetY = clamp1((e.clientX - centreX) / radius);
+    setGrip('grabbing');
     wake();
   };
 
@@ -401,8 +411,12 @@ export function DiscCloseUp({
       wake();
       return;
     }
-    if (!canHover || !settled()) return;
+    if (!canHover || !settled()) {
+      setGrip('default');
+      return;
+    }
     const inside = hits(e);
+    setGrip(inside ? 'grab' : 'default');
     s.driven = inside;
     if (inside) {
       s.targetX = clamp1((e.clientY - centreY) / radius);
@@ -420,6 +434,7 @@ export function DiscCloseUp({
       (e.currentTarget as HTMLElement).releasePointerCapture?.(e.pointerId);
       s.dragging = false;
       s.driven = canHover && hits(e);
+      setGrip(canHover && hits(e) ? 'grab' : 'default');
       // §6.3 — a tap on the face flips it.
       if (quick && still && settled()) {
         s.flipTween = {
@@ -457,7 +472,7 @@ export function DiscCloseUp({
 
   return createPortal(
     <div
-      style={{ position: 'fixed', inset: 0, zIndex: 300, touchAction: 'none' }}
+      style={{ position: 'fixed', inset: 0, zIndex: 300, touchAction: 'none', cursor: grip }}
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}
       onPointerUp={onPointerUp}
@@ -526,31 +541,12 @@ export function DiscCloseUp({
         }}
       />
 
-      <button
-        type="button"
-        onClick={onClose}
-        aria-label="Close"
-        style={{
-          position: 'absolute',
-          top: 24,
-          right: 24,
-          width: 40,
-          height: 40,
-          borderRadius: 10,
-          border: 0,
-          background: '#1C1C1C',
-          color: '#fff',
-          display: 'grid',
-          placeItems: 'center',
-          opacity: chrome,
-          pointerEvents: chrome > 0.5 ? 'auto' : 'none',
-          cursor: 'pointer',
-        }}
-      >
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-          <path d="M6 6l12 12M18 6L6 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-        </svg>
-      </button>
+      {/* The site's one lightbox close button. It positions itself, so this
+          wrapper only carries the fade — the chrome is held back until the disc
+          has nearly arrived (§7). */}
+      <div style={{ opacity: chrome, pointerEvents: chrome > 0.5 ? 'auto' : 'none' }}>
+        <LightboxCloseButton onClose={onClose} />
+      </div>
     </div>,
     document.body
   );
