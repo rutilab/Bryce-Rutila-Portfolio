@@ -48,6 +48,11 @@ export interface Project {
   title: string;
   /** Which folder on /case-studies this belongs in. */
   folder: 'finding-focus' | 'personal' | 'lastinger';
+  /**
+   * Keeps a project out of the home page's featured row while leaving it in
+   * its folder. The home page is a selection, not an index.
+   */
+  hideFromHome?: boolean;
   eyebrow?: string;
   description: string;
   tags: string[];

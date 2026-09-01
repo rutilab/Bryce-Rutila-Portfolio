@@ -5,7 +5,7 @@ import { createPortal } from 'react-dom';
 import HalftoneCanvas from '@/components/HalftoneCanvas';
 import HalftoneFly from '@/components/HalftoneFly';
 import { ProjectCard } from '@/components/ProjectCard';
-import { PROJECTS } from '@/data/projects';
+import { HOME_PROJECTS } from '@/data/projects';
 import { IdeationChip } from '@/components/IdeationChip';
 import { IridescentText } from '@/components/IridescentText';
 import { IridescentEyebrow } from '@/components/IridescentEyebrow';
@@ -967,7 +967,7 @@ export default function Home() {
           />
 
           <div className="projects-grid">
-            {PROJECTS.map((p, i) => <ProjectCard key={i} {...p} />)}
+            {HOME_PROJECTS.map((p, i) => <ProjectCard key={i} {...p} />)}
           </div>
         </section>
 

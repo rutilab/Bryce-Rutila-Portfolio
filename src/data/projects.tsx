@@ -65,6 +65,7 @@ export const PROJECTS: Project[] = [
     readTime: 'COMING SOON',
     cardColor: '#12b4ff',
     folder: 'lastinger',
+    hideFromHome: true,
     thumbnailContent: (
       <ScreenRecordingThumbnail
         src="/case-studies/lastinger/program-search.mp4"
@@ -82,6 +83,7 @@ export const PROJECTS: Project[] = [
     readTime: 'COMING SOON',
     cardColor: '#31e300',
     folder: 'lastinger',
+    hideFromHome: true,
     thumbnailContent: (
       <ScreenRecordingThumbnail
         src="/case-studies/lastinger/course-onboarding.mp4"
@@ -114,6 +116,9 @@ export const PROJECTS: Project[] = [
  * A slug that didn't match the guessed shape would have gone quietly missing
  * from its folder, which is the class of drift this file exists to end.
  */
+/** The home page's featured row — everything not held back to its folder. */
+export const HOME_PROJECTS = PROJECTS.filter(p => !p.hideFromHome);
+
 export const FINDING_FOCUS_PROJECTS = PROJECTS.filter(p => p.folder === 'finding-focus');
 export const PERSONAL_PROJECTS = PROJECTS.filter(p => p.folder === 'personal');
 export const LASTINGER_PROJECTS = PROJECTS.filter(p => p.folder === 'lastinger');
