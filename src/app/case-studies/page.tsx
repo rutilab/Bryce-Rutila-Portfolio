@@ -313,7 +313,11 @@ export default function CaseStudies() {
           flexDirection: 'column',
           alignItems: 'center',
           justifyContent: 'center',
-          paddingTop: '100px',
+          // 152px is the home page's own clearance under the nav (.landing-main).
+          // It only bites once the folders are tall enough to stop being
+          // centred — which is the stacked column, where they were sitting
+          // right under the pill.
+          paddingTop: '152px',
           paddingBottom: '120px',
           minHeight: '100dvh',
           boxSizing: 'border-box',
@@ -327,12 +331,7 @@ export default function CaseStudies() {
           justifyContent: 'center',
           alignItems: stacked ? 'center' : 'flex-start',
           columnGap: '40px',
-          /* Cards rise ~130px out of a folder, well past its own top edge, so a
-             stacked folder would open straight over the label of the one above
-             it. The extra row gap is only owed where folders actually open — a
-             touch device never hovers, and would just be scrolling past dead
-             space. */
-          rowGap: canHover ? '150px' : '40px',
+          rowGap: '40px',
         }}>
 
           <FolderItem
