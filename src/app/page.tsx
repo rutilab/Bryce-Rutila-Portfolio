@@ -27,8 +27,35 @@ function colorForFlySrc(src: string): string {
   return '#12B4FF';
 }
 
-// Module-level flag: resets on real page reload (module re-imported), persists across SPA remounts
+/**
+ * Whether the splash has already played. Module-level, so it survives the home
+ * page unmounting and remounting as you navigate away and back.
+ *
+ * Only ever written from an effect, which never runs during SSR — so the server
+ * always renders the pre-splash state and hydration matches.
+ */
 let _loaderHasRun = false;
+
+/** Survives a reload the module flag cannot, for the length of the tab session. */
+const SPLASH_KEY = 'bar9000:splash-played';
+
+function splashAlreadyPlayed(): boolean {
+  try {
+    return window.sessionStorage.getItem(SPLASH_KEY) === '1';
+  } catch {
+    // Private modes and blocked storage throw on access. Worst case the splash
+    // plays again, which is the old behaviour rather than a broken page.
+    return false;
+  }
+}
+
+function rememberSplashPlayed() {
+  try {
+    window.sessionStorage.setItem(SPLASH_KEY, '1');
+  } catch {
+    /* nothing to do — see above */
+  }
+}
 
 // ── Scrabble tiles with shuffle animation ──────────────────────────────────
 const SCRABBLE_LETTERS = ['W', 'O', 'R', 'D', 'S'] as const;
@@ -475,17 +502,31 @@ export default function Home() {
 
   // ── Loader state ──────────────────────────────────────────────────────
   type LoaderState = 'checking' | 'showing' | 'done';
-  const [loaderState, setLoaderState] = useState<LoaderState>('checking');
-  const [animReady, setAnimReady] = useState(false);
+  /**
+   * Read straight from the flag rather than settling it in an effect. An effect
+   * runs after paint, so coming back to this page from anywhere else painted a
+   * frame of the blocker below with the content still at opacity 0 — a blank
+   * cream flash on every return home, which is what the splash looked like it
+   * was doing.
+   */
+  const [loaderState, setLoaderState] = useState<LoaderState>(() =>
+    _loaderHasRun ? 'done' : 'checking',
+  );
+  const [animReady, setAnimReady] = useState(() => _loaderHasRun);
   const heroSvgRef = useRef<SVGSVGElement>(null);
 
   useEffect(() => {
-    if (_loaderHasRun) {
+    if (_loaderHasRun) return;
+    _loaderHasRun = true;
+
+    // A reload re-imports the module, so the flag alone would replay the splash
+    // on every refresh. It belongs to the visit, not to the page instance.
+    if (splashAlreadyPlayed()) {
       setLoaderState('done');
       setAnimReady(true);
       return;
     }
-    _loaderHasRun = true;
+    rememberSplashPlayed();
     setLoaderState('showing');
   }, []);
 
