@@ -6,6 +6,9 @@ import { useEffect, useRef } from 'react';
 const GRID     = 10;
 const R_BG     = 0.9;
 const COLOR_BG = '#D8D8D8';
+/** The page ground. The canvas repaints it each frame; the wrapper holds it
+ *  before the canvas can and wherever the canvas has not caught up. */
+const BACKDROP = '#faf7f2';
 
 // ── Spring / damping ───────────────────────────────────────────────────────
 const SPRING_K = 0.055;
@@ -118,7 +121,7 @@ export default function HalftoneCanvas({ rippleTrigger = 0 }: Props) {
         && waveRadius >= 0
         && ts - ripple.time < WAVE_DURATION;
 
-      ctx.fillStyle = '#faf7f2';
+      ctx.fillStyle = BACKDROP;
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
       if (g) {
@@ -221,9 +224,29 @@ export default function HalftoneCanvas({ rippleTrigger = 0 }: Props) {
   }, []);
 
   return (
-    <canvas
-      ref={canvasRef}
-      style={{ position: 'fixed', inset: 0, zIndex: 0, pointerEvents: 'none' }}
-    />
+    /**
+     * The ground is this div, not the canvas. A canvas sizes itself from its
+     * width/height attributes, which only get set once the script runs and then
+     * only on a 200ms debounce — so before hydration it was 300×150, and during
+     * a window drag it lagged the viewport. Either way the layer behind it
+     * showed through, and on the case-study routes that layer is a different
+     * white. A plain div with inset:0 fills the viewport from the very first
+     * paint and never lags, so the colour behind the dots is always this one.
+     */
+    <div
+      aria-hidden
+      style={{
+        position: 'fixed',
+        inset: 0,
+        zIndex: 0,
+        pointerEvents: 'none',
+        background: BACKDROP,
+      }}
+    >
+      <canvas
+        ref={canvasRef}
+        style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}
+      />
+    </div>
   );
 }
