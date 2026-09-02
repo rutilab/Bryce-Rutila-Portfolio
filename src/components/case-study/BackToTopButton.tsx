@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { usePathname } from 'next/navigation';
 
 /** Clear of the footer's top edge when the button parks above it. */
 const FOOTER_GAP = 24;
@@ -18,21 +19,34 @@ const BASE_BOTTOM = 24;
  * Mounted once for every case-study route. `#section-intro` is what marks a page
  * as a case study with a hero to return to, so the button simply never appears
  * on the routes that have none (the index, personal projects).
+ *
+ * That mount is in the layout, which every route under /case-studies shares —
+ * so moving between them does not remount this, and the checks below have to be
+ * keyed to the path instead. Left to run once they answered for whichever route
+ * happened to be the first one loaded: arriving at a case study from the index
+ * meant the hero was never found and the button never appeared, and leaving one
+ * for the index carried the button along with it.
  */
 export function BackToTopButton() {
   const [visible, setVisible] = useState(false);
   const anchorRef = useRef<HTMLDivElement>(null);
+  const pathname = usePathname();
 
   useEffect(() => {
     const hero = document.getElementById('section-intro');
-    if (!hero) return;
+    if (!hero) {
+      // No hero on this route, so nothing to return to — and nothing inherited
+      // from the last one either.
+      setVisible(false);
+      return;
+    }
     const obs = new IntersectionObserver(
       ([entry]) => setVisible(!entry.isIntersecting),
       { threshold: 0 },
     );
     obs.observe(hero);
     return () => obs.disconnect();
-  }, []);
+  }, [pathname]);
 
   /**
    * Park above the footer.
@@ -72,7 +86,7 @@ export function BackToTopButton() {
       window.removeEventListener('scroll', onScroll);
       window.removeEventListener('resize', onScroll);
     };
-  }, []);
+  }, [pathname]);
 
   const toTop = useCallback(() => {
     const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;

@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { usePathname } from 'next/navigation';
 
 /** Scroll far enough to be a real intent, not a trackpad twitch or a bounce. */
 const DISMISS_AT = 48;
@@ -28,8 +29,17 @@ export function ScrollCue({ gateId = 'section-intro' }: { gateId?: string | null
   const [visible, setVisible] = useState(false);
   /** Once the reader scrolls, the cue is spent — this keeps it from coming back. */
   const doneRef = useRef(false);
+  const pathname = usePathname();
 
   useEffect(() => {
+    // The layout that mounts this is shared by every route under /case-studies,
+    // so none of the state below belongs to the component's lifetime — it
+    // belongs to the page being read. Spent on one case study is not spent on
+    // the next, and a gate answered on the index must be asked again here.
+    doneRef.current = false;
+    setMounted(false);
+    setVisible(false);
+
     if (gateId && !document.getElementById(gateId)) return;
     // Landing mid-page (a refresh, a #section link) means the reader is already
     // past the point of needing to be told, so the cue never shows at all.
@@ -59,7 +69,7 @@ export function ScrollCue({ gateId = 'section-intro' }: { gateId?: string | null
       if (frame) window.cancelAnimationFrame(frame);
       window.removeEventListener('scroll', onScroll);
     };
-  }, [gateId]);
+  }, [gateId, pathname]);
 
   const scrollDown = useCallback(() => {
     doneRef.current = true;
