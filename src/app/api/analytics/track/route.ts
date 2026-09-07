@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { ensureAnalyticsSchema, getSql } from '@/lib/analytics/db';
 import { enrichMetaFromRequest } from '@/lib/analytics/geo';
+import { isBot } from '@/lib/bots';
 
 export const runtime = 'nodejs';
 
@@ -13,6 +14,12 @@ type TrackBody = {
 };
 
 export async function POST(request: Request) {
+  // Search engines are welcome on the site but not in the visitor count, and a
+  // headless scraper that runs our JS shouldn't look like a reader either.
+  if (isBot(request.headers.get('user-agent'))) {
+    return NextResponse.json({ ok: true, skipped: 'bot' });
+  }
+
   const sql = getSql();
   if (!sql) {
     return NextResponse.json({ ok: false, error: 'analytics_disabled' }, { status: 503 });

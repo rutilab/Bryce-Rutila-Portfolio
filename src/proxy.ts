@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { jwtVerify } from 'jose';
+import { isBlockedBot } from '@/lib/bots';
 
 /** Exact /admin/login only; `/admin/login/` must be treated as login too or it hits the secret gate. */
 function isAdminLoginPath(pathname: string): boolean {
@@ -8,11 +9,26 @@ function isAdminLoginPath(pathname: string): boolean {
 }
 
 /**
+ * Bot gate (robots.txt is a sign; this is the lock).
  * Visitor id cookie for analytics (set on all HTML routes).
  * Admin JWT gate for /admin (except /admin/login).
  */
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
+
+  // Turned away before anything else, so blocked crawlers never receive a
+  // visitor cookie and never reach the page. Search engines and link
+  // unfurlers are let through - see src/lib/bots.ts.
+  if (isBlockedBot(request.headers.get('user-agent'))) {
+    return new NextResponse('Not available to automated clients.', {
+      status: 403,
+      headers: {
+        'Content-Type': 'text/plain; charset=utf-8',
+        'X-Robots-Tag': 'noindex, nofollow',
+        'Cache-Control': 'no-store',
+      },
+    });
+  }
 
   const res = NextResponse.next();
 
@@ -57,7 +73,9 @@ export const config = {
   matcher: [
     /*
      * All paths except static assets and API (API sets its own cookies / auth).
+     * robots.txt and sitemap.xml stay reachable, or a well-behaved crawler can
+     * never read the rules telling it to stay out.
      */
-    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)',
+    '/((?!_next/static|_next/image|favicon.ico|robots.txt|sitemap.xml|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)',
   ],
 };
