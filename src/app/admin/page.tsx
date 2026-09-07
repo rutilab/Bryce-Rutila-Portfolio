@@ -30,7 +30,33 @@ type Stats = {
   }[];
   pageviews: { path: string; c: number }[];
   timeOnPage: { path: string; avg_ms: number | null; samples: number }[];
-  clicks: { path: string; label: string; element: string; href: string; c: number }[];
+  clickTargets: {
+    label: string;
+    kind: string;
+    href: string;
+    element: string;
+    c: number;
+    visitors: number;
+    pages: number;
+  }[];
+  clicks: {
+    path: string;
+    label: string;
+    element: string;
+    kind: string;
+    href: string;
+    section: string;
+    c: number;
+    visitors: number;
+  }[];
+};
+
+type ExcludeStatus = {
+  ok: true;
+  cookieExcluded: boolean;
+  ip: string | null;
+  ipExcluded: boolean;
+  ipListConfigured: boolean;
 };
 
 function countryLabel(code: string): string {
@@ -39,6 +65,42 @@ function countryLabel(code: string): string {
     return new Intl.DisplayNames(['en'], { type: 'region' }).of(code) ?? code;
   } catch {
     return code;
+  }
+}
+
+const KIND_STYLES: Record<string, { label: string; className: string }> = {
+  outbound: { label: 'Left the site', className: 'border-sky-800 bg-sky-950/60 text-sky-200' },
+  download: { label: 'Download', className: 'border-emerald-800 bg-emerald-950/60 text-emerald-200' },
+  email: { label: 'Email', className: 'border-violet-800 bg-violet-950/60 text-violet-200' },
+  phone: { label: 'Phone', className: 'border-violet-800 bg-violet-950/60 text-violet-200' },
+  internal: { label: 'Went to page', className: 'border-zinc-700 bg-zinc-900 text-zinc-300' },
+  button: { label: 'Button', className: 'border-zinc-700 bg-zinc-900 text-zinc-400' },
+};
+
+function KindBadge({ kind }: { kind: string }) {
+  const style = KIND_STYLES[kind];
+  if (!style) {
+    return <span className="text-xs text-zinc-600">—</span>;
+  }
+  return (
+    <span
+      className={`inline-block whitespace-nowrap rounded-full border px-2 py-0.5 text-[11px] font-medium ${style.className}`}
+    >
+      {style.label}
+    </span>
+  );
+}
+
+/** Where a click sent someone, written the way you'd read it aloud. */
+function destination(href: string, kind: string): string {
+  if (!href) return '';
+  if (kind === 'email') return href.replace(/^mailto:/, '');
+  if (kind === 'phone') return href.replace(/^tel:/, '');
+  try {
+    const u = new URL(href);
+    return u.host.replace(/^www\./, '') + (u.pathname === '/' ? '' : u.pathname);
+  } catch {
+    return href;
   }
 }
 
@@ -53,6 +115,7 @@ export default function AdminDashboardPage() {
   const [stats, setStats] = useState<Stats | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [range, setRange] = useState<RangeKey>('30d');
+  const [exclude, setExclude] = useState<ExcludeStatus | null>(null);
 
   const load = useCallback(async () => {
     setErr(null);
@@ -78,9 +141,32 @@ export default function AdminDashboardPage() {
     }
   }, [range]);
 
+  const loadExclude = useCallback(async () => {
+    try {
+      const res = await fetch('/api/admin/exclude', { cache: 'no-store' });
+      if (!res.ok) return;
+      setExclude((await res.json()) as ExcludeStatus);
+    } catch {
+      /* the dashboard is still useful without this */
+    }
+  }, []);
+
   useEffect(() => {
     void load();
   }, [load]);
+
+  useEffect(() => {
+    void loadExclude();
+  }, [loadExclude]);
+
+  async function toggleExclude(next: boolean) {
+    await fetch('/api/admin/exclude', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ exclude: next }),
+    });
+    await loadExclude();
+  }
 
   async function logout() {
     await fetch('/api/admin/logout', { method: 'POST' });
@@ -132,6 +218,45 @@ export default function AdminDashboardPage() {
           </button>
         </div>
       </div>
+
+      {exclude ? (
+        <div className="mb-8 rounded-xl border border-zinc-800 bg-zinc-900/40 p-4">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div className="min-w-0">
+              <p className="text-sm font-medium text-zinc-200">
+                {exclude.cookieExcluded || exclude.ipExcluded
+                  ? 'Your own visits are not being counted.'
+                  : 'Your own visits are being counted.'}
+              </p>
+              <p className="mt-1 text-xs leading-relaxed text-zinc-500">
+                {exclude.cookieExcluded
+                  ? 'This browser was marked when you signed in, and stays marked for about a year.'
+                  : 'This browser is currently counted like any other visitor.'}
+                {exclude.ipExcluded
+                  ? ' Your network is on the ignore list too, so every browser on it is covered.'
+                  : ''}
+              </p>
+              {exclude.ip && !exclude.ipExcluded ? (
+                <p className="mt-2 text-xs leading-relaxed text-zinc-500">
+                  To cover every browser and private window on this network, add{' '}
+                  <code className="rounded bg-zinc-800 px-1.5 py-0.5 font-mono text-zinc-300">
+                    ANALYTICS_EXCLUDE_IPS={exclude.ip}
+                  </code>{' '}
+                  in Vercel. Home addresses change every so often, so check back here if your own
+                  visits start showing up again.
+                </p>
+              ) : null}
+            </div>
+            <button
+              type="button"
+              onClick={() => void toggleExclude(!exclude.cookieExcluded)}
+              className="shrink-0 rounded-lg border border-zinc-600 px-3 py-1.5 text-sm text-zinc-200 hover:bg-zinc-800"
+            >
+              {exclude.cookieExcluded ? 'Count this browser' : "Don't count this browser"}
+            </button>
+          </div>
+        </div>
+      ) : null}
 
       {err ? (
         <p className="rounded-lg border border-amber-800 bg-amber-950/50 px-4 py-3 text-sm text-amber-200">{err}</p>
@@ -338,38 +463,112 @@ export default function AdminDashboardPage() {
             </div>
           </section>
 
-          <section>
-            <h2 className="mb-3 text-lg font-medium text-white">Clicks</h2>
+          <section className="mb-10">
+            <h2 className="mb-3 text-lg font-medium text-white">What people click</h2>
+            <p className="mb-3 text-sm text-zinc-500">
+              Every click on the site, gathered by what was clicked rather than where. “People” counts
+              distinct visitors, so one person clicking the same link six times shows as six clicks and one
+              person.
+            </p>
             <div className="overflow-x-auto rounded-xl border border-zinc-800">
-              <table className="w-full min-w-[360px] text-left text-sm">
+              <table className="w-full min-w-[560px] text-left text-sm">
+                <thead className="border-b border-zinc-800 bg-zinc-900/80 text-zinc-400">
+                  <tr>
+                    <th className="px-4 py-2 font-medium">What they clicked</th>
+                    <th className="px-4 py-2 font-medium">Type</th>
+                    <th className="px-4 py-2 font-medium">Where it goes</th>
+                    <th className="px-4 py-2 font-medium">Clicks</th>
+                    <th className="px-4 py-2 font-medium">People</th>
+                    <th className="px-4 py-2 font-medium">Pages</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {stats.clickTargets.length === 0 ? (
+                    <tr>
+                      <td colSpan={6} className="px-4 py-6 text-center text-zinc-500">
+                        No clicks recorded yet.
+                      </td>
+                    </tr>
+                  ) : (
+                    stats.clickTargets.map((row, i) => (
+                      <tr
+                        key={`${row.label}-${row.href}-${row.kind}-${i}`}
+                        className="border-b border-zinc-800/80 last:border-0"
+                      >
+                        <td className="max-w-[240px] truncate px-4 py-2 text-zinc-100" title={row.label}>
+                          {row.label || <span className="text-zinc-600">Unnamed {row.element}</span>}
+                        </td>
+                        <td className="px-4 py-2">
+                          <KindBadge kind={row.kind} />
+                        </td>
+                        <td
+                          className="max-w-[260px] truncate px-4 py-2 font-mono text-xs text-zinc-400"
+                          title={row.href}
+                        >
+                          {destination(row.href, row.kind) || '—'}
+                        </td>
+                        <td className="px-4 py-2 text-zinc-200">{row.c}</td>
+                        <td className="px-4 py-2 text-zinc-300">{row.visitors}</td>
+                        <td className="px-4 py-2 text-zinc-500">{row.pages}</td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </section>
+
+          <section>
+            <h2 className="mb-3 text-lg font-medium text-white">Clicks, page by page</h2>
+            <p className="mb-3 text-sm text-zinc-500">
+              The same clicks split by the page they happened on — useful when the same link appears in
+              several places and you want to know which one is doing the work.
+            </p>
+            <div className="overflow-x-auto rounded-xl border border-zinc-800">
+              <table className="w-full min-w-[640px] text-left text-sm">
                 <thead className="border-b border-zinc-800 bg-zinc-900/80 text-zinc-400">
                   <tr>
                     <th className="px-4 py-2 font-medium">Page</th>
-                    <th className="px-4 py-2 font-medium">Path</th>
-                    <th className="px-4 py-2 font-medium">Label</th>
-                    <th className="px-4 py-2 font-medium">El</th>
-                    <th className="px-4 py-2 font-medium">Count</th>
+                    <th className="px-4 py-2 font-medium">What they clicked</th>
+                    <th className="px-4 py-2 font-medium">Type</th>
+                    <th className="px-4 py-2 font-medium">Where it goes</th>
+                    <th className="px-4 py-2 font-medium">Clicks</th>
+                    <th className="px-4 py-2 font-medium">People</th>
                   </tr>
                 </thead>
                 <tbody>
                   {stats.clicks.length === 0 ? (
                     <tr>
-                      <td colSpan={5} className="px-4 py-6 text-center text-zinc-500">
+                      <td colSpan={6} className="px-4 py-6 text-center text-zinc-500">
                         No clicks recorded yet.
                       </td>
                     </tr>
                   ) : (
                     stats.clicks.map((row, i) => (
-                      <tr key={`${row.path}-${row.label}-${i}`} className="border-b border-zinc-800/80 last:border-0">
-                        <td className="max-w-[160px] truncate px-4 py-2 text-zinc-100">
+                      <tr
+                        key={`${row.path}-${row.label}-${row.href}-${i}`}
+                        className="border-b border-zinc-800/80 last:border-0"
+                      >
+                        <td className="max-w-[160px] truncate px-4 py-2 text-zinc-100" title={row.path}>
                           {labelForPath(row.path)}
+                          {row.section ? (
+                            <span className="block truncate text-xs text-zinc-600">{row.section}</span>
+                          ) : null}
                         </td>
-                        <td className="max-w-[160px] truncate px-4 py-2 font-mono text-xs text-zinc-400">
-                          {row.path}
+                        <td className="max-w-[220px] truncate px-4 py-2 text-zinc-200" title={row.label}>
+                          {row.label || <span className="text-zinc-600">Unnamed {row.element}</span>}
                         </td>
-                        <td className="max-w-[180px] truncate px-4 py-2 text-zinc-200">{row.label || '—'}</td>
-                        <td className="truncate px-4 py-2 text-zinc-500">{row.element}</td>
+                        <td className="px-4 py-2">
+                          <KindBadge kind={row.kind} />
+                        </td>
+                        <td
+                          className="max-w-[220px] truncate px-4 py-2 font-mono text-xs text-zinc-400"
+                          title={row.href}
+                        >
+                          {destination(row.href, row.kind) || '—'}
+                        </td>
                         <td className="px-4 py-2 text-zinc-200">{row.c}</td>
+                        <td className="px-4 py-2 text-zinc-300">{row.visitors}</td>
                       </tr>
                     ))
                   )}

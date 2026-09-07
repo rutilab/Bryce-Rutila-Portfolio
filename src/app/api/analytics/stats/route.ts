@@ -116,22 +116,51 @@ export async function GET(request: NextRequest) {
       LIMIT 80
     `;
 
-    const clicks = await sql`
+    /**
+     * The same click rolled up two ways. Targets answer "what gets clicked on
+     * this site" across every page; clicks answer "what gets clicked on this
+     * page". Visitor counts matter as much as totals: forty clicks from two
+     * people is a very different story from forty people.
+     */
+    const clickTargets = await sql`
       SELECT
-        path_clean AS path,
-        COALESCE(meta->>'label', '') AS label,
-        COALESCE(meta->>'element', '') AS element,
-        COALESCE(meta->>'href', '') AS href,
-        COUNT(*)::int AS c
+        COALESCE(NULLIF(TRIM(meta->>'label'), ''), '') AS label,
+        COALESCE(NULLIF(TRIM(meta->>'kind'), ''), '') AS kind,
+        COALESCE(NULLIF(TRIM(meta->>'href'), ''), '') AS href,
+        COALESCE(NULLIF(TRIM(meta->>'element'), ''), '') AS element,
+        COUNT(*)::int AS c,
+        COUNT(DISTINCT visitor_id)::int AS visitors,
+        COUNT(DISTINCT path_clean)::int AS pages
       FROM (
-        SELECT ${pathClean} AS path_clean, meta
+        SELECT ${pathClean} AS path_clean, meta, visitor_id
         FROM analytics_events
         WHERE event_type = 'click' AND created_at >= ${since}
       ) sub
       WHERE path_clean NOT LIKE '/admin%'
-      GROUP BY path_clean, meta->>'label', meta->>'element', meta->>'href'
+      GROUP BY 1, 2, 3, 4
       ORDER BY c DESC
-      LIMIT 100
+      LIMIT 120
+    `;
+
+    const clicks = await sql`
+      SELECT
+        path_clean AS path,
+        COALESCE(NULLIF(TRIM(meta->>'label'), ''), '') AS label,
+        COALESCE(NULLIF(TRIM(meta->>'element'), ''), '') AS element,
+        COALESCE(NULLIF(TRIM(meta->>'kind'), ''), '') AS kind,
+        COALESCE(NULLIF(TRIM(meta->>'href'), ''), '') AS href,
+        COALESCE(NULLIF(TRIM(meta->>'section'), ''), '') AS section,
+        COUNT(*)::int AS c,
+        COUNT(DISTINCT visitor_id)::int AS visitors
+      FROM (
+        SELECT ${pathClean} AS path_clean, meta, visitor_id
+        FROM analytics_events
+        WHERE event_type = 'click' AND created_at >= ${since}
+      ) sub
+      WHERE path_clean NOT LIKE '/admin%'
+      GROUP BY 1, 2, 3, 4, 5, 6
+      ORDER BY c DESC
+      LIMIT 150
     `;
 
     const vc = visitorsCookie as { c: number }[];
@@ -158,6 +187,7 @@ export async function GET(request: NextRequest) {
       usStates,
       pageviews,
       timeOnPage,
+      clickTargets,
       clicks,
     });
   } catch (e) {

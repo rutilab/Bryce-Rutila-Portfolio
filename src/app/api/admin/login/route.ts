@@ -1,6 +1,7 @@
 import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
 import { signAdminSessionToken, getAdminSecretBytes } from '@/lib/admin/auth';
+import { EXCLUDE_COOKIE, EXCLUDE_COOKIE_MAX_AGE } from '@/lib/analytics/exclude';
 
 export const runtime = 'nodejs';
 
@@ -34,6 +35,17 @@ export async function POST(request: Request) {
     secure: process.env.NODE_ENV === 'production',
     path: '/',
     maxAge: 60 * 60 * 24 * 7,
+  });
+
+  // Anyone who can sign in here is the owner, so stop counting this browser.
+  // Outlives the seven-day session on purpose: the point is to keep counting
+  // him out long after he's been signed out.
+  cookieStore.set(EXCLUDE_COOKIE, '1', {
+    httpOnly: false, // the admin page reads it to show whether this browser is excluded
+    sameSite: 'lax',
+    secure: process.env.NODE_ENV === 'production',
+    path: '/',
+    maxAge: EXCLUDE_COOKIE_MAX_AGE,
   });
 
   return NextResponse.json({ ok: true });

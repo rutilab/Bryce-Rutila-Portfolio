@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { ensureAnalyticsSchema, getSql } from '@/lib/analytics/db';
 import { enrichMetaFromRequest } from '@/lib/analytics/geo';
 import { isBot } from '@/lib/bots';
+import { exclusionReason } from '@/lib/analytics/exclude';
 
 export const runtime = 'nodejs';
 
@@ -18,6 +19,12 @@ export async function POST(request: Request) {
   // headless scraper that runs our JS shouldn't look like a reader either.
   if (isBot(request.headers.get('user-agent'))) {
     return NextResponse.json({ ok: true, skipped: 'bot' });
+  }
+
+  // Bryce reading his own site is not a visitor.
+  const excluded = exclusionReason(request);
+  if (excluded) {
+    return NextResponse.json({ ok: true, skipped: excluded });
   }
 
   const sql = getSql();
