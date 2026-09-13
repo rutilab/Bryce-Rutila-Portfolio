@@ -3,9 +3,13 @@
 import { useState, useEffect, useRef, type CSSProperties, type ReactNode, type RefObject } from 'react';
 import { createPortal } from 'react-dom';
 import ArrowDownward from '@mui/icons-material/ArrowDownward';
+import GavelOutlined from '@mui/icons-material/GavelOutlined';
+import LockOutlined from '@mui/icons-material/LockOutlined';
+import PersonSearchOutlined from '@mui/icons-material/PersonSearchOutlined';
 import UpdateIcon from '@mui/icons-material/Update';
 import ZoomInIcon from '@mui/icons-material/ZoomIn';
 import {
+  ApprovalCheckpointStory,
   CaseStudyMediaPlaceholder,
   NorthStarAnimatedIcon,
 } from '@/components/case-study';
@@ -1517,17 +1521,121 @@ function InfoCards({ items }: { items: { title: string; body: string }[] }) {
   );
 }
 
-/** The two things a person reading the request was there to catch. */
-const REVIEW_REASONS = [
+/** Why the original request-and-review model existed. */
+const APPROVAL_RATIONALES = [
   {
-    title: 'Students signing up as teachers',
-    body: 'Every now and then students would sign-up as teachers by mistake. Since an educator account gives access to tools meant for their teacher, manual review helped prevent accidental student sign-ups from getting teacher level accounts.',
+    label: 'Safeguard 01',
+    title: 'Verifying educator identity',
+    body: 'Educator accounts could create classrooms, invite students, and monitor their progress. Manual review helped keep non-educators, including students who selected the wrong role, from receiving those permissions.',
+    icon: PersonSearchOutlined,
+    accent: ACCENT_DARK,
   },
   {
-    title: 'K-8 teachers and COPPA',
-    body: "The Children's Online Privacy Protection Act requires parental consent before collecting data from students under 13. Finding Focus was built for high school, but K-8 teachers signed up anyway. Verification allowed the team to flag these requests and send manual emails explaining our high school focus and legal constraints.",
+    label: 'Safeguard 02',
+    title: 'Designing around COPPA',
+    body: 'Despite marketing Finding Focus exclusively to high schools, K–8 teachers still signed up. Their students could be under 13, introducing additional COPPA consent requirements—so those accounts needed a restricted path.',
+    icon: GavelOutlined,
+    accent: ACCENT_DARK,
+  },
+  {
+    label: 'Product Bet',
+    title: 'Making access feel earned',
+    body: 'Our co-founders believed a deliberate approval step would make access feel more valuable, increasing teachers’ commitment once they were invited in.',
+    icon: LockOutlined,
+    accent: '#c26a00',
   },
 ];
+
+function ApprovalRationaleCards() {
+  const [ref, inView] = useInView<HTMLDivElement>(0.2);
+
+  return (
+    <>
+      <style>{`
+        .approval-rationale-grid {
+          display: grid;
+          grid-template-columns: minmax(0, 1fr);
+          gap: 24px;
+        }
+
+        @media (min-width: 1120px) {
+          .approval-rationale-grid {
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+          }
+        }
+      `}</style>
+      <div
+        ref={ref}
+        className="approval-rationale-grid"
+      >
+        {APPROVAL_RATIONALES.map((rationale, i) => {
+          const Icon = rationale.icon;
+
+          return (
+            <article
+              key={rationale.title}
+              className="flex flex-col items-start text-left"
+              style={{
+                background: '#fff',
+                border: `1px solid ${BORDER}`,
+                borderRadius: 24,
+                padding: 28,
+                boxShadow: '0 10px 30px rgba(0, 13, 38, 0.045)',
+                textAlign: 'left',
+                alignItems: 'flex-start',
+                opacity: inView ? 1 : 0,
+                transform: inView ? 'translateY(0)' : 'translateY(16px)',
+                transition: `opacity 0.55s ease ${i * 120}ms, transform 0.55s ease ${i * 120}ms`,
+              }}
+            >
+              <div
+                className="flex items-center"
+                style={{ gap: 12, marginBottom: 26 }}
+              >
+                <div
+                  className="flex items-center justify-center"
+                  style={{
+                    width: 48,
+                    height: 48,
+                    flexShrink: 0,
+                    borderRadius: 14,
+                    border: `1px solid ${BORDER}`,
+                    background: CARD_LIGHT,
+                  }}
+                  aria-hidden="true"
+                >
+                  <Icon sx={{ color: INK, fontSize: 27 }} />
+                </div>
+                <p
+                  className="font-semibold uppercase"
+                  style={{ color: rationale.accent, fontSize: 10, letterSpacing: 1.5 }}
+                >
+                  {rationale.label}
+                </p>
+              </div>
+              <h3
+                className="font-semibold text-[#1a1a1a]"
+                style={{ fontSize: 22, lineHeight: 1.3 }}
+              >
+                {rationale.title}
+              </h3>
+              <div
+                style={{ width: 36, height: 1, margin: '18px 0', background: BORDER }}
+                aria-hidden="true"
+              />
+              <p
+                className="text-[#414141]"
+                style={{ fontSize: 15, lineHeight: 1.65 }}
+              >
+                {rationale.body}
+              </p>
+            </article>
+          );
+        })}
+      </div>
+    </>
+  );
+}
 
 const EDGE_CASES = [
   {
@@ -2026,14 +2134,16 @@ export default function FindingFocusInstantAccessCaseStudy() {
       <section className="max-w-[1200px] mx-auto px-5 sm:px-10 md:px-20 pb-14 md:pb-28">
         <Section
           eyebrow="The Problem"
-          heading="An outdated approval process was stopping teachers at the door."
+          heading="An outdated approval process kept every teacher behind a gate."
           body="When teachers requested an educator account, they had to wait for someone on the Finding Focus team to manually verify them before they could create an account. Teachers were prevented from gaining access at the exact moment they were most interested."
         >
           <div className="flex flex-col gap-10">
-            <PlaceholderCard
-              description="The post-signup waiting screen from 2023 — the please wait for verification state."
-              caption="What a new teacher saw after signing up"
-            />
+            <VisualCard
+              background="#EDF4FC"
+              caption="Manual review stood between every teacher and their account."
+            >
+              <ApprovalCheckpointStory />
+            </VisualCard>
             <SmallStatRow
               stats={[
                 { value: '267', label: 'number of teachers over the course of one school year who did not activate their account after being manually verified' },
@@ -2048,21 +2158,10 @@ export default function FindingFocusInstantAccessCaseStudy() {
       <section className="max-w-[1200px] mx-auto px-5 sm:px-10 md:px-20 pb-14 md:pb-28">
         <Section
           eyebrow="Why Manual Review Existed"
-          heading="Manual review helped catch sign-up edge cases."
-          body="While manually reviewing teacher sign-ups did add friction, it served an important role in helping address two edge cases:"
+          heading="Manual review bundled a real safeguard with an unproven product bet."
+          body="The request model was intentional. It protected against two account-level risks while also reflecting a product belief: that making access feel earned would lead to stronger usage."
         >
-          <div className="flex flex-col gap-3">
-            {REVIEW_REASONS.map((reason, i) => (
-              <Callout
-                key={reason.title}
-                variant="edge"
-                label={`Edge Case ${String(i + 1).padStart(2, '0')}`}
-                heading={reason.title}
-                body={reason.body}
-                compactBody
-              />
-            ))}
-          </div>
+          <ApprovalRationaleCards />
         </Section>
       </section>
 
@@ -2070,15 +2169,20 @@ export default function FindingFocusInstantAccessCaseStudy() {
       <section className="max-w-[1200px] mx-auto px-5 sm:px-10 md:px-20 pb-14 md:pb-28">
         <Section
           eyebrow="Project Origin"
-          heading="Spotting a long-standing issue and taking initiative."
-          body="When I took over as the product designer at Finding Focus, teacher drop-off from sign-up was already a known issue. Earlier attempts to solve it had stalled on the roadmap. Both sides of the product were paying the price of this outdated process: an ongoing operational drain on our end, and delayed access for teachers on theirs."
+          heading="The problem was known. I needed evidence to change the model."
+          body="When I joined as the product designer, teacher drop-off was already a known issue, but earlier attempts to address it had stalled. Replacing manual approval meant challenging both an established workflow and the belief that waiting made teachers more committed."
         >
-          <div className="flex flex-col gap-6 max-w-[820px]">
-            <p className="text-[15px] md:text-[18px] font-normal leading-[180%] text-[#555]">
-              I knew there was a better way to handle sign-ups and verification. But in order to build a case for
-              changing a core product flow, I needed to gather data to quantify the internal productivity loss, proving
-              that fixing the sign-up flow was worth prioritizing.
+          <div className="flex flex-col gap-10">
+            <p className="text-[15px] md:text-[18px] font-normal leading-[180%] text-[#555] max-w-[820px]">
+              I built the case from both sides: measuring the operational cost of reviewing every signup and tracing
+              what teachers did after approval. The evidence showed that the gate created work for the team without
+              producing the commitment it was meant to inspire.
             </p>
+
+            <PlaceholderCard
+              description="The post-signup waiting screen from 2023 — the please wait for verification state."
+              caption="What a new teacher saw after signing up"
+            />
           </div>
         </Section>
       </section>
