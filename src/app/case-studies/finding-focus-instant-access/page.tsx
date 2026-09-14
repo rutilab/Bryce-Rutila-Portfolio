@@ -3,9 +3,12 @@
 import { useState, useEffect, useRef, type CSSProperties, type ReactNode, type RefObject } from 'react';
 import { createPortal } from 'react-dom';
 import ArrowDownward from '@mui/icons-material/ArrowDownward';
+import BoltIcon from '@mui/icons-material/Bolt';
+import GavelIcon from '@mui/icons-material/Gavel';
 import GavelOutlined from '@mui/icons-material/GavelOutlined';
 import LockOutlined from '@mui/icons-material/LockOutlined';
 import PersonSearchOutlined from '@mui/icons-material/PersonSearchOutlined';
+import RestoreIcon from '@mui/icons-material/Restore';
 import UpdateIcon from '@mui/icons-material/Update';
 import ZoomInIcon from '@mui/icons-material/ZoomIn';
 import {
@@ -319,15 +322,15 @@ function ProductivityStrip() {
   );
 }
 
-// ── NumberedCards: 01 / 02 / 03 with a mono numeral ───────────────────────────
-function NumberedCards({ items }: { items: { n: string; title: string; body: string }[] }) {
+// ── GoalCards: project goals with compact icon markers ───────────────────────
+function GoalCards({ items }: { items: { icon: ReactNode; title: string; body: string }[] }) {
   const [ref, inView] = useInView<HTMLDivElement>(0.3);
 
   return (
     <div ref={ref} className="grid gap-3 grid-cols-1 lg:grid-cols-3">
       {items.map((g, i) => (
         <div
-          key={g.n}
+          key={g.title}
           className="rounded-[20px] p-4 sm:p-6 flex flex-col gap-3"
           style={{
             background: CARD_LIGHT,
@@ -336,8 +339,14 @@ function NumberedCards({ items }: { items: { n: string; title: string; body: str
             transition: `opacity 0.55s ease ${i * 160}ms, transform 0.55s ease ${i * 160}ms`,
           }}
         >
-          <span className="text-[12px] font-medium tracking-[1px]" style={{ color: ACCENT_DARK, fontFamily: 'var(--font-ibm-plex-mono), monospace' }}>
-            {g.n}
+          <span
+            className="inline-flex size-9 self-start items-center justify-center rounded-full bg-white"
+            style={{
+              color: ACCENT_DARK,
+              border: '1px solid rgba(0, 110, 254, 0.1)',
+            }}
+          >
+            {g.icon}
           </span>
           <div>
             <p className="text-[16px] font-semibold mb-1.5 text-[#1a1a1a]">{g.title}</p>
@@ -1824,11 +1833,28 @@ function ActivationChart() {
 function QuoteCard({ quote, attribution }: { quote: string; attribution: string }) {
   return (
     <div
-      className="flex max-w-[760px] flex-col gap-3 rounded-[16px] bg-white p-4 sm:p-6"
-      style={{ border: `1px solid ${BORDER}` }}
+      className="max-w-[760px] rounded-[18px] bg-white px-5 py-5 sm:px-6 sm:py-6"
+      style={{
+        border: `1px solid ${BORDER}`,
+        boxShadow: '0 6px 18px rgba(0, 13, 38, 0.035)',
+      }}
     >
-      <p className="text-[16px] font-normal leading-[165%] text-[#333]">{`“${quote}”`}</p>
-      <p className="text-[13px] font-medium text-[#555]">{`— ${attribution}`}</p>
+      <div className="flex items-stretch gap-4 sm:gap-5">
+        <span
+          aria-hidden="true"
+          className="w-0.5 shrink-0 rounded-full"
+          style={{ background: '#a9c2e8' }}
+        />
+        <blockquote className="flex min-w-0 flex-col gap-4">
+          <p className="text-[16px] font-normal leading-[175%] text-[#333] sm:text-[17px]">
+            {`“${quote}”`}
+          </p>
+          <footer className="flex items-center gap-3">
+            <span aria-hidden="true" className="h-px w-6 shrink-0" style={{ background: BORDER }} />
+            <cite className="text-[13px] font-medium not-italic text-[#6b7280]">{attribution}</cite>
+          </footer>
+        </blockquote>
+      </div>
     </div>
   );
 }
@@ -1876,6 +1902,7 @@ const NAV_SECTIONS = [
   { id: 'section-intro',          label: 'Intro' },
   { id: 'section-overview',       label: 'Overview' },
   { id: 'section-research',       label: 'Research' },
+  { id: 'section-proposal',       label: 'Proposal' },
   { id: 'section-design',         label: 'The Redesign' },
   { id: 'section-where-this-led', label: 'Where This Led' },
   { id: 'section-impact',         label: 'Impact' },
@@ -1903,6 +1930,9 @@ function SectionNav() {
   const [atFooter, setAtFooter] = useState(false);
   const visible = pastHero && !atFooter;
   const [active, setActive] = useState('section-intro');
+  // Fast Refresh preserves mounted effects. Keying the scroll listener to the
+  // section ids prevents it from keeping a stale list when the nav changes.
+  const sectionIdsKey = NAV_SECTIONS.map(({ id }) => id).join('|');
 
   useEffect(() => {
     const hero = document.getElementById('section-intro');
@@ -1933,7 +1963,7 @@ function SectionNav() {
     window.addEventListener('scroll', onScroll, { passive: true });
     onScroll();
     return () => window.removeEventListener('scroll', onScroll);
-  }, []);
+  }, [sectionIdsKey]);
 
   function goTo(id: string) {
     const el = document.getElementById(id);
@@ -1988,15 +2018,9 @@ function Divider({ label, id }: { label?: string; id?: string }) {
 // ── Content constants ────────────────────────────────────────────────────────
 
 const PROJECT_GOALS = [
-  { n: '01', title: 'Instant access', body: 'Let teachers enter the product and start exploring the second they finish signing up.' },
-  { n: '02', title: 'Uncompromised compliance', body: 'Keep K-8 COPPA checks intact without forcing every single teacher into a manual queue.' },
-  { n: '03', title: 'Asynchronous review', body: 'Eliminate real-time sign-up monitoring by shifting verification to an asynchronous workflow.' },
-];
-
-const REDESIGN_PIECES = [
-  { n: '01', title: 'The signup flow', body: 'Collecting what the system needs up front so nobody has to ask later.' },
-  { n: '02', title: 'Team verification', body: 'Ending the need for someone to be on call every business hour, waiting for signups.' },
-  { n: '03', title: 'The teacher account', body: 'What a new teacher can do before they are verified, and what they see when they hit the one locked feature.' },
+  { icon: <BoltIcon sx={{ fontSize: 20 }} />, title: 'Instant access', body: 'Let every teacher create an account and enter Finding Focus the moment they finish signing up.' },
+  { icon: <GavelIcon sx={{ fontSize: 20 }} />, title: 'Compliance preserved', body: 'Keep K-8 COPPA safeguards intact without making every teacher wait for manual approval.' },
+  { icon: <RestoreIcon sx={{ fontSize: 20 }} />, title: 'Background verification', body: 'Let the team review new teachers on their own time, without monitoring incoming sign-ups in real time.' },
 ];
 
 // ── Page ─────────────────────────────────────────────────────────────────────
@@ -2187,32 +2211,6 @@ export default function FindingFocusInstantAccessCaseStudy() {
         </Section>
       </section>
 
-      {/* ── PROJECT GOALS ── */}
-      <section className="max-w-[1200px] mx-auto px-5 sm:px-10 md:px-20 pb-14 md:pb-28">
-        <div className="flex flex-col gap-16">
-
-          <Section
-            eyebrow="Project Goals"
-            heading="Any proposal I brought had to get three things right."
-          >
-            <NumberedCards items={PROJECT_GOALS} />
-          </Section>
-
-          <div
-            className="rounded-[24px] px-8 py-10 flex flex-col items-center text-center gap-4 bg-white"
-            style={{ border: `1px solid ${BORDER}` }}
-          >
-            <NorthStarAnimatedIcon className="block size-14 shrink-0" />
-            <p className="text-[11px] font-medium tracking-[1.5px] uppercase" style={{ color: EYEBROW_ICON_COLOR }}>North Star</p>
-            <p className="text-[24px] font-semibold leading-[145%] tracking-[-0.3px] text-[#1a1a1a] max-w-[680px]">
-              Let every teacher start using Finding Focus the moment they sign up. Verification should happen in the
-              background.
-            </p>
-          </div>
-
-        </div>
-      </section>
-
       <Divider label="Research" id="section-research" />
 
       {/* ── RESEARCH ── */}
@@ -2223,7 +2221,7 @@ export default function FindingFocusInstantAccessCaseStudy() {
           <Section
             eyebrow="Building the Case"
             heading="Every signup started a five-minute countdown for the team."
-            body="I began with the operational cost because nobody had ever calculated what manual verification actually required. Manual review was a continuous operational commitment rather than a simple task. Team members rotated shifts throughout the day, keeping Slack alerts active on their phones and laptops to treat incoming signups as immediate action tasks."
+            body="I began with the productivity cost because nobody had ever calculated what manual verification actually required. Manual review was a continuous operational commitment rather than a simple task. Team members rotated shifts throughout the day, keeping Slack alerts active on their phones and laptops to treat incoming signups as immediate action tasks."
           >
             <div className="flex flex-col gap-8">
               <QuoteCard
@@ -2243,12 +2241,14 @@ export default function FindingFocusInstantAccessCaseStudy() {
             heading="Auditing the manual verification workflow."
             body="To measure the productivity cost, I conducted an internal time study, tracking team members through every step of the verification workflow."
           >
-            <div className="flex flex-col gap-8">
+            <div className="flex flex-col">
               <VisualCard pad="p-5 sm:p-8">
                 <ManualWorkflowFigure />
               </VisualCard>
-              <ProductivityStrip />
-              <div className="max-w-[820px]">
+              <div className="mt-12">
+                <ProductivityStrip />
+              </div>
+              <div className="mt-4 max-w-[860px] px-4 sm:px-6">
                 <p className="text-[15px] leading-[175%] text-[#555]">
                   <strong className="font-semibold" style={{ color: MANUAL_RED }}>
                     A workflow that scaled directly against our growth.
@@ -2260,35 +2260,55 @@ export default function FindingFocusInstantAccessCaseStudy() {
             </div>
           </Section>
 
-          {/* The solution */}
+        </div>
+      </section>
+
+      <Divider label="Project Proposal" id="section-proposal" />
+
+      {/* ── PROJECT PROPOSAL ── */}
+      <section className="max-w-[1200px] mx-auto px-5 sm:px-10 md:px-20 pb-14 md:pb-28">
+        <div className="flex flex-col gap-16">
+
+          {/* The proposal */}
           <Section
-            eyebrow="The Solution"
+            eyebrow="The Proposal"
             heading="Going from requiring teachers to request accounts to giving them instant access."
-            body="Rather than trying to make manual reviews faster, I proposed decoupling account creation from verification. Teachers could create their account during sign-up and land inside the product immediately."
+            body="I presented the productivity findings to my co-founders alongside a number we already knew: over one school year, 267 teachers requested an account, were manually verified, and still never activated it. Together, the evidence showed that the Request Account model created friction for teachers and became less sustainable as Finding Focus grew."
           >
             <div className="flex flex-col gap-8">
               <p className="text-[15px] md:text-[18px] font-normal leading-[180%] text-[#555] max-w-[820px]">
-                Verification wouldn&rsquo;t go away, instead it could move into the background and become more
-                automated. Upon signing up, teachers would land in a &ldquo;sandbox&rdquo; version of an educator
-                account that had certain features restricted &ndash; allowing us to stay COPPA compliant without
-                blocking teachers at the front door.
+                In that same meeting, I proposed replacing it with a typical sign-up experience: teachers would create
+                their account as the final step and gain instant access to the product. They would begin with a
+                restricted educator account while verification happened asynchronously in the background. The
+                safeguards stayed in place, but they no longer stood between a teacher and the product.
               </p>
               <BeforeAfterFlow />
               <Callout
-                label="Added Benefit"
-                heading="It let us say yes to K-8 teachers for the first time."
-                body="Under the old model, K-8 teachers were turned away with an explanatory email and never received an account at all. Because the new model restricted accounts at creation, we could let them in on the same terms as everyone else and simply leave their account restricted."
+                label="Stakeholder Response"
+                heading="The proposal was greenlit that week."
+                body="My co-founders supported the direction, and within two weeks Instant Access was slotted as the team's next project."
               />
             </div>
           </Section>
 
-          {/* The response */}
+          {/* Project goals */}
           <Section
-            eyebrow="The Response"
-            heading="It was greenlit that week and became the team's next priority."
-            body="Mike credited the idea and looped in Thomas to help spec it the same day. Within two weeks it was slotted in as the next project after the feature already in flight. That single change touched three parts of the system at once: what the teacher sees, how the signup flow collects information, and how the team reviews. Each one had to be redesigned for the others to work, and I owned the design for all three."
+            eyebrow="Project Goals"
+            heading="With the direction approved, we aligned on what the new sign-up flow needed to accomplish."
           >
-            <SystemsMap />
+            <div className="flex flex-col gap-16">
+              <GoalCards items={PROJECT_GOALS} />
+              <div
+                className="rounded-[24px] px-8 py-10 flex flex-col items-center text-center gap-4 bg-white"
+                style={{ border: `1px solid ${BORDER}` }}
+              >
+                <NorthStarAnimatedIcon className="block size-14 shrink-0" />
+                <p className="text-[11px] font-medium tracking-[1.5px] uppercase" style={{ color: EYEBROW_ICON_COLOR }}>North Star</p>
+                <p className="text-[24px] font-semibold leading-[145%] tracking-[-0.3px] text-[#1a1a1a] max-w-[680px]">
+                  Teacher sign-up should be frictionless without compromising compliance.
+                </p>
+              </div>
+            </div>
           </Section>
 
         </div>
@@ -2304,7 +2324,7 @@ export default function FindingFocusInstantAccessCaseStudy() {
             eyebrow="The Approach"
             heading="Instant access wasn't one screen. It was three pieces that had to work together."
           >
-            <NumberedCards items={REDESIGN_PIECES} />
+            <SystemsMap />
           </Section>
 
           {/* 01 Signup flow */}
