@@ -1172,26 +1172,6 @@ function ManualWorkflowFigure() {
   );
 }
 
-// ── FlowChip / FlowArrow: inline step pills, used by the Rolling Registration steps ──
-function FlowChip({ text }: { text: string }) {
-  return (
-    <span
-      className="inline-flex items-center rounded-full px-3.5 py-2 text-[13px] leading-[130%]"
-      style={{ background: '#ffffff', border: `1px solid ${BORDER}`, color: '#1a1a1a', whiteSpace: 'nowrap' }}
-    >
-      {text}
-    </span>
-  );
-}
-
-function FlowArrow() {
-  return (
-    <span aria-hidden className="shrink-0 text-[13px]" style={{ color: '#c8d4e4' }}>
-      →
-    </span>
-  );
-}
-
 /**
  * Two tracks drawn as one SVG rather than wrapping HTML chips. The whole point of
  * the diagram is the shape of each path, and reflowing chips destroys that at
@@ -1399,16 +1379,16 @@ function BeforeAfterFlow() {
 // ── SystemsMap: one decision, three surfaces ─────────────────────────────────
 const SYSTEM_BRANCHES = [
   {
-    title: 'Signup flow',
-    body: 'Confirm email in-session with a 4-digit code, and capture workplace so the system knows who is K-8 before anyone reviews.',
-  },
-  {
-    title: 'Admin review',
-    body: 'A Pending Teachers queue, select-and-confirm instead of re-typing, an auto-search link, and reversible decisions.',
+    title: 'Sign-up flow',
+    body: 'How teachers create an account and enter the product.',
   },
   {
     title: 'Teacher account',
-    body: 'A new pending state, one gated feature, and three messaging states — pending, verified, restricted — with matching emails.',
+    body: 'What teachers can do while verification is still pending.',
+  },
+  {
+    title: 'Admin review',
+    body: 'How the team verifies new teachers after they already have access.',
   },
 ];
 
@@ -1416,7 +1396,7 @@ function SystemsMap() {
   const [ref, inView] = useInView<HTMLDivElement>(0.25);
 
   return (
-    <VisualCard caption="One decision, three surfaces. None of them worked without the other two." pad="p-5 sm:p-10">
+    <VisualCard caption="Three parts of the experience, redesigned to work together." pad="p-5 sm:p-10">
       <div ref={ref} className="mx-auto flex w-full max-w-[900px] flex-col items-center">
         {/* Central node */}
         <div
@@ -1428,7 +1408,7 @@ function SystemsMap() {
             transition: 'opacity 0.5s ease, transform 0.5s ease',
           }}
         >
-          <span className="text-[14px] font-semibold text-white">Let teachers in immediately</span>
+          <span className="text-[14px] font-semibold text-white">Instant Access</span>
         </div>
 
         {/* Connectors — an elbow rail rather than an SVG, so nothing distorts as
@@ -1646,24 +1626,70 @@ function ApprovalRationaleCards() {
   );
 }
 
-const EDGE_CASES = [
+const OPERATIONAL_SAFEGUARDS = [
   {
     title: 'The school does not exist yet',
-    body: 'Reviewers can still create a school on the spot, then add the pending teacher to it in the same select-and-confirm step. No re-typing on either branch.',
+    body: 'Reviewers could create a school on the spot, then associate the pending teacher without re-entering their information.',
   },
   {
-    title: 'Someone gets rejected by mistake',
-    body: 'A Move to Pending button undoes a restriction at any time. Review decisions are reversible, so the team does not need to be nervous about making them.',
+    title: 'School association is high cost',
+    body: 'A confirmation step asked reviewers to verify the teacher and school before completing an association that was difficult to unwind.',
   },
   {
-    title: 'A K-8 teacher signs up',
-    body: 'They get the same instant access as everyone else. The Workplace step flags them, and the restriction on classroom creation stays until their school authorization is confirmed.',
+    title: 'A decision needs to be reversed',
+    body: 'Move to Pending let the team undo a restriction and return an account to review instead of treating every decision as final.',
   },
   {
-    title: 'An unverified teacher logs in on mobile',
-    body: 'The native app login was reworked to route unverified teachers straight to the verification step, so the two platforms behaved the same way.',
+    title: 'A K–8 teacher signs up',
+    body: 'They entered the product in a restricted state, with access to course content and Student View while classroom creation remained locked.',
   },
 ];
+
+// ── SignupDesignToggle: new / old educator sign-up assets ────────────────────
+const SIGNUP_DESIGNS = [
+  {
+    label: 'New flow',
+    description:
+      'The final educator sign-up designs: account type, workplace, account creation, and four-digit email confirmation.',
+    caption: 'New flow — create an account and enter the product in one session.',
+  },
+  {
+    label: 'Old flow',
+    description:
+      'The previous educator account-request experience: submit a request, then wait for the team to send an invitation before creating an account.',
+    caption: 'Old flow — request access, leave the product, and wait for an invitation.',
+  },
+];
+
+function SignupDesignToggle() {
+  const [active, setActive] = useState(0);
+  const design = SIGNUP_DESIGNS[active];
+
+  return (
+    <div className="flex flex-col items-center gap-6">
+      <div
+        className="inline-flex flex-nowrap items-center gap-1 rounded-full bg-white p-1"
+        style={{ border: `1px solid ${BORDER}` }}
+      >
+        {SIGNUP_DESIGNS.map((item, i) => (
+          <button
+            key={item.label}
+            type="button"
+            aria-pressed={i === active}
+            data-active={i === active}
+            onClick={() => setActive(i)}
+            className="cs-toggle-pill shrink-0 whitespace-nowrap rounded-full px-4 py-2 text-[13px]"
+          >
+            {item.label}
+          </button>
+        ))}
+      </div>
+      <div className="w-full">
+        <PlaceholderCard description={design.description} caption={design.caption} minHeight={380} />
+      </div>
+    </div>
+  );
+}
 
 // ── AccountStateTabs: pending / verified / restricted ─────────────────────────
 const ACCOUNT_STATES = [
@@ -1903,7 +1929,7 @@ const NAV_SECTIONS = [
   { id: 'section-overview',       label: 'Overview' },
   { id: 'section-research',       label: 'Research' },
   { id: 'section-proposal',       label: 'Proposal' },
-  { id: 'section-design',         label: 'The Redesign' },
+  { id: 'section-design',         label: 'Design' },
   { id: 'section-where-this-led', label: 'Where This Led' },
   { id: 'section-impact',         label: 'Impact' },
   { id: 'section-reflection',     label: 'Takeaways' },
@@ -2314,94 +2340,71 @@ export default function FindingFocusInstantAccessCaseStudy() {
         </div>
       </section>
 
-      <Divider label="The Redesign" id="section-design" />
+      <Divider label="Design" id="section-design" />
 
-      {/* ── THE REDESIGN ── */}
+      {/* ── DESIGN ── */}
       <section className="max-w-[1200px] mx-auto px-5 sm:px-10 md:px-20 pb-14 md:pb-28">
         <div className="flex flex-col gap-16">
 
           <Section
-            eyebrow="The Approach"
-            heading="Instant access wasn't one screen. It was three pieces that had to work together."
+            eyebrow="Design Scope"
+            heading="Instant Access required redesigning three connected parts of the product."
           >
             <SystemsMap />
           </Section>
 
-          {/* 01 Signup flow */}
+          {/* 01 Sign-up flow */}
           <Section
-            eyebrow="01 · Rolling Registration"
-            heading="Signup had to do three jobs a reviewer used to do by hand."
-            body="The old flow collected an email, sent a link, and waited. For teachers to land inside the product immediately, signup had to confirm the email in-session, separate students from educators before an account was ever created, and identify K-8 teachers up front so the COPPA question could be settled without anyone Googling. I restructured it into three steps, ending with a 4-digit code entered right in the flow."
+            eyebrow="01 · Sign-up Flow"
+            heading="Instant access required the sign-up flow to do more up front."
+            body="To give teachers access to their accounts immediately after signing up, I redesigned the flow with a few key changes. It now collected each teacher's workplace, role, and location, then ended with a four-digit email confirmation that activated the account. Capturing that context up front gave our team what it needed to move teacher verification into the background."
           >
-            <div className="flex flex-col gap-8">
-              <div className="flex flex-wrap items-center gap-2">
-                <FlowChip text="1. Account Type" />
-                <FlowArrow />
-                <FlowChip text="2. Workplace" />
-                <FlowArrow />
-                <FlowChip text="3. Create Account" />
-              </div>
-              <PlaceholderCard
-                description="The three signup steps plus the 4-digit code screen, with the Workplace options (K-8, High School, College, District/County) and the country-adaptive fields visible."
-                caption="Rolling Registration, end to end"
-                minHeight={380}
-              />
-            </div>
+            <SignupDesignToggle />
           </Section>
 
-          {/* 02 Team verification */}
+          {/* 02 Teacher account */}
           <Section
-            eyebrow="02 · No One on the Clock"
-            heading="Nobody had to be on call anymore."
-            body="Because a new teacher already has a working account, nothing about their experience depends on how fast review happens. The five-minute clock disappeared, and with it the shift schedule. I redesigned the review itself to match: new signups collect in a Pending Teachers tab, and confirming one is now a matter of selecting the teacher and clicking, with no information to re-type because signup already captured it. The old Google-the-teacher step became a pre-built search link attached to every notification — an engineer's suggestion that saved a manual lookup on every review."
-          >
-            <div className="flex flex-col gap-8">
-              <WorkflowComparison />
-              <PlaceholderCard
-                description="The old plain Slack notification beside the new one with the auto-search link, live by 2023-04-21."
-                caption="Slack notification, before and after"
-              />
-            </div>
-          </Section>
-
-          {/* Edge cases */}
-          <Section
-            eyebrow="Edge Cases"
-            heading="With no clock, review still had to handle the messy cases."
-          >
-            <InfoCards items={EDGE_CASES} />
-          </Section>
-
-          {/* 03 Teacher account */}
-          <Section
-            eyebrow="03 · Restricted, Not Blocked"
-            heading="A new teacher lands inside the product, with one door locked."
-            body="Teachers used to wait outside the product until a human let them in. Now they finish signing up and are immediately inside, free to explore, with classroom creation the only thing they cannot do yet. That one locked feature is where all the messaging lives: a teacher who reaches it should see that it is temporary, that nothing is wrong, and that there is nothing they need to do. I wrote its three states — pending, verified, and restricted — each with its own in-product message and email."
+            eyebrow="02 · Teacher Account"
+            heading="Instant access required a new account state for teachers awaiting review."
+            body="To give teachers a usable account before verification was complete, I designed a new Pending state. Pending teachers could explore Finding Focus while classroom creation remained locked until the team associated them with a verified school. Review then moved the account to Verified or Restricted, with matching in-product messaging and emails for each outcome."
           >
             <AccountStateTabs />
           </Section>
 
-          {/* SSO */}
+          {/* 03 Admin review */}
           <Section
-            eyebrow="Single Sign-On"
-            heading="Five months later, Google sign-in dropped into the same flow without a redesign."
-            body="While Instant Access was still being built, a school district told us they required single sign-on and would not allow self-created passwords. That fall I mocked up SSO for each account type. Because Rolling Registration had already organized signup around account type and workplace, Google sign-in slotted into the existing structure, with the 4-digit code flow as the fallback for anyone not using SSO. It launched in September 2023, and Clever was added on the same foundation later."
+            eyebrow="03 · Admin Review"
+            heading="Review moved behind account creation without removing human judgment."
+            body="A new account appeared in Pending Teachers and triggered a Slack alert. Reviewers followed an automatic search link I proposed, found or created the teacher's school, and associated the already-created account instead of retyping the teacher's information to issue an invitation. Approval unlocked class creation and sent an automatic email; an ineligible educator could remain Restricted."
           >
-            <PlaceholderCard
-              description="The Google SSO signup mockups from August 2023, sent to #design."
-              caption="Google SSO, slotted into the existing account-type structure"
-            />
+            <div className="flex flex-col gap-10">
+              <WorkflowComparison />
+              <PlaceholderCard
+                description="The old plain Slack notification beside the new alert with the automatic teacher-search link, live by April 21, 2023."
+                caption="Slack notification, before and after"
+              />
+              <div className="flex flex-col gap-6 pt-2">
+                <div className="flex max-w-[820px] flex-col gap-3">
+                  <Eyebrow label="Operational Safeguards" />
+                  <h3 className="text-[22px] md:text-[26px] font-semibold leading-[135%] tracking-[-0.25px] text-[#1a1a1a]">
+                    Making review faster could not make mistakes more expensive.
+                  </h3>
+                </div>
+                <InfoCards items={OPERATIONAL_SAFEGUARDS} />
+              </div>
+            </div>
           </Section>
 
-          {/* Launch */}
+          {/* First release */}
           <Section
             id="section-final-designs"
-            eyebrow="Shipped"
-            heading="Instant Access and the new signup flow launched together in April 2023."
+            eyebrow="Shipped · April 2023"
+            heading="Teachers could enter immediately, but class creation still waited on review."
+            body="Instant Access launched on April 19. Teachers could create an account, confirm their email, and enter the portal in one session. Pending and restricted educators could explore, but the team continued monitoring new accounts because review still determined when a teacher could create a class."
           >
             <PlaceholderCard
-              description="The final signup flow — a before/after carousel, or the mobile mockups with a light/dark toggle."
-              caption="The signup flow a new teacher sees, from account type to their first minute inside the product."
+              description="The shipped educator journey: account creation, four-digit email confirmation, immediate portal entry, and the locked Add New Class state while review remained outstanding."
+              caption="Instant Access V1 — immediate account creation with progressive access"
               minHeight={400}
             />
           </Section>
