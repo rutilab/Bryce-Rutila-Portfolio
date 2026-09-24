@@ -45,6 +45,27 @@ type Stats = {
     visitors: number;
     pages: number;
   }[];
+  sessions: {
+    sessionId: string;
+    visitorKey: string;
+    country: string;
+    region: string;
+    startedAt: string;
+    endedAt: string;
+    pageviews: number;
+    clicks: number;
+    returning: boolean;
+    steps: {
+      at: string;
+      type: string;
+      path: string;
+      label: string;
+      kind: string;
+      href: string;
+      durationMs: number | null;
+    }[];
+  }[];
+  sessionsTruncated: boolean;
   clicks: {
     path: string;
     label: string;
@@ -119,6 +140,37 @@ function destination(href: string, kind: string): string {
   } catch {
     return href;
   }
+}
+
+/** Where a visit came from, as specific as the data honestly allows. */
+function placeLabel(country: string, region: string): string {
+  if (country === 'US' && region) return labelUsState(region);
+  if (country) return countryLabel(country);
+  return 'Unknown';
+}
+
+function clockTime(iso: string): string {
+  return new Date(iso).toLocaleTimeString(undefined, {
+    hour: 'numeric',
+    minute: '2-digit',
+  });
+}
+
+function dayAndTime(iso: string): string {
+  return new Date(iso).toLocaleString(undefined, {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+  });
+}
+
+function timeAgo(iso: string): string {
+  const mins = Math.round((Date.now() - new Date(iso).getTime()) / 60000);
+  if (mins < 1) return 'just now';
+  if (mins < 60) return `${mins}m ago`;
+  const hours = Math.round(mins / 60);
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.round(hours / 24);
+  return `${days}d ago`;
 }
 
 function fmtMs(ms: number | null) {
@@ -396,6 +448,92 @@ export default function AdminDashboardPage() {
               ) : null}
             </div>
           </div>
+
+          <section className="mb-10">
+            <h2 className="mb-3 text-lg font-medium text-white">Recent visits</h2>
+            <p className="mb-3 text-sm text-zinc-500">
+              One line per sitting, newest first. Open a visit to see the order someone moved through
+              the site and how long they stayed. “Who” is a state and a browser ID — there are no names
+              here, and the same person on a different device looks like someone new.
+              {stats.sessionsTruncated ? ' Only the most recent activity in this range is shown.' : ''}
+            </p>
+
+            {stats.sessions.length === 0 ? (
+              <p className="rounded-xl border border-zinc-800 px-4 py-6 text-center text-sm text-zinc-500">
+                No visits in this range.
+              </p>
+            ) : (
+              <div className="divide-y divide-zinc-800 overflow-hidden rounded-xl border border-zinc-800">
+                {stats.sessions.map(visit => (
+                  <details key={visit.sessionId} className="group bg-zinc-900/30 open:bg-zinc-900/60">
+                    <summary className="flex cursor-pointer flex-wrap items-center gap-x-3 gap-y-1 px-4 py-3 text-sm hover:bg-zinc-800/50">
+                      <span className="font-medium text-zinc-100">
+                        {placeLabel(visit.country, visit.region)}
+                      </span>
+                      {visit.returning ? (
+                        <span className="rounded-full border border-amber-800 bg-amber-950/60 px-2 py-0.5 text-[11px] font-medium text-amber-200">
+                          Been here before
+                        </span>
+                      ) : null}
+                      <span className="text-zinc-500" title={dayAndTime(visit.startedAt)}>
+                        {timeAgo(visit.endedAt)}
+                      </span>
+                      <span className="text-zinc-600">·</span>
+                      <span className="text-zinc-400">
+                        {visit.pageviews} {visit.pageviews === 1 ? 'page' : 'pages'}
+                      </span>
+                      {visit.clicks > 0 ? (
+                        <span className="text-zinc-400">
+                          {visit.clicks} {visit.clicks === 1 ? 'click' : 'clicks'}
+                        </span>
+                      ) : null}
+                      <span className="ml-auto font-mono text-[11px] text-zinc-600">
+                        {visit.visitorKey}
+                      </span>
+                    </summary>
+
+                    <ol className="space-y-2 border-t border-zinc-800 px-4 py-3 text-sm">
+                      {visit.steps.map((step, i) => (
+                        <li key={`${visit.sessionId}-${i}`} className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
+                          <span className="w-16 shrink-0 font-mono text-xs text-zinc-600">
+                            {clockTime(step.at)}
+                          </span>
+                          {step.type === 'pageview' ? (
+                            <span className="text-zinc-200">
+                              Opened <span className="text-zinc-100">{labelForPath(step.path)}</span>
+                            </span>
+                          ) : step.type === 'page_leave' ? (
+                            <span className="text-zinc-500">
+                              Spent {fmtMs(step.durationMs)} on {labelForPath(step.path)}
+                            </span>
+                          ) : (
+                            <span className="flex flex-wrap items-baseline gap-2 text-zinc-200">
+                              <span>
+                                Clicked{' '}
+                                <span className="text-zinc-100">
+                                  {step.label || `an unnamed ${step.kind || 'element'}`}
+                                </span>
+                              </span>
+                              <KindBadge kind={step.kind} />
+                              {step.href ? (
+                                <span className="font-mono text-xs text-zinc-500">
+                                  {destination(step.href, step.kind)}
+                                </span>
+                              ) : null}
+                            </span>
+                          )}
+                        </li>
+                      ))}
+                    </ol>
+
+                    <p className="border-t border-zinc-800/60 px-4 py-2 text-xs text-zinc-600">
+                      {dayAndTime(visit.startedAt)} — {clockTime(visit.endedAt)}
+                    </p>
+                  </details>
+                ))}
+              </div>
+            )}
+          </section>
 
           <section className="mb-10">
             <h2 className="mb-3 text-lg font-medium text-white">By US state (pageviews)</h2>

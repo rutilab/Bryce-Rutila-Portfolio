@@ -3,6 +3,7 @@ import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
 import { ensureAnalyticsSchema, getSql } from '@/lib/analytics/db';
 import { verifyAdminSessionToken } from '@/lib/admin/auth';
+import { groupIntoVisits, type RecentEventRow } from '@/lib/analytics/visits';
 import {
   isCustomRange,
   parseRangeKey,
@@ -190,6 +191,46 @@ export async function GET(request: NextRequest) {
       LIMIT 150
     `;
 
+    /**
+     * The raw events behind everything above, newest first, so the dashboard
+     * can replay individual visits instead of only totals. Capped: this is a
+     * portfolio, not a firehose, and one person's afternoon is the unit that
+     * matters, not the ten-thousandth row.
+     */
+    const RECENT_EVENT_LIMIT = 600;
+    const recentEvents = (await sql`
+      SELECT
+        visitor_id,
+        session_id,
+        event_type,
+        created_at,
+        path_clean AS path,
+        COALESCE(NULLIF(TRIM(meta->>'label'), ''), '') AS label,
+        COALESCE(NULLIF(TRIM(meta->>'kind'), ''), '') AS kind,
+        COALESCE(NULLIF(TRIM(meta->>'href'), ''), '') AS href,
+        COALESCE(NULLIF(TRIM(meta->>'country'), ''), '') AS country,
+        COALESCE(NULLIF(TRIM(meta->>'region'), ''), '') AS region,
+        CASE
+          WHEN (meta->>'duration_ms') ~ '^[0-9]+(\\.[0-9]+)?$'
+          THEN (meta->>'duration_ms')::double precision
+          ELSE NULL
+        END AS duration_ms
+      FROM (
+        SELECT ${pathClean} AS path_clean, visitor_id, session_id, event_type, created_at, meta
+        FROM analytics_events
+        WHERE created_at >= ${since}
+          AND created_at < ${until}
+      ) sub
+      WHERE path_clean NOT LIKE '/admin%'
+      ORDER BY created_at DESC
+      LIMIT ${RECENT_EVENT_LIMIT}
+    `) as RecentEventRow[];
+
+    const { sessions, sessionsTruncated } = groupIntoVisits(
+      recentEvents,
+      recentEvents.length >= RECENT_EVENT_LIMIT,
+    );
+
     const vc = visitorsCookie as { c: number }[];
     const vi = visitorsIp as { c: number }[];
 
@@ -217,6 +258,8 @@ export async function GET(request: NextRequest) {
       timeOnPage,
       clickTargets,
       clicks,
+      sessions,
+      sessionsTruncated,
     });
   } catch (e) {
     console.error('[analytics/stats]', e);
