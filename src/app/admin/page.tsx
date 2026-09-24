@@ -2,7 +2,12 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { labelForPath } from '@/lib/analytics/labels';
-import { RANGE_KEYS, rangeLabel, type RangeKey } from '@/lib/analytics/ranges';
+import {
+  CUSTOM_RANGE,
+  RANGE_KEYS,
+  rangeLabel,
+  type RangeSelection,
+} from '@/lib/analytics/ranges';
 import { labelUsState } from '@/lib/analytics/usStateNames';
 
 type Stats = {
@@ -11,6 +16,7 @@ type Stats = {
     key: string;
     label: string;
     since: string;
+    until: string;
     timeZone: string;
   };
   visitors: {
@@ -68,6 +74,17 @@ function countryLabel(code: string): string {
   }
 }
 
+/** What <input type="date"> expects, in the viewer's own zone. */
+function isoDay(d: Date): string {
+  return d.toLocaleDateString('en-CA');
+}
+
+function daysAgo(n: number): Date {
+  const d = new Date();
+  d.setDate(d.getDate() - n);
+  return d;
+}
+
 const KIND_STYLES: Record<string, { label: string; className: string }> = {
   outbound: { label: 'Left the site', className: 'border-sky-800 bg-sky-950/60 text-sky-200' },
   download: { label: 'Download', className: 'border-emerald-800 bg-emerald-950/60 text-emerald-200' },
@@ -114,23 +131,44 @@ function fmtMs(ms: number | null) {
 export default function AdminDashboardPage() {
   const [stats, setStats] = useState<Stats | null>(null);
   const [err, setErr] = useState<string | null>(null);
-  const [range, setRange] = useState<RangeKey>('30d');
+  const [range, setRange] = useState<RangeSelection>('30d');
+  // Filled in when the viewer first switches to custom, not at render time:
+  // picking "today" on the server and again on the client can disagree.
+  const [fromDay, setFromDay] = useState('');
+  const [toDay, setToDay] = useState('');
   const [exclude, setExclude] = useState<ExcludeStatus | null>(null);
+
+  const isCustom = range === CUSTOM_RANGE;
+  const customReady = Boolean(fromDay && toDay && fromDay <= toDay);
 
   const load = useCallback(async () => {
     setErr(null);
+
+    if (range === CUSTOM_RANGE && !(fromDay && toDay && fromDay <= toDay)) {
+      // Nothing to ask the server yet; the form says what's missing.
+      return;
+    }
+
     try {
       const tz =
         typeof window !== 'undefined'
           ? Intl.DateTimeFormat().resolvedOptions().timeZone
           : 'UTC';
-      const res = await fetch(
-        `/api/analytics/stats?range=${encodeURIComponent(range)}&tz=${encodeURIComponent(tz)}`,
-        { cache: 'no-store' },
-      );
+      const query = new URLSearchParams({ range, tz });
+      if (range === CUSTOM_RANGE) {
+        query.set('from', fromDay);
+        query.set('to', toDay);
+      }
+      const res = await fetch(`/api/analytics/stats?${query.toString()}`, { cache: 'no-store' });
       const data = await res.json();
       if (!res.ok) {
-        setErr(data.error === 'analytics_disabled' ? 'Add DATABASE_URL (Neon) to enable analytics.' : 'Could not load stats.');
+        setErr(
+          data.error === 'analytics_disabled'
+            ? 'Add DATABASE_URL (Neon) to enable analytics.'
+            : data.error === 'invalid_range'
+              ? 'Those dates don\u2019t work. Pick a start on or before the end.'
+              : 'Could not load stats.',
+        );
         setStats(null);
         return;
       }
@@ -139,7 +177,16 @@ export default function AdminDashboardPage() {
       setErr('Network error.');
       setStats(null);
     }
-  }, [range]);
+  }, [range, fromDay, toDay]);
+
+  /** Switching to custom starts on the last 30 days, so it's never blank. */
+  function chooseRange(next: RangeSelection) {
+    if (next === CUSTOM_RANGE && !(fromDay && toDay)) {
+      setFromDay(isoDay(daysAgo(29)));
+      setToDay(isoDay(new Date()));
+    }
+    setRange(next);
+  }
 
   const loadExclude = useCallback(async () => {
     try {
@@ -190,7 +237,7 @@ export default function AdminDashboardPage() {
             <select
               id="analytics-range"
               value={range}
-              onChange={e => setRange(e.target.value as RangeKey)}
+              onChange={e => chooseRange(e.target.value as RangeSelection)}
               className="rounded-lg border border-zinc-600 bg-zinc-900 px-3 py-2 text-sm text-zinc-100 focus:border-zinc-500 focus:outline-none"
             >
               {RANGE_KEYS.map(k => (
@@ -198,8 +245,46 @@ export default function AdminDashboardPage() {
                   {rangeLabel(k)}
                 </option>
               ))}
+              <option value={CUSTOM_RANGE}>Pick dates…</option>
             </select>
+
+            {isCustom ? (
+              <div className="flex flex-wrap items-center gap-2">
+                <label className="sr-only" htmlFor="analytics-from">
+                  First day
+                </label>
+                <input
+                  id="analytics-from"
+                  type="date"
+                  value={fromDay}
+                  max={toDay || undefined}
+                  onChange={e => setFromDay(e.target.value)}
+                  className="rounded-lg border border-zinc-600 bg-zinc-900 px-3 py-2 text-sm text-zinc-100 focus:border-zinc-500 focus:outline-none"
+                />
+                <span className="text-sm text-zinc-500">to</span>
+                <label className="sr-only" htmlFor="analytics-to">
+                  Last day
+                </label>
+                <input
+                  id="analytics-to"
+                  type="date"
+                  value={toDay}
+                  min={fromDay || undefined}
+                  max={isoDay(new Date())}
+                  onChange={e => setToDay(e.target.value)}
+                  className="rounded-lg border border-zinc-600 bg-zinc-900 px-3 py-2 text-sm text-zinc-100 focus:border-zinc-500 focus:outline-none"
+                />
+              </div>
+            ) : null}
           </div>
+
+          {isCustom ? (
+            <p className="mt-2 text-xs text-zinc-500">
+              {customReady
+                ? 'Both days are included, counted in your own time zone.'
+                : 'Pick a first day on or before the last day.'}
+            </p>
+          ) : null}
         </div>
         <div className="flex gap-2">
           <button
@@ -266,7 +351,9 @@ export default function AdminDashboardPage() {
         <>
           <p className="mb-6 text-sm text-zinc-500">
             Showing <span className="text-zinc-300">{stats.range.label}</span>
-            {stats.range.key === 'today' || stats.range.key === 'week' ? (
+            {stats.range.key === 'today' ||
+            stats.range.key === 'week' ||
+            stats.range.key === CUSTOM_RANGE ? (
               <>
                 {' '}
                 in <span className="font-mono text-xs text-zinc-400">{stats.range.timeZone}</span>

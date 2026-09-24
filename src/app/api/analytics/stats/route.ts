@@ -3,7 +3,14 @@ import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
 import { ensureAnalyticsSchema, getSql } from '@/lib/analytics/db';
 import { verifyAdminSessionToken } from '@/lib/admin/auth';
-import { parseRangeKey, rangeLabel, resolveSinceUtc, safeTimeZone } from '@/lib/analytics/ranges';
+import {
+  isCustomRange,
+  parseRangeKey,
+  resolveCustomRange,
+  resolvePresetRange,
+  safeTimeZone,
+  type ResolvedRange,
+} from '@/lib/analytics/ranges';
 
 export const runtime = 'nodejs';
 
@@ -25,9 +32,21 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ ok: false, error: 'schema_failed' }, { status: 500 });
   }
 
-  const rangeKey = parseRangeKey(request.nextUrl.searchParams.get('range'));
-  const tzResolved = safeTimeZone(request.nextUrl.searchParams.get('tz'));
-  const since = resolveSinceUtc(rangeKey, tzResolved);
+  const params = request.nextUrl.searchParams;
+  const tzResolved = safeTimeZone(params.get('tz'));
+  const rangeParam = params.get('range');
+
+  let resolved: ResolvedRange;
+  if (isCustomRange(rangeParam)) {
+    const custom = resolveCustomRange(params.get('from'), params.get('to'), tzResolved);
+    if (!custom) {
+      return NextResponse.json({ ok: false, error: 'invalid_range' }, { status: 400 });
+    }
+    resolved = custom;
+  } else {
+    resolved = resolvePresetRange(parseRangeKey(rangeParam), tzResolved);
+  }
+  const { since, until } = resolved;
 
   /** Matches client-side normalizePathname: strip query, collapse trailing slash, root = /. */
   const pathClean = sql`COALESCE(
@@ -41,6 +60,7 @@ export async function GET(request: NextRequest) {
       FROM analytics_events
       WHERE event_type = 'pageview'
         AND created_at >= ${since}
+        AND created_at < ${until}
         AND ${pathClean} NOT LIKE '/admin%'
     `;
 
@@ -49,6 +69,7 @@ export async function GET(request: NextRequest) {
       FROM analytics_events
       WHERE event_type = 'pageview'
         AND created_at >= ${since}
+        AND created_at < ${until}
         AND ${pathClean} NOT LIKE '/admin%'
         AND meta ? 'ip_hash'
     `;
@@ -61,6 +82,7 @@ export async function GET(request: NextRequest) {
       FROM analytics_events
       WHERE event_type = 'pageview'
         AND created_at >= ${since}
+        AND created_at < ${until}
         AND ${pathClean} NOT LIKE '/admin%'
       GROUP BY COALESCE(NULLIF(TRIM(meta->>'country'), ''), 'Unknown')
       ORDER BY pageviews DESC
@@ -75,6 +97,7 @@ export async function GET(request: NextRequest) {
       FROM analytics_events
       WHERE event_type = 'pageview'
         AND created_at >= ${since}
+        AND created_at < ${until}
         AND ${pathClean} NOT LIKE '/admin%'
         AND TRIM(COALESCE(meta->>'country', '')) = 'US'
       GROUP BY COALESCE(NULLIF(TRIM(meta->>'region'), ''), 'Unknown')
@@ -88,6 +111,7 @@ export async function GET(request: NextRequest) {
         SELECT ${pathClean} AS path_clean
         FROM analytics_events
         WHERE event_type = 'pageview' AND created_at >= ${since}
+        AND created_at < ${until}
       ) sub
       WHERE path_clean NOT LIKE '/admin%'
       GROUP BY path_clean
@@ -107,6 +131,7 @@ export async function GET(request: NextRequest) {
         FROM analytics_events
         WHERE event_type = 'page_leave'
           AND created_at >= ${since}
+          AND created_at < ${until}
           AND meta ? 'duration_ms'
           AND (meta->>'duration_ms') ~ '^[0-9]+(\\.[0-9]+)?$'
       ) sub
@@ -135,6 +160,7 @@ export async function GET(request: NextRequest) {
         SELECT ${pathClean} AS path_clean, meta, visitor_id
         FROM analytics_events
         WHERE event_type = 'click' AND created_at >= ${since}
+        AND created_at < ${until}
       ) sub
       WHERE path_clean NOT LIKE '/admin%'
       GROUP BY 1, 2, 3, 4
@@ -156,6 +182,7 @@ export async function GET(request: NextRequest) {
         SELECT ${pathClean} AS path_clean, meta, visitor_id
         FROM analytics_events
         WHERE event_type = 'click' AND created_at >= ${since}
+        AND created_at < ${until}
       ) sub
       WHERE path_clean NOT LIKE '/admin%'
       GROUP BY 1, 2, 3, 4, 5, 6
@@ -173,9 +200,10 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       ok: true,
       range: {
-        key: rangeKey,
-        label: rangeLabel(rangeKey),
+        key: resolved.key,
+        label: resolved.label,
         since: since.toISOString(),
+        until: until.toISOString(),
         timeZone: tzResolved,
       },
       visitors: {
