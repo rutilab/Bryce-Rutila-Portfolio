@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import { useState, useEffect, useRef, type CSSProperties, type ReactNode, type RefObject } from 'react';
 import { createPortal } from 'react-dom';
 import ArrowDownward from '@mui/icons-material/ArrowDownward';
@@ -490,109 +491,38 @@ function SignupFlowSequence() {
   );
 }
 
-// ── StepChain: a vertical run of numbered steps, used by both workflow diagrams ─
-function StepChain({
-  steps,
-  tone,
-  startAt = 1,
-}: {
-  steps: string[];
-  tone: 'old' | 'new';
-  startAt?: number;
-}) {
-  const isOld = tone === 'old';
-  const dot = isOld ? '#b0392f' : ACCENT;
-  const bg = isOld ? DANGER_BG : '#ffffff';
-
+function SlackAlertComparison() {
   return (
-    <ol className="flex flex-col" style={{ listStyle: 'none', margin: 0, padding: 0 }}>
-      {steps.map((s, i) => (
-        <li key={s} className="flex flex-col">
-          <div
-            className="flex items-start gap-3 rounded-[12px] px-3.5 py-3"
-            style={{ background: bg, border: isOld ? 'none' : `1px solid ${BORDER}` }}
-          >
-            <span
-              className="flex shrink-0 items-center justify-center rounded-full text-[11px] font-semibold text-white"
-              style={{ width: 20, height: 20, background: dot, marginTop: 1 }}
-            >
-              {startAt + i}
-            </span>
-            <span className="text-[13px] leading-[160%] text-[#444]">{s}</span>
-          </div>
-          {i < steps.length - 1 && (
-            <span
-              aria-hidden
-              className="self-start"
-              style={{ width: 1.5, height: 12, marginLeft: 24, background: '#c8d4e4' }}
-            />
-          )}
-        </li>
-      ))}
-    </ol>
-  );
-}
-
-const OLD_STEPS_BEFORE_BRANCH = [
-  'Google the person to confirm they are a real high school teacher',
-  'Search the admin portal for their school, checking near-matches so we do not create duplicates',
-];
-const OLD_STEPS_AFTER_BRANCH = [
-  'Type their name, email, and role into an invite form',
-  'Compose and send a welcome email from the team shared Gmail',
-  'Log the teacher in a tracking spreadsheet',
-];
-
-/** Branch chip used where the old flow forks on whether the school already exists. */
-function BranchNote({ label, body }: { label: string; body: string }) {
-  return (
-    <div
-      className="flex flex-col gap-1 rounded-[12px] px-3.5 py-3"
-      style={{ background: '#ffffff', border: `1px dashed #c8b0ae` }}
-    >
-      <span className="text-[10px] font-medium uppercase tracking-[1.2px]" style={{ color: '#b0392f' }}>
-        {label}
-      </span>
-      <span className="text-[13px] leading-[160%] text-[#444]">{body}</span>
-    </div>
-  );
-}
-
-function OldWorkflowDiagram() {
-  return (
-    <div className="mx-auto flex w-full max-w-[440px] flex-col gap-3">
-      <p className="text-[11px] font-medium uppercase tracking-[1.5px]" style={{ color: MANUAL_RED }}>
-        Before · 6 steps · ~8 min
-      </p>
-      <StepChain steps={OLD_STEPS_BEFORE_BRANCH} tone="old" />
-      <BranchNote
-        label="Step 3 · Branch"
-        body="If the school does not exist yet, create it by hand before going any further."
-      />
-      <StepChain steps={OLD_STEPS_AFTER_BRANCH} tone="old" startAt={4} />
-    </div>
-  );
-}
-
-const NEW_STEPS = [
-  'Open the notification and follow its pre-built search link to confirm the teacher',
-  'Find them in the Pending Teachers tab and select their school (or create it inline)',
-  'Confirm. Nothing to re-type — signup already captured it, and the decision is reversible',
-];
-
-function WorkflowComparison() {
-  return (
-    <VisualCard
-      caption="The same job, before and after. Both branches — school exists and school does not — collapse into one select-and-confirm step."
-      pad="p-5 sm:p-8"
-    >
-      <div className="grid grid-cols-1 gap-6 md:grid-cols-2 md:gap-8">
-        <OldWorkflowDiagram />
-        <div className="mx-auto flex w-full max-w-[440px] flex-col gap-3">
-          <p className="text-[11px] font-medium uppercase tracking-[1.5px]" style={{ color: ACCENT_DARK }}>
-            After · 3 steps · ~2 min
+    <VisualCard caption="The sign-up alert before and after Instant Access." pad="p-5 sm:p-8">
+      <div className="flex flex-col gap-7">
+        <div className="flex flex-col gap-3">
+          <p className="text-[11px] font-medium uppercase tracking-[1.5px]" style={{ color: MANUAL_RED }}>
+            Old alert
           </p>
-          <StepChain steps={NEW_STEPS} tone="new" />
+          <div className="overflow-hidden rounded-[12px] bg-[#1f2024]">
+            <Image
+              src="/case-studies/finding-focus-instant-access/slack-alert-old.png"
+              alt="The original Slack notification for a new teacher lead"
+              width={1500}
+              height={120}
+              className="h-auto w-full"
+            />
+          </div>
+        </div>
+
+        <div className="flex flex-col gap-3">
+          <p className="text-[11px] font-medium uppercase tracking-[1.5px]" style={{ color: ACCENT_DARK }}>
+            Updated alert
+          </p>
+          <div className="overflow-hidden rounded-[12px] bg-[#1f2024]">
+            <Image
+              src="/case-studies/finding-focus-instant-access/slack-alert-updated.png"
+              alt="The updated Slack notification with teacher details and a Google search link"
+              width={1612}
+              height={454}
+              className="h-auto w-full"
+            />
+          </div>
         </div>
       </div>
     </VisualCard>
@@ -1632,8 +1562,8 @@ const OPERATIONAL_SAFEGUARDS = [
     body: 'Reviewers could create a school on the spot, then associate the pending teacher without re-entering their information.',
   },
   {
-    title: 'School association is high cost',
-    body: 'A confirmation step asked reviewers to verify the teacher and school before completing an association that was difficult to unwind.',
+    title: 'The wrong school is selected',
+    body: 'After selecting the wrong school during testing, I added a confirmation step so reviewers could check both the teacher and school before associating them.',
   },
   {
     title: 'A decision needs to be reversed',
@@ -2357,7 +2287,7 @@ export default function FindingFocusInstantAccessCaseStudy() {
           <Section
             eyebrow="01 · Sign-up Flow"
             heading="Instant access required the sign-up flow to do more up front."
-            body="To give teachers access to their accounts immediately after signing up, I redesigned the flow with a few key changes. It now collected each teacher's workplace, role, and location, then ended with a four-digit email confirmation that activated the account. Capturing that context up front gave our team what it needed to move teacher verification into the background."
+            body="To give teachers access to their accounts immediately after signing up, I redesigned the flow with a few key changes. The previous form already collected the teacher's name, email, and school; the new flow added workplace type, role, and location, then ended with a four-digit email confirmation that activated the account. Capturing this additional context gave our team what it needed to move teacher verification into the background."
           >
             <SignupDesignToggle />
           </Section>
@@ -2365,8 +2295,19 @@ export default function FindingFocusInstantAccessCaseStudy() {
           {/* 02 Teacher account */}
           <Section
             eyebrow="02 · Teacher Account"
-            heading="Instant access required a new account state for teachers awaiting review."
-            body="To give teachers a usable account before verification was complete, I designed a new Pending state. Pending teachers could explore Finding Focus while classroom creation remained locked until the team associated them with a verified school. Review then moved the account to Verified or Restricted, with matching in-product messaging and emails for each outcome."
+            heading="Giving teachers instant access meant introducing Pending accounts."
+            body={
+              <>
+                All new educators entered Finding Focus with a Pending account. They could explore the educator portal,
+                preview a demo class, and use Student View, but creating their own classroom remained locked until our
+                team verified that they taught at a high school.
+                <br />
+                <br />
+                This introduced three educator account categories: Pending while verification was underway, Verified
+                once a teacher was approved, and Restricted when an account could not be approved. Each category had
+                its own permissions, in-product messaging, and automated email.
+              </>
+            }
           >
             <AccountStateTabs />
           </Section>
@@ -2374,20 +2315,43 @@ export default function FindingFocusInstantAccessCaseStudy() {
           {/* 03 Admin review */}
           <Section
             eyebrow="03 · Admin Review"
-            heading="Review moved behind account creation without removing human judgment."
-            body="A new account appeared in Pending Teachers and triggered a Slack alert. Reviewers followed an automatic search link I proposed, found or created the teacher's school, and associated the already-created account instead of retyping the teacher's information to issue an invitation. Approval unlocked class creation and sent an automatic email; an ineligible educator could remain Restricted."
+            heading="Admin review became a decision—not an account-creation process."
+            body="Because teachers now created their accounts during sign-up, our team no longer needed to rebuild them manually and send an invitation. I redesigned the admin workflow around one decision: verify the teacher or keep their account Restricted. The information collected during sign-up followed the account through Slack and the admin interface, connecting each part of the Instant Access system."
           >
             <div className="flex flex-col gap-10">
-              <WorkflowComparison />
-              <PlaceholderCard
-                description="The old plain Slack notification beside the new alert with the automatic teacher-search link, live by April 21, 2023."
-                caption="Slack notification, before and after"
-              />
+              <div className="flex flex-col gap-6">
+                <h3 className="max-w-[820px] text-[22px] font-semibold leading-[135%] tracking-[-0.25px] text-[#1a1a1a] md:text-[26px]">
+                  The updated Slack alert gave reviewers a faster starting point.
+                </h3>
+                <p className="max-w-[820px] text-[15px] font-normal leading-[180%] text-[#555] md:text-[18px]">
+                  Each new sign-up continued to alert our team in Slack, but the notification now included the
+                  teacher&apos;s school, district, location, and educator type. I worked with Matthew, our software engineer,
+                  to implement the update, and he made the great suggestion to include a Google search for the
+                  teacher&apos;s name and school to help speed up verification.
+                </p>
+                <SlackAlertComparison />
+              </div>
+              <div className="flex flex-col gap-6">
+                <h3 className="max-w-[820px] text-[22px] font-semibold leading-[135%] tracking-[-0.25px] text-[#1a1a1a] md:text-[26px]">
+                  The Pending Teachers tab turned verification into an account decision.
+                </h3>
+                <p className="max-w-[820px] text-[15px] font-normal leading-[180%] text-[#555] md:text-[18px]">
+                  Each new account also appeared in a Pending Teachers tab I added to the admin interface. After
+                  confirming that someone was a high school educator, a reviewer could associate them with an existing
+                  school or create a new one. This moved the account to Verified, unlocked Add New Class, and sent the
+                  approval email automatically. If the teacher could not be verified, the reviewer could select Keep
+                  Restricted instead.
+                </p>
+                <PlaceholderCard
+                  description="The Pending Teachers tab in the admin interface, showing accounts awaiting review and the controls for assigning an existing school or creating a new one."
+                  caption="Pending Teachers brought every account awaiting review into one actionable queue."
+                />
+              </div>
               <div className="flex flex-col gap-6 pt-2">
                 <div className="flex max-w-[820px] flex-col gap-3">
                   <Eyebrow label="Operational Safeguards" />
                   <h3 className="text-[22px] md:text-[26px] font-semibold leading-[135%] tracking-[-0.25px] text-[#1a1a1a]">
-                    Making review faster could not make mistakes more expensive.
+                    Faster review still needed safeguards for costly mistakes.
                   </h3>
                 </div>
                 <InfoCards items={OPERATIONAL_SAFEGUARDS} />
