@@ -4,13 +4,13 @@ import Image from 'next/image';
 import { useState, useEffect, useRef, type CSSProperties, type ReactNode, type RefObject } from 'react';
 import { createPortal } from 'react-dom';
 import ArrowDownward from '@mui/icons-material/ArrowDownward';
+import ArrowOutward from '@mui/icons-material/ArrowOutward';
 import BoltIcon from '@mui/icons-material/Bolt';
 import GavelIcon from '@mui/icons-material/Gavel';
 import GavelOutlined from '@mui/icons-material/GavelOutlined';
 import LockOutlined from '@mui/icons-material/LockOutlined';
 import PersonSearchOutlined from '@mui/icons-material/PersonSearchOutlined';
 import RestoreIcon from '@mui/icons-material/Restore';
-import UpdateIcon from '@mui/icons-material/Update';
 import ZoomInIcon from '@mui/icons-material/ZoomIn';
 import {
   ApprovalCheckpointStory,
@@ -197,20 +197,38 @@ function PlaceholderCard({ description, caption, minHeight }: { description: str
 }
 
 // ── StatRow: headline numbers with a blue underline tick ──────────────────────
-function StatRow({ stats }: { stats: { value: string; label: string }[] }) {
+function StatRow({
+  stats,
+  divided,
+}: {
+  stats: { value: string; label: string }[];
+  divided?: boolean;
+}) {
   const [ref, inView] = useInView<HTMLDivElement>(0.45);
 
   return (
-    <div ref={ref} className="grid grid-cols-1 sm:grid-cols-3 gap-8 sm:gap-10 max-w-[820px]">
+    <div
+      ref={ref}
+      className={
+        divided
+          ? 'grid grid-cols-1 sm:grid-cols-3'
+          : 'grid grid-cols-1 sm:grid-cols-3 gap-8 sm:gap-10 max-w-[820px]'
+      }
+    >
       {stats.map((s, i) => (
-        <div key={i}>
+        <div
+          key={i}
+          className={
+            divided
+              ? 'p-5 sm:p-6 border-[#e6ecf4] border-t first:border-t-0 sm:border-t-0 sm:border-l sm:first:border-l-0'
+              : undefined
+          }
+        >
           <div className="flex flex-col w-fit">
             <p className="text-[24px] font-semibold text-[#1a1a1a] leading-[32px]">{s.value}</p>
             <div
               style={{
-                // Full width of the value above it — the parent is `w-fit`, so
-                // the rule underlines the whole number rather than ticking it.
-                width: '100%',
+                width: divided ? 28 : '100%',
                 height: 3,
                 background: ACCENT,
                 borderRadius: 2,
@@ -1415,31 +1433,6 @@ function SystemsMap() {
   );
 }
 
-// ── InfoCards: two-up light cards — shared by Why Manual Review Existed and Edge Cases ──
-function InfoCards({ items }: { items: { title: string; body: string }[] }) {
-  const [ref, inView] = useInView<HTMLDivElement>(0.2);
-
-  return (
-    <div ref={ref} className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-      {items.map((c, i) => (
-        <div
-          key={c.title}
-          className="flex flex-col gap-2 rounded-[20px] p-6"
-          style={{
-            background: CARD_LIGHT,
-            opacity: inView ? 1 : 0,
-            transform: inView ? 'translateY(0)' : 'translateY(14px)',
-            transition: `opacity 0.5s ease ${i * 130}ms, transform 0.5s ease ${i * 130}ms`,
-          }}
-        >
-          <p className="text-[16px] font-semibold text-[#1a1a1a]">{c.title}</p>
-          <p className="text-[15px] leading-[170%] text-[#555]">{c.body}</p>
-        </div>
-      ))}
-    </div>
-  );
-}
-
 /** Why the original request-and-review model existed. */
 const APPROVAL_RATIONALES = [
   {
@@ -1555,25 +1548,6 @@ function ApprovalRationaleCards() {
     </>
   );
 }
-
-const OPERATIONAL_SAFEGUARDS = [
-  {
-    title: 'The school does not exist yet',
-    body: 'Reviewers could create a school on the spot, then associate the pending teacher without re-entering their information.',
-  },
-  {
-    title: 'The wrong school is selected',
-    body: 'After selecting the wrong school during testing, I added a confirmation step so reviewers could check both the teacher and school before associating them.',
-  },
-  {
-    title: 'A decision needs to be reversed',
-    body: 'Move to Pending let the team undo a restriction and return an account to review instead of treating every decision as final.',
-  },
-  {
-    title: 'A K–8 teacher signs up',
-    body: 'They entered the product in a restricted state, with access to course content and Student View while classroom creation remained locked.',
-  },
-];
 
 // ── SignupDesignToggle: new / old educator sign-up assets ────────────────────
 const SIGNUP_DESIGNS = [
@@ -1698,22 +1672,19 @@ function AccountStateTabs() {
 
 // ── ActivationChart: the signature visual ─────────────────────────────────────
 /**
- * Share of new teachers who were sent a verification code and never came back,
- * by half-year cohort. Instant Access shipped in April 2023, so Spring 2023 is
- * the first cohort that saw it.
- *
- * TODO(bryce): swap in the real per-cohort figures from the tracking sheet. These
- * average to the reported 38% before / 7% after, but the individual bars are
- * stand-ins until the actual numbers are pulled.
+ * Share of educator sign-ups that did not complete account validation, by
+ * half-year cohort. Values come from the project tracking data: before Instant
+ * Access, validation meant accepting an emailed invitation; after launch, it
+ * meant entering the four-digit email confirmation code.
  */
 const COHORTS = [
   // `short` keeps the axis on one line at phone widths, where the full label wraps.
-  { label: 'Fall 2021', short: 'F21', value: 41, era: 'before' as const },
-  { label: 'Spring 2022', short: 'S22', value: 36, era: 'before' as const },
-  { label: 'Fall 2022', short: 'F22', value: 37, era: 'before' as const },
-  { label: 'Spring 2023', short: 'S23', value: 11, era: 'after' as const, launch: true },
-  { label: 'Fall 2023', short: 'F23', value: 6, era: 'after' as const },
-  { label: 'Spring 2024', short: 'S24', value: 4, era: 'after' as const },
+  { label: '2022 H1', short: '22 H1', value: 41, era: 'before' as const },
+  { label: '2022 H2', short: '22 H2', value: 23, era: 'before' as const },
+  { label: '2023 H1', short: '23 H1', value: 39, era: 'before' as const },
+  { label: '2023 H2', short: '23 H2', value: 6, era: 'after' as const, launch: true },
+  { label: '2024 H1', short: '24 H1', value: 9, era: 'after' as const },
+  { label: '2024 H2', short: '24 H2', value: 6, era: 'after' as const },
 ];
 
 const CHART_MAX = 45;
@@ -1729,9 +1700,9 @@ function ActivationChart() {
     >
       <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <Eyebrow label="Invited, never validated" />
+          <Eyebrow label="Account Validation" />
           <p className="mt-1.5 text-[16px] font-semibold text-[#1a1a1a]">
-            Teachers who were invited and never activated
+            Sign-ups that did not complete validation
           </p>
         </div>
         <p className="shrink-0 text-[13px] text-[#888]">By half-year cohort</p>
@@ -1841,13 +1812,14 @@ function ClosingCTA() {
         </p>
       </div>
       <a
-        href="https://findingfocus.app"
+        href="https://portal.findingfocus.app/marketingRequestAnAccount?v2=true&showSignUpDialogRedirect=true"
         target="_blank"
         rel="noopener noreferrer"
         className="inline-flex shrink-0 items-center gap-2 rounded-full px-7 py-4 text-[16px] font-semibold text-white transition-opacity hover:opacity-85"
         style={{ background: '#111113' }}
       >
-        Create an educator account
+        Finding Focus Signup Flow
+        <ArrowOutward sx={{ fontSize: 18 }} aria-hidden="true" />
       </a>
     </div>
   );
@@ -1860,8 +1832,8 @@ const NAV_SECTIONS = [
   { id: 'section-research',       label: 'Research' },
   { id: 'section-proposal',       label: 'Proposal' },
   { id: 'section-design',         label: 'Design' },
-  { id: 'section-where-this-led', label: 'Where This Led' },
   { id: 'section-impact',         label: 'Impact' },
+  { id: 'section-where-this-led', label: 'Where This Led' },
   { id: 'section-reflection',     label: 'Takeaways' },
 ];
 
@@ -2056,13 +2028,12 @@ export default function FindingFocusInstantAccessCaseStudy() {
                   *Based on the three semesters before and after the update.
                 </p>
               </div>
-
               <div className="flex justify-center pt-1">
                 <button
                   type="button"
                   className="tldr-jump-btn"
                   onClick={() => {
-                    const el = document.getElementById('section-final-designs');
+                    const el = document.getElementById('section-design');
                     if (!el) return;
                     smoothScrollTo(el.getBoundingClientRect().top + window.scrollY - 40);
                   }}
@@ -2073,22 +2044,9 @@ export default function FindingFocusInstantAccessCaseStudy() {
                   </span>
                 </button>
               </div>
+
             </div>
 
-            {/* A note on timing — sits below the card, not inside it */}
-            <div
-              className="flex items-center gap-3 rounded-[12px] px-4 py-3.5 mt-6"
-              style={{ background: CARD_LIGHT, width: '50%' }}
-            >
-              <UpdateIcon sx={{ fontSize: 28, color: ACCENT, flexShrink: 0 }} />
-              <div className="flex flex-col gap-1.5">
-                <p className="text-[13px] font-semibold text-[#555]">A note on timing</p>
-                <p className="text-[13px] leading-[165%] text-[#888]">
-                  This project shipped in 2023. Finding Focus has evolved since, so some screens and details here may not
-                  match the live product today.
-                </p>
-              </div>
-            </div>
           </div>
 
         </div>
@@ -2286,8 +2244,8 @@ export default function FindingFocusInstantAccessCaseStudy() {
           {/* 01 Sign-up flow */}
           <Section
             eyebrow="01 · Sign-up Flow"
-            heading="Instant access required the sign-up flow to do more up front."
-            body="To give teachers access to their accounts immediately after signing up, I redesigned the flow with a few key changes. The previous form already collected the teacher's name, email, and school; the new flow added workplace type, role, and location, then ended with a four-digit email confirmation that activated the account. Capturing this additional context gave our team what it needed to move teacher verification into the background."
+            heading="The sign-up flow needed to collect more information up front."
+            body="In addition to the information we already collected—a teacher's name, email, and school—the new flow added school type (K–8, high school, or college), school location, and educator role (teacher, counselor, or administrator). The flow then ended by sending a four-digit confirmation code to the teacher's email. Entering the code activated their account and gave them access. This additional context was essential to automating verification and allowing users to create accounts without requiring our team to invite them."
           >
             <SignupDesignToggle />
           </Section>
@@ -2295,17 +2253,21 @@ export default function FindingFocusInstantAccessCaseStudy() {
           {/* 02 Teacher account */}
           <Section
             eyebrow="02 · Teacher Account"
-            heading="Giving teachers instant access meant introducing Pending accounts."
+            heading="Teacher accounts now fell into one of three states: Pending, Verified, or Restricted."
             body={
               <>
-                All new educators entered Finding Focus with a Pending account. They could explore the educator portal,
-                preview a demo class, and use Student View, but creating their own classroom remained locked until our
-                team verified that they taught at a high school.
+                Users who fit our happy path—high school educators—entered as “Pending” while our team verified them. In
+                this state, they could explore the educator portal, preview a demo class, and use Student View, but
+                creating their own classroom remained locked—a fair tradeoff for being able to access their account
+                instantly. Once verified as a high school educator, their account moved to “Verified,” unlocking
+                classroom creation.
                 <br />
                 <br />
-                This introduced three educator account categories: Pending while verification was underway, Verified
-                once a teacher was approved, and Restricted when an account could not be approved. Each category had
-                its own permissions, in-product messaging, and automated email.
+                Edge-case users—K–8 educators and anyone our team could not verify—were classified as “Restricted.” K–8
+                educators entered Finding Focus in this state, while anyone our team was unable to verify moved from
+                “Pending” to “Restricted” after review. Classroom creation remained locked for as long as the account
+                stayed “Restricted,” helping keep Finding Focus secure and compliant. Each state had its own permissions
+                and in-product messaging, along with an automated email that reflected the outcome of our review.
               </>
             }
           >
@@ -2315,110 +2277,39 @@ export default function FindingFocusInstantAccessCaseStudy() {
           {/* 03 Admin review */}
           <Section
             eyebrow="03 · Admin Review"
-            heading="Admin review became a decision—not an account-creation process."
-            body="Because teachers now created their accounts during sign-up, our team no longer needed to rebuild them manually and send an invitation. I redesigned the admin workflow around one decision: verify the teacher or keep their account Restricted. The information collected during sign-up followed the account through Slack and the admin interface, connecting each part of the Instant Access system."
+            heading="Verification shifted from sending account invitations to confirming account status."
+            body="Before Instant Access, verifying a teacher ended with creating their account and sending an invitation. Now the teacher already had an account and access, so our team's job was to confirm whether that account should become “Verified” or “Restricted.”"
           >
             <div className="flex flex-col gap-10">
-              <div className="flex flex-col gap-6">
-                <h3 className="max-w-[820px] text-[22px] font-semibold leading-[135%] tracking-[-0.25px] text-[#1a1a1a] md:text-[26px]">
-                  The updated Slack alert gave reviewers a faster starting point.
-                </h3>
+              <div className="grid grid-cols-1 items-start gap-8 md:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)] md:gap-10">
                 <p className="max-w-[820px] text-[15px] font-normal leading-[180%] text-[#555] md:text-[18px]">
-                  Each new sign-up continued to alert our team in Slack, but the notification now included the
-                  teacher&apos;s school, district, location, and educator type. I worked with Matthew, our software engineer,
-                  to implement the update, and he made the great suggestion to include a Google search for the
-                  teacher&apos;s name and school to help speed up verification.
+                  Every new sign-up still alerted our team in Slack. Because the updated flow collected school type,
+                  location, and educator role up front, we could include that information in the alert. I worked with
+                  Matthew, our software engineer, to implement the update, and he made the great suggestion to include
+                  a Google search for the teacher&apos;s name and school. This turned the alert into the starting point for
+                  verification, allowing team members to begin cross-referencing the teacher immediately.
                 </p>
                 <SlackAlertComparison />
               </div>
               <div className="flex flex-col gap-6">
                 <h3 className="max-w-[820px] text-[22px] font-semibold leading-[135%] tracking-[-0.25px] text-[#1a1a1a] md:text-[26px]">
-                  The Pending Teachers tab turned verification into an account decision.
+                  After reviewing a teacher, our team needed an easy way to apply the right account status.
                 </h3>
                 <p className="max-w-[820px] text-[15px] font-normal leading-[180%] text-[#555] md:text-[18px]">
-                  Each new account also appeared in a Pending Teachers tab I added to the admin interface. After
-                  confirming that someone was a high school educator, a reviewer could associate them with an existing
-                  school or create a new one. This moved the account to Verified, unlocked Add New Class, and sent the
-                  approval email automatically. If the teacher could not be verified, the reviewer could select Keep
-                  Restricted instead.
+                  To support this, I designed a Pending Teachers tab for the admin interface. Every high school educator
+                  awaiting review appeared there, where a team member could quickly verify or restrict their account.
+                  Because teachers had already created their accounts and entered their information during sign-up, our
+                  team did not need to re-enter any details.
                 </p>
                 <PlaceholderCard
                   description="The Pending Teachers tab in the admin interface, showing accounts awaiting review and the controls for assigning an existing school or creating a new one."
                   caption="Pending Teachers brought every account awaiting review into one actionable queue."
                 />
               </div>
-              <div className="flex flex-col gap-6 pt-2">
-                <div className="flex max-w-[820px] flex-col gap-3">
-                  <Eyebrow label="Operational Safeguards" />
-                  <h3 className="text-[22px] md:text-[26px] font-semibold leading-[135%] tracking-[-0.25px] text-[#1a1a1a]">
-                    Faster review still needed safeguards for costly mistakes.
-                  </h3>
-                </div>
-                <InfoCards items={OPERATIONAL_SAFEGUARDS} />
-              </div>
             </div>
-          </Section>
-
-          {/* First release */}
-          <Section
-            id="section-final-designs"
-            eyebrow="Shipped · April 2023"
-            heading="Teachers could enter immediately, but class creation still waited on review."
-            body="Instant Access launched on April 19. Teachers could create an account, confirm their email, and enter the portal in one session. Pending and restricted educators could explore, but the team continued monitoring new accounts because review still determined when a teacher could create a class."
-          >
-            <PlaceholderCard
-              description="The shipped educator journey: account creation, four-digit email confirmation, immediate portal entry, and the locked Add New Class state while review remained outstanding."
-              caption="Instant Access V1 — immediate account creation with progressive access"
-              minHeight={400}
-            />
           </Section>
 
         </div>
-      </section>
-
-      <Divider label="Where This Led" id="section-where-this-led" />
-
-      {/* ── WHERE THIS LED ── */}
-      <section className="max-w-[1200px] mx-auto px-5 sm:px-10 md:px-20 pb-14 md:pb-28">
-        <Section
-          eyebrow="Phase Two"
-          heading="The restriction itself turned out to be unnecessary friction, so we removed it too."
-          body="At launch, every new teacher stayed restricted until a team member manually verified them by hand. That solved the friction of teachers waiting on nothing, but it still made the majority of teachers wait on something they did not need: manual review that mattered for exactly one group. Once that became clear, we removed the restriction for everyone else."
-        >
-          <div className="flex flex-col gap-10">
-            <p className="text-[15px] md:text-[18px] font-normal leading-[180%] text-[#555] max-w-[820px]">
-              Today, only K-8 educators see an extra step before they can create a class: agreeing that their school has
-              authorized sharing Finding Focus with students under 13. The Workplace step from Rolling Registration is
-              what makes that possible. Because the system already knows who is K-8 at signup, the one question that ever
-              needed a human answer became a single checkbox.
-            </p>
-
-            <div className="flex flex-col max-w-[760px]">
-              <Callout
-                variant="danger"
-                label="At Launch (2023)"
-                heading="Everyone restricted until reviewed"
-                body="Instant access to the account, classroom creation locked for all new teachers until a human verified them."
-                compactBody
-              />
-              <div className="flex items-center justify-center" style={{ height: 40 }} aria-hidden="true">
-                <ArrowDownward sx={{ fontSize: 20, color: '#999' }} />
-              </div>
-              <Callout
-                variant="success"
-                label="Today"
-                heading="Nobody waits, and K-8 answers one question"
-                body="Classroom creation unlocked on signup for everyone. K-8 teachers confirm their school's authorization in-product. No manual review step at all."
-                compactBody
-              />
-            </div>
-
-            <PlaceholderCard
-              description="The K-8 age and account creation pop-up, from the Unrestrict K-8 Sketch file."
-              caption="The one question that still needs an answer, asked in-product"
-            />
-          </div>
-        </Section>
       </section>
 
       <Divider label="Impact" id="section-impact" />
@@ -2429,59 +2320,72 @@ export default function FindingFocusInstantAccessCaseStudy() {
 
           <Section
             eyebrow="Impact"
-            heading="The new model paid off on both sides: for teachers, and for the team that used to chase them."
+            heading="Instant Access reduced account drop-off, increased classroom creation, and made verification faster."
           >
             <div className="flex flex-col gap-10">
               <div>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                  {[
-                    { value: '82%', unit: 'decrease', label: 'teachers who never activated their account (38% → 7%)' },
-                    { value: '12%', unit: 'increase', label: 'teachers who created a classroom (26% → 29%)' },
-                    { value: '75%', unit: 'drop', label: 'hands-on time to verify a teacher (8 min → 2 min)' },
-                  ].map(s => (
-                    <div key={s.label} className="rounded-[20px] p-6 sm:p-8 flex flex-col gap-3" style={{ background: CARD_LIGHT }}>
-                      <p className="text-[11px] font-medium tracking-[1.5px] uppercase" style={{ color: ACCENT_DARK }}>
-                        {s.unit}
-                      </p>
-                      <p className="text-[44px] sm:text-[52px] font-semibold leading-none tracking-[-1.5px] text-[#1a1a1a]">
-                        {s.value}
-                      </p>
-                      <p className="text-[15px] font-normal leading-[160%] text-[#555]">{s.label}</p>
-                    </div>
-                  ))}
+                <div
+                  className="w-full overflow-hidden rounded-[16px] bg-white"
+                  style={{ border: `1px solid ${BORDER}` }}
+                >
+                  <StatRow
+                    divided
+                    stats={[
+                      { value: '82%', label: 'decrease in teachers who never activated their account (38% → 7%)' },
+                      { value: '12%', label: 'increase in teachers who created a classroom (26% → 29%)' },
+                      { value: '75%', label: 'decrease in hands-on verification time (8 min → 2 min)' },
+                    ]}
+                  />
+                  <p className="px-5 py-3 text-center text-[13px] italic text-[#999] sm:px-6">
+                    Three semesters before vs. three semesters after the update.
+                  </p>
                 </div>
-                <p className="text-[13px] italic text-[#999] text-center mt-3">
-                  Three semesters before vs. three semesters after the update.
-                </p>
               </div>
 
               <div>
                 <ActivationChart />
                 <p className="text-[13px] text-[#999] text-center mt-3">
-                  Share of new teachers who were invited and never activated their account, by half-year cohort.
+                  Before Instant Access, validation meant accepting an emailed account invitation. After launch, it
+                  meant entering the four-digit code sent to the teacher&apos;s email.
                 </p>
               </div>
             </div>
           </Section>
 
-          <Section
-            eyebrow="For Teachers"
-            heading="More than nine in ten new teachers now activate their account."
-            body="The number the team watched most closely was teachers who were invited and never validated. Before the update, nearly four in ten signups stalled at that step. After, fewer than one in ten. And the teachers who got in kept going: the share who went on to create a classroom rose as well."
-          />
-
-          <Section
-            eyebrow="For the Team"
-            heading="The verification shift schedule was retired."
-            body="Review went from something that dictated the team's day to something they did on their own time. At the volume we were seeing, cutting six minutes from every verification freed up roughly a full workday each month, about two work-weeks a year. The bigger saving is harder to put a number on: nobody had to be on call and half-attentive for a shift block, waiting for a signup that might not come. The schedule that once took five to seven people to cover was down to two on sparse slots within a year, and then gone."
-          >
-            <QuoteCard
-              quote="Unrestricted access for all educators is now live in prod! This means that fielding these leads immediately is no longer necessary."
-              attribution="Mike Mrazek, Co-founder, announcing the change to the team"
-            />
-          </Section>
-
         </div>
+      </section>
+
+      <Divider label="Where This Led" id="section-where-this-led" />
+
+      {/* ── WHERE THIS LED ── */}
+      <section className="max-w-[1200px] mx-auto px-5 sm:px-10 md:px-20 pb-14 md:pb-28">
+        <Section
+          eyebrow="The Next Constraint"
+          heading="After account activation improved, classroom creation became the next barrier."
+        >
+          <div className="flex flex-col gap-10">
+            <div className="flex flex-col max-w-[760px]">
+              <Callout
+                variant="danger"
+                label="At Launch (2023)"
+                heading="Classroom creation still waited on review"
+                body="High school educators entered as Pending, while K–8 educators entered as Restricted. Both could immediately access their accounts, but neither could create a classroom until they were verified."
+                compactBody
+              />
+              <div className="flex items-center justify-center" style={{ height: 40 }} aria-hidden="true">
+                <ArrowDownward sx={{ fontSize: 20, color: '#999' }} />
+              </div>
+              <Callout
+                variant="success"
+                label="February 2024"
+                heading="Classroom creation no longer waited on review"
+                body="All educators could create a classroom immediately. K–8 educators agreed to a data policy specific to their account type, while review and restriction controls remained available to our team in the background."
+                compactBody
+              />
+            </div>
+
+          </div>
+        </Section>
       </section>
 
       <Divider id="section-reflection" label="Takeaways" />
@@ -2492,20 +2396,20 @@ export default function FindingFocusInstantAccessCaseStudy() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
             <div className="rounded-[24px] p-7 flex flex-col gap-3 bg-white" style={{ border: `1px solid ${BORDER}` }}>
               <Eyebrow label="Takeaway 01" color={ACCENT} />
-              <h4 className="text-[18px] font-semibold leading-[145%] text-[#1a1a1a]">Remove the constraint. Don&apos;t optimize it.</h4>
+              <h4 className="text-[18px] font-semibold leading-[145%] text-[#1a1a1a]">The best solution addressed both sides of the problem.</h4>
               <p className="text-[15px] font-normal leading-[175%] text-[#555]">
-                The obvious fix was a faster review process. The real fix was asking why review needed to block access at
-                all. Separating &quot;is this account real&quot; from &quot;is this person allowed to do this one
-                thing&quot; solved the teacher&apos;s problem and the team&apos;s problem with the same decision.
+                Instant Access allowed teachers to enter Finding Focus when their interest was highest, while giving our
+                team the flexibility to verify accounts asynchronously. Redesigning the sign-up flow, teacher account
+                states, and admin review process together made that possible.
               </p>
             </div>
             <div className="rounded-[24px] p-7 flex flex-col gap-3 bg-white" style={{ border: `1px solid ${BORDER}` }}>
               <Eyebrow label="Takeaway 02" color={ACCENT} />
-              <h4 className="text-[18px] font-semibold leading-[145%] text-[#1a1a1a]">The first fix wasn&apos;t the last.</h4>
+              <h4 className="text-[18px] font-semibold leading-[145%] text-[#1a1a1a]">Solving one drop-off revealed the next.</h4>
               <p className="text-[15px] font-normal leading-[175%] text-[#555]">
-                Restricted access was the right call in 2023. A year of data showed the restriction itself was friction
-                for almost everyone, so we removed it and kept only the one gate that had ever mattered. Being willing to
-                take apart your own design when the evidence says to is part of the job.
+                Once account activation improved, classroom creation became the largest remaining drop-off. That evidence
+                gave us the confidence to let educators create classrooms before review, while preserving K–8 safeguards
+                and our team&apos;s ability to restrict accounts when necessary.
               </p>
             </div>
           </div>
