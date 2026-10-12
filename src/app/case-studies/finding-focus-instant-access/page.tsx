@@ -2071,12 +2071,12 @@ export default function FindingFocusInstantAccessCaseStudy() {
         <Section
           eyebrow="The Problem"
           heading="Teachers had to request an account and wait for an invite before they could access our tools."
-          body="Manually reviewing each account request before sending an invite interrupted signup at the moment teachers were most interested."
+          body="Teachers had to request an account, then wait for our team to review it and send an invite, which stalled signup at the moment they were most interested."
         >
           <div className="flex flex-col gap-10">
             <VisualCard
               background="#EDF4FC"
-              caption="Manual review created a bottleneck that stood between each new teacher and their account."
+              caption="Manual review created a gate that stood between each new teacher and their account."
             >
               <ApprovalCheckpointStory />
             </VisualCard>
