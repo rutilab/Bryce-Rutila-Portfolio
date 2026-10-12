@@ -15,7 +15,6 @@ import ZoomInIcon from '@mui/icons-material/ZoomIn';
 import {
   ApprovalCheckpointStory,
   CaseStudyMediaPlaceholder,
-  NorthStarAnimatedIcon,
 } from '@/components/case-study';
 import { useBodyScrollLock } from '@/hooks/useBodyScrollLock';
 
@@ -1438,21 +1437,21 @@ const APPROVAL_RATIONALES = [
   {
     label: 'Safeguard 01',
     title: 'Verifying educator identity',
-    body: 'Educator accounts could create classrooms, invite students, and monitor their progress. Manual review helped keep non-educators, including students who selected the wrong role, from receiving those permissions.',
+    body: 'Educator accounts could create classrooms, invite students, and track progress. Manual review kept those permissions from non-educators, including students who chose the wrong role.',
     icon: PersonSearchOutlined,
     accent: ACCENT_DARK,
   },
   {
     label: 'Safeguard 02',
     title: 'Designing around COPPA',
-    body: 'Despite marketing Finding Focus exclusively to high schools, K–8 teachers still signed up. Their students could be under 13, introducing additional COPPA consent requirements—so those accounts needed a restricted path.',
+    body: 'Finding Focus was intended for high school classrooms, but K–8 teachers still requested accounts. Sharing the course with students under 13 could put us at risk of violating COPPA, so manual verification screened out K–8 teachers before they received access.',
     icon: GavelOutlined,
     accent: ACCENT_DARK,
   },
   {
     label: 'Product Bet',
-    title: 'Making access feel earned',
-    body: 'Our co-founders believed a deliberate approval step would make access feel more valuable, increasing teachers’ commitment once they were invited in.',
+    title: 'Creating a personal invitation',
+    body: 'Our co-founders believed that requesting access and receiving a direct invitation would make joining feel more personal and the product more valuable, encouraging teachers to engage once they were invited in.',
     icon: LockOutlined,
     accent: '#c26a00',
   },
@@ -1946,9 +1945,9 @@ function Divider({ label, id }: { label?: string; id?: string }) {
 // ── Content constants ────────────────────────────────────────────────────────
 
 const PROJECT_GOALS = [
-  { icon: <BoltIcon sx={{ fontSize: 20 }} />, title: 'Instant access', body: 'Let every teacher create an account and enter Finding Focus the moment they finish signing up.' },
-  { icon: <GavelIcon sx={{ fontSize: 20 }} />, title: 'Compliance preserved', body: 'Keep K-8 COPPA safeguards intact without making every teacher wait for manual approval.' },
-  { icon: <RestoreIcon sx={{ fontSize: 20 }} />, title: 'Background verification', body: 'Let the team review new teachers on their own time, without monitoring incoming sign-ups in real time.' },
+  { icon: <BoltIcon sx={{ fontSize: 20 }} />, title: 'Instant access', body: 'Let teachers enter Finding Focus as soon as they finish signup.' },
+  { icon: <GavelIcon sx={{ fontSize: 20 }} />, title: 'Compliance preserved', body: 'Preserve K–8 safeguards without delaying every teacher.' },
+  { icon: <RestoreIcon sx={{ fontSize: 20 }} />, title: 'Background verification', body: 'Let the team review teachers without having to monitor signups in real time.' },
 ];
 
 // ── Page ─────────────────────────────────────────────────────────────────────
@@ -2010,18 +2009,17 @@ export default function FindingFocusInstantAccessCaseStudy() {
             >
               <Eyebrow label="TL;DR" />
               <p className="text-[16px] font-normal leading-[150%] text-[#333] max-w-[880px]">
-                Teachers who signed up for Finding Focus couldn&apos;t get in until a team member reviewed the request
-                and manually emailed them an invite. A large number never made it that far: they requested an account,
-                hit a wall, and never came back. I put together the case for flipping the model and pitched it to our co-founders:
-                let every teacher in the moment they sign up, and move verification into the background. It cut drop-off
-                dramatically, and retired an operational burden the team had carried for years.
+                Teachers had to wait for manual approval and an emailed invitation before creating a Finding Focus
+                account. Many never returned. I built the case for instant access and redesigned signup, account
+                permissions, and internal review to support it. Teachers could enter immediately while verification
+                happened in the background.
               </p>
               <div className="flex flex-col gap-3">
                 <StatRow
                   stats={[
-                    { value: '↓82%', label: 'decrease in teachers who never activated their account (38% → 7%)' },
-                    { value: '↑12%', label: 'increase in teachers who created a classroom (26% → 29%)' },
-                    { value: '↓75%', label: 'decrease in average time needed to verify a teacher (8 min → 2 min)' },
+                    { value: '↓82%', label: 'Less account drop-off · 38% → 7%' },
+                    { value: '↑12%', label: 'More teachers creating classrooms · 26% → 29%' },
+                    { value: '↓75%', label: 'Less verification time · 8 min → 2 min' },
                   ]}
                 />
                 <p className="text-[13px] italic text-[#999]">
@@ -2058,8 +2056,8 @@ export default function FindingFocusInstantAccessCaseStudy() {
       <section className="max-w-[1200px] mx-auto px-5 sm:px-10 md:px-20 pb-14 md:pb-28">
         <Section
           eyebrow="Context"
-          heading="Finding Focus is an edtech company building attention-training tools for high school classrooms."
-          body="Teachers use our tools through a dedicated teacher interface where they can share courses with students, facilitate classroom activities, and track progress over time. The product was built for high school classrooms, and our marketing and outreach targeted high school teachers."
+          heading="Finding Focus helps high school students train their attention."
+          body="Teachers use a dedicated portal to share courses, lead classroom activities, and track student progress."
         >
           <PlaceholderCard
             description="The Finding Focus teacher interface, ideally a 2023-era screenshot."
@@ -2072,20 +2070,20 @@ export default function FindingFocusInstantAccessCaseStudy() {
       <section className="max-w-[1200px] mx-auto px-5 sm:px-10 md:px-20 pb-14 md:pb-28">
         <Section
           eyebrow="The Problem"
-          heading="An outdated approval process kept every teacher behind a gate."
-          body="When teachers requested an educator account, they had to wait for someone on the Finding Focus team to manually verify them before they could create an account. Teachers were prevented from gaining access at the exact moment they were most interested."
+          heading="Teachers had to request an account and wait for an invite before they could access our tools."
+          body="Manually reviewing each account request before sending an invite interrupted signup at the moment teachers were most interested."
         >
           <div className="flex flex-col gap-10">
             <VisualCard
               background="#EDF4FC"
-              caption="Manual review stood between every teacher and their account."
+              caption="Manual review created a bottleneck that stood between each new teacher and their account."
             >
               <ApprovalCheckpointStory />
             </VisualCard>
             <SmallStatRow
               stats={[
-                { value: '267', label: 'number of teachers over the course of one school year who did not activate their account after being manually verified' },
-                { value: '8 min', label: 'average time it took for team members to verify an account' },
+                { value: '38%', label: 'The percentage of teachers who dropped off after requesting an account' },
+                { value: '8 min', label: 'Average time it took to manually review each signup request' },
               ]}
             />
           </div>
@@ -2097,7 +2095,6 @@ export default function FindingFocusInstantAccessCaseStudy() {
         <Section
           eyebrow="Why Manual Review Existed"
           heading="Manual review bundled a real safeguard with an unproven product bet."
-          body="The request model was intentional. It protected against two account-level risks while also reflecting a product belief: that making access feel earned would lead to stronger usage."
         >
           <ApprovalRationaleCards />
         </Section>
@@ -2108,15 +2105,9 @@ export default function FindingFocusInstantAccessCaseStudy() {
         <Section
           eyebrow="Project Origin"
           heading="The problem was known. I needed evidence to change the model."
-          body="When I joined as the product designer, teacher drop-off was already a known issue, but earlier attempts to address it had stalled. Replacing manual approval meant challenging both an established workflow and the belief that waiting made teachers more committed."
+          body="Teacher drop-off was a known issue when I joined, but earlier attempts to address it had stalled. I measured the work behind each approval and traced what teachers did afterward to test whether the request model justified its cost."
         >
           <div className="flex flex-col gap-10">
-            <p className="text-[15px] md:text-[18px] font-normal leading-[180%] text-[#555] max-w-[820px]">
-              I built the case from both sides: measuring the operational cost of reviewing every signup and tracing
-              what teachers did after approval. The evidence showed that the gate created work for the team without
-              producing the commitment it was meant to inspire.
-            </p>
-
             <PlaceholderCard
               description="The post-signup waiting screen from 2023 — the please wait for verification state."
               caption="What a new teacher saw after signing up"
@@ -2135,7 +2126,7 @@ export default function FindingFocusInstantAccessCaseStudy() {
           <Section
             eyebrow="Building the Case"
             heading="Every signup started a five-minute countdown for the team."
-            body="I began with the productivity cost because nobody had ever calculated what manual verification actually required. Manual review was a continuous operational commitment rather than a simple task. Team members rotated shifts throughout the day, keeping Slack alerts active on their phones and laptops to treat incoming signups as immediate action tasks."
+            body="Nobody had measured the full cost of verification. Team members rotated coverage throughout the day, monitoring Slack on their phones and laptops to respond to new requests within five minutes."
           >
             <div className="flex flex-col gap-8">
               <QuoteCard
@@ -2152,8 +2143,8 @@ export default function FindingFocusInstantAccessCaseStudy() {
           {/* Six manual steps */}
           <Section
             eyebrow="Productivity Cost"
-            heading="Auditing the manual verification workflow."
-            body="To measure the productivity cost, I conducted an internal time study, tracking team members through every step of the verification workflow."
+            heading="At peak volume, verification took more time than the team had."
+            body="I conducted an internal time study, timing team members through each step of the verification workflow."
           >
             <div className="flex flex-col">
               <VisualCard pad="p-5 sm:p-8">
@@ -2164,11 +2155,7 @@ export default function FindingFocusInstantAccessCaseStudy() {
               </div>
               <div className="mt-4 max-w-[860px] px-4 sm:px-6">
                 <p className="text-[15px] leading-[175%] text-[#555]">
-                  <strong className="font-semibold" style={{ color: MANUAL_RED }}>
-                    A workflow that scaled directly against our growth.
-                  </strong>{' '}
-                  Manual review meant the productivity cost scaled 1:1 with success — during peak windows, incoming
-                  signups immediately surpassed team capacity, capping how fast Finding Focus could onboard new users.
+                  Every new signup added manual work. At peak volume, requests arrived faster than the team could review them.
                 </p>
               </div>
             </div>
@@ -2186,21 +2173,15 @@ export default function FindingFocusInstantAccessCaseStudy() {
           {/* The proposal */}
           <Section
             eyebrow="The Proposal"
-            heading="Going from requiring teachers to request accounts to giving them instant access."
-            body="I presented the productivity findings to my co-founders alongside a number we already knew: over one school year, 267 teachers requested an account, were manually verified, and still never activated it. Together, the evidence showed that the Request Account model created friction for teachers and became less sustainable as Finding Focus grew."
+            heading="Give educators immediate access. Verify them in the background."
+            body="Teachers failing to activate their accounts was already a known problem. I presented the internal time study to our co-founders to show why the model also couldn’t scale: every new signup added manual work, and peak demand already exceeded our capacity. I proposed giving educators immediate access while streamlining verification in the background—less waiting for teachers, less work per signup, and room to grow without overwhelming our team."
           >
             <div className="flex flex-col gap-8">
-              <p className="text-[15px] md:text-[18px] font-normal leading-[180%] text-[#555] max-w-[820px]">
-                In that same meeting, I proposed replacing it with a typical sign-up experience: teachers would create
-                their account as the final step and gain instant access to the product. They would begin with a
-                restricted educator account while verification happened asynchronously in the background. The
-                safeguards stayed in place, but they no longer stood between a teacher and the product.
-              </p>
               <BeforeAfterFlow />
               <Callout
                 label="Stakeholder Response"
                 heading="The proposal was greenlit that week."
-                body="My co-founders supported the direction, and within two weeks Instant Access was slotted as the team's next project."
+                body="Within two weeks, Instant Access became the team's next project."
               />
             </div>
           </Section>
@@ -2208,20 +2189,10 @@ export default function FindingFocusInstantAccessCaseStudy() {
           {/* Project goals */}
           <Section
             eyebrow="Project Goals"
-            heading="With the direction approved, we aligned on what the new sign-up flow needed to accomplish."
+            heading="We aligned on three goals."
           >
             <div className="flex flex-col gap-16">
               <GoalCards items={PROJECT_GOALS} />
-              <div
-                className="rounded-[24px] px-8 py-10 flex flex-col items-center text-center gap-4 bg-white"
-                style={{ border: `1px solid ${BORDER}` }}
-              >
-                <NorthStarAnimatedIcon className="block size-14 shrink-0" />
-                <p className="text-[11px] font-medium tracking-[1.5px] uppercase" style={{ color: EYEBROW_ICON_COLOR }}>North Star</p>
-                <p className="text-[24px] font-semibold leading-[145%] tracking-[-0.3px] text-[#1a1a1a] max-w-[680px]">
-                  Teacher sign-up should be frictionless without compromising compliance.
-                </p>
-              </div>
             </div>
           </Section>
 
@@ -2244,8 +2215,8 @@ export default function FindingFocusInstantAccessCaseStudy() {
           {/* 01 Sign-up flow */}
           <Section
             eyebrow="01 · Sign-up Flow"
-            heading="The sign-up flow needed to collect more information up front."
-            body="In addition to the information we already collected—a teacher's name, email, and school—the new flow added school type (K–8, high school, or college), school location, and educator role (teacher, counselor, or administrator). The flow then ended by sending a four-digit confirmation code to the teacher's email. Entering the code activated their account and gave them access. This additional context was essential to automating verification and allowing users to create accounts without requiring our team to invite them."
+            heading="The new signup flow collected more information to support verification."
+            body="We now asked teachers what grade level they taught—K–8, high school, or college—along with their school’s location and their educator role. Their school-type selection determined their initial account status. At the end of the sign-up flow, teachers entered a four-digit email confirmation code to create their account and enter the product without having to wait for our team's verification."
           >
             <SignupDesignToggle />
           </Section>
@@ -2253,21 +2224,18 @@ export default function FindingFocusInstantAccessCaseStudy() {
           {/* 02 Teacher account */}
           <Section
             eyebrow="02 · Teacher Account"
-            heading="Teacher accounts now fell into one of three states: Pending, Verified, or Restricted."
+            heading="Teachers could explore immediately. Classroom creation depended on account status."
             body={
               <>
-                Users who fit our happy path—high school educators—entered as “Pending” while our team verified them. In
-                this state, they could explore the educator portal, preview a demo class, and use Student View, but
-                creating their own classroom remained locked—a fair tradeoff for being able to access their account
-                instantly. Once verified as a high school educator, their account moved to “Verified,” unlocking
-                classroom creation.
+                High school educators entered as “Pending.” They could explore the portal, preview a demo class,
+                and use Student View while our team reviewed their account. Once a team member verified them,
+                their status changed to “Verified,” unlocking classroom creation.
                 <br />
                 <br />
-                Edge-case users—K–8 educators and anyone our team could not verify—were classified as “Restricted.” K–8
-                educators entered Finding Focus in this state, while anyone our team was unable to verify moved from
-                “Pending” to “Restricted” after review. Classroom creation remained locked for as long as the account
-                stayed “Restricted,” helping keep Finding Focus secure and compliant. Each state had its own permissions
-                and in-product messaging, along with an automated email that reflected the outcome of our review.
+                One benefit of this update is that we now had a way to allow K–8 teachers to use our product.
+                Teachers who signed up as K–8 teachers entered as “Restricted.” Teachers we couldn’t verify also
+                moved to this state after review. They retained access to the portal, but classroom creation stayed locked. Each state had
+                its own permissions and in-product messaging, with automated emails communicating review outcomes.
               </>
             }
           >
@@ -2278,28 +2246,24 @@ export default function FindingFocusInstantAccessCaseStudy() {
           <Section
             eyebrow="03 · Admin Review"
             heading="Verification shifted from sending account invitations to confirming account status."
-            body="Before Instant Access, verifying a teacher ended with creating their account and sending an invitation. Now the teacher already had an account and access, so our team's job was to confirm whether that account should become “Verified” or “Restricted.”"
           >
             <div className="flex flex-col gap-10">
               <div className="grid grid-cols-1 items-start gap-8 md:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)] md:gap-10">
                 <p className="max-w-[820px] text-[15px] font-normal leading-[180%] text-[#555] md:text-[18px]">
-                  Every new sign-up still alerted our team in Slack. Because the updated flow collected school type,
-                  location, and educator role up front, we could include that information in the alert. I worked with
-                  Matthew, our software engineer, to implement the update, and he made the great suggestion to include
-                  a Google search for the teacher&apos;s name and school. This turned the alert into the starting point for
-                  verification, allowing team members to begin cross-referencing the teacher immediately.
+                  I worked with Matthew, our software engineer, to add school type, location, and educator role to
+                  our Slack alerts for new signups. He also made the great suggestion of adding a Google search link
+                  for the teacher&apos;s name and school, giving reviewers a direct starting point for verification.
                 </p>
                 <SlackAlertComparison />
               </div>
               <div className="flex flex-col gap-6">
                 <h3 className="max-w-[820px] text-[22px] font-semibold leading-[135%] tracking-[-0.25px] text-[#1a1a1a] md:text-[26px]">
-                  After reviewing a teacher, our team needed an easy way to apply the right account status.
+                  A Pending Teachers tab brought review into our team-only admin interface.
                 </h3>
                 <p className="max-w-[820px] text-[15px] font-normal leading-[180%] text-[#555] md:text-[18px]">
-                  To support this, I designed a Pending Teachers tab for the admin interface. Every high school educator
-                  awaiting review appeared there, where a team member could quickly verify or restrict their account.
-                  Because teachers had already created their accounts and entered their information during sign-up, our
-                  team did not need to re-enter any details.
+                  I designed a queue in our internal admin interface where team members could verify or restrict
+                  educator accounts. This team-only backend used the details teachers had already entered during
+                  signup, eliminating re-entry.
                 </p>
                 <PlaceholderCard
                   description="The Pending Teachers tab in the admin interface, showing accounts awaiting review and the controls for assigning an existing school or creating a new one."
@@ -2320,7 +2284,7 @@ export default function FindingFocusInstantAccessCaseStudy() {
 
           <Section
             eyebrow="Impact"
-            heading="Instant Access reduced account drop-off, increased classroom creation, and made verification faster."
+            heading="Account drop-off fell from 38% to 7%."
           >
             <div className="flex flex-col gap-10">
               <div>
@@ -2331,9 +2295,9 @@ export default function FindingFocusInstantAccessCaseStudy() {
                   <StatRow
                     divided
                     stats={[
-                      { value: '82%', label: 'decrease in teachers who never activated their account (38% → 7%)' },
-                      { value: '12%', label: 'increase in teachers who created a classroom (26% → 29%)' },
-                      { value: '75%', label: 'decrease in hands-on verification time (8 min → 2 min)' },
+                      { value: '82%', label: 'Less account drop-off · 38% → 7%' },
+                      { value: '12%', label: 'More teachers creating classrooms · 26% → 29%' },
+                      { value: '75%', label: 'Less verification time · 8 min → 2 min' },
                     ]}
                   />
                   <p className="px-5 py-3 text-center text-[13px] italic text-[#999] sm:px-6">
@@ -2396,20 +2360,18 @@ export default function FindingFocusInstantAccessCaseStudy() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
             <div className="rounded-[24px] p-7 flex flex-col gap-3 bg-white" style={{ border: `1px solid ${BORDER}` }}>
               <Eyebrow label="Takeaway 01" color={ACCENT} />
-              <h4 className="text-[18px] font-semibold leading-[145%] text-[#1a1a1a]">The best solution addressed both sides of the problem.</h4>
+              <h4 className="text-[18px] font-semibold leading-[145%] text-[#1a1a1a]">Design the workflow behind the experience.</h4>
               <p className="text-[15px] font-normal leading-[175%] text-[#555]">
-                Instant Access allowed teachers to enter Finding Focus when their interest was highest, while giving our
-                team the flexibility to verify accounts asynchronously. Redesigning the sign-up flow, teacher account
-                states, and admin review process together made that possible.
+                Giving teachers immediate access required changes to signup, account permissions, and internal review.
+                The customer experience depended on all three working together.
               </p>
             </div>
             <div className="rounded-[24px] p-7 flex flex-col gap-3 bg-white" style={{ border: `1px solid ${BORDER}` }}>
               <Eyebrow label="Takeaway 02" color={ACCENT} />
-              <h4 className="text-[18px] font-semibold leading-[145%] text-[#1a1a1a]">Solving one drop-off revealed the next.</h4>
+              <h4 className="text-[18px] font-semibold leading-[145%] text-[#1a1a1a]">Follow the next point of friction.</h4>
               <p className="text-[15px] font-normal leading-[175%] text-[#555]">
-                Once account activation improved, classroom creation became the largest remaining drop-off. That evidence
-                gave us the confidence to let educators create classrooms before review, while preserving K–8 safeguards
-                and our team&apos;s ability to restrict accounts when necessary.
+                Improving activation revealed the next barrier: classroom creation. Watching where teachers stopped
+                helped us decide what to change next.
               </p>
             </div>
           </div>
