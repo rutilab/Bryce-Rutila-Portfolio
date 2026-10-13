@@ -7,9 +7,6 @@ import ArrowDownward from '@mui/icons-material/ArrowDownward';
 import ArrowOutward from '@mui/icons-material/ArrowOutward';
 import BoltIcon from '@mui/icons-material/Bolt';
 import GavelIcon from '@mui/icons-material/Gavel';
-import GavelOutlined from '@mui/icons-material/GavelOutlined';
-import LockOutlined from '@mui/icons-material/LockOutlined';
-import PersonSearchOutlined from '@mui/icons-material/PersonSearchOutlined';
 import RestoreIcon from '@mui/icons-material/Restore';
 import ZoomInIcon from '@mui/icons-material/ZoomIn';
 import {
@@ -200,7 +197,7 @@ function StatRow({
   stats,
   divided,
 }: {
-  stats: { value: string; label: string }[];
+  stats: { value: string; label: ReactNode }[];
   divided?: boolean;
 }) {
   const [ref, inView] = useInView<HTMLDivElement>(0.45);
@@ -245,7 +242,7 @@ function StatRow({
   );
 }
 
-// ── SmallStatRow: two evidence stats, danger or neutral treatment ─────────────
+// ── SmallStatRow: evidence stats, danger or neutral treatment ─────────────
 function SmallStatRow({
   stats,
   variant = 'danger',
@@ -257,7 +254,7 @@ function SmallStatRow({
   const isDanger = variant === 'danger';
 
   return (
-    <div ref={ref} className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+    <div ref={ref} className={`grid grid-cols-1 ${stats.length > 1 ? 'sm:grid-cols-2' : ''} gap-3`}>
       {stats.map((s, i) => (
         <div
           key={i}
@@ -358,7 +355,7 @@ function GoalCards({ items }: { items: { icon: ReactNode; title: string; body: s
           }}
         >
           <span
-            className="inline-flex size-9 self-start items-center justify-center rounded-full bg-white"
+            className="inline-flex size-9 self-start items-center justify-center rounded-[8px] bg-white"
             style={{
               color: ACCENT_DARK,
               border: '1px solid rgba(0, 110, 254, 0.1)',
@@ -1438,111 +1435,120 @@ const APPROVAL_RATIONALES = [
     label: 'Safeguard 01',
     title: 'Verifying educator identity',
     body: 'Educator accounts could create classrooms, invite students, and track progress. Manual review kept those permissions from non-educators, including students who chose the wrong role.',
-    icon: PersonSearchOutlined,
+    basis: 'Account permissions',
     accent: ACCENT_DARK,
   },
   {
     label: 'Safeguard 02',
     title: 'Designing around COPPA',
     body: 'Finding Focus was intended for high school classrooms, but K–8 teachers still requested accounts. Sharing the course with students under 13 could put us at risk of violating COPPA, so manual verification screened out K–8 teachers before they received access.',
-    icon: GavelOutlined,
+    basis: 'Federal privacy law',
     accent: ACCENT_DARK,
   },
   {
     label: 'Product Bet',
     title: 'Creating a personal invitation',
-    body: 'Our co-founders believed that requesting access and receiving a direct invitation would make joining feel more personal and the product more valuable, encouraging teachers to engage once they were invited in.',
-    icon: LockOutlined,
+    body: 'The thinking was that requesting access and receiving a direct invitation would make joining feel more personal. If the product felt exclusive, teachers might value it more and engage once they were invited in.',
+    basis: 'An untested assumption',
     accent: '#c26a00',
   },
 ];
 
-function ApprovalRationaleCards() {
-  const [ref, inView] = useInView<HTMLDivElement>(0.2);
-
+function ApprovalRationaleTable() {
   return (
     <>
       <style>{`
-        .approval-rationale-grid {
-          display: grid;
-          grid-template-columns: minmax(0, 1fr);
-          gap: 24px;
+        .approval-rationale-table {
+          width: 100%;
+          border-spacing: 0;
+          table-layout: fixed;
+          text-align: left;
         }
-
-        @media (min-width: 1120px) {
-          .approval-rationale-grid {
-            grid-template-columns: repeat(3, minmax(0, 1fr));
+        .approval-rationale-table th,
+        .approval-rationale-table td {
+          padding: 28px;
+          vertical-align: top;
+        }
+        .approval-rationale-table thead th {
+          padding-top: 20px;
+          padding-bottom: 20px;
+        }
+        .approval-rationale-table tbody th,
+        .approval-rationale-table tbody td {
+          border-top: 1px solid ${BORDER};
+        }
+        @media (max-width: 1023px) {
+          .approval-rationale-table,
+          .approval-rationale-table tbody,
+          .approval-rationale-table tr,
+          .approval-rationale-table tbody th,
+          .approval-rationale-table tbody td {
+            display: block;
+            width: 100%;
+          }
+          .approval-rationale-table colgroup,
+          .approval-rationale-table thead {
+            display: none;
+          }
+          .approval-rationale-table tbody th,
+          .approval-rationale-table tbody td {
+            border-top: 0;
+            padding: 0;
+          }
+          .approval-rationale-table tbody tr {
+            padding: 24px;
+          }
+          .approval-rationale-table tbody tr + tr {
+            border-top: 1px solid ${BORDER};
+          }
+          .approval-rationale-table tbody td {
+            margin-top: 16px;
+          }
+          .approval-rationale-basis::before {
+            content: 'Based on';
+            display: block;
+            margin-bottom: 6px;
+            font-size: 11px;
+            font-weight: 500;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            color: ${EYEBROW_ICON_COLOR};
           }
         }
       `}</style>
-      <div
-        ref={ref}
-        className="approval-rationale-grid"
-      >
-        {APPROVAL_RATIONALES.map((rationale, i) => {
-          const Icon = rationale.icon;
-
-          return (
-            <article
-              key={rationale.title}
-              className="flex flex-col items-start text-left"
-              style={{
-                background: '#fff',
-                border: `1px solid ${BORDER}`,
-                borderRadius: 24,
-                padding: 28,
-                boxShadow: '0 10px 30px rgba(0, 13, 38, 0.045)',
-                textAlign: 'left',
-                alignItems: 'flex-start',
-                opacity: inView ? 1 : 0,
-                transform: inView ? 'translateY(0)' : 'translateY(16px)',
-                transition: `opacity 0.55s ease ${i * 120}ms, transform 0.55s ease ${i * 120}ms`,
-              }}
-            >
-              <div
-                className="flex items-center"
-                style={{ gap: 12, marginBottom: 26 }}
-              >
-                <div
-                  className="flex items-center justify-center"
-                  style={{
-                    width: 48,
-                    height: 48,
-                    flexShrink: 0,
-                    borderRadius: 14,
-                    border: `1px solid ${BORDER}`,
-                    background: CARD_LIGHT,
-                  }}
-                  aria-hidden="true"
-                >
-                  <Icon sx={{ color: INK, fontSize: 27 }} />
-                </div>
-                <p
-                  className="font-semibold uppercase"
-                  style={{ color: rationale.accent, fontSize: 10, letterSpacing: 1.5 }}
-                >
-                  {rationale.label}
-                </p>
-              </div>
-              <h3
-                className="font-semibold text-[#1a1a1a]"
-                style={{ fontSize: 22, lineHeight: 1.3 }}
-              >
-                {rationale.title}
-              </h3>
-              <div
-                style={{ width: 36, height: 1, margin: '18px 0', background: BORDER }}
-                aria-hidden="true"
-              />
-              <p
-                className="text-[#414141]"
-                style={{ fontSize: 15, lineHeight: 1.65 }}
-              >
-                {rationale.body}
-              </p>
-            </article>
-          );
-        })}
+      <div style={{ background: '#fff', border: `1px solid ${BORDER}`, borderRadius: 24, overflow: 'hidden' }}>
+        <table className="approval-rationale-table" aria-label="Why manual review existed">
+          <colgroup>
+            <col style={{ width: '28%' }} />
+            <col style={{ width: '50%' }} />
+            <col style={{ width: '22%' }} />
+          </colgroup>
+          <thead>
+            <tr>
+              {['What it did', 'Why it mattered', 'Based on'].map((heading) => (
+                <th key={heading} scope="col"><Eyebrow label={heading} /></th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {APPROVAL_RATIONALES.map((rationale) => (
+              <tr key={rationale.title}>
+                <th scope="row">
+                  <Eyebrow label={rationale.label} color={rationale.accent} />
+                  <h3 className="font-semibold text-[#1a1a1a]" style={{ marginTop: 12, fontSize: 22, lineHeight: 1.3 }}>
+                    {rationale.title}
+                  </h3>
+                </th>
+                <td className="text-[#414141]" style={{ fontSize: 15, lineHeight: 1.65 }}>
+                  {rationale.body}
+                </td>
+                <td className="approval-rationale-basis font-semibold text-[#1a1a1a]" style={{ fontSize: 15, lineHeight: 1.65 }}>
+                  {rationale.basis}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
     </>
   );
@@ -1750,36 +1756,6 @@ function ActivationChart() {
             )}
           </div>
         ))}
-      </div>
-    </div>
-  );
-}
-
-// ── QuoteCard ─────────────────────────────────────────────────────────────────
-function QuoteCard({ quote, attribution }: { quote: string; attribution: string }) {
-  return (
-    <div
-      className="max-w-[760px] rounded-[18px] bg-white px-5 py-5 sm:px-6 sm:py-6"
-      style={{
-        border: `1px solid ${BORDER}`,
-        boxShadow: '0 6px 18px rgba(0, 13, 38, 0.035)',
-      }}
-    >
-      <div className="flex items-stretch gap-4 sm:gap-5">
-        <span
-          aria-hidden="true"
-          className="w-0.5 shrink-0 rounded-full"
-          style={{ background: '#a9c2e8' }}
-        />
-        <blockquote className="flex min-w-0 flex-col gap-4">
-          <p className="text-[16px] font-normal leading-[175%] text-[#333] sm:text-[17px]">
-            {`“${quote}”`}
-          </p>
-          <footer className="flex items-center gap-3">
-            <span aria-hidden="true" className="h-px w-6 shrink-0" style={{ background: BORDER }} />
-            <cite className="text-[13px] font-medium not-italic text-[#6b7280]">{attribution}</cite>
-          </footer>
-        </blockquote>
       </div>
     </div>
   );
@@ -2009,21 +1985,19 @@ export default function FindingFocusInstantAccessCaseStudy() {
             >
               <Eyebrow label="TL;DR" />
               <p className="text-[16px] font-normal leading-[150%] text-[#333] max-w-[880px]">
-                Teachers had to wait for manual approval and an emailed invitation before creating a Finding Focus
-                account. Many never returned. I built the case for instant access and redesigned signup, account
-                permissions, and internal review to support it. Teachers could enter immediately while verification
-                happened in the background.
+                38% of teachers requested an account but never claimed it. I investigated the signup experience and our team’s manual review process, then redesigned signup, account permissions, and verification so teachers could get started immediately while review happened in the background. Account drop-off fell to 7%, and the time our team spent verifying each teacher dropped from eight minutes to two.
               </p>
-              <div className="flex flex-col gap-3">
-                <StatRow
-                  stats={[
-                    { value: '↓82%', label: 'Less account drop-off · 38% → 7%' },
-                    { value: '↑12%', label: 'More teachers creating classrooms · 26% → 29%' },
-                    { value: '↓75%', label: 'Less verification time · 8 min → 2 min' },
-                  ]}
-                />
-                <p className="text-[13px] italic text-[#999]">
-                  *Based on the three semesters before and after the update.
+              <div>
+                  <StatRow
+                    divided
+                    stats={[
+                      { value: '82%', label: <>Reduction in account drop-off<br />38% → 7%</> },
+                      { value: '12%', label: <>More teachers creating classrooms<br />26% → 29%</> },
+                      { value: '75%', label: <>Less time spent verifying each teacher<br />8 min → 2 min</> },
+                    ]}
+                  />
+                <p className="mt-3 px-5 text-center text-[13px] italic text-[#999] sm:px-6">
+                  *Recorded from data collected during the three semesters before and three semesters after the update.
                 </p>
               </div>
               <div className="flex justify-center pt-1">
@@ -2070,23 +2044,40 @@ export default function FindingFocusInstantAccessCaseStudy() {
       <section className="max-w-[1200px] mx-auto px-5 sm:px-10 md:px-20 pb-14 md:pb-28">
         <Section
           eyebrow="The Problem"
-          heading="Teachers had to request an account and wait for an invite before they could access our tools."
-          body="Teachers had to request an account, then wait for our team to review it and send an invite, which stalled signup at the moment they were most interested."
+          heading="Teachers were requesting accounts, but many never claimed them."
         >
-          <div className="flex flex-col gap-10">
-            <VisualCard
-              background="#EDF4FC"
-              caption="Manual review created a gate that stood between each new teacher and their account."
-            >
-              <ApprovalCheckpointStory />
-            </VisualCard>
-            <SmallStatRow
-              stats={[
-                { value: '38%', label: 'The percentage of teachers who dropped off after requesting an account' },
-                { value: '8 min', label: 'Average time it took to manually review each signup request' },
-              ]}
+          <div className="grid grid-cols-1 lg:grid-cols-2 items-start gap-8 lg:gap-10">
+            <div className="flex flex-col gap-8">
+              <p className="text-[15px] md:text-[18px] font-normal leading-[180%] text-[#555]">
+                38% of teachers who requested an account never claimed it. They had shown enough interest to sign up, but weren’t making it into the product. Teacher drop-off was a known issue when I joined. I wanted to understand where we were losing teachers and why.
+              </p>
+              <SmallStatRow
+                stats={[
+                  { value: '38%', label: 'Teachers who requested an account but never claimed it' },
+                ]}
+              />
+            </div>
+            <PlaceholderCard
+              description="The post-signup waiting screen from 2023 — the please wait for verification state."
+              caption="What a new teacher saw after signing up"
             />
           </div>
+        </Section>
+      </section>
+
+      {/* ── MY HYPOTHESIS ── */}
+      <section className="max-w-[1200px] mx-auto px-5 sm:px-10 md:px-20 pb-14 md:pb-28">
+        <Section
+          eyebrow="My Hypothesis"
+          heading="I suspected the account request model was contributing to teacher drop-off"
+          body="Teachers requested an account, waited for our team to review it, then received an emailed invitation to create an account. I suspected that asking teachers to leave and return later was interrupting their momentum before they could experience the product."
+        >
+          <VisualCard
+            background="#EDF4FC"
+            caption="Each request passed through manual review before a teacher received an invitation to create an account."
+          >
+            <ApprovalCheckpointStory />
+          </VisualCard>
         </Section>
       </section>
 
@@ -2094,25 +2085,9 @@ export default function FindingFocusInstantAccessCaseStudy() {
       <section className="max-w-[1200px] mx-auto px-5 sm:px-10 md:px-20 pb-14 md:pb-28">
         <Section
           eyebrow="Why Manual Review Existed"
-          heading="Manual review bundled a real safeguard with an unproven product bet."
+          heading="Manual review bundled two real safeguards with an unproven product bet."
         >
-          <ApprovalRationaleCards />
-        </Section>
-      </section>
-
-      {/* ── HOW IT STARTED ── */}
-      <section className="max-w-[1200px] mx-auto px-5 sm:px-10 md:px-20 pb-14 md:pb-28">
-        <Section
-          eyebrow="Project Origin"
-          heading="The problem was known. I needed evidence to change the model."
-          body="Teacher drop-off was a known issue when I joined, but earlier attempts to address it had stalled. I measured the work behind each approval and traced what teachers did afterward to test whether the request model justified its cost."
-        >
-          <div className="flex flex-col gap-10">
-            <PlaceholderCard
-              description="The post-signup waiting screen from 2023 — the please wait for verification state."
-              caption="What a new teacher saw after signing up"
-            />
-          </div>
+          <ApprovalRationaleTable />
         </Section>
       </section>
 
@@ -2122,17 +2097,36 @@ export default function FindingFocusInstantAccessCaseStudy() {
       <section className="max-w-[1200px] mx-auto px-5 sm:px-10 md:px-20 pb-14 md:pb-28">
         <div className="flex flex-col gap-16">
 
-          {/* Building the case */}
+          {/* Teacher interviews with existing users during outreach calls. */}
           <Section
-            eyebrow="Building the Case"
-            heading="Every signup started a five-minute countdown for the team."
-            body="Nobody had measured the full cost of verification. Team members rotated coverage throughout the day, monitoring Slack on their phones and laptops to respond to new requests within five minutes."
+            eyebrow="Teacher Interviews"
+            heading="Teachers suggested that limited time and buried invitation emails could explain why accounts went unclaimed."
+            body="I tried to interview teachers who had requested an account but never claimed it, but none were available. Instead, during outreach calls with existing users, I asked why they thought other teachers might request an account but not accept the invitation. Two themes came up consistently."
           >
             <div className="flex flex-col gap-8">
-              <QuoteCard
-                quote="The goal is to address the request within less than 5 minutes... if there is a long gap between when they request and when they get invited, they lose motivation, and sometimes never end up accepting."
-                attribution="Internal process note, 2022"
+              <Callout
+                label="Limited Time"
+                heading="The window to explore a new tool might not come again soon."
+                body="Teachers described having very limited free time during the school day to explore and set up new tools. If they couldn’t get started during the brief window they had, it might be a long time before they could return to it."
               />
+              <Callout
+                label="Crowded Inboxes"
+                heading="Invitations can disappear before teachers ever see them."
+                body="Teachers also mentioned receiving a high volume of email. If an invitation arrived when they weren’t actively watching their inbox, it could easily get buried and forgotten."
+              />
+              <p className="text-[15px] md:text-[18px] font-normal leading-[180%] text-[#555] max-w-[820px]">
+                These conversations shed light on the day-to-day constraints teachers face and the realities our design needed to account for.
+              </p>
+            </div>
+          </Section>
+
+          {/* Team-side evidence */}
+          <Section
+            eyebrow="Reviewing the Team’s Process"
+            heading="Our team took shifts monitoring and verifying account requests."
+            body="After talking with teachers, I wanted to better understand our internal process for reviewing and verifying requested accounts. The process involved team members (myself included) taking shifts monitoring Slack, where account requests were sent."
+          >
+            <div className="flex flex-col gap-8">
               <PlaceholderCard
                 description="The New Leads Schedule — a full weekday grid with 5–7 people covering slots."
                 caption="The verification shift schedule"
@@ -2142,9 +2136,9 @@ export default function FindingFocusInstantAccessCaseStudy() {
 
           {/* Six manual steps */}
           <Section
-            eyebrow="Productivity Cost"
+            eyebrow="Auditing the Workflow"
             heading="At peak volume, verification took more time than the team had."
-            body="I conducted an internal time study, timing team members through each step of the verification workflow."
+            body="The verification workflow had never been formally documented or timed. I mapped each step and conducted an internal time study to measure how long team members spent on it."
           >
             <div className="flex flex-col">
               <VisualCard pad="p-5 sm:p-8">
@@ -2153,11 +2147,35 @@ export default function FindingFocusInstantAccessCaseStudy() {
               <div className="mt-12">
                 <ProductivityStrip />
               </div>
-              <div className="mt-4 max-w-[860px] px-4 sm:px-6">
-                <p className="text-[15px] leading-[175%] text-[#555]">
-                  Every new signup added manual work. At peak volume, requests arrived faster than the team could review them.
-                </p>
-              </div>
+            </div>
+          </Section>
+
+          <Section
+            eyebrow="Findings"
+            heading="The account request model didn’t fit teachers’ workflows and couldn’t scale with our team."
+          >
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+              <Callout
+                variant="danger"
+                compactBody
+                label="Workflow mismatch"
+                heading="Teachers had time to get started, not to wait."
+                body="The system assumed teachers would request access and return later. In reality, they had only brief windows to explore new tools, so waiting for an invitation meant losing that window to get started."
+              />
+              <Callout
+                variant="danger"
+                compactBody
+                label="Limited capacity"
+                heading="The account request model couldn’t scale as we grew."
+                body="Every new request added eight minutes of manual work. As signup volume grew, so did the workload—until peak demand exceeded what one reviewer could handle."
+              />
+              <Callout
+                variant="danger"
+                compactBody
+                label="Opportunity cost"
+                heading="Every account request took time away from other work."
+                body="Monitoring Slack and manually verifying accounts required recurring shifts across the team. Supporting new signups consumed time we could have spent improving the product."
+              />
             </div>
           </Section>
 
@@ -2172,9 +2190,9 @@ export default function FindingFocusInstantAccessCaseStudy() {
 
           {/* The proposal */}
           <Section
-            eyebrow="The Proposal"
+            eyebrow="The solution"
             heading="Give educators immediate access. Verify them in the background."
-            body="Teachers failing to activate their accounts was already a known problem. I presented the internal time study to our co-founders to show why the model also couldn’t scale: every new signup added manual work, and peak demand already exceeded our capacity. I proposed giving educators immediate access while streamlining verification in the background—less waiting for teachers, less work per signup, and room to grow without overwhelming our team."
+            body="I proposed letting teachers create an account and explore Finding Focus immediately, with verification happening in the background. Classroom creation would stay locked until approval, preserving the safeguards while removing the wait to get started. Our team could then review accounts without the pressure to respond immediately."
           >
             <div className="flex flex-col gap-8">
               <BeforeAfterFlow />
@@ -2189,7 +2207,7 @@ export default function FindingFocusInstantAccessCaseStudy() {
           {/* Project goals */}
           <Section
             eyebrow="Project Goals"
-            heading="We aligned on three goals."
+            heading="My stakeholders and I aligned on three goals."
           >
             <div className="flex flex-col gap-16">
               <GoalCards items={PROJECT_GOALS} />
@@ -2216,7 +2234,14 @@ export default function FindingFocusInstantAccessCaseStudy() {
           <Section
             eyebrow="01 · Sign-up Flow"
             heading="The new signup flow collected more information to support verification."
-            body="We now asked teachers what grade level they taught—K–8, high school, or college—along with their school’s location and their educator role. Their school-type selection determined their initial account status. At the end of the sign-up flow, teachers entered a four-digit email confirmation code to create their account and enter the product without having to wait for our team's verification."
+            body={
+              <>
+                We now asked teachers what grade level they taught (K–8, high school, or college) along with their school’s location and their educator role.
+                <br />
+                <br />
+                At the end of the sign-up flow, teachers entered a four-digit email confirmation code to create their account and enter the product without having to wait for our team&apos;s verification.
+              </>
+            }
           >
             <SignupDesignToggle />
           </Section>
@@ -2283,8 +2308,8 @@ export default function FindingFocusInstantAccessCaseStudy() {
         <div className="flex flex-col gap-16">
 
           <Section
-            eyebrow="Impact"
-            heading="Account drop-off fell from 38% to 7%."
+            eyebrow="Measured Results"
+            heading="More teachers claimed their accounts, while verification took less time."
           >
             <div className="flex flex-col gap-10">
               <div>
@@ -2295,15 +2320,15 @@ export default function FindingFocusInstantAccessCaseStudy() {
                   <StatRow
                     divided
                     stats={[
-                      { value: '82%', label: 'Less account drop-off · 38% → 7%' },
-                      { value: '12%', label: 'More teachers creating classrooms · 26% → 29%' },
-                      { value: '75%', label: 'Less verification time · 8 min → 2 min' },
+                      { value: '82%', label: <>Reduction in account drop-off<br />38% → 7%</> },
+                      { value: '12%', label: <>More teachers creating classrooms<br />26% → 29%</> },
+                      { value: '75%', label: <>Less time spent verifying each teacher<br />8 min → 2 min</> },
                     ]}
                   />
-                  <p className="px-5 py-3 text-center text-[13px] italic text-[#999] sm:px-6">
-                    Three semesters before vs. three semesters after the update.
-                  </p>
                 </div>
+                <p className="mt-3 px-5 text-center text-[13px] italic text-[#999] sm:px-6">
+                  *Recorded from data collected during the three semesters before and three semesters after the update.
+                </p>
               </div>
 
               <div>
@@ -2360,18 +2385,16 @@ export default function FindingFocusInstantAccessCaseStudy() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
             <div className="rounded-[24px] p-7 flex flex-col gap-3 bg-white" style={{ border: `1px solid ${BORDER}` }}>
               <Eyebrow label="Takeaway 01" color={ACCENT} />
-              <h4 className="text-[18px] font-semibold leading-[145%] text-[#1a1a1a]">Design the workflow behind the experience.</h4>
+              <h4 className="text-[18px] font-semibold leading-[145%] text-[#1a1a1a]">Understand why a process exists before deciding what to change.</h4>
               <p className="text-[15px] font-normal leading-[175%] text-[#555]">
-                Giving teachers immediate access required changes to signup, account permissions, and internal review.
-                The customer experience depended on all three working together.
+                Manual review combined account permissions, privacy requirements, and a belief that personal invitations would encourage engagement. Separating those reasons helped me understand what the new experience needed to preserve and what we could reconsider.
               </p>
             </div>
             <div className="rounded-[24px] p-7 flex flex-col gap-3 bg-white" style={{ border: `1px solid ${BORDER}` }}>
               <Eyebrow label="Takeaway 02" color={ACCENT} />
-              <h4 className="text-[18px] font-semibold leading-[145%] text-[#1a1a1a]">Follow the next point of friction.</h4>
+              <h4 className="text-[18px] font-semibold leading-[145%] text-[#1a1a1a]">The team’s workflow is part of the user experience.</h4>
               <p className="text-[15px] font-normal leading-[175%] text-[#555]">
-                Improving activation revealed the next barrier: classroom creation. Watching where teachers stopped
-                helped us decide what to change next.
+                Teachers’ ability to get started depended on someone monitoring Slack and processing their request. Mapping and timing that work helped me see how internal operations shaped the user experience—and why the solution needed to address both.
               </p>
             </div>
           </div>
