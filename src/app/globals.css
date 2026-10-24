@@ -2958,6 +2958,15 @@ body:has(.landing-main--framed) {
   margin-top: 112px;
   padding-bottom: 0;
 }
+/* Headings on the home page share the hero's Space Grotesk; body copy is
+   Inter and eyebrows stay mono. The About page keeps its serif display
+   heading, so this is scoped to the home frame. */
+.landing-main--framed .endorsements-heading-text {
+  font-family: var(--font-space-grotesk), sans-serif;
+  font-weight: 700;
+  font-size: clamp(36px, 5.5vw, 56px);
+  letter-spacing: -0.03em;
+}
 
 /* ── Home top bar ─────────────────────────────────────────────────────── */
 .home-header {
@@ -2990,10 +2999,10 @@ body:has(.landing-main--framed) {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  font-family: var(--font-battambang), sans-serif;
+  font-family: var(--font-space-grotesk), sans-serif;
   font-weight: 700;
   font-size: 18px;
-  letter-spacing: -0.04em;
+  letter-spacing: -0.03em;
   color: #141510;
   text-decoration: none;
 }
@@ -3140,11 +3149,11 @@ body:has(.landing-main--framed) {
   margin: 0 0 6px;
 }
 .work-title {
-  font-family: var(--font-battambang), sans-serif;
+  font-family: var(--font-space-grotesk), sans-serif;
   font-weight: 700;
   font-size: 19px;
-  line-height: 1.4;
-  letter-spacing: -0.03em;
+  line-height: 1.35;
+  letter-spacing: -0.02em;
   color: #141510;
   margin: 0 0 8px;
 }
@@ -3255,11 +3264,11 @@ body:has(.landing-main--framed) {
 }
 .quick-close:hover { border-color: #141510; }
 .quick-title {
-  font-family: var(--font-battambang), sans-serif;
+  font-family: var(--font-space-grotesk), sans-serif;
   font-weight: 700;
   font-size: clamp(30px, 5vw, 48px);
   line-height: 1.1;
-  letter-spacing: -0.04em;
+  letter-spacing: -0.03em;
   color: #141510;
   margin: 0 0 12px;
   max-width: 640px;
