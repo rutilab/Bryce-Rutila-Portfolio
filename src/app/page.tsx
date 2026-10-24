@@ -7,6 +7,7 @@ import HalftoneFly from '@/components/HalftoneFly';
 import { HomeHeader } from '@/components/home/HomeHeader';
 import ChipSplash from '@/components/home/ChipSplash';
 import { WordChips } from '@/components/home/WordChip';
+import ProbeCursor from '@/components/home/ProbeCursor';
 import { WorkCard } from '@/components/home/WorkCard';
 import { HOME_PROJECTS } from '@/data/projects';
 import { IridescentEyebrow } from '@/components/IridescentEyebrow';
@@ -623,6 +624,7 @@ export default function Home() {
       )}
       {splash && <ChipSplash onHandoff={handOff} onDone={splashDone} />}
       <HomeHeader />
+      <ProbeCursor />
 
       <main className="landing-main landing-main--framed">
         <CircuitBackground ready={loaderState === 'done'} />

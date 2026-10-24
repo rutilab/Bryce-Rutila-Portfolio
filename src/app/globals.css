@@ -3767,3 +3767,83 @@ html.splash-zoom .cb-chip {
   .word-chip-pad, .word-chip-joint { scale: 1; }
   .word-chip-signal { display: none; }
 }
+
+/* ── Probe cursor (home page) ─────────────────────────────────────────────
+   A pad-shaped probe stands in for the site's inverting dot on the home page:
+   two open rings, a probe wire clipped onto the nearest trace, and a centre
+   that closes over anything clickable. See ProbeCursor.
+
+   Drawn in white and blended with `difference`, like the dot it replaces: ink
+   on the paper, light over black buttons and photos. Visibility (not opacity)
+   hides it, since a fractional opacity on the element would isolate it and
+   leave the blend nothing to invert. */
+body[data-probe-cursor] .magnet-cursor { display: none !important; }
+.probe-tip,
+.probe-wire {
+  position: fixed;
+  left: 0;
+  top: 0;
+  z-index: 2147483000;
+  pointer-events: none;
+  mix-blend-mode: difference;
+}
+.probe-wire,
+.probe-clip-layer {
+  width: 100vw;
+  height: 100vh;
+  overflow: visible;
+  visibility: hidden;
+}
+.probe-wire.is-on,
+.probe-clip-layer.is-on { visibility: visible; }
+.probe-wire path {
+  fill: none;
+  stroke: #ffffff;
+  stroke-width: 1.25;
+  stroke-linejoin: round;
+}
+/* The connector is a part on the board, not part of the pointer: paper fill
+   and ink outline, sitting over the trace */
+.probe-clip-layer {
+  position: fixed;
+  left: 0;
+  top: 0;
+  z-index: 2147483000;
+  pointer-events: none;
+}
+.probe-clip circle,
+.probe-clip polygon {
+  fill: #f9fafb;
+  stroke: #141510;
+  stroke-width: 1.5;
+}
+.probe-tip {
+  visibility: hidden;
+  will-change: transform;
+}
+.probe-clip .is-solid { fill: #141510; stroke: none; }
+.probe-tip.is-visible { visibility: visible; }
+.probe-tip.is-hidden { visibility: hidden; }
+.probe-tip svg {
+  display: block;
+  overflow: visible;
+  transform: translate(-50%, -50%);
+}
+.probe-tip circle {
+  transition: scale 200ms cubic-bezier(0.34, 1.56, 0.64, 1), fill 140ms ease;
+}
+.probe-ring {
+  fill: none;
+  stroke: #ffffff;
+  stroke-width: 2;
+}
+.probe-core {
+  fill: transparent;
+  stroke: #ffffff;
+  stroke-width: 1.5;
+}
+/* Over something clickable: the probe grows a touch and the centre closes */
+.probe-tip.is-clickable .probe-ring { scale: 1.25; }
+.probe-tip.is-clickable .probe-core { fill: #ffffff; scale: 1.4; }
+.probe-tip.is-down .probe-ring { scale: 1.1; }
+.probe-tip.is-down .probe-core { scale: 1.1; }

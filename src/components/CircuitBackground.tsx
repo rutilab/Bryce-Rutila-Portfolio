@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { offsetPolyline, setBoard } from './home/boardRegistry';
 
 /**
  * Circuit-board backdrop for the home page frame.
@@ -77,29 +78,6 @@ function distToSeg([px, py]: Pt, [[ax, ay], [bx, by]]: [Pt, Pt]) {
 }
 
 /** A polyline shifted sideways by `d`, mitred at the corners so 45° runs stay parallel */
-function offsetPolyline(pts: Pt[], d: number): Pt[] {
-  const normal = (a: Pt, b: Pt): Pt => {
-    const dx = b[0] - a[0];
-    const dy = b[1] - a[1];
-    const l = Math.hypot(dx, dy) || 1;
-    return [-dy / l, dx / l];
-  };
-  return pts.map((p, i) => {
-    const n1 = i > 0 ? normal(pts[i - 1], p) : null;
-    const n2 = i < pts.length - 1 ? normal(p, pts[i + 1]) : null;
-    if (!n1 || !n2) {
-      const n = (n1 ?? n2) as Pt;
-      return [p[0] + n[0] * d, p[1] + n[1] * d];
-    }
-    let mx = n1[0] + n2[0];
-    let my = n1[1] + n2[1];
-    const ml = Math.hypot(mx, my) || 1;
-    mx /= ml;
-    my /= ml;
-    const k = d / (mx * n1[0] + my * n1[1]);
-    return [p[0] + mx * k, p[1] + my * k];
-  });
-}
 
 /** Cuts a polyline down to a fraction of its length */
 function trimPolyline(pts: Pt[], frac: number): Pt[] {
@@ -653,7 +631,15 @@ export default function CircuitBackground({ ready = true }: { ready?: boolean })
     if (!el) return;
     const sameText = (a: Rect | null, b: Rect | null) =>
       a === b || (!!a && !!b && [a.x0 - b.x0, a.y0 - b.y0, a.x1 - b.x1, a.y1 - b.y1].every((d) => Math.abs(d) < 1));
+    let retry = 0;
     const update = () => {
+      // Mid-splash the page is scaled up around BR1, and measuring it then
+      // would lay the board out at the wrong size; wait for it to settle
+      if (el.style.transform) {
+        clearTimeout(retry);
+        retry = window.setTimeout(update, 200);
+        return;
+      }
       const w = Math.round(el.clientWidth);
       const h = Math.round(el.clientHeight / 40) * 40;
       const m = measure(el);
@@ -663,10 +649,31 @@ export default function CircuitBackground({ ready = true }: { ready?: boolean })
     ro.observe(el);
     el.querySelectorAll('.home-hero-title, .home-hero-desc').forEach((t) => ro.observe(t));
     document.fonts?.ready.then(update);
-    return () => ro.disconnect();
+    return () => {
+      ro.disconnect();
+      clearTimeout(retry);
+    };
   }, []);
 
   const board = useMemo(() => (layout ? generate(layout) : null), [layout]);
+
+  // Publish the traces for the probe cursor to snap to (BR1's outline isn't a
+  // trace, so it's left out), and where the parts sit, so its wire can clip
+  // straight onto one rather than adding a connector of its own
+  useEffect(() => {
+    const svg = svgRef.current;
+    if (!board || !svg) return;
+    setBoard({
+      svg,
+      traces: board.circuits.filter((c) => !c.chip).map((c) => ({ color: c.color, segs: c.segs })),
+      parts: board.circuits.flatMap((c) => [
+        ...c.nodes.map((n) => ({ at: [n.x, n.y] as Pt, r: n.r })),
+        ...c.parts.map((p) => ({ at: [p.x, p.y] as Pt, r: 10 })),
+        ...(c.chip?.feet ?? []).map((f) => ({ at: f, r: 2 })),
+      ]),
+    });
+    return () => setBoard(null);
+  }, [board]);
 
   const twinkleFor = (tw: Twinkle | undefined): Blink =>
     tw
@@ -737,9 +744,10 @@ export default function CircuitBackground({ ready = true }: { ready?: boolean })
     <svg
       ref={svgRef}
       className={`circuit-bg${ready ? ' is-ready' : ''}`}
-      width={layout?.w}
-      height={layout?.h}
-      viewBox={layout ? `0 0 ${layout.w} ${layout.h}` : undefined}
+      // No viewBox: the board's units are the page's pixels. With one, the
+      // height (rounded to the nearest 40 to keep reflows from reshuffling
+      // the board) got stretched to the frame's real height, nudging every
+      // part a few pixels off where the layout put it.
       aria-hidden="true"
     >
       {board?.circuits.map((c, idx) => (
