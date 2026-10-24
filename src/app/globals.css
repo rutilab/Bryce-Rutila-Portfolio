@@ -3521,52 +3521,20 @@ body:has(.landing-main--framed) {
 }
 
 /* BR1 answers each signal that arrives or leaves: a ring swells off the body,
-   the lid flushes with the signal's colour, and the light blinks. Each runs on
-   its signal's loop (--glow-dur, --glow-delay), and like the dots, none shows
-   until the board has drawn in (cb-wait, held while the board isn't ready). */
+   the lid flushes with the signal's colour, and the light blinks. The timing
+   is SMIL, on the dots' own clock (see CircuitBackground); CSS only keeps
+   them hidden until the board has drawn in, like the dots (cb-wait, held
+   while the board isn't ready). */
 .cb-chip-fx {
   pointer-events: none;
-  opacity: 0;
-  transform-box: fill-box;
-  transform-origin: center;
-  animation:
-    cb-wait 1.6s step-end,
-    var(--fx) var(--glow-dur) linear var(--glow-delay) infinite;
+  animation: cb-wait 1.6s step-end;
 }
 .circuit-bg:not(.is-ready) .cb-chip-fx {
-  animation-play-state: paused, running;
+  animation-play-state: paused;
 }
 .cb-chip-glow {
-  --fx: cb-chip-glow;
   fill: none;
-  stroke: var(--g);
   stroke-width: 2;
-}
-.cb-chip-flush {
-  --fx: cb-chip-flush;
-  fill: var(--g);
-}
-.cb-chip-led-on {
-  --fx: cb-chip-led;
-  fill: var(--g);
-  stroke: #141510;
-  stroke-width: 1.25;
-}
-@keyframes cb-chip-glow {
-  0%   { opacity: 0.9; scale: 1; }
-  12%  { opacity: 0; scale: 1.22; }
-  100% { opacity: 0; scale: 1.22; }
-}
-@keyframes cb-chip-flush {
-  0%   { opacity: 0.3; }
-  10%  { opacity: 0; }
-  100% { opacity: 0; }
-}
-@keyframes cb-chip-led {
-  0%   { opacity: 1; }
-  14%  { opacity: 1; }
-  22%  { opacity: 0; }
-  100% { opacity: 0; }
 }
 /* The hero's travelling dots carry a little glow of their own */
 .cb-circuit--hero .cb-pulse {

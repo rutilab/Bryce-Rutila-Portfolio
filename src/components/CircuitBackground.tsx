@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 /**
  * Circuit-board backdrop for the home page frame.
@@ -668,15 +668,6 @@ export default function CircuitBackground({ ready = true }: { ready?: boolean })
 
   const board = useMemo(() => (layout ? generate(layout) : null), [layout]);
 
-  // The dots run on the SVG's own (SMIL) clock, which started when the <svg>
-  // mounted; BR1's pulses are CSS animations, which start when the chip
-  // renders. Reading the SVG clock once per board lets each pulse be offset
-  // to land on its dot.
-  const [clock, setClock] = useState<{ board: unknown; t: number } | null>(null);
-  useLayoutEffect(() => {
-    if (board && svgRef.current) setClock({ board, t: svgRef.current.getCurrentTime() });
-  }, [board]);
-  const t0 = clock && clock.board === board ? clock.t : null;
   const twinkleFor = (tw: Twinkle | undefined): Blink =>
     tw
       ? {
@@ -687,27 +678,21 @@ export default function CircuitBackground({ ready = true }: { ready?: boolean })
   const chipActive = board?.circuits.find((c) => c.id === activeCircuit)?.chip !== undefined;
 
   // Every time a hero signal arrives at BR1 or sets off from it, the chip
-  // answers in that signal's colour. Each one is its own looping animation,
-  // on the same clock as the dot it follows.
+  // answers in that signal's colour. The answers are SMIL animations like the
+  // dots themselves, so they run on the same clock and can't drift apart
+  // however long the page stays open (CSS animations keep their own time,
+  // and a background tab throttles the two differently).
   const chip = board?.circuits.find((c) => c.chip)?.chip;
-  const chipPulses =
-    chip && t0 !== null
-      ? board!.circuits.flatMap((h) => {
-          if (!h.hero || h.pulsePts.length < 2) return [];
-          const near = (p: Pt) => inRect(p, { x0: chip.x - 12, y0: chip.y - 12, x1: chip.x + chip.w + 12, y1: chip.y + chip.h + 12 });
-          const at = near(h.pulsePts[h.pulsePts.length - 1]) ? 1 : near(h.pulsePts[0]) ? 0 : null;
-          if (at === null) return [];
-          return [
-            {
-              style: {
-                '--g': h.color,
-                '--glow-dur': `${h.pulseDur}s`,
-                '--glow-delay': `${(h.pulseDelay + at * 0.4 * h.pulseDur - t0).toFixed(3)}s`,
-              } as React.CSSProperties,
-            },
-          ];
-        })
-      : [];
+  const chipPulses = chip
+    ? board!.circuits.flatMap((h) => {
+        if (!h.hero || h.pulsePts.length < 2) return [];
+        const near = (p: Pt) => inRect(p, { x0: chip.x - 12, y0: chip.y - 12, x1: chip.x + chip.w + 12, y1: chip.y + chip.h + 12 });
+        const at = near(h.pulsePts[h.pulsePts.length - 1]) ? 1 : near(h.pulsePts[0]) ? 0 : null;
+        if (at === null) return [];
+        const timing = { dur: `${h.pulseDur}s`, begin: `${(h.pulseDelay + at * 0.4 * h.pulseDur).toFixed(3)}s`, repeatCount: 'indefinite' };
+        return [{ color: h.color, timing }];
+      })
+    : [];
 
   useEffect(() => {
     if (!board) return;
@@ -780,37 +765,45 @@ export default function CircuitBackground({ ready = true }: { ready?: boolean })
               ))}
               {/* Signals arriving or leaving: a ring that swells off the body
                   and a flush of the signal's colour */}
-              {chipPulses.map((p, k) => (
-                <rect
-                  key={`g${k}`}
-                  className="cb-chip-fx cb-chip-glow"
-                  style={p.style}
-                  x={c.chip!.x}
-                  y={c.chip!.y}
-                  width={c.chip!.w}
-                  height={c.chip!.h}
-                  rx={4}
-                />
-              ))}
+              {chipPulses.map((p, k) => {
+                const { x, y, w, h } = c.chip!;
+                const gx = w * 0.11;
+                const gy = h * 0.11;
+                const swell = (from: number, to: number) => `${from};${to};${to}`;
+                return (
+                  <rect key={`g${k}`} className="cb-chip-fx cb-chip-glow" stroke={p.color} x={x} y={y} width={w} height={h} rx={4} opacity={0}>
+                    <animate attributeName="opacity" values="0.9;0;0" keyTimes="0;0.12;1" {...p.timing} />
+                    <animate attributeName="x" values={swell(x, x - gx)} keyTimes="0;0.12;1" {...p.timing} />
+                    <animate attributeName="y" values={swell(y, y - gy)} keyTimes="0;0.12;1" {...p.timing} />
+                    <animate attributeName="width" values={swell(w, w + 2 * gx)} keyTimes="0;0.12;1" {...p.timing} />
+                    <animate attributeName="height" values={swell(h, h + 2 * gy)} keyTimes="0;0.12;1" {...p.timing} />
+                  </rect>
+                );
+              })}
               <rect className="cb-chip-body" x={c.chip.x} y={c.chip.y} width={c.chip.w} height={c.chip.h} rx={4} />
               {chipPulses.map((p, k) => (
                 <rect
                   key={`f${k}`}
-                  className="cb-chip-fx cb-chip-flush"
-                  style={p.style}
+                  className="cb-chip-fx"
+                  fill={p.color}
                   x={c.chip!.x + 1}
                   y={c.chip!.y + 1}
                   width={c.chip!.w - 2}
                   height={c.chip!.h - 2}
                   rx={3}
-                />
+                  opacity={0}
+                >
+                  <animate attributeName="opacity" values="0.3;0;0" keyTimes="0;0.1;1" {...p.timing} />
+                </rect>
               ))}
               {/* The die under the lid, and a status light that blinks with each signal */}
               <rect className="cb-chip-die" x={c.chip.x + 5} y={c.chip.y + 5} width={c.chip.w - 10} height={c.chip.h - 10} rx={2} />
               <circle className="cb-chip-dot" cx={c.chip.x + 9} cy={c.chip.y + 9} r={2.5} />
               <circle className="cb-chip-led" cx={c.chip.x + c.chip.w - 9} cy={c.chip.y + 9} r={2.25} />
               {chipPulses.map((p, k) => (
-                <circle key={`l${k}`} className="cb-chip-fx cb-chip-led-on" style={p.style} cx={c.chip!.x + c.chip!.w - 9} cy={c.chip!.y + 9} r={2.25} />
+                <circle key={`l${k}`} className="cb-chip-fx cb-chip-led" style={{ fill: p.color }} cx={c.chip!.x + c.chip!.w - 9} cy={c.chip!.y + 9} r={2.25} opacity={0}>
+                  <animate attributeName="opacity" values="1;1;0;0" keyTimes="0;0.14;0.22;1" {...p.timing} />
+                </circle>
               ))}
               <text className="cb-chip-label" x={c.chip.x + c.chip.w / 2} y={c.chip.y + c.chip.h / 2 + 5} textAnchor="middle">
                 {c.chip.label}
