@@ -58,14 +58,16 @@ export function HomeHeader() {
         <div className="home-header-right">
           <button type="button" className="home-header-email" onClick={copyEmail}>
             <span className="home-header-email-text">{EMAIL}</span>
-            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-              <rect x="5" y="5" width="9" height="9" rx="2" stroke="currentColor" strokeWidth="1.5" />
-              <path d="M11 3.5V3a1 1 0 0 0-1-1H3a1 1 0 0 0-1 1v7a1 1 0 0 0 1 1h.5" stroke="currentColor" strokeWidth="1.5" />
+            <svg className="home-header-icon" width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+              <rect x="5.25" y="5.25" width="8.5" height="8.5" rx="1.75" stroke="currentColor" strokeWidth="1.4" />
+              <path d="M10.75 3.25V3a.75.75 0 0 0-.75-.75H3A.75.75 0 0 0 2.25 3v7c0 .41.34.75.75.75h.25" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
             </svg>
           </button>
           <a href={LINKEDIN_URL} target="_blank" rel="noopener noreferrer" className="home-header-ext">
-            LinkedIn
-            <span aria-hidden="true">↗</span>
+            <span className="home-header-ext-text">LinkedIn</span>
+            <svg className="home-header-icon home-header-icon--out" width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+              <path d="M4 10L10 4M5 4h5v5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
           </a>
         </div>
       </div>

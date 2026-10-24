@@ -2994,7 +2994,7 @@ body:has(.landing-main--framed) {
   align-items: center;
   gap: 28px;
 }
-.home-header-right { gap: 20px; }
+.home-header-right { gap: 32px; }
 .home-wordmark {
   display: inline-flex;
   align-items: center;
@@ -3014,39 +3014,62 @@ body:has(.landing-main--framed) {
   display: flex;
   gap: 20px;
 }
-.home-header-link,
-.home-header-email,
-.home-header-ext {
-  font-family: var(--font-ibm-plex-mono), monospace;
-  font-size: 13px;
+/* Page links in Inter like the contact links, a weight heavier so they lead.
+   The current page is full ink over a blue rule; the others sit back until
+   hovered, when they pick up an ink rule in the same place. */
+.home-header-link {
+  font-family: var(--font-inter), sans-serif;
+  font-size: 15px;
+  font-weight: 500;
   line-height: 20px;
   text-decoration: none;
-  transition: color 160ms ease;
-}
-.home-header-link {
-  font-weight: 500;
   color: rgba(20, 21, 16, 0.55);
   padding: 4px 0;
   border-bottom: 2px solid transparent;
+  transition: color 160ms ease, border-color 160ms ease;
 }
-.home-header-link:hover { color: #141510; }
+.home-header-link:hover {
+  color: #141510;
+  border-bottom-color: #141510;
+}
 .home-header-link[aria-current='page'] {
   color: #141510;
   border-bottom-color: #12b4ff;
 }
+/* The ways to reach Bryce read as quiet body text with a matching icon each,
+   after helenxli.com: Inter at 15px in the hero paragraph's grey, a 16px copy
+   glyph and a 14px out-arrow drawn at the same weight, 8px from their words */
 .home-header-email,
 .home-header-ext {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  color: rgba(20, 21, 16, 0.6);
+  gap: 8px;
+  font-family: var(--font-inter), sans-serif;
+  font-size: 15px;
+  font-weight: 400;
+  line-height: 20px;
+  color: #5c5a54;
+  text-decoration: none;
   background: none;
   border: 0;
-  padding: 4px 6px;
-  border-radius: 6px;
+  padding: 0;
+  transition: color 160ms ease;
+}
+.home-header-icon {
+  flex-shrink: 0;
+  transition: translate 200ms cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 .home-header-email:hover,
-.home-header-ext:hover { color: #141510; background: rgba(20, 21, 16, 0.06); }
+.home-header-ext:hover { color: #141510; }
+.home-header-email:hover .home-header-icon,
+.home-header-ext:hover .home-header-icon { translate: 1.5px -1.5px; }
+/* LinkedIn is a link like the page links, so it takes the same ink rule */
+.home-header-ext-text {
+  padding: 4px 0;
+  border-bottom: 2px solid transparent;
+  transition: border-color 160ms ease;
+}
+.home-header-ext:hover .home-header-ext-text { border-bottom-color: currentColor; }
 @media (max-width: 799px) {
   .home-header-inner { padding: 0 16px; height: 56px; }
   .home-header-left { gap: 16px; }
