@@ -772,19 +772,20 @@ export default function Home() {
             <img src="/about/portrait-2.jpg" alt="Bryce out on a hike" className="home-about-photo" />
             <div>
               <p id="home-about-label" className="home-about-lede">
-                Growing up I was always curious about how things in the world worked and why they
-                worked the way they do. Today, as the Lead UX Researcher and Designer at Finding
-                Focus, I get to combine that curiosity with my love of untangling complex problems.
+                I’ve always been curious about how things work, why they work the way they do, and
+                how people experience them. That curiosity is what drew me to product design, where
+                I get to understand people, untangle complex problems, and turn what I learn into
+                thoughtful experiences.
               </p>
               <p className="home-about-edu">
-                <span className="home-about-school">University of Florida</span>
+                <span className="home-about-school">University of Florida 🐊</span>
                 <span className="home-about-sep" aria-hidden="true">✦</span>
                 <span>B.S. Psychology</span>
                 <span className="home-about-sep" aria-hidden="true">✦</span>
                 <span>Behavior Analysis</span>
               </p>
               <a href="/about" className="home-about-cta">
-                About me <span aria-hidden="true">→</span>
+                About me <span className="home-about-cta-arrow" aria-hidden="true">→</span>
               </a>
             </div>
           </div>
