@@ -5,27 +5,27 @@ import { FlyIcon } from '@/components/icons/FlyIcon';
 
 const BIO = [
   <>
-    Growing up I was always curious about how things in the world worked and why they worked the
-    way they do. A lot of that curiosity had to do with my parents being teachers. As teachers tend
-    to do, they encouraged me to ask a lot of questions and seek out answers. I often directed that
-    curiosity toward questioning why certain things felt effortless while others felt unnecessarily
-    difficult. When I discovered the world of UX through <em>The Design of Everyday Things</em>,
-    something clicked. It felt less like discovering a new career and more like finding a framework
-    for how I already saw the world.
+    Growing up, I was always curious about how things worked and why they worked the way they did.
+    A lot of that came from my parents, who were both teachers and encouraged me to ask questions,
+    look closer, and find my own answers. I often found myself wondering why some things felt
+    effortless while others felt unnecessarily difficult. When I discovered UX through{' '}
+    <em>The Design of Everyday Things</em>, something clicked. It felt less like finding a new career
+    and more like finding a framework for how I already saw the world.
   </>,
   <>
     At the time, I was working toward my B.S. in Psychology at the University of Florida,
-    specializing in behavior analysis. That background continues to shape how I approach design and
-    research. My curiosity is alive and well, focused on understanding what motivates people and
-    what we can learn from the gap between what users say and what they actually do.
+    specializing in behavior analysis. That background still shapes the way I approach design today.
+    It taught me to look closely at behavior, question assumptions, and understand people through the
+    context surrounding their actions. More importantly, it gave me a structured way to think about
+    users, research, and the decisions that shape an experience.
   </>,
   <>
-    Today, as the Lead UX Researcher and Designer at Finding Focus, I get to combine that curiosity
-    with my love of untangling complex problems. Working on a multi-role platform, I dig into the
-    “why” behind a problem, map how it lives within the broader system, and define which solutions
-    are worth pursuing. I’ve had the privilege of taking products from 0→1 with true end-to-end
-    ownership, leading research, shaping strategy, and bringing ideas to life through design. And it
-    all still starts the same way it always has: asking a lot of questions and seeking out answers.
+    Since then, I’ve worked as a product designer across several edtech products, taking ideas from
+    early research and messy problem spaces through strategy, interaction design, and launch. I’ve
+    worked on complex, multi-role experiences, helped shape products from 0→1, and learned to think
+    beyond individual screens to the systems they belong to. What I enjoy most is making sense of
+    complexity: understanding the people at the center of a problem, connecting the pieces around it,
+    and figuring out what’s worth building.
   </>,
 ];
 
