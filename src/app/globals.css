@@ -3646,3 +3646,80 @@ html.splash-zoom .cb-chip {
 }
 .splash-die svg { display: block; overflow: visible; }
 .splash-die.is-fading { opacity: 0; }
+
+/* ── WORDS chips ──────────────────────────────────────────────────────────
+   The endorsements heading's letters, each a CPU chip after BR1. In view,
+   they glide together and each letter etches in (same keyframes as the
+   splash). Hovering closes the circuit: wires draw W to S, then colour
+   sweeps across; leaving lets it all go quickly. Timings come in as
+   --at / --dur / --lit-at from WordChips. */
+.word-chips {
+  position: relative;
+  display: inline-block;
+  line-height: 0;
+}
+.word-chips-wires { position: absolute; inset: 0; overflow: visible; }
+.word-chips-wire {
+  fill: none;
+  stroke: #141510;
+  stroke-width: 1.75;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  transition: stroke-dashoffset 160ms ease;
+}
+.word-chips.is-hot .word-chips-wire {
+  stroke-dashoffset: 0;
+  transition: stroke-dashoffset var(--dur) linear var(--at);
+}
+.word-chips-slot {
+  position: absolute;
+  inset: 0;
+  translate: var(--spread) 0;
+  opacity: 0;
+  transition: translate 500ms cubic-bezier(0.22, 1, 0.36, 1), opacity 300ms ease;
+}
+.word-chips.is-live .word-chips-slot { translate: 0 0; opacity: 1; }
+.word-chip { position: absolute; top: 0; display: block; overflow: visible; }
+.word-chip-body { transition: fill 200ms ease; }
+.word-chips.is-hot .word-chip-body { fill: var(--c); transition: fill 280ms ease var(--lit-at); }
+.word-chip-stroke {
+  fill: none;
+  stroke: #141510;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: splash-draw var(--dur) linear var(--at) forwards;
+}
+.word-chip-pad,
+.word-chip-joint {
+  transform-box: fill-box;
+  transform-origin: center;
+  scale: 0;
+  animation: splash-pop 260ms cubic-bezier(0.34, 1.56, 0.64, 1) var(--at) forwards;
+}
+.word-chip-pad { fill: var(--c); stroke: #141510; stroke-width: 1.2; }
+/* Once the body takes the colour, the pads flip to paper so they still show */
+.word-chip-pad { transition: fill 200ms ease; }
+.word-chips.is-hot .word-chip-pad { fill: #f9fafb; transition: fill 280ms ease var(--lit-at); }
+.word-chip-joint { fill: #141510; }
+.word-chip-signal {
+  fill: var(--c);
+  stroke: #141510;
+  stroke-width: 0.8;
+  opacity: 0;
+  offset-rotate: 0deg;
+  animation:
+    splash-ride var(--dur) linear var(--at) forwards,
+    splash-signal-life var(--dur) linear var(--at) forwards;
+}
+.word-chips:not(.is-live) .word-chip * { animation-play-state: paused; }
+@media (prefers-reduced-motion: reduce) {
+  .word-chips-slot { translate: 0 0; opacity: 1; transition: none; }
+  .word-chip * { animation: none !important; }
+  .word-chips-wire, .word-chip-body, .word-chip-pad { transition: none !important; }
+  .word-chip-stroke { stroke-dashoffset: 0; }
+  .word-chip-pad, .word-chip-joint { scale: 1; }
+  .word-chip-signal { display: none; }
+}

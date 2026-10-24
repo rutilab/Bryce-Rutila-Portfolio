@@ -2,6 +2,7 @@
 
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { BRAND, GLYPH_H, GLYPH_W, INK, PAPER, layoutGlyph, type Pt } from './chipGlyphs';
 
 /**
  * First-visit splash for the home page. It opens deep inside BR1, where BRYCE
@@ -14,67 +15,18 @@ import { createPortal } from 'react-dom';
 
 type Props = { onHandoff: () => void; onDone: () => void };
 
-const INK = '#141510';
-const PAPER = '#f9fafb';
-const BRAND = ['#12B4FF', '#FF12F7', '#31E300', '#FF9C12', '#FFF712'] as const;
-
-type Pt = [number, number];
-
-// BRYCE on a 4×6 grid, cut the way a router would: straight runs, 45° corners.
-// B's middle bar stops short of its spine so B gets a coloured pad like the rest.
-const LETTERS: { ch: string; strokes: Pt[][] }[] = [
-  { ch: 'B', strokes: [[[0, 6], [0, 0], [3, 0], [4, 1], [4, 2], [3, 3], [1, 3]], [[3, 3], [4, 4], [4, 5], [3, 6], [0, 6]]] },
-  { ch: 'R', strokes: [[[0, 6], [0, 0], [3, 0], [4, 1], [4, 2], [3, 3], [0, 3]], [[2, 3], [4, 5], [4, 6]]] },
-  { ch: 'Y', strokes: [[[0, 0], [0, 1], [2, 3], [2, 6]], [[4, 0], [4, 1], [2, 3]]] },
-  { ch: 'C', strokes: [[[4, 1], [3, 0], [1, 0], [0, 1], [0, 5], [1, 6], [3, 6], [4, 5]]] },
-  { ch: 'E', strokes: [[[4, 0], [0, 0], [0, 6], [4, 6]], [[0, 3], [3, 3]]] },
-];
-const LETTER_W = 4;
+const NAME = 'BRYCE';
 const LETTER_GAP = 2;
-const NAME_W = LETTERS.length * LETTER_W + (LETTERS.length - 1) * LETTER_GAP; // 28 units
-const NAME_H = 6;
+const NAME_W = NAME.length * GLYPH_W + (NAME.length - 1) * LETTER_GAP; // 28 units
+const NAME_H = GLYPH_H;
 
-const toPath = (pts: Pt[]) => pts.map(([x, y], i) => `${i ? 'L' : 'M'}${x.toFixed(2)} ${y.toFixed(2)}`).join('');
-const polyLen = (pts: Pt[]) => pts.slice(1).reduce((s, p, i) => s + Math.hypot(p[0] - pts[i][0], p[1] - pts[i][1]), 0);
-function onSeg([px, py]: Pt, [ax, ay]: Pt, [bx, by]: Pt) {
-  const dx = bx - ax;
-  const dy = by - ay;
-  const t = Math.max(0, Math.min(1, ((px - ax) * dx + (py - ay) * dy) / (dx * dx + dy * dy)));
-  return Math.hypot(px - (ax + t * dx), py - (ay + t * dy)) < 1e-6;
-}
-
-/**
- * BRYCE laid out at unit size `u` from (x0, y0). Each stroke carries when it
- * starts and how long it takes, so a letter's strokes run one after another;
- * each free stroke end gets a pad, and ends that land on another stroke get
- * a solder dot instead.
- */
+/** BRYCE at unit size `u` from (x0, y0), one letter after another */
 function layoutName(u: number, x0: number, y0: number, start: number, stagger: number, perLetter: number) {
-  return LETTERS.map((L, i) => {
-    const ox = x0 + i * (LETTER_W + LETTER_GAP) * u;
-    const strokes = L.strokes.map((s) => s.map(([x, y]): Pt => [ox + x * u, y0 + y * u]));
-    const total = strokes.reduce((s, p) => s + polyLen(p), 0);
-    let t = start + i * stagger;
-    const timed = strokes.map((pts) => {
-      const dur = (perLetter * polyLen(pts)) / total;
-      const out = { pts, d: toPath(pts), at: t, dur };
-      t += dur;
-      return out;
-    });
-    const segs = strokes.flatMap((s) => s.slice(1).map((p, k): [Pt, Pt] => [s[k], p]));
-    const seen = new Set<string>();
-    const pads = timed.flatMap((s) =>
-      [s.pts[0], s.pts[s.pts.length - 1]].map((p, end) => ({ p, at: end ? s.at + s.dur : s.at })),
-    )
-      .filter(({ p }) => {
-        const k = `${p[0].toFixed(1)},${p[1].toFixed(1)}`;
-        if (seen.has(k)) return false;
-        seen.add(k);
-        return true;
-      })
-      .map(({ p, at }) => ({ p, at, free: segs.filter(([a, b]) => onSeg(p, a, b)).length === 1 }));
-    return { ch: L.ch, color: BRAND[i], strokes: timed, pads, x: ox, end: t };
-  });
+  return [...NAME].map((ch, i) => ({
+    ch,
+    color: BRAND[i],
+    ...layoutGlyph(ch, u, x0 + i * (GLYPH_W + LETTER_GAP) * u, y0, start + i * stagger, perLetter),
+  }));
 }
 
 function prefersReducedMotion() {

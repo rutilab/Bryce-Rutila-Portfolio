@@ -6,6 +6,7 @@ import CircuitBackground from '@/components/CircuitBackground';
 import HalftoneFly from '@/components/HalftoneFly';
 import { HomeHeader } from '@/components/home/HomeHeader';
 import ChipSplash from '@/components/home/ChipSplash';
+import { WordChips } from '@/components/home/WordChip';
 import { WorkCard } from '@/components/home/WorkCard';
 import { HOME_PROJECTS } from '@/data/projects';
 import { IridescentEyebrow } from '@/components/IridescentEyebrow';
@@ -56,123 +57,6 @@ function landedOnHome(): boolean {
  * always renders the pre-splash state and hydration matches.
  */
 let _loaderHasRun = false;
-
-// ── Scrabble tiles with shuffle animation ──────────────────────────────────
-const SCRABBLE_LETTERS = ['W', 'O', 'R', 'D', 'S'] as const;
-const TILE_W = 64;
-const TILE_GAP = 3;
-const TILE_STRIDE = TILE_W + TILE_GAP;
-// slots[i] = which visual slot letter[i] occupies
-const WORDS_SLOTS = [0, 1, 2, 3, 4];          // W-O-R-D-S in order
-const SWORD_SLOTS = [1, 2, 3, 4, 0];           // S-W-O-R-D (S steals slot 0)
-
-function fisher_yates(): number[] {
-  const arr = [0, 1, 2, 3, 4];
-  for (let i = arr.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [arr[i], arr[j]] = [arr[j], arr[i]];
-  }
-  return arr;
-}
-
-type TilePhase = 'init' | 'reveal' | 'hover' | 'return';
-
-function ScrabbleTiles() {
-  const [slots, setSlots]         = useState<number[]>(WORDS_SLOTS);
-  const [rotations, setRotations] = useState<number[]>([0, 0, 0, 0, 0]);
-  const [phase, setPhase]         = useState<TilePhase>('init');
-  const [revealed, setRevealed]   = useState(false);
-  const hoverCount  = useRef(0);
-  const containerRef = useRef<HTMLSpanElement>(null);
-  const totalW = SCRABBLE_LETTERS.length * TILE_W + (SCRABBLE_LETTERS.length - 1) * TILE_GAP;
-
-  // On mount: jump instantly to a random scramble (below the fold — no flash)
-  useEffect(() => {
-    setSlots(fisher_yates());
-    setRotations([...Array(5)].map(() => (Math.random() - 0.5) * 18));
-  }, []);
-
-  // When the tiles scroll into view → cascade into correct W-O-R-D-S order
-  useEffect(() => {
-    const el = containerRef.current;
-    if (!el || revealed) return;
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          setRevealed(true);
-          setPhase('reveal');
-          setSlots(WORDS_SLOTS);
-          setRotations([0, 0, 0, 0, 0]);
-        }
-      },
-      { threshold: 0.6 },
-    );
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, [revealed]);
-
-  const onEnter = () => {
-    if (!revealed) return;
-    hoverCount.current += 1;
-    setPhase('hover');
-    // Exactly the 3rd hover: spell SWORD; all others (including beyond 3) are random
-    const newSlots = hoverCount.current === 3 ? [...SWORD_SLOTS] : fisher_yates();
-    setSlots(newSlots);
-    setRotations([...Array(5)].map(() => (Math.random() - 0.5) * 24));
-  };
-
-  const onLeave = () => {
-    setPhase('return');
-    setSlots(WORDS_SLOTS);
-    setRotations([0, 0, 0, 0, 0]);
-  };
-
-  return (
-    <span
-      ref={containerRef}
-      className="endorsements-tiles"
-      style={{ position: 'relative', display: 'inline-block', width: totalW, height: TILE_W }}
-      onMouseEnter={onEnter}
-      onMouseLeave={onLeave}
-    >
-      {SCRABBLE_LETTERS.map((letter, i) => {
-        const homeX   = i * TILE_STRIDE;
-        const targetX = slots[i] * TILE_STRIDE;
-        const dx = targetX - homeX;
-
-        let transition: string;
-        if (phase === 'init') {
-          transition = 'none';                                                               // instant scramble on mount
-        } else if (phase === 'reveal') {
-          transition = `transform 0.65s cubic-bezier(0.34, 1.56, 0.64, 1) ${i * 70}ms`;    // W first → S last
-        } else if (phase === 'hover') {
-          transition = `transform 0.55s cubic-bezier(0.34, 1.56, 0.64, 1) ${i * 45}ms`;    // cascade left → right
-        } else {
-          transition = `transform 0.38s cubic-bezier(0.34, 1.56, 0.64, 1) ${(4 - i) * 30}ms`; // snap back right → left
-        }
-
-        return (
-          <img
-            key={letter}
-            src={`/scrabble-tiles/${letter}.svg`}
-            alt={letter}
-            draggable={false}
-            style={{
-              position: 'absolute',
-              top: 0,
-              left: homeX,
-              width: TILE_W,
-              height: TILE_W,
-              transform: `translateX(${dx}px) rotate(${rotations[i]}deg)`,
-              transition,
-              willChange: 'transform',
-            }}
-          />
-        );
-      })}
-    </span>
-  );
-}
 
 // ── Endorsement data ───────────────────────────────────────────────────────
 interface Endorsement {
@@ -912,7 +796,7 @@ export default function Home() {
             <h2 className="endorsements-heading">
               <span className="endorsements-heading-text">In their own</span>
               <span style={{ display: 'inline-flex', alignItems: 'center', flexWrap: 'nowrap' }}>
-                <ScrabbleTiles />
+                <WordChips />
                 <span className="endorsements-heading-text">.</span>
               </span>
             </h2>
