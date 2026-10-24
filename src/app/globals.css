@@ -2898,14 +2898,14 @@ body:has(.landing-main--framed) {
 .landing-main--framed .br-flies-container { display: none; }
 @media (max-width: 799px) {
   .landing-main--framed { padding: 0 16px 64px; }
-  .landing-main--framed .home-hero { padding-top: 96px; }
 }
 
 /* Hero — the board's buses run 64px clear of the copy on both sides (their
    taps stop 24px short), so the padding is sized for them rather than for
-   the type. */
+   the type. The top bus sits as far below the nav bar (80px) as the bottom
+   bus sits above Selected work. */
 .home-hero {
-  padding: 104px 0 128px;
+  padding: 160px 0 128px;
 }
 .home-hero-title {
   font-family: var(--font-space-grotesk), sans-serif;
@@ -2922,6 +2922,9 @@ body:has(.landing-main--framed) {
    for the chip */
 @media (max-width: 991px) {
   .home-hero { padding-bottom: 208px; }
+  /* BR1 sits under the copy here, 46px above Selected work, so the top bus
+     sits the same distance below the nav bar */
+  .landing-main--framed .home-hero { padding-top: 126px; }
   .home-hero-title,
   .home-hero-desc { padding-right: 24px; }
 }
