@@ -1,4 +1,4 @@
-import HalftoneCanvas from '@/components/HalftoneCanvas';
+import CircuitBackground from '@/components/CircuitBackground';
 import CaterpillarFooter from '@/components/CaterpillarFooter';
 import { FitBox } from '@/components/about/FitBox';
 import { CdCard } from '@/components/about/CdCard';
@@ -59,12 +59,13 @@ const FREE_TIME_INTRO =
 export default function AboutPage() {
   return (
     <>
-      <HalftoneCanvas />
-
       <main className="about-main">
+        {/* The home page's board, routed around the deck, the letter and the
+            three keepsakes */}
+        <CircuitBackground solid="[data-board-solid], .letter-3d-stage" varied />
         {/* ── The deck of prints ─────────────────────────────────────────── */}
         <div className="about-section">
-          <div className="mx-auto w-[344px] max-w-full">
+          <div className="mx-auto w-[344px] max-w-full" data-board-solid>
             <FitBox designWidth={344} designHeight={344}>
               <PhotoStack
                 photos={PORTRAITS}
@@ -84,20 +85,21 @@ export default function AboutPage() {
 
         {/* ── Life outside work ──────────────────────────────────────────── */}
         <div className="about-section mt-[160px]">
-          <div className="display-heading-wrap">
+          <div className="display-heading-wrap" data-board-solid>
             <h2 className="display-heading">Life outside work.</h2>
           </div>
 
           <p
-            className="max-w-[35em] text-[clamp(18px,1.7vw,24px)] leading-[1.667] text-[#141510]"
+            className="max-w-[35em] text-[clamp(17px,2vw,20px)] leading-[1.6] text-[#141510]"
             style={{ fontFamily: 'var(--font-inter), sans-serif' }}
+            data-board-solid
           >
             {FREE_TIME_INTRO}
           </p>
 
           <div className="mt-10 grid grid-cols-1 gap-y-16 md:grid-cols-3 md:gap-y-0">
             {/* Chasing sunsets */}
-            <div className="flex flex-col items-center">
+            <div className="flex flex-col items-center" data-board-solid>
               <FitBox designWidth={427} designHeight={344} className="w-full max-w-[427px]">
                 <PhotoStack
                   photos={SUNSETS}
@@ -114,7 +116,7 @@ export default function AboutPage() {
 
             {/* Records and discs. The sleeves are laid out ready for the expandable
                 version Bryce has planned — for now the card just sits there. */}
-            <div className="flex flex-col items-center">
+            <div className="flex flex-col items-center" data-board-solid>
               <FitBox designWidth={427} designHeight={344} className="w-full max-w-[427px]">
                 <CdCard />
               </FitBox>
@@ -123,7 +125,7 @@ export default function AboutPage() {
             {/* Framed digital art. The site's own lightbox rather than a new one:
                 it already carries the zoom cursor, the Escape key and the
                 click-anywhere dismiss that the rest of the portfolio uses. */}
-            <div className="flex flex-col items-center">
+            <div className="flex flex-col items-center" data-board-solid>
               <FitBox designWidth={427} designHeight={344} className="w-full max-w-[427px]">
                 <div className="flex h-[344px] w-[427px] items-center justify-center">
                   <CaseStudyMedia

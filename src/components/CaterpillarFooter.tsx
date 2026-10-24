@@ -994,7 +994,7 @@ export default function CaterpillarFooter() {
           <nav className="footer-col" aria-label="Footer navigation">
             <span className="footer-col-label">EXPLORE</span>
             <Link href="/" className="footer-link">HOME</Link>
-            <Link href="/case-studies" className="footer-link">PROJECTS</Link>
+            <Link href="/#work" className="footer-link">WORK</Link>
             <Link href="/about" className="footer-link">ABOUT ME</Link>
           </nav>
 

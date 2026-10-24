@@ -1,27 +1,56 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { FlyIcon } from '@/components/icons/FlyIcon';
 import { Toast } from '@/components/Toast';
 
 const EMAIL = 'rutilab@gmail.com';
 const LINKEDIN_URL = 'https://www.linkedin.com/in/brycerutila/';
 
+/** Each link, and the pages it counts as current on */
 const LINKS = [
-  { href: '/#work', label: 'Work', current: true },
-  { href: '/about', label: 'About' },
-  { href: '/case-studies', label: 'Playground' },
+  { href: '/#work', label: 'Work', current: (p: string) => p === '/' || p.startsWith('/case-studies') },
+  { href: '/about', label: 'About', current: (p: string) => p.startsWith('/about') },
+  { href: '/playground', label: 'Playground', current: (p: string) => p.startsWith('/playground') },
 ];
 
 /**
- * The home page's top bar: a full-bleed strip whose contents line up with the
+ * The site's top bar: a full-bleed strip whose contents line up with the
  * 1024px frame below it. Wordmark and page links on the left; the two ways to
  * reach Bryce on the right, where a click copies the address rather than
  * opening a mail client nobody has set up.
+ *
+ * On most pages it sticks to the top. Case studies are long reads, so there
+ * it floats instead: it ducks away as you scroll down into the story and
+ * comes back the moment you scroll up.
  */
-export function HomeHeader() {
+export function SiteHeader() {
+  const pathname = usePathname();
   const [copied, setCopied] = useState(false);
+  const floats = pathname.startsWith('/case-studies');
+  // Tucked away belongs to the page it happened on: a new page starts shown
+  const [tuckedOn, setTuckedOn] = useState<string | null>(null);
+  const tucked = tuckedOn === pathname;
+  const lastY = useRef(0);
+
+  useEffect(() => {
+    if (!floats) return;
+    lastY.current = window.scrollY;
+    const onScroll = () => {
+      const y = window.scrollY;
+      const dy = y - lastY.current;
+      // A few pixels either way is a wobble, not a change of direction
+      if (Math.abs(dy) < 4) return;
+      setTuckedOn(dy > 0 && y > 80 ? pathname : null);
+      lastY.current = y;
+    };
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, [floats, pathname]);
+
+  if (pathname.startsWith('/admin')) return null;
 
   const copyEmail = async () => {
     try {
@@ -33,7 +62,7 @@ export function HomeHeader() {
   };
 
   return (
-    <header className="home-header">
+    <header className={`home-header${floats ? ' home-header--float' : ''}${tucked ? ' is-tucked' : ''}`}>
       <div className="home-header-inner">
         <div className="home-header-left">
           <Link href="/" className="home-wordmark" aria-label="Bryce Rutila, home">
@@ -47,7 +76,7 @@ export function HomeHeader() {
                 key={l.href}
                 href={l.href}
                 className="home-header-link"
-                aria-current={l.current ? 'page' : undefined}
+                aria-current={l.current(pathname) ? 'page' : undefined}
               >
                 {l.label}
               </Link>

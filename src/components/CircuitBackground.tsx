@@ -37,8 +37,8 @@ type NodeKind = 'ring' | 'dot' | 'square' | 'hex' | 'diamond' | 'via' | 'arrow' 
 type Twinkle = { color?: string; dur: number; delay: number };
 type CNode = { x: number; y: number; kind: NodeKind; r: number; angle?: number; twinkle?: Twinkle };
 type Part = { x: number; y: number; vertical?: boolean; twinkle?: Twinkle }; // banded resistor, centred on its run
-/** `feet`: where each pin ends, for its solder pad */
-type Chip = { x: number; y: number; w: number; h: number; pins: string; feet: Pt[]; label: string };
+/** `feet`: where each pin ends, for its solder pad. `mini`: a small unlabelled part, drawn without BR1's die and light */
+type Chip = { x: number; y: number; w: number; h: number; pins: string; feet: Pt[]; label: string; mini?: boolean };
 type Circuit = {
   id: number;
   color: string;
@@ -124,14 +124,15 @@ const angleOf = (a: Pt, b: Pt) => Math.atan2(b[1] - a[1], b[0] - a[0]);
 
 /** Page content the board routes around, in the frame's own coordinates */
 type Rect = { x0: number; y0: number; x1: number; y1: number };
+/** What the home page's board routes around; other pages mark theirs with data-board-solid */
 const SOLID =
   '.home-hero > *, .home-section > .iri-eyebrow, .work-card, .home-about-grid, .endorsements-heading-wrap, .endorsements-section > :not(.endorsements-grid), .endorsement-card';
 const CLEARANCE = 14;
 
 /** `starry`: bands of the page (top, bottom) that get extra stars */
-type Layout = { w: number; h: number; solid: Rect[]; text: Rect | null; heroBottom: number; starry: [number, number][] };
+type Layout = { w: number; h: number; solid: Rect[]; text: Rect | null; heroBottom: number; starry: [number, number][]; varied?: boolean };
 
-function measure(frame: HTMLElement): Omit<Layout, 'w' | 'h'> {
+function measure(frame: HTMLElement, solidSelector: string): Omit<Layout, 'w' | 'h'> {
   const f = frame.getBoundingClientRect();
   const rel = (r: DOMRect, pad = 0): Rect => ({
     x0: r.left - f.left - pad,
@@ -139,7 +140,7 @@ function measure(frame: HTMLElement): Omit<Layout, 'w' | 'h'> {
     x1: r.right - f.left + pad,
     y1: r.bottom - f.top + pad,
   });
-  const solid = [...frame.querySelectorAll<HTMLElement>(SOLID)]
+  const solid = [...frame.querySelectorAll<HTMLElement>(solidSelector)]
     .map((el) => el.getBoundingClientRect())
     .filter((r) => r.width > 0 && r.height > 0)
     .map((r) => rel(r, CLEARANCE));
@@ -350,7 +351,7 @@ function heroBoard(w: number, T: Rect, startId: number): Circuit[] {
   return out;
 }
 
-function generate({ w, h, solid: measured, text, heroBottom, starry }: Layout) {
+function generate({ w, h, solid: measured, text, heroBottom, starry, varied }: Layout) {
   const rand = rng(9000);
   const pick = <T,>(arr: readonly T[]) => arr[Math.floor(rand() * arr.length)];
   const between = (a: number, b: number) => a + rand() * (b - a);
@@ -371,6 +372,121 @@ function generate({ w, h, solid: measured, text, heroBottom, starry }: Layout) {
   const kinds: NodeKind[] = ['ring', 'dot', 'square', 'hex', 'diamond', 'via'];
   const lastY = { 1: -Infinity, [-1]: -Infinity } as Record<1 | -1, number>;
 
+  type Made = { circuit: Omit<Circuit, 'id' | 'color'>; bottom: number };
+  const endNode = (at: Pt, angle = 0): CNode => {
+    const kind = pick(['ring', 'via', 'hex', 'dot'] as const);
+    return { x: at[0], y: at[1], kind, r: kind === 'dot' ? 3.5 : kind === 'hex' ? 6 : 5, angle };
+  };
+  const pulse = (pts: Pt[]) => ({ pulsePts: pts, pulseDur: between(7, 12), pulseDelay: -between(0, 12) });
+
+  /** In off the border, a 45° corner, then down the open margin */
+  const elbow = (side: 1 | -1, y: number, room: number): Made | null => {
+    const X = (d: number) => (side === 1 ? 0 : w) + side * d;
+    const s = 12;
+    for (const len of [between(160, 280), between(90, 150)]) {
+      const d = between(40, Math.max(41, room - 40));
+      const pts: Pt[] = [[X(0), y], [X(d - s), y], [X(d), y + s], [X(d), y + s + len]];
+      if (blocked(pts.slice(1))) continue;
+      const segs = toSegs(pts);
+      const traces: Circuit['traces'] = [{ d: toPath(pts) }];
+      const nodes: CNode[] = [endNode(pts[3], Math.PI / 2)];
+      // Stubs off the run, alternating sides, each ending on a part
+      for (const f of [0.3, 0.62]) {
+        const by = y + s + len * f;
+        const dir = f < 0.5 ? -side : side;
+        const sl = between(18, 36);
+        const bp: Pt[] = [[X(d), by], [X(d) + dir * sl, by]];
+        if (blocked([bp[1]])) continue;
+        traces.push({ d: toPath(bp), thin: true });
+        segs.push(...toSegs(bp));
+        nodes.push({ ...endNode(bp[1]), r: 4.5 });
+      }
+      // A twin alongside the drop, cut short
+      const twin = trimPolyline(offsetPolyline(pts, 7 * side), 0.7);
+      if (!blocked(twin.slice(1))) {
+        traces.push({ d: toPath(twin), thin: true });
+        segs.push(...toSegs(twin));
+        const t = twin[twin.length - 1];
+        nodes.push({ x: t[0], y: t[1], kind: 'dot', r: 2.5 });
+      }
+      return {
+        circuit: { traces, nodes, parts: [{ x: X(d), y: y + s + len * 0.46, vertical: true }], segs, ...pulse(pts) },
+        bottom: y + s + len,
+      };
+    }
+    return null;
+  };
+
+  /** Three lines in off the border, the inner two stopping short */
+  const bus = (side: 1 | -1, y: number, room: number): Made | null => {
+    const X = (d: number) => (side === 1 ? 0 : w) + side * d;
+    const reach = Math.min(reachMax, room) * between(0.75, 0.95);
+    const k = between(reach * 0.35, reach * 0.55);
+    const step = 16 * (rand() < 0.5 ? 1 : -1);
+    const spine: Pt[] = [[X(0), y], [X(k), y], [X(k + Math.abs(step)), y + step], [X(reach), y + step]];
+    const lines = [0, 8, 16].map((o, i) => trimPolyline(offsetPolyline(spine, o * side), [1, 0.82, 0.64][i]));
+    if (lines.some((l) => blocked(l.slice(1)))) return null;
+    const segs = lines.flatMap(toSegs);
+    const nodes = lines.map((l, i) => {
+      const e = l[l.length - 1];
+      return i === 0 ? { ...endNode(e), kind: 'arrow' as const, r: 6, angle: angleOf(l[l.length - 2], e) } : { ...endNode(e), r: 4.5 };
+    });
+    return {
+      circuit: {
+        traces: lines.map((l, i) => ({ d: toPath(l), thin: i > 0 })),
+        nodes,
+        parts: [{ x: X(k * 0.5), y }],
+        segs,
+        ...pulse(lines[0]),
+      },
+      bottom: y + Math.abs(step) + 20,
+    };
+  };
+
+  /** A small part out in the margin, wired back to the border */
+  const miniChip = (side: 1 | -1, y: number, room: number): Made | null => {
+    const X = (d: number) => (side === 1 ? 0 : w) + side * d;
+    const cw = 34;
+    const ch = 24;
+    const PIN = 6;
+    const d = between(90, Math.max(91, room - cw - 40));
+    const cx0 = side === 1 ? X(d) : X(d) - cw;
+    const cy0 = y - ch / 2;
+    const near = side === 1 ? cx0 - PIN : cx0 + cw + PIN; // pins facing the border
+    const far = side === 1 ? cx0 + cw + PIN : cx0 - PIN;
+    const pinY = [cy0 + 7, cy0 + ch - 7];
+    const box: Pt[] = [[cx0 - 12, cy0 - 30], [cx0 + cw + 12, cy0 + ch + 30]];
+    if (blocked(box)) return null;
+    // Two lines back to the border, the lower one stepping down first
+    const lines: Pt[][] = [
+      [[near, pinY[0]], [X(0), pinY[0]]],
+      [[near, pinY[1]], [near - side * 14, pinY[1]], [near - side * 26, pinY[1] + 12], [X(0), pinY[1] + 12]],
+    ];
+    // Out the far side: one short lead to a part, one up to a pad
+    const outs: Pt[][] = [
+      [[far, pinY[0]], [far + side * 22, pinY[0]]],
+      [[far, pinY[1]], [far + side * 10, pinY[1]], [far + side * 22, pinY[1] + 12], [far + side * 22, pinY[1] + 30]],
+    ];
+    if (outs.some((o) => blocked(o.slice(1)))) return null;
+    const pins = [
+      ...pinY.map((py) => `M${cx0} ${py}H${cx0 - PIN}M${cx0 + cw} ${py}H${cx0 + cw + PIN}`),
+      `M${cx0 + cw / 2} ${cy0}V${cy0 - PIN}`,
+    ].join('');
+    const feet: Pt[] = [...pinY.flatMap((py): Pt[] => [[cx0 - PIN, py], [cx0 + cw + PIN, py]]), [cx0 + cw / 2, cy0 - PIN]];
+    const outline: Pt[] = [[cx0, cy0], [cx0 + cw, cy0], [cx0 + cw, cy0 + ch], [cx0, cy0 + ch], [cx0, cy0]];
+    return {
+      circuit: {
+        traces: [...lines.map((l) => ({ d: toPath(l) })), ...outs.map((o) => ({ d: toPath(o), thin: true }))],
+        nodes: [endNode(outs[0][1]), { ...endNode(outs[1][outs[1].length - 1]), r: 4.5 }],
+        parts: [{ x: (near + X(0)) / 2, y: pinY[0] }],
+        chip: { x: cx0, y: cy0, w: cw, h: ch, pins, feet, label: '', mini: true },
+        segs: [...lines.flatMap(toSegs), ...outs.flatMap(toSegs), ...toSegs(outline)],
+        ...pulse([...lines[0]].reverse()),
+      },
+      bottom: pinY[1] + 40,
+    };
+  };
+
   let y = heroBottom + 20;
   while (y < h - 40) {
     // Take whichever border has room here, preferring the one used less recently
@@ -386,6 +502,20 @@ function generate({ w, h, solid: measured, text, heroBottom, starry }: Layout) {
     const X = (d: number) => x0 + side * d; // distance in from the border → x
     const room = freeReach(side, y - 30, y + 30);
     const reach = Math.min(reachMax, room) * between(0.8, 1);
+
+    // Pages with wide open margins (About, Playground) mix in other shapes so
+    // the board isn't all horizontal runs: a run that turns down the margin, a
+    // three-line bus, or a small part wired in from the edge
+    if (varied && room >= 150) {
+      const motif = pick(['elbow', 'elbow', 'bus', 'chip', 'trunk'] as const);
+      const made = motif === 'elbow' ? elbow(side, y, room) : motif === 'bus' ? bus(side, y, room) : motif === 'chip' ? miniChip(side, y, room) : null;
+      if (made) {
+        circuits.push({ ...made.circuit, id: circuits.length, color: BRAND[circuits.length % BRAND.length] });
+        lastY[side] = Math.max(lastY[side], made.bottom - 120);
+        y = Math.max(y + between(90, 150), made.bottom - 60);
+        continue;
+      }
+    }
 
     // Trunk: run, chamfer, run, (chamfer, run). Short ones stay straight.
     const pts: Pt[] = [[X(0), y]];
@@ -640,7 +770,19 @@ function Resistor({ p, b }: { p: Part; b: Blink }) {
   );
 }
 
-export default function CircuitBackground({ ready = true }: { ready?: boolean }) {
+/**
+ * `solid`: what to route around. `varied`: mix elbows, buses and small parts in
+ * with the side runs, for pages with wide open margins.
+ */
+export default function CircuitBackground({
+  ready = true,
+  solid = SOLID,
+  varied = false,
+}: {
+  ready?: boolean;
+  solid?: string;
+  varied?: boolean;
+}) {
   const svgRef = useRef<SVGSVGElement>(null);
   const [layout, setLayout] = useState<Layout | null>(null);
   const [activeCircuit, setActiveCircuit] = useState<number | null>(null);
@@ -666,8 +808,8 @@ export default function CircuitBackground({ ready = true }: { ready?: boolean })
       }
       const w = Math.round(el.clientWidth);
       const h = Math.round(el.clientHeight / 40) * 40;
-      const m = measure(el);
-      setLayout((prev) => (prev && prev.w === w && prev.h === h && sameText(prev.text, m.text) ? prev : { w, h, ...m }));
+      const m = measure(el, solid);
+      setLayout((prev) => (prev && prev.w === w && prev.h === h && sameText(prev.text, m.text) ? prev : { w, h, varied, ...m }));
     };
     const ro = new ResizeObserver(update);
     ro.observe(el);
@@ -677,7 +819,7 @@ export default function CircuitBackground({ ready = true }: { ready?: boolean })
       ro.disconnect();
       clearTimeout(retry);
     };
-  }, []);
+  }, [solid, varied]);
 
   const board = useMemo(() => (layout ? generate(layout) : null), [layout]);
 
@@ -779,7 +921,7 @@ export default function CircuitBackground({ ready = true }: { ready?: boolean })
               ))}
               {/* Signals arriving or leaving: a ring that swells off the body
                   and a flush of the signal's colour */}
-              {chipPulses.map((p, k) => {
+              {(c.hero ? chipPulses : []).map((p, k) => {
                 const { x, y, w, h } = c.chip!;
                 const gx = w * 0.11;
                 const gy = h * 0.11;
@@ -795,7 +937,7 @@ export default function CircuitBackground({ ready = true }: { ready?: boolean })
                 );
               })}
               <rect className="cb-chip-body" x={c.chip.x} y={c.chip.y} width={c.chip.w} height={c.chip.h} rx={4} />
-              {chipPulses.map((p, k) => (
+              {(c.hero ? chipPulses : []).map((p, k) => (
                 <rect
                   key={`f${k}`}
                   className="cb-chip-fx"
@@ -811,10 +953,14 @@ export default function CircuitBackground({ ready = true }: { ready?: boolean })
                 </rect>
               ))}
               {/* The die under the lid, and a status light that blinks with each signal */}
-              <rect className="cb-chip-die" x={c.chip.x + 5} y={c.chip.y + 5} width={c.chip.w - 10} height={c.chip.h - 10} rx={2} />
-              <circle className="cb-chip-dot" cx={c.chip.x + 9} cy={c.chip.y + 9} r={2.5} />
-              <circle className="cb-chip-led" cx={c.chip.x + c.chip.w - 9} cy={c.chip.y + 9} r={2.25} />
-              {chipPulses.map((p, k) => (
+              {!c.chip.mini && (
+                <>
+                  <rect className="cb-chip-die" x={c.chip.x + 5} y={c.chip.y + 5} width={c.chip.w - 10} height={c.chip.h - 10} rx={2} />
+                  <circle className="cb-chip-led" cx={c.chip.x + c.chip.w - 9} cy={c.chip.y + 9} r={2.25} />
+                </>
+              )}
+              <circle className="cb-chip-dot" cx={c.chip.x + (c.chip.mini ? 6 : 9)} cy={c.chip.y + (c.chip.mini ? 6 : 9)} r={c.chip.mini ? 1.75 : 2.5} />
+              {(c.hero ? chipPulses : []).map((p, k) => (
                 <circle key={`l${k}`} className="cb-chip-fx cb-chip-led" style={{ fill: p.color }} cx={c.chip!.x + c.chip!.w - 9} cy={c.chip!.y + 9} r={2.25} opacity={0}>
                   <animate attributeName="opacity" values="1;1;0;0" keyTimes="0;0.14;0.22;1" {...p.timing} />
                 </circle>

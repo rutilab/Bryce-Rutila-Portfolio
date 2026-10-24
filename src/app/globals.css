@@ -1256,7 +1256,8 @@ body[data-ideation-rotating] * {
   z-index: 1;
   max-width: 1280px;
   margin: 0 auto;
-  padding: 152px 40px 160px;
+  /* The top bar is in the flow now rather than floating over the page */
+  padding: 96px 40px 160px;
   box-sizing: border-box;
 }
 @media (max-width: 799px) {
@@ -2968,7 +2969,7 @@ body:has(.landing-main--framed) {
   letter-spacing: -0.03em;
 }
 
-/* ── Home top bar ─────────────────────────────────────────────────────── */
+/* ── Site top bar (SiteHeader) ─────────────────────────────────────────────────────── */
 .home-header {
   position: sticky;
   top: 0;
@@ -2977,6 +2978,23 @@ body:has(.landing-main--framed) {
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
   border-bottom: 1px solid rgba(20, 21, 16, 0.12);
+}
+/* Case studies: the bar floats over the story instead, ducking away on the
+   way down and coming back on the way up */
+.home-header--float {
+  position: fixed;
+  left: 0;
+  right: 0;
+  transition: translate 280ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.home-header--float.is-tucked { translate: 0 -100%; }
+/* …and lines up with the case studies' wider 1200px column */
+.home-header--float .home-header-inner { max-width: 1200px; }
+@media (max-width: 639px) {
+  .home-header--float .home-header-inner { padding: 0 20px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .home-header--float { transition: none; }
 }
 .home-header-inner {
   max-width: 1024px;
@@ -3818,3 +3836,62 @@ html.splash-zoom .cb-chip {
   .word-chip-pad, .word-chip-joint { scale: 1; }
   .word-chip-signal { display: none; }
 }
+
+/* ── Pages in the home page's dress ──────────────────────────────────────
+   About and Playground share the home page's ground, type and board:
+   Space Grotesk headings, Inter body, mono eyebrows on the cool off-white. */
+html:has(.about-main),
+body:has(.about-main),
+html:has(.page-framed),
+body:has(.page-framed) {
+  background: #f9fafb !important;
+}
+.about-main .display-heading {
+  font-family: var(--font-space-grotesk), sans-serif;
+  font-weight: 700;
+  font-size: clamp(36px, 5.5vw, 56px);
+  line-height: 1.1;
+  letter-spacing: -0.03em;
+}
+.page-framed {
+  position: relative;
+  z-index: 1;
+  max-width: 1024px;
+  margin: 0 auto;
+  padding: 0 24px;
+  box-sizing: border-box;
+}
+.playground-main {
+  min-height: calc(100dvh - 64px);
+  display: flex;
+  align-items: center;
+}
+.playground-intro {
+  max-width: 640px;
+  padding: 96px 0;
+}
+.page-eyebrow {
+  font-family: var(--font-ibm-plex-mono), monospace;
+  font-size: 14px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #141510;
+  margin: 0 0 20px;
+}
+.page-title {
+  font-family: var(--font-space-grotesk), sans-serif;
+  font-weight: 700;
+  font-size: clamp(40px, 7vw, 64px);
+  line-height: 1.094;
+  letter-spacing: -0.03em;
+  color: #000;
+  margin: 0 0 24px;
+}
+.page-lede {
+  font-family: var(--font-inter), sans-serif;
+  font-size: clamp(17px, 2vw, 20px);
+  line-height: 1.35;
+  color: #5c5a54;
+  margin: 0 0 32px;
+}
+

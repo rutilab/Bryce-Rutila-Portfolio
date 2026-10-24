@@ -4,7 +4,6 @@ import { useState, useRef, useEffect, useLayoutEffect, useCallback } from 'react
 import { createPortal } from 'react-dom';
 import CircuitBackground from '@/components/CircuitBackground';
 import HalftoneFly from '@/components/HalftoneFly';
-import { HomeHeader } from '@/components/home/HomeHeader';
 import ChipSplash from '@/components/home/ChipSplash';
 import { WordChips } from '@/components/home/WordChip';
 import { WorkCard } from '@/components/home/WorkCard';
@@ -622,7 +621,6 @@ export default function Home() {
         <div aria-hidden="true" style={{ position: 'fixed', inset: 0, zIndex: 9998, background: '#f9fafb', pointerEvents: 'none' }} />
       )}
       {splash && <ChipSplash onHandoff={handOff} onDone={splashDone} />}
-      <HomeHeader />
 
       <main className="landing-main landing-main--framed">
         <CircuitBackground ready={loaderState === 'done'} />
