@@ -2898,13 +2898,14 @@ body:has(.landing-main--framed) {
 .landing-main--framed .br-flies-container { display: none; }
 @media (max-width: 799px) {
   .landing-main--framed { padding: 0 16px 64px; }
-  .landing-main--framed .home-hero { padding-top: 72px; }
+  .landing-main--framed .home-hero { padding-top: 96px; }
 }
 
-/* Hero — the board's buses run 40px clear of the copy on both sides, so the
-   padding is sized for them rather than for the type. */
+/* Hero — the board's buses run 64px clear of the copy on both sides (their
+   taps stop 24px short), so the padding is sized for them rather than for
+   the type. */
 .home-hero {
-  padding: 80px 0 104px;
+  padding: 104px 0 128px;
 }
 .home-hero-title {
   font-family: var(--font-space-grotesk), sans-serif;
@@ -2920,7 +2921,7 @@ body:has(.landing-main--framed) {
    gutter, so the copy gives that channel some room and the hero makes space
    for the chip */
 @media (max-width: 991px) {
-  .home-hero { padding-bottom: 184px; }
+  .home-hero { padding-bottom: 208px; }
   .home-hero-title,
   .home-hero-desc { padding-right: 24px; }
 }
@@ -3463,17 +3464,19 @@ body:has(.landing-main--framed) {
 .cb-node--hole {
   fill: #f9fafb;
 }
-/* Lit for a beat as the travelling dot rolls over it */
-.cb-node.cb-blink {
+/* Every part lights up on its own every so often, each on a slow loop of
+   its own (--tw-dur, --tw-delay), and carries a little glow while it does */
+.cb-node.cb-twinkle {
   animation:
     cb-pop 360ms cubic-bezier(0.34, 1.56, 0.64, 1) calc(var(--draw-delay, 0s) + 0.75s) both,
-    cb-blink var(--pulse-dur) linear var(--blink-delay) infinite;
+    cb-glow var(--tw-dur) linear var(--tw-delay) infinite;
+  filter: drop-shadow(0 0 calc(var(--blink) * 4px) color-mix(in srgb, var(--c) calc(var(--blink) * 100%), transparent));
 }
-@keyframes cb-blink {
+@keyframes cb-glow {
   0%   { --blink: 0; }
-  0.8% { --blink: 1; }
-  3%   { --blink: 1; }
-  9%   { --blink: 0; }
+  1.5% { --blink: 1; }
+  4.5% { --blink: 1; }
+  8%   { --blink: 0; }
   100% { --blink: 0; }
 }
 .cb-band {
@@ -3498,6 +3501,76 @@ body:has(.landing-main--framed) {
 }
 .cb-chip-dot {
   fill: #141510;
+}
+/* Solder feet at the ends of BR1's pins, the die under its lid, and a
+   status light */
+.cb-chip-foot {
+  fill: #141510;
+}
+.cb-chip-die {
+  fill: none;
+  stroke: #141510;
+  stroke-width: 0.75;
+  stroke-opacity: 0.3;
+  stroke-dasharray: 2 2;
+}
+.cb-chip-led {
+  fill: #f9fafb;
+  stroke: #141510;
+  stroke-width: 1.25;
+}
+
+/* BR1 answers each signal that arrives or leaves: a ring swells off the body,
+   the lid flushes with the signal's colour, and the light blinks. Each runs on
+   its signal's loop (--glow-dur, --glow-delay), and like the dots, none shows
+   until the board has drawn in (cb-wait, held while the board isn't ready). */
+.cb-chip-fx {
+  pointer-events: none;
+  opacity: 0;
+  transform-box: fill-box;
+  transform-origin: center;
+  animation:
+    cb-wait 1.6s step-end,
+    var(--fx) var(--glow-dur) linear var(--glow-delay) infinite;
+}
+.circuit-bg:not(.is-ready) .cb-chip-fx {
+  animation-play-state: paused, running;
+}
+.cb-chip-glow {
+  --fx: cb-chip-glow;
+  fill: none;
+  stroke: var(--g);
+  stroke-width: 2;
+}
+.cb-chip-flush {
+  --fx: cb-chip-flush;
+  fill: var(--g);
+}
+.cb-chip-led-on {
+  --fx: cb-chip-led;
+  fill: var(--g);
+  stroke: #141510;
+  stroke-width: 1.25;
+}
+@keyframes cb-chip-glow {
+  0%   { opacity: 0.9; scale: 1; }
+  12%  { opacity: 0; scale: 1.22; }
+  100% { opacity: 0; scale: 1.22; }
+}
+@keyframes cb-chip-flush {
+  0%   { opacity: 0.3; }
+  10%  { opacity: 0; }
+  100% { opacity: 0; }
+}
+@keyframes cb-chip-led {
+  0%   { opacity: 1; }
+  14%  { opacity: 1; }
+  22%  { opacity: 0; }
+  100% { opacity: 0; }
+}
+/* The hero's travelling dots carry a little glow of their own */
+.cb-circuit--hero .cb-pulse {
+  filter: drop-shadow(0 0 3px var(--c));
 }
 .cb-chip-label {
   font-family: var(--font-ibm-plex-mono), monospace;
@@ -3558,7 +3631,8 @@ html.splash-zoom .cb-chip {
   animation: cb-twinkle 10s ease-in-out infinite;
 }
 .cb-star-outer {
-  fill: #141510;
+  /* A hint of each star's colour even at rest */
+  fill: color-mix(in srgb, var(--c) 65%, #141510);
   stroke: #141510;
   stroke-width: 0;
   transition: fill 200ms ease;
@@ -3579,14 +3653,16 @@ html.splash-zoom .cb-chip {
 }
 @keyframes cb-twinkle {
   0%, 52%, 100% { opacity: 0;    scale: 0.2; rotate: -45deg; }
-  60%           { opacity: 0.32; scale: 1;   rotate: 0deg; }
-  84%           { opacity: 0.32; scale: 1;   rotate: 0deg; }
+  60%           { opacity: 0.42; scale: 1;   rotate: 0deg; }
+  84%           { opacity: 0.42; scale: 1;   rotate: 0deg; }
   92%           { opacity: 0;    scale: 0.4; rotate: 30deg; }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .cb-trace, .cb-node, .cb-chip { animation: none; stroke-dashoffset: 0; }
   .cb-pulse { display: none; }
+  .cb-chip-fx { display: none; }
+  .cb-node.cb-twinkle { animation: none; filter: none; }
   .cb-star { animation: none; opacity: 0.3; }
 }
 

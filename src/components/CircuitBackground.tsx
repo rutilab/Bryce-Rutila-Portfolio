@@ -33,10 +33,12 @@ const SPARK_INNER = 'M8 4L9.08036 6.91964L12 8L9.08036 9.08036L8 12L6.91964 9.08
 
 type Pt = [number, number];
 type NodeKind = 'ring' | 'dot' | 'square' | 'hex' | 'diamond' | 'via' | 'arrow' | 'pad';
-/** `blink`: how far along the circuit's pulse path this part sits (0–1), if the pulse passes it */
-type CNode = { x: number; y: number; kind: NodeKind; r: number; angle?: number; blink?: number };
-type Part = { x: number; y: number; vertical?: boolean; blink?: number }; // banded resistor, centred on its run
-type Chip = { x: number; y: number; w: number; h: number; pins: string; label: string };
+/** Every part lights up on its own now and then: in `color` (its circuit's, unless set), once every `dur` seconds */
+type Twinkle = { color?: string; dur: number; delay: number };
+type CNode = { x: number; y: number; kind: NodeKind; r: number; angle?: number; twinkle?: Twinkle };
+type Part = { x: number; y: number; vertical?: boolean; twinkle?: Twinkle }; // banded resistor, centred on its run
+/** `feet`: where each pin ends, for its solder pad */
+type Chip = { x: number; y: number; w: number; h: number; pins: string; feet: Pt[]; label: string };
 type Circuit = {
   id: number;
   color: string;
@@ -124,7 +126,8 @@ const SOLID =
   '.home-hero > *, .home-section > .iri-eyebrow, .work-card, .home-about-grid, .endorsements-heading-wrap, .endorsements-section > :not(.endorsements-grid), .endorsement-card';
 const CLEARANCE = 14;
 
-type Layout = { w: number; h: number; solid: Rect[]; text: Rect | null; heroBottom: number };
+/** `starry`: bands of the page (top, bottom) that get extra stars */
+type Layout = { w: number; h: number; solid: Rect[]; text: Rect | null; heroBottom: number; starry: [number, number][] };
 
 function measure(frame: HTMLElement): Omit<Layout, 'w' | 'h'> {
   const f = frame.getBoundingClientRect();
@@ -143,7 +146,13 @@ function measure(frame: HTMLElement): Omit<Layout, 'w' | 'h'> {
     ? parts.reduce((u, r) => ({ x0: Math.min(u.x0, r.x0), y0: Math.min(u.y0, r.y0), x1: Math.max(u.x1, r.x1), y1: Math.max(u.y1, r.y1) }))
     : null;
   const hero = frame.querySelector<HTMLElement>('.home-hero');
-  return { solid, text, heroBottom: hero ? rel(hero.getBoundingClientRect()).y1 : 0 };
+  const heroBottom = hero ? rel(hero.getBoundingClientRect()).y1 : 0;
+  // The hero, and About through Endorsements, get a few more stars
+  const about = frame.querySelector<HTMLElement>('.home-about-grid')?.closest('section');
+  const ends = frame.querySelector<HTMLElement>('.endorsements-section');
+  const starry: [number, number][] = [[0, heroBottom]];
+  if (about && ends) starry.push([rel(about.getBoundingClientRect()).y0, rel(ends.getBoundingClientRect()).y1]);
+  return { solid, text, heroBottom, starry };
 }
 
 const inRect = ([x, y]: Pt, r: Rect) => x > r.x0 && x < r.x1 && y > r.y0 && y < r.y1;
@@ -171,8 +180,8 @@ function heroBoard(w: number, T: Rect, startId: number): Circuit[] {
   };
 
   const wide = w - T.x1 >= 200;
-  const MARGIN = 40; // buses stay this far off the copy
-  const TAP_GAP = 12; // pads stop this far short of it
+  const MARGIN = 64; // buses stay this far off the copy
+  const TAP_GAP = 24; // pads stop this far short of it
   const PIN = 8;
   const s = 10; // chamfer
   const span = T.x1 - T.x0;
@@ -200,19 +209,25 @@ function heroBoard(w: number, T: Rect, startId: number): Circuit[] {
     const gx = w - 6 - 6 * k;
     return [[0, y], [gx - s, y], [gx, y + s], [gx, landY - (gx - px)], [px, landY], [px, cy0 - PIN]];
   });
-  const topTaps = [0.14, 0.55].map((f): Pt[] => {
+  // Taps end in pads at least TAP_GAP off the copy, some stopping a little
+  // shorter so they don't read as a ruled line
+  const TAP_R = 4;
+  const topTaps = [0.14, 0.55].map((f, k): Pt[] => {
     const x = T.x0 + span * f;
-    return [[x, topY(2)], [x, T.y0 - TAP_GAP - 3]];
+    return [[x, topY(2)], [x, T.y0 - TAP_GAP - TAP_R - [7, 0][k]]];
   });
+  // Every so often a tap's pad lights up on its own, each on a slow loop of its own
+  const tapGlow = (k: number) => ({ color: BRAND[[2, 4, 3, 0][k]], dur: [13, 17, 19, 23][k], delay: -[2, 9, 5, 14][k] });
   add(
     {
       color: BRAND[0],
       traces: [...top.map((d) => ({ d: toPath(d) })), ...topTaps.map((d) => ({ d: toPath(d), thin: true }))],
       nodes: [
-        { x: ARROW_IN, y: topY(1), kind: 'arrow', r: 6, angle: Math.PI },
+        // The top bus flows in towards BR1, so its arrow points that way
+        { x: ARROW_IN, y: topY(1), kind: 'arrow', r: 6, angle: 0 },
         { x: 52, y: topY(0), kind: 'via', r: 4.5 },
         { x: T.x0 + span * 0.8, y: topY(0), kind: 'diamond', r: 5 },
-        ...topTaps.map((t) => ({ x: t[1][0], y: t[1][1], kind: 'pad' as const, r: 3 })),
+        ...topTaps.map((t, k) => ({ x: t[1][0], y: t[1][1], kind: 'ring' as const, r: TAP_R, twinkle: tapGlow(k) })),
       ],
       parts: [{ x: T.x0 + span * 0.34, y: topY(1) }],
       pulsePts: top[1],
@@ -240,7 +255,7 @@ function heroBoard(w: number, T: Rect, startId: number): Circuit[] {
   const botTaps = [0.06, 0.62]
     .map((f) => T.x0 + span * f)
     .filter((x) => x < flatEnd(0) - 16)
-    .map((x): Pt[] => [[x, botY(0)], [x, T.y1 + TAP_GAP + 3]]);
+    .map((x, k): Pt[] => [[x, botY(0)], [x, T.y1 + TAP_GAP + TAP_R + [0, 9][k]]]);
   const hexX = along(2, 0.24);
   const hang: Pt[] = [[hexX, botY(2)], [hexX, botY(2) + 16]];
   add(
@@ -252,7 +267,7 @@ function heroBoard(w: number, T: Rect, startId: number): Circuit[] {
         { x: hexX, y: botY(2) + 22, kind: 'hex', r: 6.5 },
         { x: along(1, 0.82), y: botY(1), kind: 'diamond', r: 5 },
         { x: along(0, 0.46), y: botY(0), kind: 'via', r: 4.5 },
-        ...botTaps.map((t) => ({ x: t[1][0], y: t[1][1], kind: 'pad' as const, r: 3 })),
+        ...botTaps.map((t, k) => ({ x: t[1][0], y: t[1][1], kind: 'ring' as const, r: TAP_R, twinkle: tapGlow(k + 2) })),
       ],
       parts: [{ x: along(2, 0.66), y: botY(2) }],
       pulsePts: bot[1],
@@ -263,7 +278,7 @@ function heroBoard(w: number, T: Rect, startId: number): Circuit[] {
 
   // ── Wide only: BR1's left pins wire it to the copy, ending in pads at its edge
   if (wide) {
-    const xe = T.x1 + 12;
+    const xe = T.x1 + TAP_GAP + 3.5; // pad edge, not centre, sits TAP_GAP off
     // Staggered ends so the three pads don't stack into one blob
     const left = pinY.map((y, k): Pt[] => [[cx0 - PIN, y], [xe + [0, 16, 4][k], y]]);
     add(
@@ -311,6 +326,10 @@ function heroBoard(w: number, T: Rect, startId: number): Circuit[] {
     ...pinX.map((x) => `M${x} ${cy0}V${cy0 - PIN}` + (wide ? `M${x} ${cy0 + ch}V${cy0 + ch + PIN}` : '')),
     ...pinY.map((y) => `M${cx0} ${y}H${cx0 - PIN}M${cx0 + cw} ${y}H${cx0 + cw + PIN}`),
   ].join('');
+  const feet: Pt[] = [
+    ...pinX.flatMap((x): Pt[] => (wide ? [[x, cy0 - PIN], [x, cy0 + ch + PIN]] : [[x, cy0 - PIN]])),
+    ...pinY.flatMap((y): Pt[] => [[cx0 - PIN, y], [cx0 + cw + PIN, y]]),
+  ];
   const outline: Pt[] = [[cx0, cy0], [cx0 + cw, cy0], [cx0 + cw, cy0 + ch], [cx0, cy0 + ch], [cx0, cy0]];
   out.push({
     id: id++,
@@ -319,7 +338,7 @@ function heroBoard(w: number, T: Rect, startId: number): Circuit[] {
     traces: [],
     nodes: [],
     parts: [],
-    chip: { x: cx0, y: cy0, w: cw, h: ch, pins, label: 'BR1' },
+    chip: { x: cx0, y: cy0, w: cw, h: ch, pins, feet, label: 'BR1' },
     segs: [...toSegs(outline), [[cx0, cy0], [cx0 + cw, cy0 + ch]], [[cx0 + cw, cy0], [cx0, cy0 + ch]]],
     pulsePts: [],
     pulseDur: 0,
@@ -329,7 +348,7 @@ function heroBoard(w: number, T: Rect, startId: number): Circuit[] {
   return out;
 }
 
-function generate({ w, h, solid: measured, text, heroBottom }: Layout) {
+function generate({ w, h, solid: measured, text, heroBottom, starry }: Layout) {
   const rand = rng(9000);
   const pick = <T,>(arr: readonly T[]) => arr[Math.floor(rand() * arr.length)];
   const between = (a: number, b: number) => a + rand() * (b - a);
@@ -506,63 +525,48 @@ function generate({ w, h, solid: measured, text, heroBottom }: Layout) {
     gy += len;
   }
 
-  // Stars wherever there's open paper, kept clear of content and traces
+  // Stars wherever there's open paper, kept clear of content and traces: one
+  // a row down the page, and a second pass over the starry bands that adds a
+  // few more, a little closer together
   const stars: Star[] = [];
   const allSegs = circuits.flatMap((c) => c.segs);
-  for (let sy = 60, s = 0; sy < h - 30; sy += between(110, 170), s++) {
-    for (let tries = 0; tries < 16; tries++) {
-      const sx = between(16, w - 16);
-      const yy = sy + between(-30, 30);
-      if (measured.some((r) => inRect([sx, yy], r))) continue;
-      if (allSegs.some((g) => distToSeg([sx, yy], g) < 22)) continue;
-      if (stars.some((o) => Math.hypot(o.x - sx, o.y - yy) < 90)) continue;
-      const kind = rand() < 0.5 ? 'burst' : 'spark';
-      stars.push({
-        id: s,
-        x: sx,
-        y: yy,
-        size: kind === 'burst' ? between(14, 20) : between(12, 22),
-        kind,
-        color: pick(BRAND),
-        dur: between(8, 14),
-        delay: -between(0, 14),
-      });
-      break;
+  const scatter = (y0: number, y1: number, step: [number, number], spacing: number) => {
+    for (let sy = y0; sy < y1; sy += between(...step)) {
+      for (let tries = 0; tries < 16; tries++) {
+        const sx = between(16, w - 16);
+        const yy = sy + between(-30, 30);
+        if (yy < 12 || yy > h - 20) continue;
+        if (measured.some((r) => inRect([sx, yy], r))) continue;
+        if (allSegs.some((g) => distToSeg([sx, yy], g) < 22)) continue;
+        if (stars.some((o) => Math.hypot(o.x - sx, o.y - yy) < spacing)) continue;
+        const kind = rand() < 0.5 ? 'burst' : 'spark';
+        stars.push({
+          id: stars.length,
+          x: sx,
+          y: yy,
+          size: kind === 'burst' ? between(14, 20) : between(12, 22),
+          kind,
+          color: pick(BRAND),
+          dur: between(8, 14),
+          delay: -between(0, 14),
+        });
+        break;
+      }
+    }
+  };
+  scatter(60, h - 30, [110, 170], 90);
+  for (const [y0, y1] of starry) scatter(y0 + 30, y1 - 10, [70, 110], 70);
+
+  // Every part lights up on its own every so often, each on a slow loop of
+  // its own so they never fall into step
+  for (const c of circuits) {
+    for (const x of [...c.nodes, ...c.parts]) {
+      if (x.twinkle) continue;
+      const dur = between(16, 34);
+      x.twinkle = { dur, delay: -between(0, dur) };
     }
   }
-
-  circuits.forEach(attachBlinks);
   return { circuits, stars };
-}
-
-/**
- * Marks the parts the travelling dot rolls over, with where along its path
- * it reaches them, so each can light up as the dot passes.
- */
-function attachBlinks(c: Circuit) {
-  const segs = toSegs(c.pulsePts);
-  if (!segs.length) return;
-  const lens = segs.map(([a, b]) => Math.hypot(b[0] - a[0], b[1] - a[1]));
-  const total = lens.reduce((t, l) => t + l, 0) || 1;
-  const locate = (p: Pt) => {
-    let best = Infinity;
-    let at = 0;
-    let run = 0;
-    segs.forEach(([a, b], i) => {
-      const dx = b[0] - a[0];
-      const dy = b[1] - a[1];
-      const t = Math.max(0, Math.min(1, ((p[0] - a[0]) * dx + (p[1] - a[1]) * dy) / (lens[i] ** 2 || 1)));
-      const d = Math.hypot(p[0] - (a[0] + t * dx), p[1] - (a[1] + t * dy));
-      if (d < best) {
-        best = d;
-        at = (run + t * lens[i]) / total;
-      }
-      run += lens[i];
-    });
-    return best < 9 ? at : undefined;
-  };
-  c.nodes.forEach((n) => (n.blink = locate([n.x, n.y])));
-  c.parts.forEach((p) => (p.blink = locate([p.x, p.y])));
 }
 
 const poly = (n: CNode, count: number, start: number) =>
@@ -571,7 +575,7 @@ const poly = (n: CNode, count: number, start: number) =>
     return `${(n.x + n.r * Math.cos(a)).toFixed(1)},${(n.y + n.r * Math.sin(a)).toFixed(1)}`;
   }).join(' ');
 
-/** Extra props for the element that lights up when the pulse passes, if any */
+/** Extra props for the element that lights up now and then, if any */
 type Blink = { className: string; style?: React.CSSProperties };
 
 function NodeShape({ n, b }: { n: CNode; b: Blink }) {
@@ -580,7 +584,13 @@ function NodeShape({ n, b }: { n: CNode; b: Blink }) {
     case 'square':
       return <rect className={cls('cb-node--fill')} style={b.style} x={n.x - n.r} y={n.y - n.r} width={n.r * 2} height={n.r * 2} />;
     case 'pad':
-      return <rect className={cls('cb-node--ink')} style={b.style} x={n.x - n.r} y={n.y - n.r} width={n.r * 2} height={n.r * 2} />;
+      // Round pads: an ink disc with a paper eye
+      return (
+        <g>
+          <circle className={cls('cb-node--ink')} style={b.style} cx={n.x} cy={n.y} r={n.r + 0.5} />
+          <circle className="cb-node cb-node--hole" cx={n.x} cy={n.y} r={n.r * 0.4} />
+        </g>
+      );
     case 'hex':
       return (
         <g>
@@ -651,19 +661,45 @@ export default function CircuitBackground({ ready = true }: { ready?: boolean })
   const board = useMemo(() => (layout ? generate(layout) : null), [layout]);
 
   // The dots run on the SVG's own (SMIL) clock, which started when the <svg>
-  // mounted; the blinks are CSS animations, which start when the parts render.
-  // Reading the SVG clock once per board lets the blinks be offset to land on
-  // the dot.
+  // mounted; BR1's pulses are CSS animations, which start when the chip
+  // renders. Reading the SVG clock once per board lets each pulse be offset
+  // to land on its dot.
   const [clock, setClock] = useState<{ board: unknown; t: number } | null>(null);
   useLayoutEffect(() => {
     if (board && svgRef.current) setClock({ board, t: svgRef.current.getCurrentTime() });
   }, [board]);
   const t0 = clock && clock.board === board ? clock.t : null;
-  const blinkFor = (c: Circuit, at: number | undefined): Blink =>
-    at === undefined || t0 === null
-      ? { className: '' }
-      : { className: ' cb-blink', style: { '--blink-delay': `${(c.pulseDelay + at * 0.4 * c.pulseDur - t0).toFixed(3)}s` } as React.CSSProperties };
+  const twinkleFor = (tw: Twinkle | undefined): Blink =>
+    tw
+      ? {
+          className: ' cb-twinkle',
+          style: { ...(tw.color ? { '--c': tw.color } : {}), '--tw-dur': `${tw.dur.toFixed(2)}s`, '--tw-delay': `${tw.delay.toFixed(2)}s` } as React.CSSProperties,
+        }
+      : { className: '' };
   const chipActive = board?.circuits.find((c) => c.id === activeCircuit)?.chip !== undefined;
+
+  // Every time a hero signal arrives at BR1 or sets off from it, the chip
+  // answers in that signal's colour. Each one is its own looping animation,
+  // on the same clock as the dot it follows.
+  const chip = board?.circuits.find((c) => c.chip)?.chip;
+  const chipPulses =
+    chip && t0 !== null
+      ? board!.circuits.flatMap((h) => {
+          if (!h.hero || h.pulsePts.length < 2) return [];
+          const near = (p: Pt) => inRect(p, { x0: chip.x - 12, y0: chip.y - 12, x1: chip.x + chip.w + 12, y1: chip.y + chip.h + 12 });
+          const at = near(h.pulsePts[h.pulsePts.length - 1]) ? 1 : near(h.pulsePts[0]) ? 0 : null;
+          if (at === null) return [];
+          return [
+            {
+              style: {
+                '--g': h.color,
+                '--glow-dur': `${h.pulseDur}s`,
+                '--glow-delay': `${(h.pulseDelay + at * 0.4 * h.pulseDur - t0).toFixed(3)}s`,
+              } as React.CSSProperties,
+            },
+          ];
+        })
+      : [];
 
   useEffect(() => {
     if (!board) return;
@@ -723,16 +759,51 @@ export default function CircuitBackground({ ready = true }: { ready?: boolean })
             <path key={k} className={`cb-trace${t.thin ? ' cb-trace--thin' : ''}`} d={t.d} pathLength={1} />
           ))}
           {c.parts.map((p, k) => (
-            <Resistor key={k} p={p} b={blinkFor(c, p.blink)} />
+            <Resistor key={k} p={p} b={twinkleFor(p.twinkle)} />
           ))}
           {c.nodes.map((n, k) => (
-            <NodeShape key={k} n={n} b={blinkFor(c, n.blink)} />
+            <NodeShape key={k} n={n} b={twinkleFor(n.twinkle)} />
           ))}
           {c.chip && (
             <g className="cb-chip">
               <path className="cb-chip-pins" d={c.chip.pins} />
+              {c.chip.feet.map(([fx, fy], k) => (
+                <rect key={k} className="cb-chip-foot" x={fx - 1.75} y={fy - 1.75} width={3.5} height={3.5} />
+              ))}
+              {/* Signals arriving or leaving: a ring that swells off the body
+                  and a flush of the signal's colour */}
+              {chipPulses.map((p, k) => (
+                <rect
+                  key={`g${k}`}
+                  className="cb-chip-fx cb-chip-glow"
+                  style={p.style}
+                  x={c.chip!.x}
+                  y={c.chip!.y}
+                  width={c.chip!.w}
+                  height={c.chip!.h}
+                  rx={4}
+                />
+              ))}
               <rect className="cb-chip-body" x={c.chip.x} y={c.chip.y} width={c.chip.w} height={c.chip.h} rx={4} />
+              {chipPulses.map((p, k) => (
+                <rect
+                  key={`f${k}`}
+                  className="cb-chip-fx cb-chip-flush"
+                  style={p.style}
+                  x={c.chip!.x + 1}
+                  y={c.chip!.y + 1}
+                  width={c.chip!.w - 2}
+                  height={c.chip!.h - 2}
+                  rx={3}
+                />
+              ))}
+              {/* The die under the lid, and a status light that blinks with each signal */}
+              <rect className="cb-chip-die" x={c.chip.x + 5} y={c.chip.y + 5} width={c.chip.w - 10} height={c.chip.h - 10} rx={2} />
               <circle className="cb-chip-dot" cx={c.chip.x + 9} cy={c.chip.y + 9} r={2.5} />
+              <circle className="cb-chip-led" cx={c.chip.x + c.chip.w - 9} cy={c.chip.y + 9} r={2.25} />
+              {chipPulses.map((p, k) => (
+                <circle key={`l${k}`} className="cb-chip-fx cb-chip-led-on" style={p.style} cx={c.chip!.x + c.chip!.w - 9} cy={c.chip!.y + 9} r={2.25} />
+              ))}
               <text className="cb-chip-label" x={c.chip.x + c.chip.w / 2} y={c.chip.y + c.chip.h / 2 + 5} textAnchor="middle">
                 {c.chip.label}
               </text>
