@@ -84,7 +84,7 @@ export default function AboutPage() {
         <FoldedLetter />
 
         {/* ── Life outside work ──────────────────────────────────────────── */}
-        <div className="about-section mt-[160px]">
+        <div className="about-section about-section--framed mt-[160px]">
           <div className="display-heading-wrap" data-board-solid>
             <h2 className="display-heading">Life outside work.</h2>
           </div>

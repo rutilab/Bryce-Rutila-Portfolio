@@ -1256,16 +1256,19 @@ body[data-ideation-rotating] * {
   z-index: 1;
   max-width: 1280px;
   margin: 0 auto;
-  /* The top bar is in the flow now rather than floating over the page */
-  padding: 96px 40px 160px;
+  /* The top bar is in the flow now rather than floating over the page. Side
+     padding is the home page's, so a section held to its column lines up. */
+  padding: 96px 24px 160px;
   box-sizing: border-box;
 }
 @media (max-width: 799px) {
   .about-main {
-    padding-left: 24px;
-    padding-right: 24px;
+    padding-left: 16px;
+    padding-right: 16px;
   }
 }
+/* Sections held to the home page's column: 1024 less its 24px gutters */
+.about-section.about-section--framed { max-width: 976px; }
 
 /* The content measure inside that shell — the counterpart to
    .projects-section and .endorsements-section. Centred with the two side
