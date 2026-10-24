@@ -41,7 +41,7 @@ function Tags({ tags }: { tags: string[] }) {
  * sit two-up with a squarer one.
  */
 export function WorkCard({ project, wide = false }: { project: Project; wide?: boolean }) {
-  const { title, eyebrow, description, tags, readTime, href, thumbnailContent, comingSoon, role } = project;
+  const { title, eyebrow, description, tags, readTime, href, thumbnailContent, comingSoon } = project;
   const [hoverColor, setHoverColor] = useState<string>(HOVER_COLORS[0]);
   const [quickOpen, setQuickOpen] = useState(false);
   const live = !comingSoon && !!href;
@@ -70,9 +70,8 @@ export function WorkCard({ project, wide = false }: { project: Project; wide?: b
           )}
         </h3>
         <p className="work-desc">{description}</p>
+        {/* Just the read time here; the role is in Quick view */}
         <p className="work-facts">
-          {role && <span className="work-fact-strong">{role}</span>}
-          {role && <span aria-hidden="true"> · </span>}
           <span>{comingSoon ? 'Case study coming soon' : readTime.toLowerCase()}</span>
         </p>
 
