@@ -3,7 +3,6 @@ import { Suspense } from 'react';
 import { Geist, Geist_Mono, Inter, Battambang, IBM_Plex_Mono, Space_Grotesk } from 'next/font/google';
 import { AnalyticsProvider } from '@/components/analytics/AnalyticsProvider';
 import { Navigation } from '@/components/layout';
-import MagnetCursor from '@/components/MagnetCursor';
 import './globals.css';
 
 const geistSans = Geist({
@@ -114,7 +113,6 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} ${inter.variable} ${battambang.variable} ${ibmPlexMono.variable} ${spaceGrotesk.variable} antialiased`}
         style={{ background: '#faf7f2', color: '#141510', overflowX: 'clip' }}
       >
-        <MagnetCursor />
         <Navigation />
         <Suspense fallback={null}>
           <AnalyticsProvider />

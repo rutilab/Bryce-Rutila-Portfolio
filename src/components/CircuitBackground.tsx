@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { offsetPolyline, setBoard } from './home/boardRegistry';
 
 /**
  * Circuit-board backdrop for the home page frame.
@@ -80,6 +79,31 @@ function distToSeg([px, py]: Pt, [[ax, ay], [bx, by]]: [Pt, Pt]) {
 /** A polyline shifted sideways by `d`, mitred at the corners so 45° runs stay parallel */
 
 /** Cuts a polyline down to a fraction of its length */
+/** A polyline shifted sideways by `d`, mitred at the corners, for drawing buses */
+function offsetPolyline(pts: Pt[], d: number): Pt[] {
+  const normal = (a: Pt, b: Pt): Pt => {
+    const dx = b[0] - a[0];
+    const dy = b[1] - a[1];
+    const l = Math.hypot(dx, dy) || 1;
+    return [-dy / l, dx / l];
+  };
+  return pts.map((p, i) => {
+    const n1 = i > 0 ? normal(pts[i - 1], p) : null;
+    const n2 = i < pts.length - 1 ? normal(p, pts[i + 1]) : null;
+    if (!n1 || !n2) {
+      const n = (n1 ?? n2) as Pt;
+      return [p[0] + n[0] * d, p[1] + n[1] * d];
+    }
+    let mx = n1[0] + n2[0];
+    let my = n1[1] + n2[1];
+    const ml = Math.hypot(mx, my) || 1;
+    mx /= ml;
+    my /= ml;
+    const k = d / (mx * n1[0] + my * n1[1]);
+    return [p[0] + mx * k, p[1] + my * k];
+  });
+}
+
 function trimPolyline(pts: Pt[], frac: number): Pt[] {
   const lens = toSegs(pts).map(([a, b]) => Math.hypot(b[0] - a[0], b[1] - a[1]));
   let left = lens.reduce((s, l) => s + l, 0) * frac;
@@ -656,24 +680,6 @@ export default function CircuitBackground({ ready = true }: { ready?: boolean })
   }, []);
 
   const board = useMemo(() => (layout ? generate(layout) : null), [layout]);
-
-  // Publish the traces for the probe cursor to snap to (BR1's outline isn't a
-  // trace, so it's left out), and where the parts sit, so its wire can clip
-  // straight onto one rather than adding a connector of its own
-  useEffect(() => {
-    const svg = svgRef.current;
-    if (!board || !svg) return;
-    setBoard({
-      svg,
-      traces: board.circuits.filter((c) => !c.chip).map((c) => ({ color: c.color, segs: c.segs })),
-      parts: board.circuits.flatMap((c) => [
-        ...c.nodes.map((n) => ({ at: [n.x, n.y] as Pt, r: n.r })),
-        ...c.parts.map((p) => ({ at: [p.x, p.y] as Pt, r: 10 })),
-        ...(c.chip?.feet ?? []).map((f) => ({ at: f, r: 2 })),
-      ]),
-    });
-    return () => setBoard(null);
-  }, [board]);
 
   const twinkleFor = (tw: Twinkle | undefined): Blink =>
     tw

@@ -303,7 +303,7 @@ export function CaseStudyMedia({
               display: 'flex',
               flexDirection: 'column',
               alignItems: 'center',
-              cursor: 'none',
+              cursor: 'default',
               maxHeight: 'calc(100vh - 80px)',
               overflow: 'auto',
             }}
@@ -457,7 +457,7 @@ export function CaseStudyMediaGallery({
 
           <div
             onClick={(e) => e.stopPropagation()}
-            style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', cursor: 'none', maxWidth: 'min(88vw, 1200px)' }}
+            style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', cursor: 'default', maxWidth: 'min(88vw, 1200px)' }}
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
@@ -793,7 +793,7 @@ export function MediaCarouselStage({
           ) : null}
           <div
             onClick={(e) => e.stopPropagation()}
-            style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', cursor: 'none', maxWidth: 'min(88vw, 1200px)' }}
+            style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', cursor: 'default', maxWidth: 'min(88vw, 1200px)' }}
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
