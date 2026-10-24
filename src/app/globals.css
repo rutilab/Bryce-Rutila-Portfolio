@@ -3429,7 +3429,8 @@ body:has(.landing-main--framed) {
 .circuit-bg:not(.is-ready) .cb-node {
   animation-play-state: paused;
 }
-.circuit-bg:not(.is-ready) .cb-pulse {
+.circuit-bg:not(.is-ready) .cb-pulse,
+.circuit-bg:not(.is-ready) .cb-star {
   visibility: hidden;
 }
 
@@ -3482,7 +3483,7 @@ body:has(.landing-main--framed) {
   pointer-events: none;
 }
 
-/* U1 — the chip the hero copy is wired into */
+/* BR1 — the chip the hero copy is wired into */
 .cb-chip-pins {
   fill: none;
   stroke: #141510;
@@ -3517,6 +3518,11 @@ body:has(.landing-main--framed) {
 .circuit-bg:not(.is-ready) .cb-chip {
   animation-play-state: paused;
 }
+/* The zoom splash dives into BR1, so the chip is already there while the
+   rest of the board waits for the camera to settle */
+html.splash-zoom .cb-chip {
+  animation: none;
+}
 .cb-circuit.is-active .cb-node:not(.cb-node--solid):not(.cb-node--hole) {
   --base: var(--c);
   transform: scale(1.3);
@@ -3530,6 +3536,17 @@ body:has(.landing-main--framed) {
   fill: var(--c);
   stroke: #141510;
   stroke-width: 1.5;
+}
+/* No signal until its trace has finished drawing in (the 1.1s cb-draw after
+   --draw-delay); the wait holds while the board isn't ready yet */
+.circuit-bg .cb-pulse {
+  animation: cb-wait calc(var(--draw-delay, 0s) + 1.1s) step-end;
+}
+.circuit-bg:not(.is-ready) .cb-pulse {
+  animation-play-state: paused;
+}
+@keyframes cb-wait {
+  from, to { visibility: hidden; }
 }
 
 /* Stars blink in and out on their own clocks; hovering one (even mid-blink)
@@ -3572,3 +3589,60 @@ body:has(.landing-main--framed) {
   .cb-pulse { display: none; }
   .cb-star { animation: none; opacity: 0.3; }
 }
+
+/* ── First-visit splash ───────────────────────────────────────────────────
+   The page zooms out of BR1 (see ChipSplash). Its die shares the board's
+   vocabulary: ink traces, paper-holed pads, a signal dot in a BRYCE colour.
+   Timings come in as --at (start) and --dur from the component. */
+.splash--cover {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: #f9fafb;
+  pointer-events: none;
+}
+
+.splash-stroke {
+  fill: none;
+  stroke: #141510;
+  stroke-width: 0.42;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: splash-draw var(--dur) linear var(--at) forwards;
+}
+@keyframes splash-draw { to { stroke-dashoffset: 0; } }
+
+.splash-pad,
+.splash-joint {
+  transform-box: fill-box;
+  transform-origin: center;
+  scale: 0;
+  animation: splash-pop 260ms cubic-bezier(0.34, 1.56, 0.64, 1) var(--at) forwards;
+}
+.splash-pad { fill: var(--c); stroke: #141510; stroke-width: 0.22; }
+.splash-joint { fill: #141510; }
+@keyframes splash-pop { to { scale: 1; } }
+
+.splash-signal {
+  fill: var(--c);
+  opacity: 0;
+  offset-rotate: 0deg;
+  filter: drop-shadow(0 0 4px var(--c));
+  animation:
+    splash-ride var(--dur) linear var(--at) forwards,
+    splash-signal-life var(--dur) linear var(--at) forwards;
+}
+@keyframes splash-ride { from { offset-distance: 0%; } to { offset-distance: 100%; } }
+@keyframes splash-signal-life { 0% { opacity: 1; } 85% { opacity: 1; } 100% { opacity: 0; } }
+
+/* The die sits on BR1 inside the page, which is what zooms */
+.splash-die {
+  position: absolute;
+  z-index: 0;
+  pointer-events: none;
+  transition: opacity 450ms ease;
+}
+.splash-die svg { display: block; overflow: visible; }
+.splash-die.is-fading { opacity: 0; }

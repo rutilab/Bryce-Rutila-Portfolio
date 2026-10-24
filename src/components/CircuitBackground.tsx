@@ -9,7 +9,7 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
  *
  * - The hero board treats the headline as the part everything is soldered to.
  *   Three-line buses run along its top and bottom edges, tap down into it with
- *   pads, and wire it to a little U1 chip on its right. It sits darker than the
+ *   pads, and wire it to a little BR1 chip on its right. It sits darker than the
  *   rest of the page because it's meant to be seen.
  * - Below the hero, traces come in off the frame edge and route around the
  *   cards — into the gaps between sections and down the side gutters — with
@@ -155,10 +155,10 @@ const boxHits = (pts: Pt[], r: Rect) => {
 
 /**
  * The hero board: the headline block T is the part, buses run along its top
- * and bottom, pads tap into it, and a U1 chip wires it all together.
+ * and bottom, pads tap into it, and a BR1 chip wires it all together.
  *
- * Wide frames put U1 beside the copy. Narrower ones (anything under ~990px)
- * don't have the room, so U1 drops below the copy at the right: the top bus
+ * Wide frames put BR1 beside the copy. Narrower ones (anything under ~990px)
+ * don't have the room, so BR1 drops below the copy at the right: the top bus
  * turns down the right gutter and into its top pins, and the bottom bus leaves
  * its left pins and sweeps up to run under the copy. Either way the copy is
  * boxed in on three sides, which is what makes it read as part of the board.
@@ -178,11 +178,11 @@ function heroBoard(w: number, T: Rect, startId: number): Circuit[] {
   const span = T.x1 - T.x0;
   const ARROW_IN = 16; // arrowheads sit in from the edge so their tips aren't clipped
 
-  // U1's box and pins for whichever layout this is
+  // BR1's box and pins for whichever layout this is
   const cw = wide ? 88 : 64;
   const ch = wide ? 64 : 44;
   const cx0 = wide ? Math.round(T.x1 + (w - T.x1 - cw) / 2) : w - 40 - cw;
-  // Compact: the top bus's diagonals land just above U1, starting no higher
+  // Compact: the top bus's diagonals land just above BR1, starting no higher
   // than the margin line under the copy
   const landY = T.y1 + MARGIN + 70;
   const cy0 = wide ? Math.round((T.y0 + T.y1) / 2 - ch / 2) : landY + PIN + 8;
@@ -196,7 +196,7 @@ function heroBoard(w: number, T: Rect, startId: number): Circuit[] {
     const y = topY(k);
     const px = pinX[2 - k];
     if (wide) return [[0, y], [px - s, y], [px, y + s], [px, cy0 - PIN]];
-    // Down the right gutter, then a 45° jog onto U1's top pins
+    // Down the right gutter, then a 45° jog onto BR1's top pins
     const gx = w - 6 - 6 * k;
     return [[0, y], [gx - s, y], [gx, y + s], [gx, landY - (gx - px)], [px, landY], [px, cy0 - PIN]];
   });
@@ -220,7 +220,7 @@ function heroBoard(w: number, T: Rect, startId: number): Circuit[] {
     [...top, ...topTaps],
   );
 
-  // ── Bottom bus: back out of U1 and along under the copy to the left edge,
+  // ── Bottom bus: back out of BR1 and along under the copy to the left edge,
   // with a hex nut hanging off the outer line
   const botY = (k: number) => T.y1 + MARGIN + k * 8;
   const bot = [0, 1, 2].map((k): Pt[] => {
@@ -229,7 +229,7 @@ function heroBoard(w: number, T: Rect, startId: number): Circuit[] {
       const px = pinX[k];
       return [[px, cy0 + ch + PIN], [px, y - s], [px - s, y], [0, y]];
     }
-    // Out of U1's left pins, then a long 45° climb to the margin line
+    // Out of BR1's left pins, then a long 45° climb to the margin line
     const py = pinY[k];
     const x = cx0 - PIN - 10 - 14 * k;
     return [[cx0 - PIN, py], [x, py], [x - (py - y), y], [0, y]];
@@ -261,7 +261,7 @@ function heroBoard(w: number, T: Rect, startId: number): Circuit[] {
     7,
   );
 
-  // ── Wide only: U1's left pins wire it to the copy, ending in pads at its edge
+  // ── Wide only: BR1's left pins wire it to the copy, ending in pads at its edge
   if (wide) {
     const xe = T.x1 + 12;
     // Staggered ends so the three pads don't stack into one blob
@@ -306,7 +306,7 @@ function heroBoard(w: number, T: Rect, startId: number): Circuit[] {
     4,
   );
 
-  // ── U1 itself. Hovering it lights the whole hero board.
+  // ── BR1 itself. Hovering it lights the whole hero board.
   const pins = [
     ...pinX.map((x) => `M${x} ${cy0}V${cy0 - PIN}` + (wide ? `M${x} ${cy0 + ch}V${cy0 + ch + PIN}` : '')),
     ...pinY.map((y) => `M${cx0} ${y}H${cx0 - PIN}M${cx0 + cw} ${y}H${cx0 + cw + PIN}`),
@@ -319,7 +319,7 @@ function heroBoard(w: number, T: Rect, startId: number): Circuit[] {
     traces: [],
     nodes: [],
     parts: [],
-    chip: { x: cx0, y: cy0, w: cw, h: ch, pins, label: 'U1' },
+    chip: { x: cx0, y: cy0, w: cw, h: ch, pins, label: 'BR1' },
     segs: [...toSegs(outline), [[cx0, cy0], [cx0 + cw, cy0 + ch]], [[cx0 + cw, cy0], [cx0, cy0 + ch]]],
     pulsePts: [],
     pulseDur: 0,

@@ -1,10 +1,11 @@
 'use client';
 
-import { useState, useRef, useEffect, useLayoutEffect } from 'react';
+import { useState, useRef, useEffect, useLayoutEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import CircuitBackground from '@/components/CircuitBackground';
 import HalftoneFly from '@/components/HalftoneFly';
 import { HomeHeader } from '@/components/home/HomeHeader';
+import ChipSplash from '@/components/home/ChipSplash';
 import { WorkCard } from '@/components/home/WorkCard';
 import { HOME_PROJECTS } from '@/data/projects';
 import { IridescentEyebrow } from '@/components/IridescentEyebrow';
@@ -37,34 +38,24 @@ function colorForFlySrc(src: string): string {
 }
 
 /**
- * Whether the splash has already played. Module-level, so it survives the home
- * page unmounting and remounting as you navigate away and back.
+ * Whether this page load opened on the home page. The splash introduces the
+ * site, so it plays when someone arrives here, not when they click back to
+ * Home from another page.
+ */
+function landedOnHome(): boolean {
+  const nav = performance.getEntriesByType('navigation')[0];
+  return !nav || new URL(nav.name).pathname === '/';
+}
+
+/**
+ * Whether the splash has had its chance this page load. Module-level, so it
+ * survives the home page unmounting and remounting as you navigate away and
+ * back.
  *
  * Only ever written from an effect, which never runs during SSR — so the server
  * always renders the pre-splash state and hydration matches.
  */
 let _loaderHasRun = false;
-
-/** Survives a reload the module flag cannot, for the length of the tab session. */
-const SPLASH_KEY = 'bar9000:splash-played';
-
-function splashAlreadyPlayed(): boolean {
-  try {
-    return window.sessionStorage.getItem(SPLASH_KEY) === '1';
-  } catch {
-    // Private modes and blocked storage throw on access. Worst case the splash
-    // plays again, which is the old behaviour rather than a broken page.
-    return false;
-  }
-}
-
-function rememberSplashPlayed() {
-  try {
-    window.sessionStorage.setItem(SPLASH_KEY, '1');
-  } catch {
-    /* nothing to do — see above */
-  }
-}
 
 // ── Scrabble tiles with shuffle animation ──────────────────────────────────
 const SCRABBLE_LETTERS = ['W', 'O', 'R', 'D', 'S'] as const;
@@ -522,20 +513,20 @@ export default function Home() {
     _loaderHasRun ? 'done' : 'checking',
   );
 
+  const [splash, setSplash] = useState(false);
+  const handOff = useCallback(() => setLoaderState('done'), []);
+  const splashDone = useCallback(() => setSplash(false), []);
+
   useEffect(() => {
     if (_loaderHasRun) return;
     _loaderHasRun = true;
 
-    // A reload re-imports the module, so the flag alone would replay the splash
-    // on every refresh. It belongs to the visit, not to the page instance.
-    if (splashAlreadyPlayed()) {
+    if (!landedOnHome()) {
       setLoaderState('done');
       return;
     }
-    // The splash flew the BRYCE letters into the old hero; the redesigned hero
-    // has no wordmark to land on, so the page opens straight onto the board.
-    rememberSplashPlayed();
-    setLoaderState('done');
+    // They came in the front door: open from inside BR1
+    setSplash(true);
   }, []);
 
   // ── Draggable BR Flies ────────────────────────────────────────────────
@@ -743,9 +734,10 @@ export default function Home() {
   return (
     <>
       {/* White screen blocks flash during SSR→hydration before loader mounts */}
-      {loaderState !== 'done' && (
-        <div aria-hidden="true" style={{ position: 'fixed', inset: 0, zIndex: 9998, background: '#faf7f2', pointerEvents: 'none' }} />
+      {loaderState !== 'done' && !splash && (
+        <div aria-hidden="true" style={{ position: 'fixed', inset: 0, zIndex: 9998, background: '#f9fafb', pointerEvents: 'none' }} />
       )}
+      {splash && <ChipSplash onHandoff={handOff} onDone={splashDone} />}
       <HomeHeader />
 
       <main className="landing-main landing-main--framed">
