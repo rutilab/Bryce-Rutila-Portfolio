@@ -645,16 +645,24 @@ export default function CircuitBackground({ ready = true }: { ready?: boolean })
   const [activeStar, setActiveStar] = useState<number | null>(null);
 
   // Regenerate only on real size changes — rounding stops sub-pixel reflows
-  // from reshuffling the board
+  // from reshuffling the board. The hero copy is watched too: when its font
+  // arrives (or it rewraps) the page may not change height, but the buses
+  // and taps have to move with the text.
   useEffect(() => {
     const el = svgRef.current?.parentElement;
     if (!el) return;
-    const ro = new ResizeObserver(() => {
+    const sameText = (a: Rect | null, b: Rect | null) =>
+      a === b || (!!a && !!b && [a.x0 - b.x0, a.y0 - b.y0, a.x1 - b.x1, a.y1 - b.y1].every((d) => Math.abs(d) < 1));
+    const update = () => {
       const w = Math.round(el.clientWidth);
       const h = Math.round(el.clientHeight / 40) * 40;
-      setLayout((prev) => (prev && prev.w === w && prev.h === h ? prev : { w, h, ...measure(el) }));
-    });
+      const m = measure(el);
+      setLayout((prev) => (prev && prev.w === w && prev.h === h && sameText(prev.text, m.text) ? prev : { w, h, ...m }));
+    };
+    const ro = new ResizeObserver(update);
     ro.observe(el);
+    el.querySelectorAll('.home-hero-title, .home-hero-desc').forEach((t) => ro.observe(t));
+    document.fonts?.ready.then(update);
     return () => ro.disconnect();
   }, []);
 

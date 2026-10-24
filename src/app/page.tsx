@@ -716,11 +716,11 @@ export default function Home() {
         {/* ── Hero ──────────────────────────────────────────────────────── */}
         <section className="home-hero">
 
-          <h1 className="home-hero-title">I design solutions with the whole product in mind</h1>
+          <h1 className="home-hero-title">I design with the whole product in mind</h1>
           <p className="home-hero-desc">
             Every design decision sits within a larger context: what led to it, who it affects, and
-            what happens after it ships. I carry that context through the design process, keeping
-            the broader product, its users, and the systems around it in mind.
+            what happens after it ships. I carry that context throughout my design process,
+            considering the broader product, its users, and the systems each decision touches.
           </p>
         </section>
 
