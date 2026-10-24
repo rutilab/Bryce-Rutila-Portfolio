@@ -40,7 +40,8 @@ export function Navigation() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, [pathname]);
 
-  if (pathname.startsWith('/admin')) return null;
+  // Home carries its own top bar (HomeHeader)
+  if (pathname.startsWith('/admin') || pathname === '/') return null;
 
   const isLightPage = pathname === '/';
 

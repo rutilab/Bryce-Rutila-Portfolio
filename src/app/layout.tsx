@@ -1,6 +1,6 @@
 import type { Metadata, Viewport } from 'next';
 import { Suspense } from 'react';
-import { Geist, Geist_Mono, Inter, Battambang, IBM_Plex_Mono } from 'next/font/google';
+import { Geist, Geist_Mono, Inter, Battambang, IBM_Plex_Mono, Space_Grotesk } from 'next/font/google';
 import { AnalyticsProvider } from '@/components/analytics/AnalyticsProvider';
 import { Navigation } from '@/components/layout';
 import MagnetCursor from '@/components/MagnetCursor';
@@ -29,6 +29,14 @@ const battambang = Battambang({
   subsets: ['latin'],
   weight: ['400', '700'],
   display: 'block',
+});
+
+/** Home hero headline (homepage-redesign branch). */
+const spaceGrotesk = Space_Grotesk({
+  variable: '--font-space-grotesk',
+  subsets: ['latin'],
+  weight: ['700'],
+  display: 'swap',
 });
 
 const ibmPlexMono = IBM_Plex_Mono({
@@ -103,7 +111,7 @@ export default function RootLayout({
       style={{ overflowX: 'clip' }}
     >
       <body
-        className={`${geistSans.variable} ${geistMono.variable} ${inter.variable} ${battambang.variable} ${ibmPlexMono.variable} antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} ${inter.variable} ${battambang.variable} ${ibmPlexMono.variable} ${spaceGrotesk.variable} antialiased`}
         style={{ background: '#faf7f2', color: '#141510', overflowX: 'clip' }}
       >
         <MagnetCursor />

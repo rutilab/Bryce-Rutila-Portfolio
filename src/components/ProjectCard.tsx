@@ -68,6 +68,10 @@ export interface Project {
    * isn't.
    */
   comingSoon?: boolean;
+  /** Case study facts, as the case study's own meta row states them. */
+  role?: string;
+  team?: string[];
+  timeline?: string;
 }
 
 /** Shown by the cursor tag and the touch toast alike, so both say one thing. */

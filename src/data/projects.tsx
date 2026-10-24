@@ -22,6 +22,9 @@ export const PROJECTS: Project[] = [
     cardColor: '#31e300',
     folder: 'finding-focus',
     href: '/case-studies/focus-coach-achievements',
+    role: 'Sole Product Designer',
+    team: ['Mike Mrazek, Co-founder', 'Thomas Kennedy, SWE'],
+    timeline: 'Jan – Jul 2026',
     thumbnailContent: <MilestoneThumbnail />,
   },
   {
@@ -34,6 +37,9 @@ export const PROJECTS: Project[] = [
     cardColor: '#ff9c12',
     folder: 'finding-focus',
     href: '/case-studies/finding-focus-ai-assistant',
+    role: 'UX Lead',
+    team: ['Mike Mrazek, Co-founder', 'Thomas Kennedy, SWE'],
+    timeline: 'Aug – Nov 2024',
     thumbnailContent: <AIAssistantThumbnail />,
   },
   {
@@ -46,6 +52,9 @@ export const PROJECTS: Project[] = [
     cardColor: '#12b4ff',
     folder: 'finding-focus',
     href: '/case-studies/finding-focus-landing-page',
+    role: 'UX Designer',
+    team: ['Mike Mrazek, Co-founder', 'Thomas Kennedy, SWE'],
+    timeline: 'Sep – Nov 2025',
     thumbnailContent: (
       <img src="/case-studies/landing-page/header-and-hero.png" alt="" style={{
         position: 'absolute', inset: '8px',
