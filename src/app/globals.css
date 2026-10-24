@@ -1487,8 +1487,9 @@ h2.display-heading {
   /* Solid cream is the base — the modal reuses this class and stays flat.
      Grid cards override it with their gradient below. */
   background: #fdfbf9;
-  border: 2px solid #000;
-  border-radius: 16px;
+  /* Same hairline and corners as the case study cards above */
+  border: 1px solid rgba(20, 21, 16, 0.14);
+  border-radius: 12px;
   padding: 24px;
   display: flex;
   flex-direction: column;
@@ -1500,15 +1501,21 @@ h2.display-heading {
 /* Card background gradient, ported from the Figma "Aug 18th Updates" frame.
    Figma stores it as a gradientTransform over normalized object space:
      stop 0 #FFFDFA @ 0.3173, stop 1 <accent> @ 1.0
+   The light end is now the case study cards' #f5f5f5, so the two rows of
+   cards read as one set.
    Converted to CSS: the stop percentages (48.04% / 135.14%) are the same at
    any card size; only the tilt depends on the card's aspect ratio, ranging
    169deg–174deg across our breakpoints. 172deg matches the desktop card. */
 .endorsements-grid > .endorsement-card {
   background: linear-gradient(
     172deg,
-    #FFFDFA 48.04%,
+    #f5f5f5 48.04%,
     var(--endorsement-accent, #31E300) 135.14%
   );
+  /* The border is translucent, and a gradient sized to the padding box
+     repeats under it — the accent end of the next tile was showing along
+     the top edge. Keep it inside the border. */
+  background-clip: padding-box;
 }
 
 /* Responsive: 2-col between 640–949px, 1-col below 640px */
