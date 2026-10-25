@@ -7,10 +7,7 @@
     "dev": "next dev --webpack",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint",
-    "og:generate": "node scripts/generate-og.mjs",
-    "favicon:generate": "node scripts/generate-favicon.mjs",
-    "assets:generate": "node scripts/generate-favicon.mjs && node scripts/generate-og.mjs"
+    "lint": "eslint"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",
