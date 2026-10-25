@@ -49,15 +49,15 @@ label[for] {
 /* Glassmorphism utility classes - from Figma design */
 .glass-card {
   background: rgba(0, 0, 0, 0.2);
-  backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
+  backdrop-filter: blur(20px);
   border-radius: 1.5rem;
 }
 
 .glass-button {
   background: rgba(0, 0, 0, 0.05);
-  backdrop-filter: blur(50px);
   -webkit-backdrop-filter: blur(50px);
+  backdrop-filter: blur(50px);
   border: 1px solid rgba(255, 255, 255, 0.5);
   border-radius: 0.75rem;
   padding: 0.75rem 1rem;
@@ -82,8 +82,8 @@ label[for] {
 
 .glass-input {
   background: rgba(0, 0, 0, 0.25);
-  backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
+  backdrop-filter: blur(20px);
   border-radius: 1.5rem;
   padding: 1rem 1.25rem;
   color: white;
@@ -102,8 +102,8 @@ label[for] {
 
 .glass-nav {
   background: rgba(0, 0, 0, 0.25);
-  backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
+  backdrop-filter: blur(20px);
   border-radius: 9999px;
   padding: 0.25rem;
 }
@@ -111,8 +111,8 @@ label[for] {
 /* Chip/Quick question styles - from Figma design */
 .chip {
   background: rgba(0, 0, 0, 0.05);
-  backdrop-filter: blur(50px);
   -webkit-backdrop-filter: blur(50px);
+  backdrop-filter: blur(50px);
   border: 1px solid rgba(255, 255, 255, 0.5);
   border-radius: 0.75rem;
   padding: 0.75rem 1rem;
@@ -1919,8 +1919,8 @@ h2.display-heading {
   letter-spacing: -0.012em;
   color: #f7f5f0;
   background: rgba(16, 17, 13, 0.72);
-  backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
   border: 1px solid rgba(255, 255, 255, 0.16);
   border-radius: 999px;
   padding: 8px 14px;
@@ -1952,8 +1952,8 @@ h2.display-heading {
   letter-spacing: -0.012em;
   color: #f7f5f0;
   background: rgba(16, 17, 13, 0.82);
-  backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
   border: 1px solid rgba(255, 255, 255, 0.16);
   border-radius: 999px;
   padding: 12px 20px;
@@ -2978,8 +2978,8 @@ body:has(.landing-main--framed) {
   top: 0;
   z-index: 200;
   background: rgba(249, 250, 251, 0.72);
-  backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
   border-bottom: 1px solid rgba(20, 21, 16, 0.12);
 }
 /* Case studies: the bar floats over the story instead, ducking away on the
@@ -3373,8 +3373,8 @@ body:has(.landing-main--framed) {
   justify-content: center;
   padding: 24px;
   background: rgba(20, 21, 16, 0.45);
-  backdrop-filter: blur(6px);
   -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
   animation: quick-fade 180ms ease both;
 }
 .quick-close {
