@@ -717,8 +717,8 @@ export default function Home() {
           <h1 className="home-hero-title">I design with the whole product in mind</h1>
           <p className="home-hero-desc">
             Every design decision sits within a larger context: what led to it, who it affects, and
-            what happens after it ships. I hold onto that context from problem to solution, so
-            what I design works across the product, not just within a single screen or feature.
+            what happens after it ships. I hold onto that context from problem to solution, so my
+            work connects across the product, not just a single screen or feature.
           </p>
         </section>
 
