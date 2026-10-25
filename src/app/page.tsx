@@ -1,15 +1,14 @@
 'use client';
 
-import { useState, useRef, useEffect, useLayoutEffect } from 'react';
+import { useState, useRef, useEffect, useLayoutEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
-import HalftoneCanvas from '@/components/HalftoneCanvas';
+import CircuitBackground from '@/components/CircuitBackground';
 import HalftoneFly from '@/components/HalftoneFly';
-import { ProjectCard } from '@/components/ProjectCard';
+import ChipSplash from '@/components/home/ChipSplash';
+import { WordChips } from '@/components/home/WordChip';
+import { WorkCard } from '@/components/home/WorkCard';
 import { HOME_PROJECTS } from '@/data/projects';
-import { IdeationChip } from '@/components/IdeationChip';
-import { IridescentText } from '@/components/IridescentText';
 import { IridescentEyebrow } from '@/components/IridescentEyebrow';
-import Loader from '@/components/Loader';
 import CaterpillarFooter from '@/components/CaterpillarFooter';
 import { registerBrFlyRefill } from '@/lib/brFlyRefill';
 
@@ -18,6 +17,17 @@ const BR_FLY_SRCS = [
   '/butterflies/updated-br-fly-2.svg',
   '/butterflies/updated-br-fly-3.svg',
 ] as const;
+
+/** Groups the home projects into rows of one, two, one, two… */
+function chunkWork<T>(items: T[]): T[][] {
+  const rows: T[][] = [];
+  for (let i = 0, wide = true; i < items.length; wide = !wide) {
+    const n = wide ? 1 : 2;
+    rows.push(items.slice(i, i + n));
+    i += n;
+  }
+  return rows;
+}
 
 /** Accent for net glow — keyed to the fly art, not the slot index */
 function colorForFlySrc(src: string): string {
@@ -28,151 +38,24 @@ function colorForFlySrc(src: string): string {
 }
 
 /**
- * Whether the splash has already played. Module-level, so it survives the home
- * page unmounting and remounting as you navigate away and back.
+ * Whether this page load opened on the home page. The splash introduces the
+ * site, so it plays when someone arrives here, not when they click back to
+ * Home from another page.
+ */
+function landedOnHome(): boolean {
+  const nav = performance.getEntriesByType('navigation')[0];
+  return !nav || new URL(nav.name).pathname === '/';
+}
+
+/**
+ * Whether the splash has had its chance this page load. Module-level, so it
+ * survives the home page unmounting and remounting as you navigate away and
+ * back.
  *
  * Only ever written from an effect, which never runs during SSR — so the server
  * always renders the pre-splash state and hydration matches.
  */
 let _loaderHasRun = false;
-
-/** Survives a reload the module flag cannot, for the length of the tab session. */
-const SPLASH_KEY = 'bar9000:splash-played';
-
-function splashAlreadyPlayed(): boolean {
-  try {
-    return window.sessionStorage.getItem(SPLASH_KEY) === '1';
-  } catch {
-    // Private modes and blocked storage throw on access. Worst case the splash
-    // plays again, which is the old behaviour rather than a broken page.
-    return false;
-  }
-}
-
-function rememberSplashPlayed() {
-  try {
-    window.sessionStorage.setItem(SPLASH_KEY, '1');
-  } catch {
-    /* nothing to do — see above */
-  }
-}
-
-// ── Scrabble tiles with shuffle animation ──────────────────────────────────
-const SCRABBLE_LETTERS = ['W', 'O', 'R', 'D', 'S'] as const;
-const TILE_W = 64;
-const TILE_GAP = 3;
-const TILE_STRIDE = TILE_W + TILE_GAP;
-// slots[i] = which visual slot letter[i] occupies
-const WORDS_SLOTS = [0, 1, 2, 3, 4];          // W-O-R-D-S in order
-const SWORD_SLOTS = [1, 2, 3, 4, 0];           // S-W-O-R-D (S steals slot 0)
-
-function fisher_yates(): number[] {
-  const arr = [0, 1, 2, 3, 4];
-  for (let i = arr.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [arr[i], arr[j]] = [arr[j], arr[i]];
-  }
-  return arr;
-}
-
-type TilePhase = 'init' | 'reveal' | 'hover' | 'return';
-
-function ScrabbleTiles() {
-  const [slots, setSlots]         = useState<number[]>(WORDS_SLOTS);
-  const [rotations, setRotations] = useState<number[]>([0, 0, 0, 0, 0]);
-  const [phase, setPhase]         = useState<TilePhase>('init');
-  const [revealed, setRevealed]   = useState(false);
-  const hoverCount  = useRef(0);
-  const containerRef = useRef<HTMLSpanElement>(null);
-  const totalW = SCRABBLE_LETTERS.length * TILE_W + (SCRABBLE_LETTERS.length - 1) * TILE_GAP;
-
-  // On mount: jump instantly to a random scramble (below the fold — no flash)
-  useEffect(() => {
-    setSlots(fisher_yates());
-    setRotations([...Array(5)].map(() => (Math.random() - 0.5) * 18));
-  }, []);
-
-  // When the tiles scroll into view → cascade into correct W-O-R-D-S order
-  useEffect(() => {
-    const el = containerRef.current;
-    if (!el || revealed) return;
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          setRevealed(true);
-          setPhase('reveal');
-          setSlots(WORDS_SLOTS);
-          setRotations([0, 0, 0, 0, 0]);
-        }
-      },
-      { threshold: 0.6 },
-    );
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, [revealed]);
-
-  const onEnter = () => {
-    if (!revealed) return;
-    hoverCount.current += 1;
-    setPhase('hover');
-    // Exactly the 3rd hover: spell SWORD; all others (including beyond 3) are random
-    const newSlots = hoverCount.current === 3 ? [...SWORD_SLOTS] : fisher_yates();
-    setSlots(newSlots);
-    setRotations([...Array(5)].map(() => (Math.random() - 0.5) * 24));
-  };
-
-  const onLeave = () => {
-    setPhase('return');
-    setSlots(WORDS_SLOTS);
-    setRotations([0, 0, 0, 0, 0]);
-  };
-
-  return (
-    <span
-      ref={containerRef}
-      className="endorsements-tiles"
-      style={{ position: 'relative', display: 'inline-block', width: totalW, height: TILE_W }}
-      onMouseEnter={onEnter}
-      onMouseLeave={onLeave}
-    >
-      {SCRABBLE_LETTERS.map((letter, i) => {
-        const homeX   = i * TILE_STRIDE;
-        const targetX = slots[i] * TILE_STRIDE;
-        const dx = targetX - homeX;
-
-        let transition: string;
-        if (phase === 'init') {
-          transition = 'none';                                                               // instant scramble on mount
-        } else if (phase === 'reveal') {
-          transition = `transform 0.65s cubic-bezier(0.34, 1.56, 0.64, 1) ${i * 70}ms`;    // W first → S last
-        } else if (phase === 'hover') {
-          transition = `transform 0.55s cubic-bezier(0.34, 1.56, 0.64, 1) ${i * 45}ms`;    // cascade left → right
-        } else {
-          transition = `transform 0.38s cubic-bezier(0.34, 1.56, 0.64, 1) ${(4 - i) * 30}ms`; // snap back right → left
-        }
-
-        return (
-          <img
-            key={letter}
-            src={`/scrabble-tiles/${letter}.svg`}
-            alt={letter}
-            draggable={false}
-            style={{
-              position: 'absolute',
-              top: 0,
-              left: homeX,
-              width: TILE_W,
-              height: TILE_W,
-              transform: `translateX(${dx}px) rotate(${rotations[i]}deg)`,
-              transition,
-              willChange: 'transform',
-            }}
-          />
-        );
-      })}
-    </span>
-  );
-}
 
 // ── Endorsement data ───────────────────────────────────────────────────────
 interface Endorsement {
@@ -512,55 +395,22 @@ export default function Home() {
   const [loaderState, setLoaderState] = useState<LoaderState>(() =>
     _loaderHasRun ? 'done' : 'checking',
   );
-  const [animReady, setAnimReady] = useState(() => _loaderHasRun);
-  const heroSvgRef = useRef<SVGSVGElement>(null);
+
+  const [splash, setSplash] = useState(false);
+  const handOff = useCallback(() => setLoaderState('done'), []);
+  const splashDone = useCallback(() => setSplash(false), []);
 
   useEffect(() => {
     if (_loaderHasRun) return;
     _loaderHasRun = true;
 
-    // A reload re-imports the module, so the flag alone would replay the splash
-    // on every refresh. It belongs to the visit, not to the page instance.
-    if (splashAlreadyPlayed()) {
+    if (!landedOnHome()) {
       setLoaderState('done');
-      setAnimReady(true);
       return;
     }
-    rememberSplashPlayed();
-    setLoaderState('showing');
+    // They came in the front door: open from inside BR1
+    setSplash(true);
   }, []);
-
-  // Delay idle letter animations 3.5s after loader ends
-  useEffect(() => {
-    if (loaderState !== 'done') return;
-    const t = setTimeout(() => setAnimReady(true), 3500);
-    return () => clearTimeout(t);
-  }, [loaderState]);
-
-  // ── Draggable BRYCE SVG ────────────────────────────────────────────────
-  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
-  const [isDragging, setIsDragging] = useState(false);
-  const dragStart = useRef({ mx: 0, my: 0, ox: 0, oy: 0 });
-
-  useEffect(() => {
-    if (!isDragging) return;
-    const onMove = (e: MouseEvent) => {
-      setDragOffset({
-        x: dragStart.current.ox + e.clientX - dragStart.current.mx,
-        y: dragStart.current.oy + e.clientY - dragStart.current.my,
-      });
-    };
-    const onUp = () => {
-      setIsDragging(false);
-      setDragOffset({ x: 0, y: 0 });
-    };
-    window.addEventListener('mousemove', onMove);
-    window.addEventListener('mouseup', onUp);
-    return () => {
-      window.removeEventListener('mousemove', onMove);
-      window.removeEventListener('mouseup', onUp);
-    };
-  }, [isDragging]);
 
   // ── Draggable BR Flies ────────────────────────────────────────────────
   const [flyOffsets, setFlyOffsets] = useState([
@@ -767,15 +617,14 @@ export default function Home() {
   return (
     <>
       {/* White screen blocks flash during SSR→hydration before loader mounts */}
-      {loaderState !== 'done' && (
-        <div aria-hidden="true" style={{ position: 'fixed', inset: 0, zIndex: 9998, background: '#faf7f2', pointerEvents: 'none' }} />
+      {loaderState !== 'done' && !splash && (
+        <div aria-hidden="true" style={{ position: 'fixed', inset: 0, zIndex: 9998, background: '#f9fafb', pointerEvents: 'none' }} />
       )}
-      {loaderState === 'showing' && (
-        <Loader heroRef={heroSvgRef} onComplete={() => setLoaderState('done')} />
-      )}
-      <HalftoneCanvas />
+      {splash && <ChipSplash onHandoff={handOff} onDone={splashDone} />}
 
-      <main className="landing-main">
+      <main className="landing-main landing-main--framed">
+        <CircuitBackground ready={loaderState === 'done'} />
+
         {/* ── Butterfly Net (visible during drag) ─────────────────────── */}
         {flyDragging !== null && (() => {
           const c = colorForFlySrc(flySrcs[flyDragging] ?? BR_FLY_SRCS[flyDragging]);
@@ -863,138 +712,21 @@ export default function Home() {
         </div>
 
         {/* ── Hero ──────────────────────────────────────────────────────── */}
-        <section style={{ marginBottom: '64px' }}>
+        <section className="home-hero">
 
-          <h1 className="howdy-heading">Howdy, I'm</h1>
-
-          <svg
-            ref={heroSvgRef}
-            width="604"
-            height="152"
-            viewBox="0 0 604 152"
-            fill="none"
-            overflow="visible"
-            xmlns="http://www.w3.org/2000/svg"
-            aria-label="BRYCE"
-            role="img"
-            className="bryce-svg"
-            onMouseDown={e => {
-              e.preventDefault();
-              dragStart.current = { mx: e.clientX, my: e.clientY, ox: dragOffset.x, oy: dragOffset.y };
-              setIsDragging(true);
-            }}
-            style={{
-              cursor: isDragging ? 'grabbing' : 'grab',
-              transform: `translate(${dragOffset.x}px, ${dragOffset.y}px)`,
-              transition: isDragging ? 'none' : 'transform 0.7s cubic-bezier(0.34, 1.56, 0.64, 1)',
-              position: 'relative',
-              zIndex: isDragging ? 50 : undefined,
-              userSelect: 'none',
-              opacity: loaderState !== 'done' ? 0 : 1,
-            }}
-          >
-            <style>{`
-              .letter {
-                transform-box: fill-box;
-                transform-origin: center bottom;
-              }
-              @keyframes bryce-b {
-                0%   { transform: translateY(0) rotate(0deg); }
-                8%   { transform: translateY(-4px) rotate(-0.8deg); }
-                18%  { transform: translateY(0) rotate(0deg); }
-                100% { transform: translateY(0) rotate(0deg); }
-              }
-              @keyframes bryce-r {
-                0%   { transform: rotate(0deg); }
-                6%   { transform: rotate(1.5deg); }
-                12%  { transform: rotate(-1deg); }
-                18%  { transform: rotate(0deg); }
-                100% { transform: rotate(0deg); }
-              }
-              @keyframes bryce-y {
-                0%   { transform: translateY(0) scale(1); }
-                10%  { transform: translateY(-3px) scale(1.02); }
-                20%  { transform: translateY(0) scale(1); }
-                100% { transform: translateY(0) scale(1); }
-              }
-              @keyframes bryce-c {
-                0%   { transform: translateY(0) rotate(0deg); }
-                8%   { transform: translateY(-5px) rotate(0.6deg); }
-                18%  { transform: translateY(0) rotate(0deg); }
-                100% { transform: translateY(0) rotate(0deg); }
-              }
-              @keyframes bryce-e {
-                0%   { transform: scale(1) rotate(0deg); }
-                10%  { transform: scale(1.025) rotate(-0.7deg); }
-                20%  { transform: scale(1) rotate(0deg); }
-                100% { transform: scale(1) rotate(0deg); }
-              }
-              ${animReady ? `
-              #letter-b { animation: bryce-b 7s   ease-in-out 0s    infinite; }
-              #letter-r { animation: bryce-r 6s   ease-in-out 2.3s  infinite; }
-              #letter-y { animation: bryce-y 8s   ease-in-out 4.1s  infinite; }
-              #letter-c { animation: bryce-c 6.5s ease-in-out 1.2s  infinite; }
-              #letter-e { animation: bryce-e 7s   ease-in-out 5.5s  infinite; }
-              ` : ''}
-            `}</style>
-
-            {/* E — drawn first so it sits below overlapping letters */}
-            <g className="letter" id="letter-e">
-              <path d="M549.923 1.5L443.967 1.5L427.334 38.4371L478.464 147.996H585.036L601.668 111.685L590.58 94.1557L524.05 94.1557L515.425 77.2523L564.707 77.2523L553.619 55.3405H507.417L498.793 35.3068H564.707L549.923 1.5Z" fill="#31E300" stroke="black" strokeWidth="3"/>
-              <path d="M445.668 6L495.715 111.059L600.439 111.059L586.887 147.996H480.315L426.721 38.4365L445.668 6Z" fill="#31E300"/>
-              <path d="M480.315 147.996H586.887L600.439 111.059L495.715 111.059L445.668 6L426.721 38.4365L480.315 147.996ZM495.715 111.059L480.315 147.996" stroke="black" strokeWidth="3"/>
-            </g>
-
-            {/* C */}
-            <g className="letter" id="letter-c">
-              <path d="M445.204 6.50781L339.248 6.50781L320.768 44.071L374.98 147.369L480.933 147.996L495.104 112.31L479.704 77.2511L407.011 77.8778L392.842 40.3146L460.168 39L445.204 6.50781Z" fill="#FF12F7" stroke="black" strokeWidth="3"/>
-              <path d="M390.374 112.937L495.717 111.059L479.7 77.2523L414.402 77.2523L397.153 39.6892L461.168 39L443.352 1.5L337.396 1.5L390.374 112.937Z" fill="#FF12F7" stroke="black" strokeWidth="3"/>
-            </g>
-
-            {/* Y */}
-            <g className="letter" id="letter-y">
-              <path d="M265.941 144.867L282.573 105.425L265.325 69.1143L248.076 107.929L265.941 144.867Z" fill="#FFF712" stroke="black" strokeWidth="3"/>
-              <path d="M336.07 1.5L389.454 110.885L376.209 147.37H268.405L283.913 109.628L235.756 4.63026L266.557 4.00421L281.459 37.333L317.048 37.333L300.481 1.5L336.07 1.5Z" fill="#FFF712"/>
-              <path d="M283.913 109.628L268.405 147.37H376.209L389.454 110.885L336.07 1.5L300.481 1.5L317.048 37.333L281.459 37.333L266.557 4.00421L235.756 4.63026L283.913 109.628ZM389.454 110.885L283.913 109.628" stroke="black" strokeWidth="3"/>
-              <path d="M233.91 4.00439L265.943 70.992H334.322" stroke="black" strokeWidth="3"/>
-            </g>
-
-            {/* R */}
-            <g className="letter" id="letter-r">
-              <path d="M202.491 148.622H160.602L177.85 114.188L211.115 115.441L202.491 148.622Z" fill="#12B4FF"/>
-              <path d="M160.602 148.622L159.26 147.95L158.173 150.122H160.602V148.622ZM202.491 148.622V150.122H203.651L203.943 148.999L202.491 148.622ZM211.115 115.441L212.567 115.818C212.682 115.378 212.59 114.91 212.319 114.545C212.048 114.181 211.626 113.959 211.172 113.942L211.115 115.441ZM177.85 114.188L177.907 112.69L176.942 112.653L176.509 113.517L177.85 114.188ZM160.602 148.622V150.122H202.491V148.622V147.122H160.602V148.622ZM202.491 148.622L203.943 148.999L212.567 115.818L211.115 115.441L209.664 115.063L201.039 148.245L202.491 148.622ZM211.115 115.441L211.172 113.942L177.907 112.69L177.85 114.188L177.794 115.687L211.059 116.94L211.115 115.441ZM177.85 114.188L176.509 113.517L159.26 147.95L160.602 148.622L161.943 149.294L179.191 114.86L177.85 114.188Z" fill="black"/>
-              <path d="M270.253 147.37L234.523 146.744L248.076 112.312H283.805L270.253 147.37Z" fill="#12B4FF" stroke="black" strokeWidth="3"/>
-              <path d="M211.114 114.189H177.233L126.719 4.00439L233.907 4.62984L254.851 52.2104L235.139 62.2273L266.556 75.3744L281.956 111.685L247.459 112.311L230.827 75.3744H195.713L211.114 114.189Z" fill="#12B4FF" stroke="black" strokeWidth="3"/>
-              <path d="M209.267 22.7856H177.85L179.082 29.6722H211.115L209.267 22.7856Z" fill="white" stroke="black" strokeWidth="3"/>
-              <path d="M224.054 132.345L233.294 146.744L248.078 111.686L230.214 75.3745H217.277L233.294 109.181L224.054 132.345Z" fill="#12B4FF"/>
-              <path d="M233.294 146.744L232.032 147.554C232.332 148.023 232.868 148.286 233.422 148.238C233.977 148.191 234.46 147.84 234.676 147.327L233.294 146.744ZM224.054 132.345L222.66 131.789L222.374 132.506L222.791 133.155L224.054 132.345ZM233.294 109.181L234.687 109.737L234.929 109.13L234.649 108.539L233.294 109.181ZM217.277 75.3745V73.8745H214.907L215.922 76.0167L217.277 75.3745ZM230.214 75.3745L231.56 74.7123L231.148 73.8745H230.214V75.3745ZM248.078 111.686L249.461 112.268L249.727 111.638L249.424 111.023L248.078 111.686ZM233.294 146.744L234.556 145.934L225.316 131.535L224.054 132.345L222.791 133.155L232.032 147.554L233.294 146.744ZM224.054 132.345L225.447 132.901L234.687 109.737L233.294 109.181L231.901 108.626L222.66 131.789L224.054 132.345ZM233.294 109.181L234.649 108.539L218.633 74.7323L217.277 75.3745L215.922 76.0167L231.938 109.824L233.294 109.181ZM217.277 75.3745V76.8745H230.214V75.3745V73.8745H217.277V75.3745ZM230.214 75.3745L228.868 76.0367L246.733 112.348L248.078 111.686L249.424 111.023L231.56 74.7123L230.214 75.3745ZM248.078 111.686L246.696 111.103L231.912 146.161L233.294 146.744L234.676 147.327L249.461 112.268L248.078 111.686Z" fill="black"/>
-            </g>
-
-            {/* B — drawn last so it sits on top */}
-            <g className="letter" id="letter-b">
-              <path d="M158.138 70.3666L177.85 112.938L167.994 148.622L54.0299 149.249L1.66797 46.5766L21.3807 4.00439L125.489 4.00439L147.665 52.8371L129.185 63.48L158.138 70.3666Z" fill="#FF9C12" stroke="black" strokeWidth="3"/>
-              <path d="M1.66797 46.5752L15.8365 15.8986L20.7647 6.50781L70.6625 114.189L53.4139 148.622L1.66797 46.5752Z" fill="#FF9C12" stroke="black" strokeWidth="3"/>
-              <path d="M167.993 148.622L54.0293 150.5L71.2779 114.189H177.545L167.993 148.622Z" fill="#FF9C12" stroke="black" strokeWidth="3" strokeLinejoin="round"/>
-              <path d="M97.7648 22.1597H66.3477L67.5797 29.0462H99.6129L97.7648 22.1597Z" fill="white" stroke="black" strokeWidth="3"/>
-              <path d="M121.791 84.1382H92.8379L96.534 91.0248H126.103L121.791 84.1382Z" fill="white" stroke="black" strokeWidth="3"/>
-            </g>
-          </svg>
-
-          <p className="subheader-text">
-            <IridescentText text="A systems-thinking product designer building memorable experiences from " />
-            <span className="subheader-inline-chips" style={{ whiteSpace: 'nowrap' }}>
-              <IdeationChip />{' '}
-              <IridescentText text="to" />{' '}
-              <span className="subheader-prod">[PROD]</span>
-            </span>
+          <h1 className="home-hero-title">I design with the whole product in mind</h1>
+          <p className="home-hero-desc">
+            Every design decision sits within a larger context: what led to it, who it affects, and
+            what happens after it ships. I carry that context throughout my design process,
+            considering the broader product, its users, and the systems each decision touches.
           </p>
         </section>
 
-        {/* ── Featured Projects ──────────────────────────────────────────── */}
-        <section className="projects-section">
+        {/* ── Selected work ─────────────────────────────────────────────── */}
+        <section className="home-section" id="work">
 
           <IridescentEyebrow
-            label="FEATURED PROJECTS"
+            label="SELECTED WORK"
             iconPathD={[
               'M8 0L9.16938 5.17688L13.6569 2.34315L10.8231 6.83062L16 8L10.8231 9.16938L13.6569 13.6569L9.16938 10.8231L8 16L6.83062 10.8231L2.34315 13.6569L5.17688 9.16938L0 8L5.17688 6.83062L2.34315 2.34315L6.83062 5.17688L8 0Z',
               'M8 4L8.58469 6.58844L10.8284 5.17157L9.41156 7.41531L12 8L9.41156 8.58469L10.8284 10.8284L8.58469 9.41156L8 12L7.41531 9.41156L5.17157 10.8284L6.58844 8.58469L4 8L6.58844 7.41531L5.17157 5.17157L7.41531 6.58844L8 4Z',
@@ -1007,8 +739,54 @@ export default function Home() {
             }
           />
 
-          <div className="projects-grid">
-            {HOME_PROJECTS.map((p, i) => <ProjectCard key={i} {...p} />)}
+          {/* Wide, a pair, wide again — the rhythm repeats if more are added */}
+          <ul className="work-list">
+            {chunkWork(HOME_PROJECTS).map((row, r) => (
+              <li key={r} className={row.length === 2 ? 'work-row work-row--pair' : 'work-row'}>
+                {row.map((p) => <WorkCard key={p.title} project={p} wide={row.length === 1} />)}
+              </li>
+            ))}
+          </ul>
+        </section>
+
+        {/* ── About preview ─────────────────────────────────────────────── */}
+        <section className="home-section home-about" aria-labelledby="home-about-label">
+          <IridescentEyebrow
+            label="ABOUT ME"
+            iconPathD={[
+              'M8 0L10.1607 5.83927L16 8L10.1607 10.1607L8 16L5.83927 10.1607L0 8L5.83927 5.83927L8 0Z',
+              'M8 4L9.08036 6.91964L12 8L9.08036 9.08036L8 12L6.91964 9.08036L4 8L6.91964 6.91964L8 4Z',
+            ]}
+            icon={
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ flexShrink: 0 }}>
+                <path d="M8 0L10.1607 5.83927L16 8L10.1607 10.1607L8 16L5.83927 10.1607L0 8L5.83927 5.83927L8 0Z" fill="#141510"/>
+                <path d="M8 4L9.08036 6.91964L12 8L9.08036 9.08036L8 12L6.91964 9.08036L4 8L6.91964 6.91964L8 4Z" fill="#FAF7F2"/>
+              </svg>
+            }
+          />
+          <div className="home-about-grid">
+            <img src="/about/portrait-2.jpg" alt="Bryce out on a hike" className="home-about-photo" />
+            <div>
+              <p id="home-about-label" className="home-about-lede">
+                I’ve always been curious about how things work, why they work the way they do, and
+                how people experience them. That curiosity is what drew me to product design, where
+                I get to understand people, untangle complex problems, and turn what I learn into
+                thoughtful experiences.
+              </p>
+              <p className="home-about-edu">
+                <span className="home-about-school">University of Florida 🐊</span>
+                <span className="home-about-sep" aria-hidden="true">✦</span>
+                {/* The degree and its focus wrap as one, never split across lines */}
+                <span className="home-about-degree">
+                  <span>B.S. Psychology</span>
+                  <span className="home-about-sep" aria-hidden="true">✦</span>
+                  <span>Behavior Analysis</span>
+                </span>
+              </p>
+              <a href="/about" className="home-about-cta">
+                About me <span className="home-about-cta-arrow" aria-hidden="true">→</span>
+              </a>
+            </div>
           </div>
         </section>
 
@@ -1020,7 +798,7 @@ export default function Home() {
             <h2 className="endorsements-heading">
               <span className="endorsements-heading-text">In their own</span>
               <span style={{ display: 'inline-flex', alignItems: 'center', flexWrap: 'nowrap' }}>
-                <ScrabbleTiles />
+                <WordChips />
                 <span className="endorsements-heading-text">.</span>
               </span>
             </h2>

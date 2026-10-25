@@ -915,7 +915,7 @@ function ToggleMedia({
               display: 'flex',
               flexDirection: 'column',
               alignItems: 'center',
-              cursor: 'none',
+              cursor: 'default',
               maxHeight: 'calc(100vh - 80px)',
               overflow: 'auto',
             }}
@@ -2121,7 +2121,7 @@ function ExpandableImage({ src, alt, style, className }: { src: string; alt: str
           <img
             src={src} alt={alt}
             onClick={e => e.stopPropagation()}
-            style={{ maxWidth: 'min(88vw, 1280px)', maxHeight: '82vh', objectFit: 'contain', borderRadius: 14, cursor: 'none', display: 'block' }}
+            style={{ maxWidth: 'min(88vw, 1280px)', maxHeight: '82vh', objectFit: 'contain', borderRadius: 14, cursor: 'default', display: 'block' }}
           />
         </div>,
         document.body

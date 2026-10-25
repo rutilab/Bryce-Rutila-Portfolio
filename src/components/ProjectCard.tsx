@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import { Toast } from '@/components/Toast';
 import { useCanPrimaryHover } from '@/hooks/useCanPrimaryHover';
+import type { QuickSlide } from '@/data/quickViews';
 
 /**
  * The portfolio's project card, and the only one. It started life inside the
@@ -68,6 +69,12 @@ export interface Project {
    * isn't.
    */
   comingSoon?: boolean;
+  /** Case study facts, as the case study's own meta row states them. */
+  role?: string;
+  team?: string[];
+  timeline?: string;
+  /** The Quick view deck — see src/data/quickViews.ts */
+  quickView?: QuickSlide[];
 }
 
 /** Shown by the cursor tag and the touch toast alike, so both say one thing. */

@@ -1256,15 +1256,19 @@ body[data-ideation-rotating] * {
   z-index: 1;
   max-width: 1280px;
   margin: 0 auto;
-  padding: 152px 40px 160px;
+  /* The top bar is in the flow now rather than floating over the page. Side
+     padding is the home page's, so a section held to its column lines up. */
+  padding: 96px 24px 160px;
   box-sizing: border-box;
 }
 @media (max-width: 799px) {
   .about-main {
-    padding-left: 24px;
-    padding-right: 24px;
+    padding-left: 16px;
+    padding-right: 16px;
   }
 }
+/* Sections held to the home page's column: 1024 less its 24px gutters */
+.about-section.about-section--framed { max-width: 976px; }
 
 /* The content measure inside that shell — the counterpart to
    .projects-section and .endorsements-section. Centred with the two side
@@ -1487,8 +1491,9 @@ h2.display-heading {
   /* Solid cream is the base — the modal reuses this class and stays flat.
      Grid cards override it with their gradient below. */
   background: #fdfbf9;
-  border: 2px solid #000;
-  border-radius: 16px;
+  /* Same hairline and corners as the case study cards above */
+  border: 1px solid rgba(20, 21, 16, 0.14);
+  border-radius: 12px;
   padding: 24px;
   display: flex;
   flex-direction: column;
@@ -1500,15 +1505,21 @@ h2.display-heading {
 /* Card background gradient, ported from the Figma "Aug 18th Updates" frame.
    Figma stores it as a gradientTransform over normalized object space:
      stop 0 #FFFDFA @ 0.3173, stop 1 <accent> @ 1.0
+   The light end is now the case study cards' #f5f5f5, so the two rows of
+   cards read as one set.
    Converted to CSS: the stop percentages (48.04% / 135.14%) are the same at
    any card size; only the tilt depends on the card's aspect ratio, ranging
    169deg–174deg across our breakpoints. 172deg matches the desktop card. */
 .endorsements-grid > .endorsement-card {
   background: linear-gradient(
     172deg,
-    #FFFDFA 48.04%,
+    #f5f5f5 48.04%,
     var(--endorsement-accent, #31E300) 135.14%
   );
+  /* The border is translucent, and a gradient sized to the padding box
+     repeats under it — the accent end of the next tile was showing along
+     the top edge. Keep it inside the border. */
+  background-clip: padding-box;
 }
 
 /* Responsive: 2-col between 640–949px, 1-col below 640px */
@@ -2865,3 +2876,1824 @@ body[data-magnet-cursor] .cd-tile[role='button'] {
     transform: none !important;
   }
 }
+
+/* ── Home: 1024px framed board ─────────────────────────────────────────────
+   Laid out after helenxli.com: one 1024px column with 24px gutters, a hero
+   that opens 64px under the top bar, and sections that each start on a small
+   eyebrow. A hairline on each side gives the circuit traces something to
+   plug into. The flies anchor to the frame rather than the viewport. */
+/* The redesign moves home onto a cooler off-white than the rest of the site */
+html:has(.landing-main--framed),
+body:has(.landing-main--framed) {
+  background: #f9fafb !important;
+}
+.landing-main--framed {
+  max-width: 1024px;
+  padding: 0 24px 96px;
+  --fly-w: clamp(140px, 17vw, 210px);
+  --hero-w: min(520px, 100%);
+}
+.landing-main--framed .br-flies-container {
+  left: 0;
+  width: 100%;
+}
+@media (min-width: 800px) {
+  .landing-main--framed {
+    --hero-w: min(520px, calc(100% - 0.8 * var(--fly-w)));
+  }
+  .landing-main--framed .br-fly-1 { left: auto; right: 150px; top: 120px; }
+  .landing-main--framed .br-fly-2 { width: clamp(100px, 12vw, 150px); right: 28px; top: 20px; }
+  .landing-main--framed .br-fly-3 { width: clamp(80px, 9vw, 116px); right: 40px; top: 290px; }
+}
+/* The flies left with the BRYCE hero; their game logic stays dormant */
+.landing-main--framed .br-flies-container { display: none; }
+@media (max-width: 799px) {
+  .landing-main--framed { padding: 0 16px 64px; }
+}
+
+/* Hero — the board's buses run 64px clear of the copy on both sides (their
+   taps stop 24px short), so the padding is sized for them rather than for
+   the type. The top bus sits as far below the nav bar (80px) as the bottom
+   bus sits above Selected work. */
+.home-hero {
+  padding: 160px 0 128px;
+}
+.home-hero-title {
+  font-family: var(--font-space-grotesk), sans-serif;
+  font-weight: 700;
+  font-size: clamp(40px, 7vw, 64px);
+  line-height: 1.094;
+  letter-spacing: -0.03em;
+  color: #000;
+  max-width: 768px;
+  margin: 0 0 24px;
+}
+/* Under ~990px U1 moves below the copy and the top bus runs down the right
+   gutter, so the copy gives that channel some room and the hero makes space
+   for the chip */
+@media (max-width: 991px) {
+  .home-hero { padding-bottom: 208px; }
+  /* BR1 sits under the copy here, 46px above Selected work, so the top bus
+     sits the same distance below the nav bar */
+  .landing-main--framed .home-hero { padding-top: 126px; }
+  .home-hero-title,
+  .home-hero-desc { padding-right: 24px; }
+}
+/* The hero copy reads as part of the board, so it keeps the arrow rather than
+   the text cursor (it can still be selected) */
+.home-hero-title,
+.home-hero-desc { cursor: default; }
+.home-hero-desc {
+  font-family: var(--font-inter), sans-serif;
+  font-size: clamp(17px, 2vw, 20px);
+  line-height: 1.35;
+  color: #5c5a54;
+  max-width: 768px;
+  margin: 0;
+}
+
+.home-section { padding-top: 32px; }
+.home-section + .home-section { padding-top: 112px; }
+.landing-main--framed .iri-eyebrow { margin-bottom: 20px; }
+/* No dividing rule under the section labels on home */
+.landing-main--framed .sling-dash { display: none; }
+.landing-main--framed .endorsements-section {
+  max-width: none;
+  margin-top: 112px;
+  padding-bottom: 0;
+}
+/* Headings on the home page share the hero's Space Grotesk; body copy is
+   Inter and eyebrows stay mono. The About page keeps its serif display
+   heading, so this is scoped to the home frame. */
+.landing-main--framed .endorsements-heading-text {
+  font-family: var(--font-space-grotesk), sans-serif;
+  font-weight: 700;
+  font-size: clamp(36px, 5.5vw, 56px);
+  letter-spacing: -0.03em;
+}
+
+/* ── Site top bar (SiteHeader) ─────────────────────────────────────────────────────── */
+.home-header {
+  position: sticky;
+  top: 0;
+  z-index: 200;
+  background: rgba(249, 250, 251, 0.72);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border-bottom: 1px solid rgba(20, 21, 16, 0.12);
+}
+/* Case studies: the bar floats over the story instead, ducking away on the
+   way down and coming back on the way up */
+.home-header--float {
+  position: fixed;
+  left: 0;
+  right: 0;
+  transition: translate 280ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.home-header--float.is-tucked { translate: 0 -100%; }
+/* …and lines up with the case studies' wider 1200px column */
+.home-header--float .home-header-inner { max-width: 1200px; }
+@media (max-width: 639px) {
+  .home-header--float .home-header-inner { padding: 0 20px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .home-header--float { transition: none; }
+}
+.home-header-inner {
+  max-width: 1024px;
+  margin: 0 auto;
+  padding: 0 24px;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+.home-header-left,
+.home-header-right {
+  display: flex;
+  align-items: center;
+  gap: 28px;
+}
+.home-header-right { gap: 32px; }
+.home-wordmark {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-family: var(--font-space-grotesk), sans-serif;
+  font-weight: 700;
+  font-size: 18px;
+  letter-spacing: -0.03em;
+  color: #141510;
+  text-decoration: none;
+}
+.home-wordmark-fly {
+  transition: rotate 400ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.home-wordmark:hover .home-wordmark-fly { rotate: -18deg; }
+.home-header-links {
+  display: flex;
+  gap: 20px;
+}
+/* Page links in Inter like the contact links, a weight heavier so they lead.
+   The current page is full ink over a blue rule; the others sit back until
+   hovered, when they pick up an ink rule in the same place. */
+.home-header-link {
+  font-family: var(--font-inter), sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 20px;
+  text-decoration: none;
+  color: rgba(20, 21, 16, 0.55);
+  padding: 4px 0;
+  border-bottom: 2px solid transparent;
+  transition: color 160ms ease, border-color 160ms ease;
+}
+.home-header-link:hover {
+  color: #141510;
+  border-bottom-color: #141510;
+}
+.home-header-link[aria-current='page'] {
+  color: #141510;
+  border-bottom-color: #12b4ff;
+}
+/* The ways to reach Bryce read as quiet body text with a matching icon each,
+   after helenxli.com: Inter at 13px in the hero paragraph's grey, a 14px copy
+   glyph and a 12px out-arrow drawn at the same weight, 6px from their words */
+.home-header-email,
+.home-header-ext {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-inter), sans-serif;
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 20px;
+  color: #5c5a54;
+  text-decoration: none;
+  background: none;
+  border: 0;
+  padding: 0;
+  transition: color 160ms ease;
+}
+.home-header-icon {
+  flex-shrink: 0;
+  width: 14px;
+  height: 14px;
+  transition: translate 200ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.home-header-email:hover,
+.home-header-ext:hover { color: #141510; }
+.home-header-email:hover .home-header-icon,
+.home-header-ext:hover .home-header-icon { translate: 1.5px -1.5px; }
+.home-header-icon--out { width: 12px; height: 12px; }
+/* LinkedIn is a link like the page links, so it takes the same ink rule */
+.home-header-ext-text {
+  padding: 4px 0;
+  border-bottom: 2px solid transparent;
+  transition: border-color 160ms ease;
+}
+.home-header-ext:hover .home-header-ext-text { border-bottom-color: currentColor; }
+@media (max-width: 799px) {
+  .home-header-inner { padding: 0 16px; height: 56px; }
+  .home-header-left { gap: 16px; }
+  .home-header-links { gap: 14px; }
+  .home-header-email-text { display: none; }
+  .home-header-ext { display: none; }
+}
+@media (max-width: 420px) {
+  .home-wordmark { font-size: 16px; }
+  .home-header-links { gap: 10px; }
+}
+/* Phones: just the wordmark and a menu button; everything else drops down
+   under the bar when it's opened */
+.home-header-menu-btn,
+.home-header-menu { display: none; }
+@media (max-width: 639px) {
+  .home-header-links,
+  .home-header-right { display: none; }
+  .home-header-menu-btn {
+    display: inline-flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 4px;
+    width: 40px;
+    height: 40px;
+    margin-right: -10px;
+    padding: 0 10px;
+    border: 0;
+    border-radius: 8px;
+    background: none;
+    cursor: pointer;
+  }
+  .home-header-menu-btn span {
+    display: block;
+    height: 1.5px;
+    border-radius: 1px;
+    background: #141510;
+    transition: translate 220ms ease, rotate 220ms ease, opacity 160ms ease;
+  }
+  /* Open: the three lines fold into a cross */
+  .is-menu-open .home-header-menu-btn span:nth-child(1) { translate: 0 5.5px; rotate: 45deg; }
+  .is-menu-open .home-header-menu-btn span:nth-child(2) { opacity: 0; }
+  .is-menu-open .home-header-menu-btn span:nth-child(3) { translate: 0 -5.5px; rotate: -45deg; }
+
+  .home-header-menu:not([hidden]) {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    padding: 12px 16px 24px;
+    background: #f9fafb;
+    border-bottom: 1px solid rgba(20, 21, 16, 0.12);
+    box-shadow: 0 12px 24px rgba(20, 21, 16, 0.06);
+    animation: home-menu-in 200ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  .home-header-menu-links {
+    display: flex;
+    flex-direction: column;
+  }
+  .home-header-menu-link {
+    font-family: var(--font-inter), sans-serif;
+    font-size: 17px;
+    font-weight: 500;
+    line-height: 24px;
+    padding: 10px 0;
+    color: rgba(20, 21, 16, 0.55);
+    text-decoration: none;
+    border-bottom: 1px solid rgba(20, 21, 16, 0.08);
+  }
+  .home-header-menu-link[aria-current='page'] { color: #141510; }
+  .home-header-menu-contact {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 14px;
+  }
+  .home-header-menu-contact .home-header-email,
+  .home-header-menu-contact .home-header-ext { font-size: 15px; }
+  /* (the bar's own LinkedIn link is hidden under 800px; this one isn't) */
+  .home-header-menu-contact .home-header-ext { display: inline-flex; }
+}
+@keyframes home-menu-in {
+  from { opacity: 0; translate: 0 -6px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .home-header-menu:not([hidden]) { animation: none; }
+}
+
+/* ── Selected work ────────────────────────────────────────────────────────
+   Cards alternate one wide, then a pair. Each is a bordered sheet with the
+   artwork in an inset well; on hover the sheet lifts, the well fills with the
+   next BRYCE colour, and the arrow nudges. */
+.work-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 40px;
+}
+.work-row--pair {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 40px;
+}
+@media (max-width: 799px) {
+  .work-list { gap: 24px; }
+  /* minmax(0, …), not plain 1fr: a 1fr column grows to fit its card, and
+     Safari sizes the artwork well's width from its height (the aspect ratio
+     run backwards), so the two fed each other and the card grew without end */
+  .work-row--pair { grid-template-columns: minmax(0, 1fr); gap: 24px; }
+}
+
+.work-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  padding: 16px;
+  background: #f5f5f5;
+  border: 1px solid rgba(20, 21, 16, 0.14);
+  border-radius: 12px;
+  transition: border-color 200ms ease, box-shadow 220ms ease, translate 260ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.work-card--wide { padding: 20px; }
+.work-card.is-live:hover {
+  border-color: #141510;
+  box-shadow: 0 8px 28px rgba(20, 21, 16, 0.12);
+  translate: 0 -3px;
+}
+
+.work-thumb {
+  position: relative;
+  /* Width leads, height follows from the ratio — never the other way round */
+  width: 100%;
+  height: auto;
+  aspect-ratio: 10 / 7;
+}
+.work-card--wide .work-thumb { aspect-ratio: 16 / 9; }
+/* The artwork sits straight on the card */
+.work-thumb-screen {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  border-radius: 6px;
+  background: #fff;
+  transition: box-shadow 220ms ease;
+}
+
+
+.work-body {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  padding: 20px 4px 4px;
+}
+.work-tags {
+  list-style: none;
+  margin: 0 0 14px;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.work-tag {
+  font-family: var(--font-ibm-plex-mono), monospace;
+  font-size: 11px;
+  line-height: 16px;
+  color: rgba(20, 21, 16, 0.7);
+  padding: 2px 8px;
+  border: 1px solid rgba(20, 21, 16, 0.2);
+  border-radius: 999px;
+}
+.work-eyebrow {
+  font-family: var(--font-ibm-plex-mono), monospace;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(20, 21, 16, 0.55);
+  margin: 0 0 6px;
+}
+.work-title {
+  font-family: var(--font-space-grotesk), sans-serif;
+  font-weight: 700;
+  font-size: 19px;
+  line-height: 1.35;
+  letter-spacing: -0.02em;
+  color: #141510;
+  margin: 0 0 8px;
+}
+.work-card--wide .work-title { font-size: 24px; line-height: 1.3; }
+.work-title-link {
+  color: inherit;
+  text-decoration: none;
+}
+.work-title-link::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 12px;
+}
+.work-desc {
+  font-family: var(--font-inter), sans-serif;
+  font-size: 15px;
+  line-height: 1.625;
+  color: #5c5a54;
+  margin: 0 0 12px;
+  max-width: 560px;
+}
+.work-facts {
+  font-family: var(--font-inter), sans-serif;
+  font-size: 14px;
+  line-height: 20px;
+  color: #6f6c65;
+  margin: 0;
+}
+.work-actions {
+  margin-top: auto;
+  padding-top: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.work-cta {
+  font-family: var(--font-inter), sans-serif;
+  font-size: 15px;
+  font-weight: 500;
+  color: #141510;
+  text-decoration: underline;
+  text-decoration-color: transparent;
+  text-underline-offset: 4px;
+  text-decoration-thickness: 2px;
+  transition: text-decoration-color 180ms ease;
+}
+.work-cta-arrow {
+  display: inline-block;
+  transition: translate 220ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.work-card.is-live:hover .work-cta { text-decoration-color: var(--hover); }
+.work-card.is-live:hover .work-cta-arrow { translate: 4px 0; }
+/* Phones keep :hover stuck on whatever was last tapped, so a card scrolled
+   past stayed lifted and outlined; touch gets no hover state */
+@media (hover: none) and (pointer: coarse) {
+  .work-card.is-live:hover { border-color: rgba(20, 21, 16, 0.14); box-shadow: none; translate: none; }
+  .work-card.is-live:hover .work-cta { text-decoration-color: transparent; }
+  .work-card.is-live:hover .work-cta-arrow { translate: none; }
+}
+.work-quick {
+  position: relative;
+  z-index: 1; /* above the stretched title link */
+  font-family: var(--font-inter), sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  color: #141510;
+  background: #f9fafb;
+  border: 1px solid #141510;
+  border-radius: 8px;
+  padding: 10px 14px;
+  transition: background-color 160ms ease, color 160ms ease;
+}
+.work-quick:hover { background: #141510; color: #fff; }
+
+/* ── Quick view ───────────────────────────────────────────────────────── */
+/* A case study as a short slide deck. The panel holds one fixed size and the
+   slides crossfade inside it, so turning a slide never moves the buttons. */
+.quick-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(20, 21, 16, 0.45);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  animation: quick-fade 180ms ease both;
+}
+.quick-close {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  border: 1px solid rgba(20, 21, 16, 0.2);
+  background: #fff;
+  font-size: 20px;
+  line-height: 1;
+  color: #141510;
+}
+.quick-close:hover { border-color: #141510; }
+.quick-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 44px;
+  padding: 0 18px;
+  border-radius: 999px;
+  background: #141510;
+  color: #fff;
+  font-family: var(--font-inter), sans-serif;
+  font-size: 15px;
+  font-weight: 600;
+  text-decoration: none;
+}
+.quick-cta:hover { background: #2a2b24; }
+
+.qv-panel {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: min(1160px, 100%);
+  height: min(760px, calc(100dvh - 48px));
+  background: #fdfbf9;
+  border: 2px solid #141510;
+  border-radius: 16px;
+  box-shadow: 0 24px 64px rgba(20, 21, 16, 0.3);
+  overflow: hidden;
+  animation: quick-rise 260ms cubic-bezier(0.34, 1.4, 0.64, 1) both;
+}
+
+/* Header: what this is, how long it takes, and where you are in it */
+.qv-head {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px 16px;
+  align-items: center;
+  padding: 16px 20px 0 32px;
+}
+.qv-kicker {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  margin: 0;
+  font-family: var(--font-ibm-plex-mono), monospace;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(20, 21, 16, 0.55);
+}
+.qv-kicker-time::before { content: '◷ '; }
+.qv-progress {
+  grid-column: 1 / -1;
+  display: flex;
+  gap: 8px;
+  padding-right: 12px;
+}
+.qv-progress-step {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 6px 0;
+  text-align: left;
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+.qv-progress-bars { display: flex; gap: 3px; }
+.qv-progress-bar {
+  flex: 1 1 0;
+  height: 4px;
+  border-radius: 999px;
+  background: rgba(20, 21, 16, 0.12);
+  position: relative;
+  overflow: hidden;
+}
+.qv-progress-bar::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: #141510;
+  transform-origin: left;
+  transform: scaleX(0);
+  transition: transform 320ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+.qv-progress-bar[data-filled='true']::after { transform: scaleX(1); }
+.qv-progress-step:hover .qv-progress-bar { background: rgba(20, 21, 16, 0.25); }
+.qv-progress-label {
+  font-family: var(--font-inter), sans-serif;
+  font-size: 12px;
+  line-height: 16px;
+  color: rgba(20, 21, 16, 0.45);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: color 200ms ease;
+}
+.qv-progress-step[data-current='true'] .qv-progress-label { color: #141510; font-weight: 600; }
+.qv-progress-step:hover .qv-progress-label { color: #141510; }
+
+/* Stage: every slide in one cell, only the current one shown */
+.qv-stage {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: grid;
+  touch-action: pan-y; /* sideways drags are ours, for swiping */
+}
+.qv-slide {
+  grid-area: 1 / 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 24px 32px;
+  display: grid;
+  gap: 32px;
+  transition: opacity 260ms ease, translate 360ms cubic-bezier(0.22, 1, 0.36, 1), visibility 0s linear 360ms;
+}
+.qv-slide[data-active='false'] { opacity: 0; visibility: hidden; pointer-events: none; }
+.qv-slide[data-side='before'] { translate: -32px 0; }
+.qv-slide[data-side='after'] { translate: 32px 0; }
+.qv-slide[data-active='true'] { transition-delay: 0s; }
+.qv-slide--split {
+  grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+  grid-template-rows: minmax(0, 1fr);
+}
+.qv-slide--split .qv-copy { align-self: center; }
+.qv-slide--stack { grid-template-rows: auto minmax(0, 1fr); gap: 18px; }
+.qv-slide--stack .qv-body { max-width: 760px; }
+.qv-slide--text { align-content: center; }
+
+.qv-label {
+  margin: 0 0 10px;
+  font-family: var(--font-ibm-plex-mono), monospace;
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(20, 21, 16, 0.55);
+}
+.qv-headline {
+  font-family: var(--font-space-grotesk), sans-serif;
+  font-weight: 700;
+  font-size: clamp(24px, 3vw, 34px);
+  line-height: 1.15;
+  letter-spacing: -0.025em;
+  color: #141510;
+  margin: 0;
+  max-width: 760px;
+  text-wrap: balance;
+}
+.qv-headline--title { font-size: clamp(30px, 4vw, 44px); line-height: 1.08; letter-spacing: -0.03em; }
+.qv-body {
+  font-family: var(--font-inter), sans-serif;
+  font-size: 16px;
+  line-height: 1.6;
+  color: #5c5a54;
+  margin: 12px 0 0;
+  max-width: 600px;
+  text-wrap: pretty;
+}
+
+.qv-facts {
+  display: grid;
+  gap: 14px;
+  margin: 24px 0 0;
+  padding-top: 20px;
+  border-top: 1px dashed rgba(20, 21, 16, 0.3);
+}
+.qv-facts div { display: grid; grid-template-columns: 88px minmax(0, 1fr); gap: 12px; }
+.qv-facts dt {
+  font-family: var(--font-ibm-plex-mono), monospace;
+  font-size: 11px;
+  line-height: 22px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(20, 21, 16, 0.55);
+}
+.qv-facts dd {
+  font-family: var(--font-inter), sans-serif;
+  font-size: 15px;
+  line-height: 22px;
+  color: #141510;
+  margin: 0;
+  white-space: pre-line;
+}
+
+.qv-stats {
+  list-style: none;
+  margin: 24px 0 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(var(--cols, 2), minmax(0, 1fr));
+  gap: 16px;
+}
+.qv-stats[data-count='1'] { --cols: 1; max-width: 320px; }
+.qv-stats[data-count='3'] { --cols: 3; }
+.qv-stats li {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 16px 18px;
+  border-radius: 12px;
+  background: #fff;
+  border: 1px solid rgba(20, 21, 16, 0.12);
+}
+.qv-stat-value {
+  font-family: var(--font-space-grotesk), sans-serif;
+  font-weight: 700;
+  font-size: clamp(30px, 3.6vw, 44px);
+  line-height: 1;
+  letter-spacing: -0.03em;
+  color: #141510;
+}
+.qv-stat-label {
+  font-family: var(--font-inter), sans-serif;
+  font-size: 14px;
+  line-height: 1.45;
+  color: #5c5a54;
+}
+/* With no picture beside them, the numbers are the slide */
+.qv-slide--text .qv-stats { margin-top: 32px; }
+.qv-slide--text .qv-stats li { padding: 24px; }
+.qv-slide--text .qv-stat-value { font-size: clamp(40px, 5vw, 64px); }
+
+.qv-points {
+  list-style: none;
+  margin: 20px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 12px;
+}
+.qv-points li { display: grid; grid-template-columns: 28px minmax(0, 1fr); column-gap: 10px; }
+.qv-point-num {
+  grid-row: span 2;
+  font-family: var(--font-ibm-plex-mono), monospace;
+  font-size: 12px;
+  line-height: 24px;
+  color: rgba(20, 21, 16, 0.45);
+}
+.qv-point-title {
+  font-family: var(--font-space-grotesk), sans-serif;
+  font-weight: 700;
+  font-size: 17px;
+  line-height: 24px;
+  letter-spacing: -0.01em;
+  color: #141510;
+  margin: 0;
+}
+.qv-point-body {
+  font-family: var(--font-inter), sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+  color: #5c5a54;
+  margin: 2px 0 0;
+}
+/* Without a picture, points become cards side by side */
+.qv-slide--text .qv-points {
+  grid-template-columns: repeat(var(--cols, 3), minmax(0, 1fr));
+  gap: 16px;
+  margin-top: 32px;
+}
+.qv-slide--text .qv-points[data-count='2'],
+.qv-slide--text .qv-points[data-count='4'] { --cols: 2; }
+.qv-slide--text .qv-points li {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 22px;
+  border-radius: 12px;
+  background: #fff;
+  border: 1px solid rgba(20, 21, 16, 0.12);
+}
+.qv-slide--text .qv-point-num { font-size: 13px; line-height: 1; }
+/* Options weighed against each other: the pick stands out, the rest step back */
+.qv-point-verdict {
+  align-self: flex-start;
+  padding: 2px 10px;
+  border-radius: 999px;
+  font-family: var(--font-ibm-plex-mono), monospace;
+  font-size: 11px;
+  line-height: 18px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #6f6c65;
+  border: 1px dashed rgba(20, 21, 16, 0.35);
+}
+.qv-slide--text .qv-points li[data-verdict='ruled-out'] { background: transparent; border-style: dashed; }
+.qv-points li[data-verdict='ruled-out'] .qv-point-title { color: #6f6c65; }
+.qv-slide--text .qv-points li[data-verdict='chosen'] { border: 2px solid #141510; box-shadow: 0 6px 20px rgba(20, 21, 16, 0.08); }
+.qv-points li[data-verdict='chosen'] .qv-point-verdict { background: #141510; color: #fff; border: 1px solid #141510; }
+.qv-slide--text .qv-point-title { font-size: 19px; line-height: 1.3; }
+.qv-slide--text .qv-point-body { font-size: 15px; line-height: 1.55; margin: 0; }
+
+/* The alternatives a decision was weighed against */
+.qv-options { margin-top: 24px; }
+.qv-options-label {
+  margin: 0 0 10px;
+  font-family: var(--font-ibm-plex-mono), monospace;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(20, 21, 16, 0.55);
+}
+.qv-options ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  max-width: 420px;
+}
+.qv-options li { display: flex; flex-direction: column; gap: 6px; opacity: 0.55; }
+.qv-options li[data-chosen] { opacity: 1; }
+.qv-option-img {
+  position: relative;
+  aspect-ratio: 3 / 2;
+  border-radius: 8px;
+  background: #fff;
+  border: 1px solid rgba(20, 21, 16, 0.15);
+  overflow: hidden;
+}
+.qv-options li[data-chosen] .qv-option-img { border: 2px solid #141510; }
+.qv-option-name {
+  font-family: var(--font-inter), sans-serif;
+  font-size: 12px;
+  line-height: 1.35;
+  color: #141510;
+}
+.qv-options li[data-chosen] .qv-option-name { font-weight: 600; }
+.qv-option-badge {
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: #141510;
+  color: #fff;
+  font-family: var(--font-ibm-plex-mono), monospace;
+  font-size: 9px;
+  line-height: 15px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.qv-quote {
+  margin: 24px 0 0;
+  padding: 4px 0 4px 18px;
+  border-left: 3px solid #141510;
+  max-width: 620px;
+}
+.qv-quote p {
+  font-family: var(--font-inter), sans-serif;
+  font-size: 17px;
+  line-height: 1.55;
+  color: #141510;
+  margin: 0;
+}
+.qv-quote footer {
+  margin-top: 8px;
+  font-family: var(--font-ibm-plex-mono), monospace;
+  font-size: 12px;
+  color: rgba(20, 21, 16, 0.55);
+}
+
+/* Visuals: a framed well, like the cards' artwork, with an optional caption */
+.qv-visual {
+  margin: 0;
+  min-height: 0;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.qv-caption {
+  font-family: var(--font-ibm-plex-mono), monospace;
+  font-size: 12px;
+  line-height: 16px;
+  color: rgba(20, 21, 16, 0.55);
+  text-align: center;
+}
+.qv-box {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
+  border-radius: 12px;
+  background: #efebe4;
+  overflow: hidden;
+}
+.qv-box--image img { padding: 12px; }
+.qv-box--thumb { flex: none; padding: 10px; aspect-ratio: 16 / 10; margin-block: auto; }
+.qv-demo { position: relative; flex: 1 1 auto; min-height: 0; overflow: hidden; }
+.qv-prototype { position: absolute; top: 0; left: 0; border: 0; transform-origin: 0 0; }
+.qv-demo-wrap { position: relative; flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; }
+.qv-demo-inner { position: absolute; top: 0; left: 0; transform-origin: 0 0; }
+
+/* A row of screens sharing one height: each takes width in proportion to its shape */
+.qv-gallery { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; gap: 10px; }
+.qv-tabs { display: flex; gap: 6px; }
+.qv-tab {
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(20, 21, 16, 0.2);
+  background: #fff;
+  font-family: var(--font-inter), sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  color: #141510;
+}
+.qv-tab[aria-selected='true'] { background: #141510; border-color: #141510; color: #fff; }
+.qv-row {
+  height: 100%;
+  min-height: 0;
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+}
+.qv-box--row .qv-row { padding: 16px; }
+.qv-shot {
+  /* ×10: flex hands out only part of the space when the weights sum below 1, as one phone's would */
+  flex: calc(var(--ratio) * 10) 1 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.qv-shot-img { position: relative; flex: 1 1 auto; min-height: 0; }
+.qv-shot-cap {
+  font-family: var(--font-inter), sans-serif;
+  font-size: 12px;
+  line-height: 16px;
+  color: #5c5a54;
+  text-align: center;
+}
+
+/* Groups: labelled sets of screens — a flow with arrows, or a before/after */
+.qv-groups { display: flex; align-items: stretch; gap: 10px; padding: 14px; }
+.qv-group {
+  /* Its padding and gaps up front, then width in proportion to its screens, so every phone comes out the same size */
+  flex: calc(var(--sum) * 10) 1 calc(24px + 8px * (var(--n) - 1));
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px 12px 12px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.6);
+  border: 1px solid rgba(20, 21, 16, 0.15);
+}
+.qv-group[data-dashed] { background: transparent; border: 1.5px dashed rgba(20, 21, 16, 0.35); }
+.qv-group-head { margin: 0; display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; }
+.qv-group-label {
+  font-family: var(--font-space-grotesk), sans-serif;
+  font-weight: 700;
+  font-size: 15px;
+  color: #141510;
+}
+.qv-group-tag {
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: #141510;
+  color: #fff;
+  font-family: var(--font-ibm-plex-mono), monospace;
+  font-size: 10px;
+  line-height: 16px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.qv-group[data-dashed] .qv-group-tag { background: transparent; color: #141510; border: 1px dashed #141510; }
+.qv-group .qv-row { gap: 8px; }
+.qv-arrow {
+  flex: none;
+  align-self: center;
+  font-size: 20px;
+  color: rgba(20, 21, 16, 0.5);
+}
+
+/* Pages: whole pages, each scrolling in its own window */
+.qv-pages { display: flex; gap: 14px; padding: 14px; }
+.qv-page { flex: 1 1 0; min-width: 0; min-height: 0; display: flex; flex-direction: column; gap: 6px; }
+.qv-page-label {
+  font-family: var(--font-ibm-plex-mono), monospace;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(20, 21, 16, 0.6);
+}
+.qv-page-window { position: relative; flex: 1 1 auto; min-height: 0; display: flex; }
+.qv-page-scroll {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
+  overflow-y: auto;
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(20, 21, 16, 0.15);
+  overscroll-behavior: contain;
+}
+
+/* Full screen: a corner button on each visual, and screens that open on a click */
+.qv-zoomable { cursor: zoom-in; }
+button.qv-shot-img { display: block; width: 100%; padding: 0; border: 0; background: none; }
+.qv-zoom {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 999px;
+  border: 1px solid rgba(20, 21, 16, 0.15);
+  background: rgba(255, 255, 255, 0.92);
+  color: #141510;
+  box-shadow: 0 2px 8px rgba(20, 21, 16, 0.12);
+  opacity: 0;
+  transition: opacity 160ms ease, transform 160ms ease;
+}
+.qv-box:hover > .qv-zoom,
+.qv-page-window:hover > .qv-zoom,
+.qv-demo-wrap:hover > .qv-zoom,
+.qv-zoom:focus-visible { opacity: 1; }
+.qv-zoom:hover { transform: scale(1.08); }
+/* No hover to reveal it on touch, so it stays put */
+@media (hover: none) { .qv-zoom { opacity: 1; } }
+
+.qv-lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 1100;
+  display: flex;
+  flex-direction: column;
+  background: #0c0c0a;
+  animation: quick-fade 160ms ease both;
+}
+.qv-lb-bar { display: flex; align-items: center; gap: 16px; padding: 14px 20px; }
+.qv-lb-caption {
+  flex: 1 1 auto;
+  min-width: 0;
+  margin: 0;
+  font-family: var(--font-ibm-plex-mono), monospace;
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.75);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.qv-lb-count { font-family: var(--font-ibm-plex-mono), monospace; font-size: 12px; color: rgba(255, 255, 255, 0.6); }
+.qv-lb-close {
+  flex: none;
+  width: 40px;
+  height: 40px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  background: transparent;
+  color: #fff;
+  font-size: 22px;
+  line-height: 1;
+}
+.qv-lb-close:hover { background: rgba(255, 255, 255, 0.12); }
+.qv-lb-stage {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  justify-content: center;
+  padding: 0 80px 28px;
+}
+.qv-lb-image { position: relative; width: 100%; height: 100%; }
+.qv-lb-page {
+  width: min(1100px, 100%);
+  height: 100%;
+  overflow-y: auto;
+  border-radius: 8px;
+  background: #fff;
+  overscroll-behavior: contain;
+}
+.qv-lb-demo { width: min(520px, 100%); height: 100%; display: flex; flex-direction: column; }
+.qv-lb-demo .qv-demo { flex: 1 1 auto; height: auto; }
+.qv-lb-nav {
+  position: absolute;
+  top: 50%;
+  translate: 0 -50%;
+  width: 48px;
+  height: 48px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+  font-size: 20px;
+}
+.qv-lb-nav:hover:not(:disabled) { background: rgba(255, 255, 255, 0.2); }
+.qv-lb-nav:disabled { opacity: 0.3; cursor: default; }
+.qv-lb-nav--prev { left: 16px; }
+.qv-lb-nav--next { right: 16px; }
+
+/* Footer: where you are, and the way on */
+.qv-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 20px 12px 32px;
+  border-top: 1px solid rgba(20, 21, 16, 0.12);
+}
+.qv-count {
+  margin: 0;
+  white-space: nowrap;
+  font-family: var(--font-ibm-plex-mono), monospace;
+  font-size: 13px;
+  color: rgba(20, 21, 16, 0.45);
+}
+.qv-count-now { color: #141510; font-weight: 600; }
+.qv-nav { position: relative; display: flex; align-items: center; gap: 8px; }
+
+/* One-time tips: the theme-toggle callout's bubble, placed for the deck */
+.qv-tip[data-placement='above'] {
+  position: absolute;
+  bottom: calc(100% + 12px);
+  right: 0;
+  z-index: 5;
+  transform: translateY(6px) scale(0.96);
+  transform-origin: bottom right;
+}
+.qv-tip[data-placement='above'] .theme-toggle-callout-caret { top: auto; bottom: -4px; right: 28px; }
+.qv-tip[data-placement='above'][data-entered='true'] { transform: none; }
+.qv-tip[data-placement='inside'] { max-width: 300px; transform-origin: bottom center; transform: translateY(6px) scale(0.96); }
+.qv-tip[data-placement='inside'][data-entered='true'] { transform: none; }
+.qv-page-tip {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 14px;
+  z-index: 3;
+  display: flex;
+  justify-content: center;
+  pointer-events: none;
+}
+.qv-page-tip .qv-tip { pointer-events: auto; }
+.qv-kbd {
+  display: inline-grid;
+  place-items: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  border-radius: 4px;
+  font-family: var(--font-ibm-plex-mono), monospace;
+  font-size: 11px;
+  line-height: 1;
+  vertical-align: 1px;
+}
+.qv-prev {
+  width: 44px;
+  height: 44px;
+  border-radius: 999px;
+  border: 1px solid rgba(20, 21, 16, 0.2);
+  background: #fff;
+  font-size: 18px;
+  color: #141510;
+}
+.qv-prev:hover:not(:disabled) { border-color: #141510; }
+.qv-prev:disabled { opacity: 0.35; cursor: default; }
+.qv-next {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 44px;
+  padding: 0 20px;
+  border-radius: 999px;
+  border: 0;
+  background: #141510;
+  color: #fff;
+  font-family: var(--font-inter), sans-serif;
+  font-size: 15px;
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+}
+.qv-next:hover { background: #2a2b24; }
+.qv-cta-short { display: none; }
+
+@keyframes quick-fade { from { opacity: 0; } }
+@keyframes quick-rise { from { opacity: 0; translate: 0 16px; scale: 0.98; } }
+
+@media (max-width: 799px) {
+  .quick-backdrop { padding: 12px; }
+  .qv-panel { height: calc(100dvh - 24px); }
+  .qv-head { padding: 14px 14px 0 20px; }
+  .qv-kicker-time { display: none; }
+  .qv-progress { padding-right: 0; gap: 4px; }
+  /* Seven labels don't fit a phone; the slide's own label says where you are */
+  .qv-progress-label { display: none; }
+  .qv-slide { padding: 20px; gap: 20px; align-content: start; }
+  .qv-slide--split { grid-template-columns: minmax(0, 1fr); grid-template-rows: none; }
+  .qv-slide--stack { grid-template-rows: none; }
+  /* Its full height, so the slide scrolls instead of squeezing the visual into what's left */
+  .qv-visual { height: auto; min-height: auto; }
+  .qv-box--image { flex: none; height: clamp(200px, 36dvh, 320px); }
+  .qv-box--row .qv-row { height: 300px; padding: 10px; gap: 8px; }
+  .qv-box--row .qv-row[data-wide] { height: auto; flex-direction: column; }
+  .qv-row[data-wide] .qv-shot { flex: none; }
+  .qv-row[data-wide] .qv-shot-img { flex: none; aspect-ratio: var(--ratio); }
+  .qv-groups { flex-direction: column; padding: 10px; }
+  .qv-group { flex: none; }
+  .qv-group .qv-row { height: 220px; }
+  .qv-demo { flex: none; height: 360px; }
+  .qv-box--prototype { flex: none; height: clamp(360px, 58dvh, 520px); }
+  .qv-arrow { rotate: 90deg; }
+  .qv-pages { flex: none; height: 60dvh; flex-direction: column; padding: 10px; }
+  .qv-options ul { max-width: none; }
+  .qv-stats, .qv-slide--text .qv-points { --cols: 1 !important; }
+  .qv-slide--text .qv-stats li { padding: 16px 18px; }
+  .qv-slide--text .qv-stat-value { font-size: 40px; }
+  .qv-slide--text .qv-points li { padding: 18px; }
+  .qv-foot { padding: 12px 14px 12px 20px; }
+  .qv-lb-stage { padding: 0 12px 80px; }
+  /* The window's bottom edge is below the fold on a phone, so the tip sits up top, under the corner button */
+  .qv-page-tip { bottom: auto; top: 52px; padding: 0 10px; }
+  .qv-lb-nav { top: auto; bottom: 16px; translate: none; }
+  .qv-lb-nav--prev { left: calc(50% - 56px); }
+  .qv-lb-nav--next { right: calc(50% - 56px); }
+  .qv-next-label, .qv-cta-long { display: none; }
+  .qv-cta-short { display: inline; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .qv-slide { translate: none !important; transition: opacity 120ms ease, visibility 0s linear 120ms; }
+  .qv-panel, .quick-backdrop { animation: none; }
+}
+
+/* ── About preview ────────────────────────────────────────────────────── */
+.home-about-grid {
+  display: grid;
+  grid-template-columns: 120px minmax(0, 1fr);
+  gap: 24px;
+  align-items: start;
+}
+.home-about-photo {
+  width: 120px;
+  height: 120px;
+  border-radius: 999px;
+  object-fit: cover;
+  object-position: 50% 6%;
+}
+.home-about-lede {
+  font-family: var(--font-inter), sans-serif;
+  font-size: 17px;
+  line-height: 1.6;
+  color: #141510;
+  margin: 0 0 16px;
+  max-width: 600px;
+}
+.home-about-edu {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--font-ibm-plex-mono), monospace;
+  font-size: 13px;
+  color: rgba(20, 21, 16, 0.65);
+  margin: 0 0 28px;
+}
+.home-about-school { color: #141510; font-weight: 600; }
+.home-about-sep { color: #141510; font-size: 11px; }
+.home-about-degree { display: inline-flex; align-items: center; gap: 10px; white-space: nowrap; }
+/* A phone always breaks the line after the school, which left its star dangling */
+@media (max-width: 480px) {
+  .home-about-edu > .home-about-sep { display: none; }
+}
+.home-about-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 44px;
+  padding: 0 20px;
+  border-radius: 8px;
+  background: #141510;
+  color: #fff;
+  font-family: var(--font-inter), sans-serif;
+  font-size: 15px;
+  font-weight: 600;
+  text-decoration: none;
+}
+.home-about-cta-arrow {
+  display: inline-block;
+  transition: translate 220ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.home-about-cta:hover .home-about-cta-arrow { translate: 4px 0; }
+@media (max-width: 599px) {
+  .home-about-grid { grid-template-columns: 1fr; }
+  .home-about-photo { width: 96px; height: 96px; }
+}
+
+/* ── Circuit background ───────────────────────────────────────────────────
+   z-index -1 inside the main's own stacking context: above its ground, below
+   every in-flow block. Ink at rest; on hover the trace goes full ink and its
+   pads pick up a BRYCE letter fill with the same black outline. */
+.circuit-bg {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.cb-circuit {
+  opacity: 0.36;
+  transition: opacity 260ms ease;
+}
+/* The hero board is meant to be seen, so it rests darker */
+.cb-circuit--hero {
+  opacity: 0.62;
+}
+.cb-circuit.is-active {
+  opacity: 1;
+}
+
+.cb-trace {
+  fill: none;
+  stroke: #141510;
+  stroke-width: 1.5;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: cb-draw 1.1s cubic-bezier(0.65, 0, 0.35, 1) var(--draw-delay, 0s) forwards;
+  transition: stroke-width 220ms ease;
+}
+.cb-trace--thin {
+  stroke-width: 1.2;
+}
+.cb-circuit.is-active .cb-trace {
+  stroke-width: 2.25;
+}
+.cb-circuit.is-active .cb-trace--thin {
+  stroke-width: 1.75;
+}
+@keyframes cb-draw {
+  to { stroke-dashoffset: 0; }
+}
+@keyframes cb-pop {
+  from { scale: 0; }
+  to { scale: 1; }
+}
+/* Hold the board until the splash loader has handed over */
+.circuit-bg:not(.is-ready) .cb-trace,
+.circuit-bg:not(.is-ready) .cb-node {
+  animation-play-state: paused;
+}
+.circuit-bg:not(.is-ready) .cb-pulse,
+.circuit-bg:not(.is-ready) .cb-star {
+  visibility: hidden;
+}
+
+/* Each pad pops in once its trace has drawn past.
+   Fill is a mix of the part's resting colour (--base) and its circuit colour,
+   weighted by --blink, so a passing pulse can tint it without fighting hover. */
+@property --blink {
+  syntax: '<number>';
+  inherits: false;
+  initial-value: 0;
+}
+.cb-node {
+  --base: #f9fafb;
+  animation: cb-pop 360ms cubic-bezier(0.34, 1.56, 0.64, 1) calc(var(--draw-delay, 0s) + 0.75s) both;
+  fill: color-mix(in srgb, var(--c) calc(var(--blink) * 100%), var(--base));
+  stroke: #141510;
+  stroke-width: 1.5;
+  transform-box: fill-box;
+  transform-origin: center;
+  transition: fill 220ms ease, transform 260ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.cb-node--solid {
+  --base: #141510;
+  stroke: none;
+}
+/* Arrowheads and pads: solid ink at rest, filled with colour when lit */
+.cb-node--ink {
+  --base: #141510;
+}
+.cb-node--hole {
+  fill: #f9fafb;
+}
+/* Every part lights up on its own every so often, each on a slow loop of
+   its own (--tw-dur, --tw-delay), and carries a little glow while it does */
+.cb-node.cb-twinkle {
+  animation:
+    cb-pop 360ms cubic-bezier(0.34, 1.56, 0.64, 1) calc(var(--draw-delay, 0s) + 0.75s) both,
+    cb-glow var(--tw-dur) linear var(--tw-delay) infinite;
+  filter: drop-shadow(0 0 calc(var(--blink) * 4px) color-mix(in srgb, var(--c) calc(var(--blink) * 100%), transparent));
+}
+@keyframes cb-glow {
+  0%   { --blink: 0; }
+  1.5% { --blink: 1; }
+  4.5% { --blink: 1; }
+  8%   { --blink: 0; }
+  100% { --blink: 0; }
+}
+.cb-band {
+  fill: none;
+  stroke: #141510;
+  stroke-width: 1.2;
+  pointer-events: none;
+}
+
+/* BR1 — the chip the hero copy is wired into */
+.cb-chip-pins {
+  fill: none;
+  stroke: #141510;
+  stroke-width: 2;
+  stroke-linecap: square;
+}
+.cb-chip-body {
+  fill: #f9fafb;
+  stroke: #141510;
+  stroke-width: 2;
+  transition: fill 240ms ease;
+}
+.cb-chip-dot {
+  fill: #141510;
+}
+/* Solder feet at the ends of BR1's pins, the die under its lid, and a
+   status light */
+.cb-chip-foot {
+  fill: #141510;
+}
+.cb-chip-die {
+  fill: none;
+  stroke: #141510;
+  stroke-width: 0.75;
+  stroke-opacity: 0.3;
+  stroke-dasharray: 2 2;
+}
+.cb-chip-led {
+  fill: #f9fafb;
+  stroke: #141510;
+  stroke-width: 1.25;
+}
+
+/* BR1 answers each signal that arrives or leaves: a ring swells off the body,
+   the lid flushes with the signal's colour, and the light blinks. The timing
+   is SMIL, on the dots' own clock (see CircuitBackground); CSS only keeps
+   them hidden until the board has drawn in, like the dots (cb-wait, held
+   while the board isn't ready). */
+.cb-chip-fx {
+  pointer-events: none;
+  animation: cb-wait 1.6s step-end;
+}
+.circuit-bg:not(.is-ready) .cb-chip-fx {
+  animation-play-state: paused;
+}
+.cb-chip-glow {
+  fill: none;
+  stroke-width: 2;
+}
+/* The hero's travelling dots carry a little glow of their own */
+.cb-circuit--hero .cb-pulse {
+  filter: drop-shadow(0 0 3px var(--c));
+}
+.cb-chip-label {
+  font-family: var(--font-ibm-plex-mono), monospace;
+  font-size: 15px;
+  font-weight: 400;
+  letter-spacing: 0.04em;
+  fill: #141510;
+}
+.cb-chip {
+  animation: cb-fade 500ms ease 0.2s both;
+}
+.cb-circuit.is-active .cb-chip-body {
+  fill: var(--c);
+}
+@keyframes cb-fade {
+  from { opacity: 0; }
+}
+.circuit-bg:not(.is-ready) .cb-chip {
+  animation-play-state: paused;
+}
+/* The zoom splash dives into BR1, so the chip is already there while the
+   rest of the board waits for the camera to settle */
+html.splash-zoom .cb-chip {
+  animation: none;
+}
+.cb-circuit.is-active .cb-node:not(.cb-node--solid):not(.cb-node--hole) {
+  --base: var(--c);
+  transform: scale(1.3);
+}
+.cb-circuit.is-active .cb-node--solid {
+  transform: scale(1.3);
+}
+
+/* The travelling dot carries its circuit's colour even at rest */
+.cb-pulse {
+  fill: var(--c);
+  stroke: #141510;
+  stroke-width: 1.5;
+}
+/* No signal until its trace has finished drawing in (the 1.1s cb-draw after
+   --draw-delay); the wait holds while the board isn't ready yet */
+.circuit-bg .cb-pulse {
+  animation: cb-wait calc(var(--draw-delay, 0s) + 1.1s) step-end;
+}
+.circuit-bg:not(.is-ready) .cb-pulse {
+  animation-play-state: paused;
+}
+@keyframes cb-wait {
+  from, to { visibility: hidden; }
+}
+
+/* Stars blink in and out on their own clocks; hovering one (even mid-blink)
+   pins it open in colour */
+.cb-star {
+  opacity: 0;
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: cb-twinkle 10s ease-in-out infinite;
+}
+.cb-star-outer {
+  /* A hint of each star's colour even at rest */
+  fill: color-mix(in srgb, var(--c) 65%, #141510);
+  stroke: #141510;
+  stroke-width: 0;
+  transition: fill 200ms ease;
+}
+.cb-star-inner {
+  fill: #f9fafb;
+}
+.cb-star.is-active {
+  animation: none;
+  opacity: 1;
+  scale: 1.35;
+  rotate: 45deg;
+  transition: scale 280ms cubic-bezier(0.34, 1.56, 0.64, 1), rotate 280ms ease;
+}
+.cb-star.is-active .cb-star-outer {
+  fill: var(--c);
+  stroke-width: 1.2;
+}
+@keyframes cb-twinkle {
+  0%, 52%, 100% { opacity: 0;    scale: 0.2; rotate: -45deg; }
+  60%           { opacity: 0.42; scale: 1;   rotate: 0deg; }
+  84%           { opacity: 0.42; scale: 1;   rotate: 0deg; }
+  92%           { opacity: 0;    scale: 0.4; rotate: 30deg; }
+}
+
+/* Touch screens: the glows are filters redrawn every frame, which is what made
+   scrolling the board stutter on phones. Parts still light up, just without
+   the halo. */
+@media (hover: none) and (pointer: coarse) {
+  .cb-node.cb-twinkle { filter: none; }
+  .cb-circuit--hero .cb-pulse { filter: none; }
+  .splash-signal { filter: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cb-trace, .cb-node, .cb-chip { animation: none; stroke-dashoffset: 0; }
+  .cb-pulse { display: none; }
+  .cb-chip-fx { display: none; }
+  .cb-node.cb-twinkle { animation: none; filter: none; }
+  .cb-star { animation: none; opacity: 0.3; }
+}
+
+/* ── First-visit splash ───────────────────────────────────────────────────
+   The page zooms out of BR1 (see ChipSplash). Its die shares the board's
+   vocabulary: ink traces, paper-holed pads, a signal dot in a BRYCE colour.
+   Timings come in as --at (start) and --dur from the component. */
+.splash--cover {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: #f9fafb;
+  pointer-events: none;
+}
+
+.splash-stroke {
+  fill: none;
+  stroke: #141510;
+  stroke-width: 0.42;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: splash-draw var(--dur) linear var(--at) forwards;
+}
+@keyframes splash-draw { to { stroke-dashoffset: 0; } }
+
+.splash-pad,
+.splash-joint {
+  transform-box: fill-box;
+  transform-origin: center;
+  scale: 0;
+  animation: splash-pop 260ms cubic-bezier(0.34, 1.56, 0.64, 1) var(--at) forwards;
+}
+.splash-pad { fill: var(--c); stroke: #141510; stroke-width: 0.22; }
+.splash-joint { fill: #141510; }
+@keyframes splash-pop { to { scale: 1; } }
+
+.splash-signal {
+  fill: var(--c);
+  opacity: 0;
+  offset-rotate: 0deg;
+  filter: drop-shadow(0 0 4px var(--c));
+  animation:
+    splash-ride var(--dur) linear var(--at) forwards,
+    splash-signal-life var(--dur) linear var(--at) forwards;
+}
+@keyframes splash-ride { from { offset-distance: 0%; } to { offset-distance: 100%; } }
+@keyframes splash-signal-life { 0% { opacity: 1; } 85% { opacity: 1; } 100% { opacity: 0; } }
+
+/* The die sits on BR1 inside the page, which is what zooms */
+.splash-die {
+  position: absolute;
+  z-index: 0;
+  pointer-events: none;
+  transition: opacity 450ms ease;
+}
+.splash-die svg { display: block; overflow: visible; }
+.splash-die.is-fading { opacity: 0; }
+
+/* Phones: BR1 and the die in a layer over the page, resized each frame so it
+   stays sharp while the page under it zooms (see ChipSplash) */
+.splash-crisp-chip {
+  position: fixed;
+  left: 0;
+  top: 0;
+  z-index: 2;
+  overflow: visible;
+  pointer-events: none;
+}
+.splash-crisp-die { transition: opacity 450ms ease; }
+.splash-crisp-die.is-fading { opacity: 0; }
+/* Safari ignores `scale` on these, so they showed as specks before their
+   letter etched; keep them transparent until they pop */
+.splash-crisp-die .splash-pad,
+.splash-crisp-die .splash-joint {
+  opacity: 0;
+  animation-name: splash-pop-in;
+}
+@keyframes splash-pop-in {
+  from { opacity: 1; scale: 0; }
+  to { opacity: 1; scale: 1; }
+}
+html.splash-crisp .circuit-bg .cb-circuit--hero .cb-chip { visibility: hidden; }
+/* Before the board draws, Safari still paints a round cap at the end of each
+   undrawn trace; the zoom blew the one on BR1's pin up into a blurry dot */
+html.splash-crisp .circuit-bg:not(.is-ready) .cb-trace,
+html.splash-crisp .circuit-bg:not(.is-ready) .cb-node { visibility: hidden; }
+
+/* Phones: the die on a sheet over the page, which fades instead of zooming */
+.splash-sheet {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f9fafb;
+  pointer-events: none;
+  transition: opacity 450ms ease;
+}
+.splash-sheet.is-fading { opacity: 0; }
+.splash-sheet-die {
+  display: block;
+  width: min(86vw, 560px);
+  height: auto;
+  overflow: visible;
+}
+
+/* ── WORDS chips ──────────────────────────────────────────────────────────
+   The endorsements heading's letters, each a CPU chip after BR1. In view,
+   they glide together and each letter etches in (same keyframes as the
+   splash). Hovering closes the circuit: wires draw W to S, then colour
+   sweeps across; leaving lets it all go quickly. Timings come in as
+   --at / --dur / --lit-at from WordChips. */
+.word-chips {
+  position: relative;
+  display: inline-block;
+  line-height: 0;
+}
+.word-chips-wires { position: absolute; inset: 0; overflow: visible; }
+.word-chips-wire {
+  fill: none;
+  stroke: #141510;
+  stroke-width: 1.75;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  transition: stroke-dashoffset 160ms ease;
+}
+.word-chips.is-hot .word-chips-wire {
+  stroke-dashoffset: 0;
+  transition: stroke-dashoffset var(--dur) linear var(--at);
+}
+.word-chips-slot {
+  position: absolute;
+  inset: 0;
+  translate: var(--spread) 0;
+  opacity: 0;
+  transition: translate 500ms cubic-bezier(0.22, 1, 0.36, 1), opacity 300ms ease;
+}
+.word-chips.is-live .word-chips-slot { translate: 0 0; opacity: 1; }
+.word-chip { position: absolute; top: 0; display: block; overflow: visible; }
+.word-chip-body { transition: fill 200ms ease; }
+.word-chips.is-hot .word-chip-body { fill: var(--c); transition: fill 280ms ease var(--lit-at); }
+.word-chip-stroke {
+  fill: none;
+  stroke: #141510;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: splash-draw var(--dur) linear var(--at) forwards;
+}
+.word-chip-pad,
+.word-chip-joint {
+  transform-box: fill-box;
+  transform-origin: center;
+  scale: 0;
+  animation: splash-pop 260ms cubic-bezier(0.34, 1.56, 0.64, 1) var(--at) forwards;
+}
+.word-chip-pad { fill: var(--c); stroke: #141510; stroke-width: 1.2; }
+/* Once the body takes the colour, the pads flip to paper so they still show */
+.word-chip-pad { transition: fill 200ms ease; }
+.word-chips.is-hot .word-chip-pad { fill: #f9fafb; transition: fill 280ms ease var(--lit-at); }
+.word-chip-joint { fill: #141510; }
+.word-chip-signal {
+  fill: var(--c);
+  stroke: #141510;
+  stroke-width: 0.8;
+  opacity: 0;
+  offset-rotate: 0deg;
+  animation:
+    splash-ride var(--dur) linear var(--at) forwards,
+    splash-signal-life var(--dur) linear var(--at) forwards;
+}
+.word-chips:not(.is-live) .word-chip * { animation-play-state: paused; }
+@media (prefers-reduced-motion: reduce) {
+  .word-chips-slot { translate: 0 0; opacity: 1; transition: none; }
+  .word-chip * { animation: none !important; }
+  .word-chips-wire, .word-chip-body, .word-chip-pad { transition: none !important; }
+  .word-chip-stroke { stroke-dashoffset: 0; }
+  .word-chip-pad, .word-chip-joint { scale: 1; }
+  .word-chip-signal { display: none; }
+}
+
+/* ── Pages in the home page's dress ──────────────────────────────────────
+   About and Playground share the home page's ground, type and board:
+   Space Grotesk headings, Inter body, mono eyebrows on the cool off-white. */
+html:has(.about-main),
+body:has(.about-main),
+html:has(.page-framed),
+body:has(.page-framed) {
+  background: #f9fafb !important;
+}
+.about-main .display-heading {
+  font-family: var(--font-space-grotesk), sans-serif;
+  font-weight: 700;
+  font-size: clamp(36px, 5.5vw, 56px);
+  line-height: 1.1;
+  letter-spacing: -0.03em;
+}
+.page-framed {
+  position: relative;
+  z-index: 1;
+  max-width: 1024px;
+  margin: 0 auto;
+  padding: 0 24px;
+  box-sizing: border-box;
+}
+.playground-main {
+  min-height: calc(100dvh - 64px);
+  display: flex;
+  align-items: center;
+}
+.playground-intro {
+  max-width: 640px;
+  padding: 96px 0;
+}
+.page-eyebrow {
+  font-family: var(--font-ibm-plex-mono), monospace;
+  font-size: 14px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #141510;
+  margin: 0 0 20px;
+}
+.page-title {
+  font-family: var(--font-space-grotesk), sans-serif;
+  font-weight: 700;
+  font-size: clamp(40px, 7vw, 64px);
+  line-height: 1.094;
+  letter-spacing: -0.03em;
+  color: #000;
+  margin: 0 0 24px;
+}
+.page-lede {
+  font-family: var(--font-inter), sans-serif;
+  font-size: clamp(17px, 2vw, 20px);
+  line-height: 1.35;
+  color: #5c5a54;
+  margin: 0 0 32px;
+}
+

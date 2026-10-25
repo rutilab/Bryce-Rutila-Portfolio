@@ -1101,7 +1101,7 @@ function EndOfSessionFlowDiagram() {
             style={{
               /* Solid fill in lightbox — frosted BLOCK_BG reads as transparent on the dark overlay */
               background: '#e8eef8',
-              cursor: 'none',
+              cursor: 'default',
               maxWidth: FLOW_DIAGRAM_MIN_W,
               height: lightboxInnerHeight > 0 ? lightboxInnerHeight * lightboxScale : undefined,
             }}

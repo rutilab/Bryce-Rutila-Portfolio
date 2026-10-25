@@ -4,14 +4,32 @@ import { usePathname, useSearchParams } from 'next/navigation';
 import { useEffect, useRef } from 'react';
 import { normalizePathname } from '@/lib/analytics/labels';
 
+/**
+ * crypto.randomUUID only exists on secure pages (https or localhost), so a
+ * phone opening the dev server over the network threw on every event.
+ * getRandomValues works everywhere.
+ */
+function newId(): string {
+  if (typeof crypto.randomUUID === 'function') return crypto.randomUUID();
+  const b = crypto.getRandomValues(new Uint8Array(16));
+  b[6] = (b[6] & 0x0f) | 0x40;
+  b[8] = (b[8] & 0x3f) | 0x80;
+  const h = Array.from(b, (x) => x.toString(16).padStart(2, '0')).join('');
+  return `${h.slice(0, 8)}-${h.slice(8, 12)}-${h.slice(12, 16)}-${h.slice(16, 20)}-${h.slice(20)}`;
+}
+
 function getSessionId(): string {
   if (typeof window === 'undefined') return '';
-  let sid = sessionStorage.getItem('analytics_sid');
-  if (!sid) {
-    sid = crypto.randomUUID();
-    sessionStorage.setItem('analytics_sid', sid);
+  try {
+    let sid = sessionStorage.getItem('analytics_sid');
+    if (!sid) {
+      sid = newId();
+      sessionStorage.setItem('analytics_sid', sid);
+    }
+    return sid;
+  } catch {
+    return '';
   }
-  return sid;
 }
 
 function getVisitorId(): string {

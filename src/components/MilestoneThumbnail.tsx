@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { MilestoneHeroScreen } from '@/components/case-study';
 
 /** Intrinsic width the screen is laid out at before scaling. */
@@ -26,27 +26,46 @@ const DESIGN_H = 400;
  * needed, and it avoids creating a transform containing block, which can disturb
  * the CSS animations inside the injected mountain SVG (drifting clouds, waving
  * flag).
+ *
+ * Phones get `transform: scale` instead, sized from the screen's measured
+ * height. Safari's zoom left the screen too big for the card (the flag and
+ * progress meter cut off) and confused its in-view check, so the reveal
+ * paused partway and never drew the last check.
  */
+const TOUCH = '(hover: none) and (pointer: coarse)';
+const subscribeTouch = (cb: () => void) => {
+  const mq = window.matchMedia(TOUCH);
+  mq.addEventListener('change', cb);
+  return () => mq.removeEventListener('change', cb);
+};
+
 export function MilestoneThumbnail() {
   const outerRef = useRef<HTMLDivElement>(null);
+  const innerRef = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(0.5);
+  // False on the server, so hydration matches; real value right after
+  const touch = useSyncExternalStore(subscribeTouch, () => window.matchMedia(TOUCH).matches, () => false);
 
   useEffect(() => {
     const outer = outerRef.current;
-    if (!outer) return;
+    const inner = innerRef.current;
+    if (!outer || !inner) return;
 
     const update = () => {
       const containerW = outer.clientWidth;
       const containerH = outer.clientHeight;
       if (containerW <= 0 || containerH <= 0) return;
-      setScale(Math.min(containerW / DESIGN_W, containerH / DESIGN_H));
+      // A transform leaves layout alone, so the screen's own height is real
+      const designH = touch ? inner.offsetHeight || DESIGN_H : DESIGN_H;
+      setScale(Math.min(containerW / DESIGN_W, containerH / designH));
     };
 
     update();
     const ro = new ResizeObserver(update);
     ro.observe(outer);
+    if (touch) ro.observe(inner);
     return () => ro.disconnect();
-  }, []);
+  }, [touch]);
 
   return (
     <div
@@ -63,12 +82,20 @@ export function MilestoneThumbnail() {
       }}
     >
       <div
+        ref={innerRef}
         style={{
           width: DESIGN_W,
-          zoom: scale,
           pointerEvents: 'none',
           userSelect: 'none',
           flexShrink: 0,
+          ...(touch
+            ? {
+                position: 'absolute',
+                left: '50%',
+                top: '50%',
+                transform: `translate(-50%, -50%) scale(${scale})`,
+              }
+            : { zoom: scale }),
         }}
       >
         <MilestoneHeroScreen hideContinue />

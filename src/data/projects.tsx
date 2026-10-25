@@ -5,6 +5,7 @@ import { MilestoneThumbnail } from '@/components/MilestoneThumbnail';
 import { DisccThumbnail } from '@/components/DisccThumbnail';
 import { ScreenRecordingThumbnail } from '@/components/ScreenRecordingThumbnail';
 import type { Project } from '@/components/ProjectCard';
+import { AI_ASSISTANT_DECK, FOCUS_COACH_DECK, LANDING_PAGE_DECK } from '@/data/quickViews';
 
 /**
  * Every project on the site, in the order the home page lists them. The folder
@@ -22,6 +23,10 @@ export const PROJECTS: Project[] = [
     cardColor: '#31e300',
     folder: 'finding-focus',
     href: '/case-studies/focus-coach-achievements',
+    role: 'Sole Product Designer',
+    team: ['Mike Mrazek, Co-founder', 'Thomas Kennedy, SWE'],
+    timeline: 'Jan – Jul 2026',
+    quickView: FOCUS_COACH_DECK,
     thumbnailContent: <MilestoneThumbnail />,
   },
   {
@@ -34,6 +39,10 @@ export const PROJECTS: Project[] = [
     cardColor: '#ff9c12',
     folder: 'finding-focus',
     href: '/case-studies/finding-focus-ai-assistant',
+    role: 'UX Lead',
+    team: ['Mike Mrazek, Co-founder', 'Thomas Kennedy, SWE'],
+    timeline: 'Aug – Nov 2024',
+    quickView: AI_ASSISTANT_DECK,
     thumbnailContent: <AIAssistantThumbnail />,
   },
   {
@@ -46,6 +55,10 @@ export const PROJECTS: Project[] = [
     cardColor: '#12b4ff',
     folder: 'finding-focus',
     href: '/case-studies/finding-focus-landing-page',
+    role: 'UX Designer',
+    team: ['Mike Mrazek, Co-founder', 'Thomas Kennedy, SWE'],
+    timeline: 'Sep – Nov 2025',
+    quickView: LANDING_PAGE_DECK,
     thumbnailContent: (
       <img src="/case-studies/landing-page/header-and-hero.png" alt="" style={{
         position: 'absolute', inset: '8px',
