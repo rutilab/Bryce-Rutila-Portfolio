@@ -26,27 +26,42 @@ const DESIGN_H = 400;
  * needed, and it avoids creating a transform containing block, which can disturb
  * the CSS animations inside the injected mountain SVG (drifting clouds, waving
  * flag).
+ *
+ * Phones get `transform: scale` instead, sized from the screen's measured
+ * height. Safari's zoom left the screen too big for the card (the flag and
+ * progress meter cut off) and confused its in-view check, so the reveal
+ * paused partway and never drew the last check.
  */
 export function MilestoneThumbnail() {
   const outerRef = useRef<HTMLDivElement>(null);
+  const innerRef = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(0.5);
+  const [touch, setTouch] = useState(false);
+
+  useEffect(() => {
+    setTouch(window.matchMedia('(hover: none) and (pointer: coarse)').matches);
+  }, []);
 
   useEffect(() => {
     const outer = outerRef.current;
-    if (!outer) return;
+    const inner = innerRef.current;
+    if (!outer || !inner) return;
 
     const update = () => {
       const containerW = outer.clientWidth;
       const containerH = outer.clientHeight;
       if (containerW <= 0 || containerH <= 0) return;
-      setScale(Math.min(containerW / DESIGN_W, containerH / DESIGN_H));
+      // A transform leaves layout alone, so the screen's own height is real
+      const designH = touch ? inner.offsetHeight || DESIGN_H : DESIGN_H;
+      setScale(Math.min(containerW / DESIGN_W, containerH / designH));
     };
 
     update();
     const ro = new ResizeObserver(update);
     ro.observe(outer);
+    if (touch) ro.observe(inner);
     return () => ro.disconnect();
-  }, []);
+  }, [touch]);
 
   return (
     <div
@@ -63,12 +78,20 @@ export function MilestoneThumbnail() {
       }}
     >
       <div
+        ref={innerRef}
         style={{
           width: DESIGN_W,
-          zoom: scale,
           pointerEvents: 'none',
           userSelect: 'none',
           flexShrink: 0,
+          ...(touch
+            ? {
+                position: 'absolute',
+                left: '50%',
+                top: '50%',
+                transform: `translate(-50%, -50%) scale(${scale})`,
+              }
+            : { zoom: scale }),
         }}
       >
         <MilestoneHeroScreen hideContinue />

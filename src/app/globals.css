@@ -3781,6 +3781,7 @@ body:has(.landing-main--framed) {
 .qv-box--image img { padding: 12px; }
 .qv-box--thumb { flex: none; padding: 10px; aspect-ratio: 16 / 10; margin-block: auto; }
 .qv-demo { position: relative; flex: 1 1 auto; min-height: 0; overflow: hidden; }
+.qv-prototype { position: absolute; top: 0; left: 0; border: 0; transform-origin: 0 0; }
 .qv-demo-wrap { position: relative; flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; }
 .qv-demo-inner { position: absolute; top: 0; left: 0; transform-origin: 0 0; }
 
@@ -4098,6 +4099,7 @@ button.qv-shot-img { display: block; width: 100%; padding: 0; border: 0; backgro
   .qv-group { flex: none; }
   .qv-group .qv-row { height: 220px; }
   .qv-demo { flex: none; height: 360px; }
+  .qv-box--prototype { flex: none; height: clamp(360px, 58dvh, 520px); }
   .qv-arrow { rotate: 90deg; }
   .qv-pages { flex: none; height: 60dvh; flex-direction: column; padding: 10px; }
   .qv-options ul { max-width: none; }
@@ -4154,6 +4156,11 @@ button.qv-shot-img { display: block; width: 100%; padding: 0; border: 0; backgro
 }
 .home-about-school { color: #141510; font-weight: 600; }
 .home-about-sep { color: #141510; font-size: 11px; }
+.home-about-degree { display: inline-flex; align-items: center; gap: 10px; white-space: nowrap; }
+/* A phone always breaks the line after the school, which left its star dangling */
+@media (max-width: 480px) {
+  .home-about-edu > .home-about-sep { display: none; }
+}
 .home-about-cta {
   display: inline-flex;
   align-items: center;

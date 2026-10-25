@@ -222,7 +222,7 @@ function Slide({
     slide.layout ??
     (!media
       ? 'text'
-      : media.kind === 'image' || media.kind === 'thumbnail' || (media.kind === 'pages' && media.pages.length === 1)
+      : media.kind === 'image' || media.kind === 'thumbnail' || media.kind === 'prototype' || (media.kind === 'pages' && media.pages.length === 1)
         ? 'split'
         : 'stack');
   const Heading = facts ? 'h2' : 'h3';
@@ -403,6 +403,8 @@ function Media({ media, project, active }: { media: QuickMedia; project: Project
         </div>
       );
     }
+    case 'prototype':
+      return <Prototype media={media} active={active} />;
     case 'pages': {
       const items: ZoomItem[] = media.pages.map((p) => ({ kind: 'page', ...p, caption: p.label }));
       return (
@@ -692,6 +694,49 @@ function Demo({ name, active }: { name: keyof typeof DEMOS; active: boolean }) {
 }
 
 type DemoName = keyof typeof DEMOS;
+
+/**
+ * A live HTML prototype, framed at its own size and scaled to fit the box.
+ * Like the demos it only exists while its slide is open, so it starts over
+ * each visit and its opening reply is never missed.
+ */
+function Prototype({ media, active }: { media: Extract<QuickMedia, { kind: 'prototype' }>; active: boolean }) {
+  const { src, title, width, height } = media;
+  const boxRef = useRef<HTMLDivElement>(null);
+  const [fit, setFit] = useState<{ scale: number; x: number; y: number } | null>(null);
+
+  useEffect(() => {
+    const box = boxRef.current;
+    if (!active || !box) return;
+    const measure = () => {
+      const scale = Math.min(box.clientWidth / width, box.clientHeight / height);
+      setFit({ scale, x: (box.clientWidth - width * scale) / 2, y: (box.clientHeight - height * scale) / 2 });
+    };
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(box);
+    return () => ro.disconnect();
+  }, [active, width, height]);
+
+  return (
+    <div ref={boxRef} className="qv-box qv-box--prototype">
+      {active && (
+        <iframe
+          src={src}
+          title={title}
+          scrolling="no"
+          className="qv-prototype"
+          style={{
+            width,
+            height,
+            transform: fit ? `translate(${fit.x}px, ${fit.y}px) scale(${fit.scale})` : undefined,
+            visibility: fit ? 'visible' : 'hidden',
+          }}
+        />
+      )}
+    </div>
+  );
+}
 
 /**
  * The full-screen viewer. It sits above the deck rather than inside it, so a

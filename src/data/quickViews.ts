@@ -13,6 +13,8 @@ export type QuickMedia =
   | { kind: 'thumbnail' }
   /** `fixed` keeps it out of the full-screen viewer, for a diagram that gains nothing from being bigger */
   | { kind: 'image'; src: string; alt: string; fit?: 'contain' | 'cover'; fixed?: boolean }
+  /** A live HTML prototype in a frame, scaled to fit; it starts over each time its slide opens */
+  | { kind: 'prototype'; src: string; title: string; width: number; height: number }
   /** A row of screens; more than one set adds tabs to switch between them */
   | { kind: 'gallery'; sets: { label?: string; screens: QuickScreen[] }[] }
   /** Labelled groups of screens side by side — a flow when `arrows` is set, a before/after when not */
@@ -193,7 +195,8 @@ export const AI_ASSISTANT_DECK: QuickSlide[] = [
     headline: "Hands-on support worked. It just didn't scale.",
     body: "Our team's bandwidth was limited, and teachers didn't know how to reach us. The only self-serve option was a dense help center that busy teachers rarely searched.",
     stats: [{ value: '<5%', label: 'of sign-ups ever received one-on-one support' }],
-    media: { kind: 'image', fixed: true, src: `${AI}/teacher-reach-diagram.png`, alt: 'Diagram: of every teacher who signs up, only a few get one-on-one support' },
+    // The same diagram the case study uses
+    media: { kind: 'image', fixed: true, src: `${AI}/teacher%20reach%20diagram.png`, alt: 'Diagram: of every teacher who signs up, only a few get one-on-one support' },
   },
   {
     label: 'Research',
@@ -221,7 +224,15 @@ export const AI_ASSISTANT_DECK: QuickSlide[] = [
       { title: 'Distinct message styles', body: 'Teacher messages in bubbles, so the conversation is easy to follow.' },
       { title: 'Auto-scroll and anchor', body: 'The layout stays steady while a reply streams in.' },
     ],
-    media: aiGif('Streaming in text', 'A reply streaming in letter by letter'),
+    // The live prototype from the case study's Final Design section
+    media: {
+      kind: 'prototype',
+      src: `${AI}/prototype/index.html?embed=1`,
+      title: 'Finding Focus AI Assistant interactive prototype',
+      // The prototype's frame at its largest (0.7 of 725×928), plus its 20px margin
+      width: 548,
+      height: 690,
+    },
   },
   {
     label: 'Key decisions',
