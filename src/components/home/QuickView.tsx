@@ -378,8 +378,7 @@ function Media({ media, project, active }: { media: QuickMedia; project: Project
                   data-dashed={g.dashed || undefined}
                   style={
                     {
-                      // A demo is a touch wider than a phone at the same height
-                      '--sum': g.demo ? 0.75 : (g.screens ?? []).reduce((sum, s) => sum + s.ratio, 0),
+                      '--sum': g.demo ? DEMOS[g.demo].ratio : (g.screens ?? []).reduce((sum, s) => sum + s.ratio, 0),
                       '--n': g.screens?.length ?? 1,
                     } as React.CSSProperties
                   }
@@ -641,9 +640,13 @@ function Gallery({ sets }: { sets: Extract<QuickMedia, { kind: 'gallery' }>['set
   );
 }
 
-/** Live demos a deck can show in place of screens, at the width they were designed for */
+/**
+ * Live demos a deck can show in place of screens: the width each is laid out
+ * at, and its shape (width over height) so its group gets a matching share
+ */
 const DEMOS = {
-  'end-of-session': { Component: EndOfSessionFlow, width: 408 },
+  // Wider than its 408px phone so it fills more of the slide; the screens are centred, so it stretches cleanly
+  'end-of-session': { Component: EndOfSessionFlow, width: 760, ratio: 760 / 680 },
 } as const;
 
 /**
