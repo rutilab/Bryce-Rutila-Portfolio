@@ -776,9 +776,12 @@ export default function Home() {
               <p className="home-about-edu">
                 <span className="home-about-school">University of Florida 🐊</span>
                 <span className="home-about-sep" aria-hidden="true">✦</span>
-                <span>B.S. Psychology</span>
-                <span className="home-about-sep" aria-hidden="true">✦</span>
-                <span>Behavior Analysis</span>
+                {/* The degree and its focus wrap as one, never split across lines */}
+                <span className="home-about-degree">
+                  <span>B.S. Psychology</span>
+                  <span className="home-about-sep" aria-hidden="true">✦</span>
+                  <span>Behavior Analysis</span>
+                </span>
               </p>
               <a href="/about" className="home-about-cta">
                 About me <span className="home-about-cta-arrow" aria-hidden="true">→</span>

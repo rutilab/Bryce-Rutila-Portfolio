@@ -765,8 +765,13 @@ export default function CaterpillarFooter() {
     const ro = new ResizeObserver(setup);
     ro.observe(canvas);
 
+    // On phones, only animate while the footer is on screen; offscreen it's
+    // wasted work, felt as jank further up the page. Desktop runs it always.
+    const touch = window.matchMedia('(hover: none) and (pointer: coarse)').matches;
+    let io: IntersectionObserver | null = null;
     if (!reducedRef.current) {
       let lastTs = performance.now();
+      let running = false;
       const loop = (ts: number) => {
         const step = Math.min(MAX_STEP, (ts - lastTs) / REF_FRAME_MS);
         lastTs = ts;
@@ -789,13 +794,27 @@ export default function CaterpillarFooter() {
           // the cursor on its own when the target moves and the mouse does not.
           if (pointerRef.current) applyCursorRef.current();
         }
-        rafRef.current = requestAnimationFrame(loop);
+        if (running) rafRef.current = requestAnimationFrame(loop);
       };
-      rafRef.current = requestAnimationFrame(loop);
+      if (!touch) {
+        running = true;
+        rafRef.current = requestAnimationFrame(loop);
+      } else io = new IntersectionObserver(([entry]) => {
+        if (entry.isIntersecting && !running) {
+          running = true;
+          lastTs = performance.now();
+          rafRef.current = requestAnimationFrame(loop);
+        } else if (!entry.isIntersecting && running) {
+          running = false;
+          cancelAnimationFrame(rafRef.current);
+        }
+      }, { rootMargin: '200px 0px' });
+      io?.observe(canvas);
     }
 
     return () => {
       ro.disconnect();
+      io?.disconnect();
       cancelAnimationFrame(rafRef.current);
       for (const t of timeouts) window.clearTimeout(t);
     };

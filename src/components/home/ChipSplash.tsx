@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { BRAND, GLYPH_H, GLYPH_W, INK, PAPER, layoutGlyph, type Pt } from './chipGlyphs';
 
@@ -11,6 +11,16 @@ import { BRAND, GLYPH_H, GLYPH_W, INK, PAPER, layoutGlyph, type Pt } from './chi
  * starts drawing once the camera has settled (`onHandoff`), and the splash
  * gets out of the way after that (`onDone`). Any click, key, scroll or touch
  * skips it; reduced motion never sees it.
+ *
+ * Phones get the same zoom, made cheaper: the page is cut down to the part
+ * the camera ever sees, so only about one screen is blown up rather than the
+ * whole ~5000px page, and a timer ends it even if the phone falls behind.
+ * Safari stretches a scaled page as a bitmap rather than redrawing it, so on
+ * phones BR1 and its die are drawn in a layer of their own that's resized
+ * (not scaled) each frame in step with the zoom, and stay sharp.
+ * Scaling the full page left phones stuttering, and a stalled zoom left the
+ * page blown up. `LiteSplash` (a sheet that fades, no zoom) is the fallback
+ * if that's still too much: set PHONE_SPLASH to 'lite'.
  */
 
 type Props = { onHandoff: () => void; onDone: () => void };
@@ -60,6 +70,13 @@ function useSkip(skip: () => void) {
   }, []);
 }
 
+const PHONE_SPLASH: 'zoom' | 'lite' = 'zoom';
+
+/** Phones and tablets; desktop is never treated as one, however narrow */
+function isTouch() {
+  return window.matchMedia('(hover: none) and (pointer: coarse)').matches;
+}
+
 function useViewport() {
   const [vp] = useState(() => ({ w: window.innerWidth, h: window.innerHeight }));
   return vp;
@@ -84,6 +101,7 @@ function useChipRect() {
 
 export default function ChipSplash({ onHandoff, onDone }: Props) {
   const [reduced] = useState(prefersReducedMotion);
+  const [touch] = useState(isTouch);
 
   // Nothing scrolls under the splash
   useEffect(() => {
@@ -103,10 +121,56 @@ export default function ChipSplash({ onHandoff, onDone }: Props) {
   }, [reduced, onHandoff, onDone]);
   if (reduced) return null;
 
-  return <ZoomSplash onHandoff={onHandoff} onDone={onDone} />;
+  if (touch && PHONE_SPLASH === 'lite') return <LiteSplash onHandoff={onHandoff} onDone={onDone} />;
+  return <ZoomSplash onHandoff={onHandoff} onDone={onDone} touch={touch} />;
 }
 
-function ZoomSplash({ onHandoff, onDone }: Props) {
+/**
+ * The die over a plain sheet, BRYCE etched across it; then the sheet fades and
+ * the board draws in underneath. Timers rather than a frame loop, so a busy
+ * phone can run it late but can't leave it stuck.
+ */
+function LiteSplash({ onHandoff, onDone }: Props) {
+  const [fade, setFade] = useState(false);
+  const doneRef = useRef(false);
+
+  const HOLD = 1900; // until the last letter has etched
+  const FADE = 450; // matches .splash-sheet's transition
+
+  const finish = useRef(() => {});
+  useEffect(() => {
+    const timers: number[] = [];
+    const end = () => {
+      if (doneRef.current) return;
+      doneRef.current = true;
+      timers.forEach(clearTimeout);
+      onHandoff();
+      setFade(true);
+      timers.push(window.setTimeout(onDone, FADE));
+    };
+    finish.current = end;
+    timers.push(window.setTimeout(end, HOLD));
+    return () => timers.forEach(clearTimeout);
+  }, [onHandoff, onDone]);
+
+  useSkip(() => finish.current());
+
+  // Laid out at roughly BR1's own scale, so stroke weights match the zoom
+  const u = 3;
+  const cw = (NAME_W * u) / 0.78;
+  const ch = cw * 0.5;
+
+  return createPortal(
+    <div className={`splash-sheet${fade ? ' is-fading' : ''}`} aria-hidden="true">
+      <svg viewBox={`0 0 ${cw} ${ch}`} className="splash-sheet-die">
+        <Die cw={cw} ch={ch} u={u} />
+      </svg>
+    </div>,
+    document.body,
+  );
+}
+
+function ZoomSplash({ onHandoff, onDone, touch = false }: Props & { touch?: boolean }) {
   const vp = useViewport();
   const chip = useChipRect();
   const [main, setMain] = useState<HTMLElement | null>(null);
@@ -114,6 +178,8 @@ function ZoomSplash({ onHandoff, onDone }: Props) {
   const raf = useRef(0);
   const doneRef = useRef(false);
   const skipRef = useRef<() => void>(() => {});
+  const crispRef = useRef<SVGSVGElement>(null);
+  const cloneRef = useRef<SVGGElement>(null);
 
   useLayoutEffect(() => {
     setMain(document.querySelector<HTMLElement>('.landing-main'));
@@ -137,6 +203,25 @@ function ZoomSplash({ onHandoff, onDone }: Props) {
       })()
     : null;
 
+  // Phones: where BR1 sits, in board units (for the sharp layer's viewBox) and
+  // on screen before the zoom (to keep that layer on top of the page's BR1)
+  const crisp = useMemo(() => {
+    if (!touch || !chip || !main) return null;
+    const g = document.querySelector<SVGGElement>('.cb-circuit--hero .cb-chip');
+    const body = document.querySelector<SVGRectElement>('.cb-circuit--hero .cb-chip-body');
+    if (!g || !body) return null;
+    const vb = g.getBBox();
+    const b = body.getBBox();
+    const r = g.getBoundingClientRect();
+    const m = main.getBoundingClientRect();
+    return {
+      vb: `${vb.x} ${vb.y} ${vb.width} ${vb.height}`,
+      body: { x: b.x, y: b.y },
+      r: { left: r.left, top: r.top, w: r.width, h: r.height },
+      m: { left: m.left, top: m.top },
+    };
+  }, [touch, chip, main]);
+
   useLayoutEffect(() => {
     if (!geo || !main) return;
     const header = document.querySelector<HTMLElement>('.home-header');
@@ -146,7 +231,24 @@ function ZoomSplash({ onHandoff, onDone }: Props) {
       // Shift shrinks in step with the zoom, so BR1 glides home as it settles
       const f = (s - 1) / (s0 - 1);
       main.style.transform = `translate(${(dx * f).toFixed(2)}px, ${(dy * f).toFixed(2)}px) scale(${s.toFixed(4)})`;
+      // The sharp layer lands where the page's BR1 now is
+      const svg = crispRef.current;
+      if (crisp && svg) {
+        const { r, m } = crisp;
+        svg.style.left = `${m.left + ox + (r.left - m.left - ox) * s + dx * f}px`;
+        svg.style.top = `${m.top + oy + (r.top - m.top - oy) * s + dy * f}px`;
+        svg.style.width = `${r.w * s}px`;
+        svg.style.height = `${r.h * s}px`;
+      }
     };
+    // A copy of BR1 for the sharp layer, minus its signal effects; the page's
+    // own BR1 hides until the zoom ends
+    if (crisp && cloneRef.current) {
+      const copy = document.querySelector('.cb-circuit--hero .cb-chip')!.cloneNode(true) as SVGGElement;
+      copy.querySelectorAll('.cb-chip-fx').forEach((n) => n.remove());
+      cloneRef.current.replaceChildren(copy);
+      document.documentElement.classList.add('splash-crisp');
+    }
     // BR1 shows from the start; everything else on the board holds still
     document.documentElement.classList.add('splash-zoom');
     if (header) {
@@ -161,6 +263,7 @@ function ZoomSplash({ onHandoff, onDone }: Props) {
       cancelAnimationFrame(raf.current);
       main.style.transform = '';
       main.style.transformOrigin = '';
+      unclip();
       if (header) header.style.opacity = '';
       // splash-zoom stays on: taking it off would replay BR1's fade-in
       onHandoff();
@@ -181,10 +284,36 @@ function ZoomSplash({ onHandoff, onDone }: Props) {
       }
       raf.current = requestAnimationFrame(tick);
     };
+    // Phones: clip the page to the lowest point the camera reaches on its way
+    // out, so the zoom only has to draw that much, and end it on a timer if
+    // the frames fall behind
+    let backup = 0;
+    if (touch) {
+      const top = main.getBoundingClientRect().top;
+      let low = 0;
+      for (let k = 0; k <= 40; k++) {
+        const sc = 1 + ((s0 - 1) * k) / 40;
+        const f = (sc - 1) / (s0 - 1);
+        low = Math.max(low, oy + (vp.h - top - oy - dy * f) / sc);
+      }
+      main.style.maxHeight = `${Math.ceil(low + 40)}px`;
+      main.style.overflow = 'hidden';
+      backup = window.setTimeout(finish, (HOLD + PULL) * 1000 + 1200);
+    }
+    const unclip = () => {
+      clearTimeout(backup);
+      if (!touch) return;
+      document.documentElement.classList.remove('splash-crisp');
+      main.style.maxHeight = '';
+      main.style.overflow = '';
+    };
     set(s0);
     raf.current = requestAnimationFrame(tick);
     skipRef.current = finish;
-    return () => cancelAnimationFrame(raf.current);
+    return () => {
+      cancelAnimationFrame(raf.current);
+      unclip();
+    };
     // geo is derived from chip/main, which settle once
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [chip, main]);
@@ -193,18 +322,20 @@ function ZoomSplash({ onHandoff, onDone }: Props) {
 
   if (!geo || !main) return <div className="splash--cover" aria-hidden="true" />;
 
-  // The die, drawn in BR1's own pixels: a fine grid, bond pads round the rim,
-  // and BRYCE etched across the middle
   const cw = chip!.width;
   const ch = chip!.height;
-  const u = (cw * 0.78) / NAME_W;
-  const nx = (cw - NAME_W * u) / 2;
-  const ny = (ch - NAME_H * u) / 2;
-  const letters = layoutName(u, nx, ny, 0.25, 0.2, 0.45);
-  const t = (s: number) => `${s.toFixed(3)}s`;
-  const bond: Pt[] = [];
-  for (let x = 6; x <= cw - 6; x += 5) bond.push([x, 3], [x, ch - 3]);
-  for (let y = 8; y <= ch - 8; y += 5) bond.push([3, y], [cw - 3, y]);
+
+  if (crisp) {
+    return createPortal(
+      <svg ref={crispRef} className="splash-crisp-chip" viewBox={crisp.vb} aria-hidden="true">
+        <g ref={cloneRef} className="cb-circuit cb-circuit--hero" />
+        <g className={`splash-crisp-die${fade ? ' is-fading' : ''}`} transform={`translate(${crisp.body.x} ${crisp.body.y})`}>
+          <Die cw={cw} ch={ch} u={(cw * 0.78) / NAME_W} smil />
+        </g>
+      </svg>,
+      document.body,
+    );
+  }
 
   return createPortal(
     <div
@@ -213,31 +344,58 @@ function ZoomSplash({ onHandoff, onDone }: Props) {
       style={{ left: geo.rel.left, top: geo.rel.top, width: cw, height: ch }}
     >
       <svg width={cw} height={ch} viewBox={`0 0 ${cw} ${ch}`}>
-        <defs>
-          <pattern id="die-grid" width={2} height={2} patternUnits="userSpaceOnUse">
-            <path d="M2 0H0V2" fill="none" stroke={INK} strokeOpacity={0.12} strokeWidth={0.06} />
-          </pattern>
-        </defs>
-        <rect x={1} y={1} width={cw - 2} height={ch - 2} rx={3} fill={PAPER} />
-        <rect x={1} y={1} width={cw - 2} height={ch - 2} rx={3} fill="url(#die-grid)" />
-        {bond.map(([x, y], k) => (
-          <rect key={k} x={x - 0.9} y={y - 0.9} width={1.8} height={1.8} fill="none" stroke={INK} strokeOpacity={0.45} strokeWidth={0.12} />
-        ))}
-        {letters.map((L) => (
-          <g key={L.ch} style={{ '--c': L.color } as React.CSSProperties}>
-            {L.strokes.map((s, k) => (
-              <path key={k} className="splash-stroke" d={s.d} pathLength={1} style={{ '--at': t(s.at), '--dur': t(s.dur) } as React.CSSProperties} />
-            ))}
-            {L.pads.map(({ p, at, free }, k) => (
-              <circle key={k} className={free ? 'splash-pad' : 'splash-joint'} cx={p[0]} cy={p[1]} r={free ? 0.55 : 0.32} style={{ '--at': t(at) } as React.CSSProperties} />
-            ))}
-            {L.strokes.map((s, k) => (
-              <circle key={`s${k}`} className="splash-signal" r={0.5} style={{ offsetPath: `path('${s.d}')`, '--at': t(s.at), '--dur': t(s.dur) } as React.CSSProperties} />
-            ))}
-          </g>
-        ))}
+        <Die cw={cw} ch={ch} u={(cw * 0.78) / NAME_W} />
       </svg>
     </div>,
     main,
+  );
+}
+
+/** The die, drawn in its chip's own pixels: a fine grid, bond pads round the
+    rim, and BRYCE etched across the middle at unit size `u` */
+function Die({ cw, ch, u, smil = false }: { cw: number; ch: number; u: number; smil?: boolean }) {
+  const nx = (cw - NAME_W * u) / 2;
+  const ny = (ch - NAME_H * u) / 2;
+  const letters = layoutName(u, nx, ny, 0.25, 0.2, 0.45);
+  const t = (s: number) => `${s.toFixed(3)}s`;
+  const bond: Pt[] = [];
+  for (let x = 6; x <= cw - 6; x += 5) bond.push([x, 3], [x, ch - 3]);
+  for (let y = 8; y <= ch - 8; y += 5) bond.push([3, y], [cw - 3, y]);
+
+  return (
+    <>
+      <defs>
+        <pattern id="die-grid" width={2} height={2} patternUnits="userSpaceOnUse">
+          <path d="M2 0H0V2" fill="none" stroke={INK} strokeOpacity={0.12} strokeWidth={0.06} />
+        </pattern>
+      </defs>
+      <rect x={1} y={1} width={cw - 2} height={ch - 2} rx={3} fill={PAPER} />
+      <rect x={1} y={1} width={cw - 2} height={ch - 2} rx={3} fill="url(#die-grid)" />
+      {bond.map(([x, y], k) => (
+        <rect key={k} x={x - 0.9} y={y - 0.9} width={1.8} height={1.8} fill="none" stroke={INK} strokeOpacity={0.45} strokeWidth={0.12} />
+      ))}
+      {letters.map((L) => (
+        <g key={L.ch} style={{ '--c': L.color } as React.CSSProperties}>
+          {L.strokes.map((s, k) => (
+            <path key={k} className="splash-stroke" d={s.d} pathLength={1} style={{ '--at': t(s.at), '--dur': t(s.dur) } as React.CSSProperties} />
+          ))}
+          {L.pads.map(({ p, at, free }, k) => (
+            <circle key={k} className={free ? 'splash-pad' : 'splash-joint'} cx={p[0]} cy={p[1]} r={free ? 0.55 : 0.32} style={{ '--at': t(at) } as React.CSSProperties} />
+          ))}
+          {/* Safari loses the CSS motion path inside a resized SVG; SMIL rides
+              the stroke anywhere */}
+          {L.strokes.map((s, k) =>
+            smil ? (
+              <circle key={`s${k}`} r={0.5} opacity={0} style={{ fill: 'var(--c)' }}>
+                <animateMotion path={s.d} begin={t(s.at)} dur={t(s.dur)} fill="freeze" />
+                <animate attributeName="opacity" values="1;1;0" keyTimes="0;0.85;1" begin={t(s.at)} dur={t(s.dur)} fill="freeze" />
+              </circle>
+            ) : (
+              <circle key={`s${k}`} className="splash-signal" r={0.5} style={{ offsetPath: `path('${s.d}')`, '--at': t(s.at), '--dur': t(s.dur) } as React.CSSProperties} />
+            ),
+          )}
+        </g>
+      ))}
+    </>
   );
 }
