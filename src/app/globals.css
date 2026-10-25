@@ -4419,6 +4419,15 @@ html.splash-zoom .cb-chip {
   92%           { opacity: 0;    scale: 0.4; rotate: 30deg; }
 }
 
+/* Touch screens: the glows are filters redrawn every frame, which is what made
+   scrolling the board stutter on phones. Parts still light up, just without
+   the halo. */
+@media (hover: none) and (pointer: coarse) {
+  .cb-node.cb-twinkle { filter: none; }
+  .cb-circuit--hero .cb-pulse { filter: none; }
+  .splash-signal { filter: none; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .cb-trace, .cb-node, .cb-chip { animation: none; stroke-dashoffset: 0; }
   .cb-pulse { display: none; }
@@ -4483,6 +4492,26 @@ html.splash-zoom .cb-chip {
 }
 .splash-die svg { display: block; overflow: visible; }
 .splash-die.is-fading { opacity: 0; }
+
+/* Phones: the die on a sheet over the page, which fades instead of zooming */
+.splash-sheet {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f9fafb;
+  pointer-events: none;
+  transition: opacity 450ms ease;
+}
+.splash-sheet.is-fading { opacity: 0; }
+.splash-sheet-die {
+  display: block;
+  width: min(86vw, 560px);
+  height: auto;
+  overflow: visible;
+}
 
 /* ── WORDS chips ──────────────────────────────────────────────────────────
    The endorsements heading's letters, each a CPU chip after BR1. In view,

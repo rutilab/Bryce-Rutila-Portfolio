@@ -130,7 +130,7 @@ const SOLID =
 const CLEARANCE = 14;
 
 /** `starry`: bands of the page (top, bottom) that get extra stars */
-type Layout = { w: number; h: number; solid: Rect[]; text: Rect | null; heroBottom: number; starry: [number, number][]; varied?: boolean };
+type Layout = { w: number; h: number; solid: Rect[]; text: Rect | null; heroBottom: number; starry: [number, number][]; varied?: boolean; touch?: boolean };
 
 function measure(frame: HTMLElement, solidSelector: string): Omit<Layout, 'w' | 'h'> {
   const f = frame.getBoundingClientRect();
@@ -351,7 +351,7 @@ function heroBoard(w: number, T: Rect, startId: number): Circuit[] {
   return out;
 }
 
-function generate({ w, h, solid: measured, text, heroBottom, starry, varied }: Layout) {
+function generate({ w, h, solid: measured, text, heroBottom, starry, varied, touch }: Layout) {
   const rand = rng(9000);
   const pick = <T,>(arr: readonly T[]) => arr[Math.floor(rand() * arr.length)];
   const between = (a: number, b: number) => a + rand() * (b - a);
@@ -659,7 +659,11 @@ function generate({ w, h, solid: measured, text, heroBottom, starry, varied }: L
 
   // Stars wherever there's open paper, kept clear of content and traces: one
   // a row down the page, and a second pass over the starry bands that adds a
-  // few more, a little closer together
+  // few more, a little closer together. A phone's single column leaves only
+  // thin strips of paper, so it gets fewer, slower stars and no extra pass —
+  // at desktop density they read as constant flashing. Desktop is untouched,
+  // even in a narrow window.
+  const narrow = !!touch;
   const stars: Star[] = [];
   const allSegs = circuits.flatMap((c) => c.segs);
   const scatter = (y0: number, y1: number, step: [number, number], spacing: number) => {
@@ -679,15 +683,18 @@ function generate({ w, h, solid: measured, text, heroBottom, starry, varied }: L
           size: kind === 'burst' ? between(14, 20) : between(12, 22),
           kind,
           color: pick(BRAND),
-          dur: between(8, 14),
-          delay: -between(0, 14),
+          dur: narrow ? between(18, 30) : between(8, 14),
+          delay: narrow ? -between(0, 30) : -between(0, 14),
         });
         break;
       }
     }
   };
-  scatter(60, h - 30, [110, 170], 90);
-  for (const [y0, y1] of starry) scatter(y0 + 30, y1 - 10, [70, 110], 70);
+  if (narrow) scatter(60, h - 30, [260, 380], 200);
+  else {
+    scatter(60, h - 30, [110, 170], 90);
+    for (const [y0, y1] of starry) scatter(y0 + 30, y1 - 10, [70, 110], 70);
+  }
 
   // Every part lights up on its own every so often, each on a slow loop of
   // its own so they never fall into step
@@ -809,7 +816,8 @@ export default function CircuitBackground({
       const w = Math.round(el.clientWidth);
       const h = Math.round(el.clientHeight / 40) * 40;
       const m = measure(el, solid);
-      setLayout((prev) => (prev && prev.w === w && prev.h === h && sameText(prev.text, m.text) ? prev : { w, h, varied, ...m }));
+      const touch = window.matchMedia('(hover: none) and (pointer: coarse)').matches;
+      setLayout((prev) => (prev && prev.w === w && prev.h === h && sameText(prev.text, m.text) ? prev : { w, h, varied, touch, ...m }));
     };
     const ro = new ResizeObserver(update);
     ro.observe(el);
