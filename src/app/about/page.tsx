@@ -86,7 +86,7 @@ export default function AboutPage() {
         {/* ── Life outside work ──────────────────────────────────────────── */}
         <div className="about-section about-section--framed mt-[160px]">
           <div className="display-heading-wrap" data-board-solid>
-            <h2 className="display-heading">Life outside work.</h2>
+            <h2 className="display-heading">Life outside work</h2>
           </div>
 
           <p

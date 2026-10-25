@@ -799,7 +799,6 @@ export default function Home() {
               <span className="endorsements-heading-text">In their own</span>
               <span style={{ display: 'inline-flex', alignItems: 'center', flexWrap: 'nowrap' }}>
                 <WordChips />
-                <span className="endorsements-heading-text">.</span>
               </span>
             </h2>
           </div>
