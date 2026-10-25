@@ -3204,7 +3204,10 @@ body:has(.landing-main--framed) {
 }
 @media (max-width: 799px) {
   .work-list { gap: 24px; }
-  .work-row--pair { grid-template-columns: 1fr; gap: 24px; }
+  /* minmax(0, …), not plain 1fr: a 1fr column grows to fit its card, and
+     Safari sizes the artwork well's width from its height (the aspect ratio
+     run backwards), so the two fed each other and the card grew without end */
+  .work-row--pair { grid-template-columns: minmax(0, 1fr); gap: 24px; }
 }
 
 .work-card {
@@ -3227,6 +3230,9 @@ body:has(.landing-main--framed) {
 
 .work-thumb {
   position: relative;
+  /* Width leads, height follows from the ratio — never the other way round */
+  width: 100%;
+  height: auto;
   aspect-ratio: 10 / 7;
 }
 .work-card--wide .work-thumb { aspect-ratio: 16 / 9; }
@@ -3333,6 +3339,13 @@ body:has(.landing-main--framed) {
 }
 .work-card.is-live:hover .work-cta { text-decoration-color: var(--hover); }
 .work-card.is-live:hover .work-cta-arrow { translate: 4px 0; }
+/* Phones keep :hover stuck on whatever was last tapped, so a card scrolled
+   past stayed lifted and outlined; touch gets no hover state */
+@media (hover: none) and (pointer: coarse) {
+  .work-card.is-live:hover { border-color: rgba(20, 21, 16, 0.14); box-shadow: none; translate: none; }
+  .work-card.is-live:hover .work-cta { text-decoration-color: transparent; }
+  .work-card.is-live:hover .work-cta-arrow { translate: none; }
+}
 .work-quick {
   position: relative;
   z-index: 1; /* above the stretched title link */
@@ -4492,6 +4505,35 @@ html.splash-zoom .cb-chip {
 }
 .splash-die svg { display: block; overflow: visible; }
 .splash-die.is-fading { opacity: 0; }
+
+/* Phones: BR1 and the die in a layer over the page, resized each frame so it
+   stays sharp while the page under it zooms (see ChipSplash) */
+.splash-crisp-chip {
+  position: fixed;
+  left: 0;
+  top: 0;
+  z-index: 2;
+  overflow: visible;
+  pointer-events: none;
+}
+.splash-crisp-die { transition: opacity 450ms ease; }
+.splash-crisp-die.is-fading { opacity: 0; }
+/* Safari ignores `scale` on these, so they showed as specks before their
+   letter etched; keep them transparent until they pop */
+.splash-crisp-die .splash-pad,
+.splash-crisp-die .splash-joint {
+  opacity: 0;
+  animation-name: splash-pop-in;
+}
+@keyframes splash-pop-in {
+  from { opacity: 1; scale: 0; }
+  to { opacity: 1; scale: 1; }
+}
+html.splash-crisp .circuit-bg .cb-circuit--hero .cb-chip { visibility: hidden; }
+/* Before the board draws, Safari still paints a round cap at the end of each
+   undrawn trace; the zoom blew the one on BR1's pin up into a blurry dot */
+html.splash-crisp .circuit-bg:not(.is-ready) .cb-trace,
+html.splash-crisp .circuit-bg:not(.is-ready) .cb-node { visibility: hidden; }
 
 /* Phones: the die on a sheet over the page, which fades instead of zooming */
 .splash-sheet {
