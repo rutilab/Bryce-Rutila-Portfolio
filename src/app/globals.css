@@ -1901,15 +1901,15 @@ h2.display-heading {
    rather than a fourth nav column. */
 .footer-tagline {
   margin: 0;
-  /* Two lines: the cap clears "Transforming products" (21ch) but not the following
-     "one" (25ch), so the phrase breaks at its own hinge rather than stranding
-     "at a time" on the second line, which is where 31ch put it. */
-  max-width: 22ch;
-  font-family: var(--font-ibm-plex-mono), monospace;
-  font-weight: 400;
-  font-size: 20px;
-  line-height: 1.35;
-  letter-spacing: -0.02em;
+  /* Two lines, broken at the phrase's hinge: "Good design connects" clears
+     the cap (about 11em), "…connects the" doesn't */
+  max-width: 12em;
+  /* Same face as BRYCE on the chip and the home page headline */
+  font-family: var(--font-space-grotesk), sans-serif;
+  font-weight: 700;
+  font-size: clamp(26px, 3.2vw, 36px);
+  line-height: 1.1;
+  letter-spacing: -0.03em;
   color: #faf7f2;
 }
 /* EXPLORE and CONNECT move as one unit against the right edge */
