@@ -4924,13 +4924,36 @@ body:has(.page-framed) {
   box-sizing: border-box;
 }
 .playground-main {
-  min-height: calc(100dvh - 64px);
-  display: flex;
-  align-items: center;
+  padding-bottom: 120px;
 }
 .playground-intro {
   max-width: 640px;
-  padding: 96px 0;
+  padding: 96px 0 56px;
+}
+/* Playground cards, after helenxli.com: each piece plays right in its stage,
+   with a one-line how-to under it and a quiet credit under that */
+.pg-list {
+  display: flex;
+  flex-direction: column;
+  gap: 64px;
+}
+.pg-card {
+  margin: 0;
+}
+.pg-caption {
+  margin: 16px 0 0;
+  font-family: var(--font-inter), sans-serif;
+  font-size: 15px;
+  font-weight: 500;
+  line-height: 1.45;
+  color: #141510;
+}
+.pg-credit {
+  margin: 4px 0 0;
+  font-family: var(--font-ibm-plex-mono), monospace;
+  font-size: 12px;
+  letter-spacing: 0.02em;
+  color: #8a8778;
 }
 .page-eyebrow {
   font-family: var(--font-ibm-plex-mono), monospace;
