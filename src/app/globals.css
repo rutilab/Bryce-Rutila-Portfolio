@@ -3552,28 +3552,58 @@ body:has(.landing-main--framed) {
   align-items: center;
   justify-content: space-between;
 }
+/* On card hover a trace draws in under the CTA in the card's colour and
+   lands on a round pad past the arrow, like the nav and footer links */
 .work-cta {
+  position: relative;
   font-family: var(--font-inter), sans-serif;
   font-size: 15px;
   font-weight: 500;
   color: #141510;
-  text-decoration: underline;
-  text-decoration-color: transparent;
-  text-underline-offset: 4px;
-  text-decoration-thickness: 2px;
-  transition: text-decoration-color 180ms ease;
+}
+.work-cta::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -5px;
+  height: 2px;
+  background-color: var(--hover);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 260ms cubic-bezier(0.65, 0, 0.35, 1);
+}
+.work-cta::before {
+  content: '';
+  position: absolute;
+  /* clear of the arrow once it's nudged over */
+  right: -13px;
+  bottom: -8px;
+  width: 8px;
+  height: 8px;
+  box-sizing: border-box;
+  border: 2px solid var(--hover);
+  border-radius: 50%;
+  background-color: #f5f5f5;
+  transform: scale(0);
+  transition: transform 160ms ease;
 }
 .work-cta-arrow {
   display: inline-block;
   transition: translate 220ms cubic-bezier(0.34, 1.56, 0.64, 1);
 }
-.work-card.is-live:hover .work-cta { text-decoration-color: var(--hover); }
+.work-card.is-live:hover .work-cta::after { transform: scaleX(1); }
+.work-card.is-live:hover .work-cta::before {
+  transform: scale(1);
+  transition: transform 300ms cubic-bezier(0.34, 1.56, 0.64, 1) 200ms;
+}
 .work-card.is-live:hover .work-cta-arrow { translate: 4px 0; }
 /* Phones keep :hover stuck on whatever was last tapped, so a card scrolled
    past stayed lifted and outlined; touch gets no hover state */
 @media (hover: none) and (pointer: coarse) {
   .work-card.is-live:hover { border-color: rgba(20, 21, 16, 0.14); box-shadow: none; translate: none; }
-  .work-card.is-live:hover .work-cta { text-decoration-color: transparent; }
+  .work-card.is-live:hover .work-cta::after,
+  .work-card.is-live:hover .work-cta::before { visibility: hidden; }
   .work-card.is-live:hover .work-cta-arrow { translate: none; }
 }
 .work-quick {
