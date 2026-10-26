@@ -356,14 +356,12 @@ export default function ChipFooter() {
     if (still) {
       svg.pauseAnimations();
       svg.setCurrentTime(0);
-      setLive(true);
-      return;
     }
     const io = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting) {
           setLive(true);
-          svg.unpauseAnimations();
+          if (!still) svg.unpauseAnimations();
         } else {
           svg.pauseAnimations();
         }
