@@ -90,7 +90,7 @@ export default function AboutPage() {
           </div>
 
           <p
-            className="max-w-[35em] text-[clamp(17px,2vw,20px)] leading-[1.35] text-[#141510]"
+            className="max-w-[35em] text-[clamp(17px,2vw,20px)] leading-[1.35] text-[#5c5a54]"
             style={{ fontFamily: 'var(--font-inter), sans-serif' }}
             data-board-solid
           >
