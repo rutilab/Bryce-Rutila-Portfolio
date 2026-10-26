@@ -20,7 +20,7 @@ import FooterOverscroll from '@/components/FooterOverscroll';
  *
  * The chip lifts out of its socket: drag it away and the board loses power,
  * the colour draining out from the socket to the edges and the beat stopping.
- * Drop it back near the socket and it snaps in and the colour floods back.
+ * Let go and it springs back into the socket and the colour floods back.
  */
 
 const LINKEDIN_URL = 'https://www.linkedin.com/in/brycerutila/';
@@ -36,7 +36,6 @@ const BAR = BEAT * 4;
 const SPEED = 280; // px/s a signal runs
 const COMET = 44; // px, length of a signal's lit tail
 const UNPLUG_AT = 20; // px the chip has to leave its socket to cut the power
-const SNAP_WITHIN = 72; // px from the socket a dropped chip snaps back in
 const EDGE_FADE = 56; // px the board fades out over at top and bottom (.chip-board's mask)
 
 type Pt = [number, number];
@@ -441,10 +440,9 @@ export default function ChipFooter() {
     if (!grab.current) return;
     grab.current = null;
     setDragging(false);
-    if (Math.hypot(...offset.current) < SNAP_WITHIN) {
-      moveLift(0, 0, true);
-      setPlugged(true);
-    }
+    // Wherever it's let go, it springs home
+    moveLift(0, 0, true);
+    setPlugged(true);
   };
 
   const chip = board?.chip;
@@ -614,11 +612,6 @@ export default function ChipFooter() {
             </g>
           )}
         </svg>
-        {board && (
-          <span className="chip-hint" aria-hidden="true">
-            {plugged ? 'Drag the chip to unplug it' : 'Plug the chip back in'}
-          </span>
-        )}
       </div>
 
       <div className="footer-bottom">
