@@ -70,7 +70,7 @@ function LetterSheet({
       <div aria-hidden={hideText || undefined}>
         <h1
           className="text-[18px] leading-[26px] tracking-[-0.03em] text-black sm:text-[20px] sm:leading-[28px]"
-          style={{ fontFamily: 'var(--font-space-grotesk), sans-serif', fontWeight: 700 }}
+          style={{ fontFamily: 'var(--font-heading), sans-serif', fontWeight: 700 }}
         >
           A little bit about me...
         </h1>

@@ -1,6 +1,6 @@
 import type { Metadata, Viewport } from 'next';
 import { Suspense } from 'react';
-import { Geist, Geist_Mono, Inter, Battambang, IBM_Plex_Mono, Space_Grotesk } from 'next/font/google';
+import { Geist, Geist_Mono, Inter, Battambang, IBM_Plex_Mono, Chakra_Petch } from 'next/font/google';
 import { AnalyticsProvider } from '@/components/analytics/AnalyticsProvider';
 import { SiteHeader } from '@/components/layout';
 import './globals.css';
@@ -30,9 +30,9 @@ const battambang = Battambang({
   display: 'block',
 });
 
-/** Home hero headline (homepage-redesign branch). */
-const spaceGrotesk = Space_Grotesk({
-  variable: '--font-space-grotesk',
+/** Headings: the hero, page titles, BRYCE on the footer chip. Cut corners to match the board's 45° bends. */
+const chakraPetch = Chakra_Petch({
+  variable: '--font-heading',
   subsets: ['latin'],
   weight: ['700'],
   display: 'swap',
@@ -101,7 +101,7 @@ export default function RootLayout({
       style={{ overflowX: 'clip' }}
     >
       <body
-        className={`${geistSans.variable} ${geistMono.variable} ${inter.variable} ${battambang.variable} ${ibmPlexMono.variable} ${spaceGrotesk.variable} antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} ${inter.variable} ${battambang.variable} ${ibmPlexMono.variable} ${chakraPetch.variable} antialiased`}
         style={{ background: '#faf7f2', color: '#141510', overflowX: 'clip' }}
       >
         <SiteHeader />

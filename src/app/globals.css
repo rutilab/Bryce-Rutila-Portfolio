@@ -1841,7 +1841,7 @@ h2.display-heading {
   pointer-events: none;
 }
 .chip-word {
-  font-family: var(--font-space-grotesk), sans-serif;
+  font-family: var(--font-heading), sans-serif;
   font-weight: 700;
   font-size: 120px;
   letter-spacing: -0.03em;
@@ -1906,7 +1906,7 @@ h2.display-heading {
      doesn't */
   max-width: 13.5em;
   /* Same face as BRYCE on the chip and the home page headline */
-  font-family: var(--font-space-grotesk), sans-serif;
+  font-family: var(--font-heading), sans-serif;
   font-weight: 700;
   font-size: clamp(20px, 2.2vw, 26px);
   line-height: 1.15;
@@ -3115,7 +3115,7 @@ body:has(.landing-main--framed) {
   padding: 160px 0 128px;
 }
 .home-hero-title {
-  font-family: var(--font-space-grotesk), sans-serif;
+  font-family: var(--font-heading), sans-serif;
   font-weight: 700;
   font-size: clamp(40px, 7vw, 64px);
   line-height: 1.094;
@@ -3158,11 +3158,11 @@ body:has(.landing-main--framed) {
   margin-top: 112px;
   padding-bottom: 0;
 }
-/* Headings on the home page share the hero's Space Grotesk; body copy is
+/* Headings on the home page share the hero's Chakra Petch; body copy is
    Inter and eyebrows stay mono. The About page keeps its serif display
    heading, so this is scoped to the home frame. */
 .landing-main--framed .endorsements-heading-text {
-  font-family: var(--font-space-grotesk), sans-serif;
+  font-family: var(--font-heading), sans-serif;
   font-weight: 700;
   font-size: clamp(36px, 5.5vw, 56px);
   letter-spacing: -0.03em;
@@ -3216,7 +3216,7 @@ body:has(.landing-main--framed) {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  font-family: var(--font-space-grotesk), sans-serif;
+  font-family: var(--font-heading), sans-serif;
   font-weight: 700;
   font-size: 18px;
   letter-spacing: -0.03em;
@@ -3328,18 +3328,18 @@ body:has(.landing-main--framed) {
   .home-header-inner { padding: 0 16px; height: 56px; }
   .home-header-left { gap: 16px; }
   .home-header-links { gap: 14px; }
-  .home-header-email-text { display: none; }
-  .home-header-ext { display: none; }
 }
 @media (max-width: 420px) {
   .home-wordmark { font-size: 16px; }
   .home-header-links { gap: 10px; }
 }
-/* Phones: just the wordmark and a menu button; everything else drops down
-   under the bar when it's opened */
+/* Under 800px: just the wordmark and a menu button; everything else drops
+   down under the bar when it's opened. This is also where the contact links
+   stop fitting in the bar, so they move into the menu rather than leaving a
+   lone copy icon behind. */
 .home-header-menu-btn,
 .home-header-menu { display: none; }
-@media (max-width: 639px) {
+@media (max-width: 799px) {
   .home-header-links,
   .home-header-right { display: none; }
   .home-header-menu-btn {
@@ -3405,7 +3405,6 @@ body:has(.landing-main--framed) {
   }
   .home-header-menu-contact .home-header-email,
   .home-header-menu-contact .home-header-ext { font-size: 15px; }
-  /* (the bar's own LinkedIn link is hidden under 800px; this one isn't) */
   .home-header-menu-contact .home-header-ext { display: inline-flex; }
 }
 @keyframes home-menu-in {
@@ -3511,7 +3510,7 @@ body:has(.landing-main--framed) {
   margin: 0 0 6px;
 }
 .work-title {
-  font-family: var(--font-space-grotesk), sans-serif;
+  font-family: var(--font-heading), sans-serif;
   font-weight: 700;
   font-size: 19px;
   line-height: 1.35;
@@ -3789,7 +3788,7 @@ body:has(.landing-main--framed) {
   color: rgba(20, 21, 16, 0.55);
 }
 .qv-headline {
-  font-family: var(--font-space-grotesk), sans-serif;
+  font-family: var(--font-heading), sans-serif;
   font-weight: 700;
   font-size: clamp(24px, 3vw, 34px);
   line-height: 1.15;
@@ -3855,7 +3854,7 @@ body:has(.landing-main--framed) {
   border: 1px solid rgba(20, 21, 16, 0.12);
 }
 .qv-stat-value {
-  font-family: var(--font-space-grotesk), sans-serif;
+  font-family: var(--font-heading), sans-serif;
   font-weight: 700;
   font-size: clamp(30px, 3.6vw, 44px);
   line-height: 1;
@@ -3889,7 +3888,7 @@ body:has(.landing-main--framed) {
   color: rgba(20, 21, 16, 0.45);
 }
 .qv-point-title {
-  font-family: var(--font-space-grotesk), sans-serif;
+  font-family: var(--font-heading), sans-serif;
   font-weight: 700;
   font-size: 17px;
   line-height: 24px;
@@ -4101,7 +4100,7 @@ body:has(.landing-main--framed) {
 .qv-group[data-dashed] { background: transparent; border: 1.5px dashed rgba(20, 21, 16, 0.35); }
 .qv-group-head { margin: 0; display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; }
 .qv-group-label {
-  font-family: var(--font-space-grotesk), sans-serif;
+  font-family: var(--font-heading), sans-serif;
   font-weight: 700;
   font-size: 15px;
   color: #141510;
@@ -4901,7 +4900,7 @@ html.splash-crisp .circuit-bg:not(.is-ready) .cb-node { visibility: hidden; }
 
 /* ── Pages in the home page's dress ──────────────────────────────────────
    About and Playground share the home page's ground, type and board:
-   Space Grotesk headings, Inter body, mono eyebrows on the cool off-white. */
+   Chakra Petch headings, Inter body, mono eyebrows on the cool off-white. */
 html:has(.about-main),
 body:has(.about-main),
 html:has(.page-framed),
@@ -4909,7 +4908,7 @@ body:has(.page-framed) {
   background: #f9fafb !important;
 }
 .about-main .display-heading {
-  font-family: var(--font-space-grotesk), sans-serif;
+  font-family: var(--font-heading), sans-serif;
   font-weight: 700;
   font-size: clamp(36px, 5.5vw, 56px);
   line-height: 1.1;
@@ -4984,7 +4983,7 @@ body:has(.page-framed) {
 }
 .pg-sticky-title {
   margin: 0 0 10px;
-  font-family: var(--font-space-grotesk), sans-serif;
+  font-family: var(--font-heading), sans-serif;
   font-weight: 700;
   font-size: 22px;
   line-height: 1.1;
@@ -5007,7 +5006,7 @@ body:has(.page-framed) {
   margin: 0 0 20px;
 }
 .page-title {
-  font-family: var(--font-space-grotesk), sans-serif;
+  font-family: var(--font-heading), sans-serif;
   font-weight: 700;
   font-size: clamp(40px, 7vw, 64px);
   line-height: 1.094;
