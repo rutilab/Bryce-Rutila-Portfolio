@@ -456,20 +456,20 @@ function gridCircuits(w: number, h: number, solid: Rect[], rand: () => number): 
   type Seed = { start: Pt; dir: number; forbid: number; max: number; pad: boolean };
   const seeds: Seed[] = [];
   const pin = (start: Pt, dir: number) =>
-    free(...start) && rand() < 0.85 && seeds.push({ start, dir, forbid: (dir + 2) % 4, max: Math.floor(between(12, 44)), pad: true });
+    free(...start) && rand() < 0.55 && seeds.push({ start, dir, forbid: (dir + 2) % 4, max: Math.floor(between(10, 36)), pad: true });
   for (const b of cells) {
-    for (let c = b.c0 + 1; c < b.c1; c += 2) {
+    for (let c = b.c0 + 1; c < b.c1; c += 3) {
       pin([c, b.r0 - 1], 0);
       pin([c, b.r1 + 1], 2);
     }
-    for (let r = b.r0 + 1; r < b.r1; r += 2) {
+    for (let r = b.r0 + 1; r < b.r1; r += 3) {
       pin([b.c0 - 1, r], 3);
       pin([b.c1 + 1, r], 1);
     }
   }
-  for (let r = 2; r < rows - 2; r += 3 + Math.floor(rand() * 3)) {
-    if (rand() < 0.75 && free(0, r)) seeds.push({ start: [0, r], dir: 1, forbid: 3, max: Math.floor(between(10, 40)), pad: false });
-    if (rand() < 0.75 && free(cols, r)) seeds.push({ start: [cols, r], dir: 3, forbid: 1, max: Math.floor(between(10, 40)), pad: false });
+  for (let r = 2; r < rows - 2; r += 5 + Math.floor(rand() * 4)) {
+    if (rand() < 0.55 && free(0, r)) seeds.push({ start: [0, r], dir: 1, forbid: 3, max: Math.floor(between(10, 40)), pad: false });
+    if (rand() < 0.55 && free(cols, r)) seeds.push({ start: [cols, r], dir: 3, forbid: 1, max: Math.floor(between(10, 40)), pad: false });
   }
   seeds.forEach((sd) => mark(...sd.start));
   for (let i = seeds.length - 1; i > 0; i--) {
@@ -478,8 +478,16 @@ function gridCircuits(w: number, h: number, solid: Rect[], rand: () => number): 
   }
 
   const circuits: Circuit[] = [];
+  // Only about one trace in five carries a travelling signal, to keep the
+  // number of running animations down on a board this size
   const add = (c: Omit<Circuit, 'id' | 'color'>) =>
-    circuits.push({ ...c, id: circuits.length, color: BRAND[circuits.length % BRAND.length], drawDelay: between(0.15, 1.2) });
+    circuits.push({
+      ...c,
+      pulsePts: rand() < 0.2 ? c.pulsePts : [],
+      id: circuits.length,
+      color: BRAND[circuits.length % BRAND.length],
+      drawDelay: between(0.15, 1.2),
+    });
 
   for (const sd of seeds) {
     const m = walk(sd.start, sd.dir, sd.forbid, sd.max, 1 + Math.floor(rand() * 5));
@@ -508,7 +516,7 @@ function gridCircuits(w: number, h: number, solid: Rect[], rand: () => number): 
   }
 
   // Loose little circuits in whatever space is left
-  const tries = Math.floor(((cols + 1) * (rows + 1)) / 40);
+  const tries = Math.floor(((cols + 1) * (rows + 1)) / 110);
   for (let i = 0; i < tries; i++) {
     const s: Pt = [Math.floor(rand() * (cols + 1)), Math.floor(rand() * (rows + 1))];
     if (!free(...s) || [0, 1, 2, 3].some((k) => inGrid(s[0] + DX[k], s[1] + DY[k]) && !free(s[0] + DX[k], s[1] + DY[k]))) continue;
@@ -874,9 +882,11 @@ function generate({ w, h, solid: measured, text, heroBottom, starry, varied, gri
 
   // Every part lights up on its own every so often, each on a slow loop of
   // its own so they never fall into step
+  // (on a grid board, only about a quarter of them, so the page isn't running
+  // hundreds of glows at once)
   for (const c of circuits) {
     for (const x of [...c.nodes, ...c.parts]) {
-      if (x.twinkle) continue;
+      if (x.twinkle || (grid && rand() > 0.25)) continue;
       const dur = between(16, 34);
       x.twinkle = { dur, delay: -between(0, dur) };
     }
