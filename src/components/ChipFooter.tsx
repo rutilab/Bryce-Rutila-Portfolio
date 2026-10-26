@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
+import FooterOverscroll from '@/components/FooterOverscroll';
 
 /**
  * Footer scene after the Four Tet stage show: one big BRYCE chip that pumps on
@@ -543,6 +544,7 @@ export default function ChipFooter() {
         <span>© 2026 BRYCE RUTILA</span>
         <span className="footer-bottom-note">No chips were fried in the making of this site</span>
       </div>
+      <FooterOverscroll />
     </footer>
   );
 }

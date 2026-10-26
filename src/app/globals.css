@@ -1916,6 +1916,42 @@ h2.display-heading {
   color: #8a8778;
 }
 
+/* Pull past the end of the page (FooterOverscroll): the spacer grows with the
+   pull and the glow's stepped columns rise with it, --rise going 0 → 1 */
+.footer-overscroll {
+  position: relative;
+  height: 0;
+  --rise: 0;
+}
+.footer-overscroll-glow {
+  position: absolute;
+  bottom: 0;
+  /* wider than the band so the blur doesn't thin out at the sides */
+  left: -48px;
+  right: -48px;
+  height: 520px;
+  display: flex;
+  align-items: flex-end;
+  filter: blur(22px);
+  pointer-events: none;
+}
+.footer-overscroll-glow span {
+  flex: 1;
+  height: calc(var(--h) * 100%);
+  transform: scaleY(var(--rise));
+  transform-origin: bottom;
+  background: linear-gradient(
+    to top,
+    #12b4ff 0%,
+    #12b4ff 24%,
+    #31e300 36%,
+    #fff712 45%,
+    #ff9c12 60%,
+    #ff12f7 77%,
+    transparent 100%
+  );
+}
+
 /* 40px is the default at every width; mobile tightens to 24px */
 @media (max-width: 799px) {
   .footer-content,
