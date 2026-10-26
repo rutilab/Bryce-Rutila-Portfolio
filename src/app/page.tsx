@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect, useLayoutEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
+import { useCanPrimaryHover } from '@/hooks/useCanPrimaryHover';
 import CircuitBackground from '@/components/CircuitBackground';
 import HalftoneFly from '@/components/HalftoneFly';
 import ChipSplash from '@/components/home/ChipSplash';
@@ -157,12 +158,22 @@ function EndorsementCard({ name, role, company, quote, fullQuote, initials, avat
   const [modalOpen, setModalOpen] = useState(false);
   const [buttonHovered, setButtonHovered] = useState(false);
   const [closeHovered, setCloseHovered] = useState(false);
+  const modalScrollRef = useRef<HTMLDivElement>(null);
+  // iOS Safari spends the first tap on anything that changes on hover, so the
+  // button and the close ✕ each took two taps. Touch gets no hover at all: the
+  // button stays visible, and tapping the card opens the quote.
+  const canHover = useCanPrimaryHover();
+  const showButton = hovered || !canHover;
 
   useEffect(() => {
     if (!modalOpen) return;
     document.body.style.overflow = 'hidden';
     document.body.dataset.modalOpen = 'true';
-    const preventScroll = (e: Event) => e.preventDefault();
+    // Freeze the page, but let a long quote scroll inside the modal
+    const preventScroll = (e: Event) => {
+      if (modalScrollRef.current?.contains(e.target as Node)) return;
+      e.preventDefault();
+    };
     window.addEventListener('wheel', preventScroll, { passive: false });
     window.addEventListener('touchmove', preventScroll, { passive: false });
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setModalOpen(false); };
@@ -209,9 +220,10 @@ function EndorsementCard({ name, role, company, quote, fullQuote, initials, avat
     <>
       <div
         className="endorsement-card"
-        onMouseEnter={() => setHovered(true)}
-        onMouseLeave={() => setHovered(false)}
-        style={{ position: 'relative', paddingBottom: fullQuote && hovered ? CARD_PAD_BOTTOM_HOVER : CARD_PAD_BOTTOM, transition: 'padding-bottom 0.2s ease', ['--endorsement-accent' as string]: gradientAccent } as React.CSSProperties}
+        onMouseEnter={canHover ? () => setHovered(true) : undefined}
+        onMouseLeave={canHover ? () => setHovered(false) : undefined}
+        onClick={!canHover && fullQuote ? e => { if (!(e.target as HTMLElement).closest('a')) setModalOpen(true); } : undefined}
+        style={{ position: 'relative', paddingBottom: fullQuote && showButton ? CARD_PAD_BOTTOM_HOVER : CARD_PAD_BOTTOM, transition: 'padding-bottom 0.2s ease', ['--endorsement-accent' as string]: gradientAccent } as React.CSSProperties}
       >
         {/* Hover emoji — pops in at top-right */}
         <div style={{
@@ -236,12 +248,12 @@ function EndorsementCard({ name, role, company, quote, fullQuote, initials, avat
         {fullQuote && (
           <button
             onClick={e => { e.stopPropagation(); setModalOpen(true); }}
-            onMouseEnter={() => setButtonHovered(true)}
-            onMouseLeave={() => setButtonHovered(false)}
+            onMouseEnter={canHover ? () => setButtonHovered(true) : undefined}
+            onMouseLeave={canHover ? () => setButtonHovered(false) : undefined}
             style={{
               position: 'absolute', bottom: 16, right: 16,
-              opacity: hovered ? 1 : 0,
-              transform: hovered ? 'translateY(0)' : 'translateY(4px)',
+              opacity: showButton ? 1 : 0,
+              transform: showButton ? 'translateY(0)' : 'translateY(4px)',
               transition: 'opacity 0.2s ease, transform 0.2s ease, background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease',
               fontFamily: "var(--font-ibm-plex-mono), monospace",
               fontSize: '11px',
@@ -274,21 +286,30 @@ function EndorsementCard({ name, role, company, quote, fullQuote, initials, avat
             padding: '24px',
           }}
           onClick={() => setModalOpen(false)}
+          // iOS Safari can swallow the first tap's click on this page, so touch
+          // closes on lift instead. preventDefault stops the click that would
+          // follow from landing on whatever sits under the modal.
+          onTouchEnd={e => { if (e.target === e.currentTarget) { e.preventDefault(); setModalOpen(false); } }}
         >
           <div
             className="endorsement-card"
             onClick={e => e.stopPropagation()}
-            style={{ position: 'relative', maxWidth: '560px', width: '100%' }}
+            // Capped to the screen; the quote scrolls inside while the close
+            // button stays pinned to the corner
+            style={{ position: 'relative', maxWidth: '560px', width: '100%', maxHeight: '100%', padding: 0, overflow: 'hidden' }}
           >
             {/* Close button */}
             <button
               onClick={() => setModalOpen(false)}
-              onMouseEnter={() => setCloseHovered(true)}
-              onMouseLeave={() => setCloseHovered(false)}
+              onTouchEnd={e => { e.preventDefault(); setModalOpen(false); }}
+              onMouseEnter={canHover ? () => setCloseHovered(true) : undefined}
+              onMouseLeave={canHover ? () => setCloseHovered(false) : undefined}
               style={{
                 position: 'absolute', top: 14, right: 14,
                 width: 28, height: 28,
-                background: closeHovered ? '#141510' : 'transparent',
+                // Solid, so the quote scrolling underneath doesn't show through
+                background: closeHovered ? '#141510' : '#fdfbf9',
+                zIndex: 1,
                 border: '1px solid #141510',
                 borderRadius: '50%',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -299,14 +320,19 @@ function EndorsementCard({ name, role, company, quote, fullQuote, initials, avat
               }}
             >✕</button>
 
-            {nameRowEl}
+            <div
+              ref={modalScrollRef}
+              style={{ display: 'flex', flexDirection: 'column', gap: '16px', padding: '24px', overflowY: 'auto', overscrollBehavior: 'contain', minHeight: 0, boxSizing: 'border-box' }}
+            >
+              {nameRowEl}
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              {fullQuote.map((para, i) => (
-                <p key={i} style={{ fontFamily: "var(--font-inter), sans-serif", fontWeight: 400, fontSize: '16px', lineHeight: '24px', letterSpacing: '-0.48px', color: '#141510', margin: 0 }}>
-                  {para}
-                </p>
-              ))}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                {fullQuote.map((para, i) => (
+                  <p key={i} style={{ fontFamily: "var(--font-inter), sans-serif", fontWeight: 400, fontSize: '16px', lineHeight: '24px', letterSpacing: '-0.48px', color: '#141510', margin: 0 }}>
+                    {para}
+                  </p>
+                ))}
+              </div>
             </div>
           </div>
         </div>,

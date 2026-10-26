@@ -20,8 +20,8 @@ export default function PlaygroundPage() {
           <p className="page-eyebrow">✦ Playground</p>
           <h1 className="page-title">Side projects and experiments</h1>
           <p className="page-lede">
-            Things I build when bored and to try out what new tools can actually do. Everything here works right on
-            the page, so go ahead and play.
+            Things I build when I’m bored, curious, or just want to see what new tools can actually do. Everything
+            here works right on the page, so go ahead and play.
           </p>
         </section>
         <div className="pg-list">
