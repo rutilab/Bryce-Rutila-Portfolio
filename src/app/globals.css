@@ -3232,9 +3232,11 @@ body:has(.landing-main--framed) {
   gap: 20px;
 }
 /* Page links in Inter like the contact links, a weight heavier so they lead.
-   The current page is full ink over a blue rule; the others sit back until
-   hovered, when they pick up an ink rule in the same place. */
+   The others sit back until hovered; hovered or current, a trace draws in
+   under the link in its own colour (--c, set inline) and lands on a round
+   pad, the same as the footer's links. The current page's stays drawn. */
 .home-header-link {
+  position: relative;
   font-family: var(--font-inter), sans-serif;
   font-size: 13px;
   font-weight: 500;
@@ -3242,16 +3244,48 @@ body:has(.landing-main--framed) {
   text-decoration: none;
   color: rgba(20, 21, 16, 0.55);
   padding: 4px 0;
-  border-bottom: 2px solid transparent;
-  transition: color 160ms ease, border-color 160ms ease;
+  transition: color 160ms ease;
 }
-.home-header-link:hover {
-  color: #141510;
-  border-bottom-color: #141510;
+.home-header-link::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 2px;
+  background-color: var(--c, #141510);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 260ms cubic-bezier(0.65, 0, 0.35, 1);
 }
+.home-header-link::before {
+  content: '';
+  position: absolute;
+  right: -9px;
+  bottom: -3px;
+  width: 8px;
+  height: 8px;
+  box-sizing: border-box;
+  border: 2px solid var(--c, #141510);
+  border-radius: 50%;
+  background-color: #f9fafb;
+  transform: scale(0);
+  transition: transform 160ms ease;
+}
+.home-header-link:hover,
 .home-header-link[aria-current='page'] {
   color: #141510;
-  border-bottom-color: #12b4ff;
+}
+.home-header-link:hover::after,
+.home-header-link:focus-visible::after,
+.home-header-link[aria-current='page']::after {
+  transform: scaleX(1);
+}
+.home-header-link:hover::before,
+.home-header-link:focus-visible::before,
+.home-header-link[aria-current='page']::before {
+  transform: scale(1);
+  transition: transform 300ms cubic-bezier(0.34, 1.56, 0.64, 1) 200ms;
 }
 /* The ways to reach Bryce read as quiet body text with a matching icon each,
    after helenxli.com: Inter at 13px in the hero paragraph's grey, a 14px copy
