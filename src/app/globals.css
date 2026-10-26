@@ -4925,6 +4925,10 @@ body:has(.page-framed) {
   line-height: 1.1;
   letter-spacing: -0.03em;
 }
+/* Same heading-to-intro gap as .page-title above .page-lede */
+.about-main .display-heading-wrap {
+  margin-bottom: 24px;
+}
 .page-framed {
   position: relative;
   z-index: 1;
