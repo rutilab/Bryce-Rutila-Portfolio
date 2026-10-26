@@ -2,13 +2,14 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import Link from 'next/link';
 import './caterpillar-playground.css';
 
 /**
- * Pixel-art footer scene: caterpillars crawl along ink branches; click one to
- * cocoon it, click the cocoon to hatch a BR fly (the same SVGs used in the hero).
- * Canvas is transparent so the halftone background shows through.
+ * Pixel-art scene, once the site footer and now a playground card:
+ * caterpillars crawl along branches; click one to cocoon it, click the cocoon
+ * to hatch a BR fly, and net the flies for confetti. Just the scene — the card
+ * around it (CaterpillarCard) supplies the frame, and hears about each hatch
+ * and catch through `onHatch` / `onCatch`.
  */
 
 const S = 3; // 1 art pixel = 3 screen pixels
@@ -22,9 +23,6 @@ const SCENE_AH = 56; // scene art height → 168px tall
 const REF_FRAME_MS = 1000 / 120;
 /** Cap the catch-up after a stall (background tab, slow paint) so nothing teleports */
 const MAX_STEP = 4;
-
-const LINKEDIN_URL = 'https://www.linkedin.com/in/brycerutila/';
-const EMAIL = 'rutilab@gmail.com';
 
 /** Hatch order cycles the five BRYCE block colors (B-R-E-C-Y) — green sits
  *  fourth so it lands inside the initial four caterpillars, not the refill */
@@ -706,7 +704,7 @@ function hitTest(scene: Scene, bug: Bug, ax: number, ay: number): boolean {
 
 // ── Component ────────────────────────────────────────────────────────────────
 
-export default function CaterpillarPlayground() {
+export default function CaterpillarPlayground({ onHatch, onCatch }: { onHatch?: () => void; onCatch?: () => void }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const sceneRef = useRef<Scene | null>(null);
   const flyPhysRef = useRef<Map<number, FlyPhys>>(new Map());
@@ -766,9 +764,8 @@ export default function CaterpillarPlayground() {
     const ro = new ResizeObserver(setup);
     ro.observe(canvas);
 
-    // On phones, only animate while the footer is on screen; offscreen it's
-    // wasted work, felt as jank further up the page. Desktop runs it always.
-    const touch = window.matchMedia('(hover: none) and (pointer: coarse)').matches;
+    // Only animate while the card is on screen; offscreen it's wasted work,
+    // and a playground page has other cards running too
     let io: IntersectionObserver | null = null;
     if (!reducedRef.current) {
       let lastTs = performance.now();
@@ -797,10 +794,7 @@ export default function CaterpillarPlayground() {
         }
         if (running) rafRef.current = requestAnimationFrame(loop);
       };
-      if (!touch) {
-        running = true;
-        rafRef.current = requestAnimationFrame(loop);
-      } else io = new IntersectionObserver(([entry]) => {
+      io = new IntersectionObserver(([entry]) => {
         if (entry.isIntersecting && !running) {
           running = true;
           lastTs = performance.now();
@@ -915,6 +909,7 @@ export default function CaterpillarPlayground() {
       });
       setFlies((prev) => [...prev, { id: flyId, colorIdx }]);
       setHint((h) => (h === 'crawl' ? 'hatched' : h));
+      onHatch?.();
       // a new caterpillar wanders in from the edge after a bit
       const branchIdx = bug.branchIdx;
       timeoutsRef.current.push(
@@ -976,6 +971,7 @@ export default function CaterpillarPlayground() {
     setFlies((prev) => prev.filter((f) => f.id !== fly.id));
     hoverFlyRef.current = null;
     setCursor(undefined);
+    onCatch?.();
 
     // reduced motion: the catch still lands, it just doesn't throw confetti
     if (reducedRef.current || !phys || !sceneRect) return;
@@ -1001,33 +997,7 @@ export default function CaterpillarPlayground() {
   const hintText = hint === 'crawl' ? `${verb} on a caterpillar` : 'Metamorphosis complete';
 
   return (
-    <footer className="caterpillar-playground">
-      {/* ── Footer info ── */}
-      <div className="caterpillar-content">
-        <p className="caterpillar-tagline">
-          Transforming products one idea at a time.
-        </p>
-
-        {/* the two link columns travel together as one right-hand group, so
-            EXPLORE can't drift into the middle as the viewport widens */}
-        <div className="caterpillar-links">
-          <nav className="caterpillar-col" aria-label="Footer navigation">
-            <span className="caterpillar-col-label">EXPLORE</span>
-            <Link href="/" className="caterpillar-link">HOME</Link>
-            <Link href="/#work" className="caterpillar-link">WORK</Link>
-            <Link href="/about" className="caterpillar-link">ABOUT ME</Link>
-          </nav>
-
-          <div className="caterpillar-col">
-            <span className="caterpillar-col-label">CONNECT</span>
-            <a href={`mailto:${EMAIL}`} className="caterpillar-link">EMAIL</a>
-            <a href={LINKEDIN_URL} target="_blank" rel="noopener noreferrer" className="caterpillar-link">
-              LINKEDIN
-            </a>
-          </div>
-        </div>
-      </div>
-
+    <div className="caterpillar-playground">
       {/* ── Interactive branch scene ── */}
       {/* The scene box owns the pointer: it covers the branches AND the airspace
           the butterflies fly in, and unlike the sprites it never moves, so the
@@ -1080,7 +1050,7 @@ export default function CaterpillarPlayground() {
         )}
 
         {/* Catch confetti — portaled to body so the scene's `overflow: clip`
-            can't crop the burst at the footer's edges */}
+            can't crop the burst at the card's edges */}
         {bursts.map((burst) =>
           createPortal(
             <div
@@ -1113,12 +1083,6 @@ export default function CaterpillarPlayground() {
         )}
       </div>
 
-      <div className="caterpillar-bottom">
-        <span>© 2026 BRYCE RUTILA</span>
-        <span className="caterpillar-bottom-note">
-          No butterflies were harmed in the making of this site
-        </span>
-      </div>
-    </footer>
+    </div>
   );
 }

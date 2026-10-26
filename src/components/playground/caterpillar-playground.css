@@ -1,28 +1,18 @@
-/* Snapshot of the caterpillar footer styles (from globals.css), renamed so the
-   live footer can change without touching this. Import alongside
-   CaterpillarPlayground.tsx when it becomes a playground experience. */
+/* The caterpillar scene (CaterpillarPlayground), from the old footer. */
 
 .caterpillar-playground {
   position: relative;
-  z-index: 1;
   width: 100%;
-  /* deep-ink band closing the cream page — the scene's bark and keyline
-     colours are set to match in CaterpillarFooter.tsx */
+  /* the scene's bark and keyline colours are tuned for this ink */
   background-color: #141510;
-  /* the gap above comes from .landing-main's bottom padding; the scene's own
-     padding-top is now purely the butterflies' airspace between the links and
-     the branches */
-  margin-top: 0;
 }
 
 .caterpillar-scene {
   position: relative;
   width: 100%;
   overflow: clip;
-  /* The canvas already leaves 62px under the lower branch. The air above the
-     scene — last link down to the upper branch — measures 178px, so add the
-     116px difference to sit the branches in equal space top and bottom. */
-  padding-bottom: 116px;
+  /* room under the lower branch for the hint pill */
+  padding-bottom: 64px;
 }
 .caterpillar-scene canvas {
   display: block;
@@ -96,97 +86,82 @@
   }
 }
 
-/* Info block */
-.caterpillar-content {
-  /* full-bleed: the link columns stay pinned 40px off the right edge at every
-     width above the mobile breakpoint, rather than centring in a 1200px well */
-  margin: 0;
-  padding: 40px 40px 32px;
-  display: flex;
-  /* tagline left, link columns right, both on the same 40px gutter */
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 48px;
-  flex-wrap: wrap;
+/* ── The caterpillar's card: a pinned specimen box ──────────────────────
+   An ink box with a dashed inner frame, a pin in each corner of it, a
+   running tally across the top and a paper collection label in the corner,
+   like a butterfly mounted in a museum drawer. */
+.specimen {
+  position: relative;
+  border-radius: 16px;
+  background-color: #141510;
+  overflow: hidden;
+  isolation: isolate;
 }
-/* Left-hand statement, set on the same top line as the EXPLORE/CONNECT labels.
-   Same mono as the rest of the footer, sized up so it reads as a statement
-   rather than a fourth nav column. */
-.caterpillar-tagline {
-  margin: 0;
-  /* Two lines: the cap clears "Transforming products" (21ch) but not the following
-     "one" (25ch), so the phrase breaks at its own hinge rather than stranding
-     "at a time" on the second line, which is where 31ch put it. */
-  max-width: 22ch;
-  font-family: var(--font-ibm-plex-mono), monospace;
-  font-weight: 400;
-  font-size: 20px;
-  line-height: 1.35;
-  letter-spacing: -0.02em;
-  color: #faf7f2;
+.specimen::before {
+  content: '';
+  position: absolute;
+  inset: 10px;
+  border: 1px dashed rgba(250, 247, 242, 0.22);
+  border-radius: 10px;
+  pointer-events: none;
+  z-index: 1;
 }
-/* EXPLORE and CONNECT move as one unit against the right edge */
-.caterpillar-links {
-  display: flex;
-  gap: 64px;
+.specimen-pin {
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  border: 2px solid #141510;
+  box-shadow: 0 0 0 1.5px rgba(250, 247, 242, 0.55);
+  z-index: 2;
+  pointer-events: none;
 }
-.caterpillar-col {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-.caterpillar-col-label {
-  font-family: var(--font-ibm-plex-mono), monospace;
-  font-size: 12px;
-  letter-spacing: 0.08em;
-  color: #9a9686;
-  margin-bottom: 2px;
-}
-.caterpillar-link {
-  font-family: var(--font-ibm-plex-mono), monospace;
-  font-size: 14px;
-  letter-spacing: -0.012em;
-  color: #faf7f2;
-  text-decoration: none;
-  align-self: flex-start;
-  border-radius: 3px;
-  padding: 0 3px;
-  margin: 0 -3px;
-  transition: background-color 0.18s ease, color 0.18s ease;
-}
-.caterpillar-link:hover {
-  background-color: #fcf7a4; /* yellow highlight wash, same as endorsement highlights */
-  color: #141510; /* flip the label dark so it stays legible inside the wash */
-}
-
-/* Bottom bar */
-.caterpillar-bottom {
-  margin: 0;
-  padding: 40px;
-  border-top: 1px dashed rgba(250, 247, 242, 0.28);
+.specimen-pin:nth-of-type(1) { top: 6px; left: 6px; background: #ff9c12; }
+.specimen-pin:nth-of-type(2) { top: 6px; right: 6px; background: #12b4ff; }
+.specimen-pin:nth-of-type(3) { bottom: 6px; left: 6px; background: #31e300; }
+.specimen-pin:nth-of-type(4) { bottom: 6px; right: 6px; background: #ff12f7; }
+.specimen-bar {
+  position: relative;
+  z-index: 2;
   display: flex;
   justify-content: space-between;
-  align-items: center;
   gap: 16px;
-  flex-wrap: wrap;
+  padding: 22px 28px 0;
   font-family: var(--font-ibm-plex-mono), monospace;
   font-size: 11px;
-  letter-spacing: 0.04em;
-  color: #8a8778;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #9a9686;
+  pointer-events: none;
 }
-
-/* 40px is the default at every width; mobile tightens to 24px */
-@media (max-width: 799px) {
-  .caterpillar-content,
-  .caterpillar-bottom {
-    padding-left: 24px;
-    padding-right: 24px;
-  }
-  .caterpillar-content {
-    flex-direction: column;
-    gap: 32px;
-  }
-  .caterpillar-links {
-    gap: 40px;
-  }
+.specimen-tally b {
+  font-weight: 400;
+  color: #faf7f2;
+}
+.specimen-label {
+  position: absolute;
+  right: 28px;
+  bottom: 24px;
+  z-index: 2;
+  padding: 6px 10px 7px;
+  background-color: #faf7f2;
+  color: #141510;
+  font-family: var(--font-ibm-plex-mono), monospace;
+  font-size: 10px;
+  line-height: 1.45;
+  letter-spacing: 0.02em;
+  rotate: -1.5deg;
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.25);
+  pointer-events: none;
+}
+.specimen-label i {
+  font-style: italic;
+}
+/* The scene's air above the branches starts under the tally */
+.specimen .caterpillar-scene {
+  margin-top: -40px;
+}
+@media (max-width: 639px) {
+  .specimen-bar { padding: 20px 20px 0; }
+  .specimen-label { display: none; }
 }
