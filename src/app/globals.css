@@ -1659,99 +1659,228 @@ h2.display-heading {
   background: rgba(255, 255, 255, 0.3);
 }
 
-/* ── Landing footer — pixel caterpillar scene + site info ─────────────────── */
+/* ── Landing footer — BRYCE chip scene + site info ─────────────────────────── */
 .landing-footer {
   position: relative;
   z-index: 1;
   width: 100%;
-  /* deep-ink band closing the cream page — the scene's bark and keyline
-     colours are set to match in CaterpillarFooter.tsx */
+  /* deep-ink band closing the cream page — the chip scene's holes, bands
+     and keylines are set to match below */
   background-color: #141510;
-  /* the gap above comes from .landing-main's bottom padding; the scene's own
-     padding-top is now purely the butterflies' airspace between the links and
-     the branches */
+  /* the gap above comes from .landing-main's bottom padding */
   margin-top: 0;
 }
 
-.footer-scene {
+/* The BRYCE chip scene (ChipFooter). Same parts as the home page board, inverted
+   for the ink band: traces in pastel BRYCE colours, signals in the full neon. */
+.chip-scene {
   position: relative;
   width: 100%;
+  height: 480px;
   overflow: clip;
-  /* The canvas already leaves 62px under the lower branch. The air above the
-     scene — last link down to the upper branch — measures 178px, so add the
-     116px difference to sit the branches in equal space top and bottom. */
-  padding-bottom: 116px;
 }
-.footer-scene canvas {
+@media (max-width: 799px) {
+  .chip-scene { height: 360px; }
+}
+.chip-board {
   display: block;
-  width: 100%;
-  height: 168px;
-  image-rendering: pixelated;
+  overflow: hidden;
+  /* traces that run off the band fade out rather than stopping at a hard line */
+  mask-image: linear-gradient(to bottom, transparent, #000 56px, #000 calc(100% - 56px), transparent);
+}
+.chip-circuit,
+.chip-star {
+  --p: color-mix(in srgb, var(--c) 62%, #faf7f2);
+  /* power leaves and comes back from the socket outward */
+  --drain: calc(var(--k, 0) * 700ms);
+}
+/* Chip pulled: the board goes dead grey and the signals stop */
+.chip-board.is-unplugged .chip-circuit,
+.chip-board.is-unplugged .chip-star {
+  --p: #3a3b34;
+}
+.chip-board.is-live.is-unplugged .chip-signal,
+.chip-board.is-unplugged .chip-ring-fx,
+.chip-board.is-unplugged .chip-led-fx,
+.chip-board.is-unplugged .chip-flush {
+  visibility: hidden;
+}
+.chip-trace {
+  fill: none;
+  stroke: var(--p);
+  transition: stroke 450ms ease var(--drain);
+  stroke-width: 2.25;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+}
+.chip-part {
+  fill: var(--p);
+  transition: fill 450ms ease var(--drain);
+  transform-box: fill-box;
+  transform-origin: center;
+  scale: 0;
+}
+.chip-ring {
+  fill: #141510;
+  stroke: var(--p);
+  transition: stroke 450ms ease var(--drain);
+  stroke-width: 2;
+  transform-box: fill-box;
+  transform-origin: center;
+  scale: 0;
+}
+.chip-hole {
+  fill: #141510;
+}
+.chip-band {
+  fill: none;
+  stroke: #141510;
+  stroke-width: 1.4;
+}
+/* Board draws in the first time the band comes into view */
+.chip-board.is-live .chip-trace {
+  animation: cb-draw 1s cubic-bezier(0.65, 0, 0.35, 1) var(--d, 0s) forwards;
+}
+.chip-board.is-live .chip-part,
+.chip-board.is-live .chip-ring {
+  animation: cb-pop 360ms cubic-bezier(0.34, 1.56, 0.64, 1) calc(var(--d, 0s) + 0.7s) both;
+}
+.chip-signal {
+  fill: none;
+  stroke: var(--c);
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  filter: drop-shadow(0 0 4px var(--c));
+  visibility: hidden;
+}
+.chip-board.is-live .chip-signal {
+  visibility: visible;
+  animation: cb-wait 1.6s step-end;
 }
 
-.footer-hint {
-  position: absolute;
-  left: 50%;
-  /* 24px of air between the pill and the dashed divider below the scene */
-  bottom: 24px;
-  transform: translateX(-50%);
-  font-family: var(--font-ibm-plex-mono), monospace;
-  font-size: 11px;
-  letter-spacing: 0.06em;
-  color: #9a9686;
-  white-space: nowrap;
+/* The chip: paper lid and ink type like the home page's BR1, sat on a blue
+   slab; pins in paper */
+.chip-lid {
+  opacity: 0;
+  transition: opacity 500ms ease 0.15s;
+}
+.chip-board.is-live .chip-lid {
+  opacity: 1;
+}
+.chip-pins {
+  fill: none;
+  stroke: #faf7f2;
+  stroke-width: 3;
+  stroke-linecap: square;
+}
+.chip-foot {
+  fill: #faf7f2;
+  transition: fill 450ms ease;
+}
+.chip-board.is-unplugged .chip-foot {
+  fill: #3a3b34;
+}
+/* The empty socket, once the chip's out of it */
+.chip-socket {
+  fill: none;
+  stroke: #5c5d55;
+  stroke-width: 1.5;
+  stroke-dasharray: 6 6;
+  opacity: 0;
+  transition: opacity 300ms ease;
+}
+.chip-board.is-unplugged .chip-socket {
+  opacity: 1;
+}
+.chip-lift {
+  cursor: grab;
+  touch-action: none;
+}
+.chip-lift.is-dragging {
+  cursor: grabbing;
+}
+.chip-slab {
+  fill: #12b4ff;
+  stroke: #141510;
+  stroke-width: 3;
+}
+.chip-body {
+  fill: #faf7f2;
+  stroke: #141510;
+  stroke-width: 3;
+}
+.chip-flush {
+  fill: #fff712;
   pointer-events: none;
+}
+.chip-die {
+  fill: none;
+  stroke: #141510;
+  stroke-width: 1.25;
+  stroke-opacity: 0.35;
+  stroke-dasharray: 4 4;
+}
+.chip-dot {
+  fill: #141510;
+}
+.chip-led {
+  fill: #faf7f2;
+  stroke: #141510;
+  stroke-width: 2;
+}
+.chip-led-fx {
+  stroke: #141510;
+  stroke-width: 2;
+}
+.chip-ring-fx {
+  fill: none;
+  stroke-width: 2.5;
+  pointer-events: none;
+}
+.chip-word {
+  font-family: var(--font-space-grotesk), sans-serif;
+  font-weight: 700;
+  font-size: 120px;
+  letter-spacing: -0.03em;
+  fill: #141510;
   user-select: none;
-  /* pill: a hairline capsule so the prompt reads as an affordance, not a caption */
-  padding: 5px 12px;
-  border: 1px solid rgba(250, 247, 242, 0.22);
-  border-radius: 9999px;
-  background-color: rgba(250, 247, 242, 0.05);
-}
-.footer-hint-done {
-  color: #141510;
-  background-color: #fcf7a4; /* #FFF712 at 0.35 on cream */
-  border-color: #fcf7a4;
 }
 
-/* Hatched BR flies — real hero SVGs flying over the scene.
-   The wrapper's translate/bank transform is driven from the rAF loop (JS);
-   CSS handles the pop-in and the continuous wingbeat. */
-.footer-br-fly {
-  position: absolute;
-  left: 0;
-  top: 0;
-  width: 45px;
-  height: 42px;
-  will-change: transform;
-  /* The scene box does the hit-testing and carries the net cursor — a sprite
-     that banks and drifts is the wrong thing to hang :hover off. */
-  pointer-events: none;
+.chip-star {
+  opacity: 0;
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: chip-twinkle 8s ease-in-out infinite;
 }
-.footer-br-fly > svg {
-  display: block;
-  width: 100%;
-  height: 100%;
-  animation:
-    footer-fly-pop 0.45s cubic-bezier(0.34, 1.56, 0.64, 1) both,
-    footer-fly-flap 0.4s ease-in-out 0.45s infinite;
+.chip-star-outer {
+  fill: var(--c);
+  transition: fill 450ms ease var(--drain);
 }
-@keyframes footer-fly-pop {
-  from { transform: scale(0) rotate(-30deg); }
-  to   { transform: scale(1) rotate(0deg); }
+.chip-board.is-unplugged .chip-star-outer {
+  fill: var(--p);
 }
-/* paper-butterfly wingbeat: fold about the vertical body axis */
-@keyframes footer-fly-flap {
-  0%   { transform: perspective(220px) rotateY(0deg)  scale(1); }
-  25%  { transform: perspective(220px) rotateY(-38deg) scale(0.96); }
-  50%  { transform: perspective(220px) rotateY(0deg)  scale(1); }
-  75%  { transform: perspective(220px) rotateY(34deg) scale(0.97); }
-  100% { transform: perspective(220px) rotateY(0deg)  scale(1); }
+.chip-star-inner {
+  fill: #141510;
 }
+@keyframes chip-twinkle {
+  0%, 52%, 100% { opacity: 0;   scale: 0.2; rotate: -45deg; }
+  60%           { opacity: 0.9; scale: 1;   rotate: 0deg; }
+  84%           { opacity: 0.9; scale: 1;   rotate: 0deg; }
+  92%           { opacity: 0;   scale: 0.4; rotate: 30deg; }
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .footer-br-fly > svg {
-    animation: none;
-  }
+  .chip-board .chip-trace { animation: none; stroke-dashoffset: 0; }
+  .chip-board .chip-part,
+  .chip-board .chip-ring { animation: none; scale: 1; }
+  .chip-signal,
+  .chip-ring-fx,
+  .chip-led-fx,
+  .chip-flush { display: none; }
+  .chip-star { animation: none; opacity: 0.5; }
 }
 
 /* Info block */
@@ -1772,15 +1901,16 @@ h2.display-heading {
    rather than a fourth nav column. */
 .footer-tagline {
   margin: 0;
-  /* Two lines: the cap clears "Transforming products" (21ch) but not the following
-     "one" (25ch), so the phrase breaks at its own hinge rather than stranding
-     "at a time" on the second line, which is where 31ch put it. */
-  max-width: 22ch;
-  font-family: var(--font-ibm-plex-mono), monospace;
-  font-weight: 400;
-  font-size: 20px;
-  line-height: 1.35;
-  letter-spacing: -0.02em;
+  /* Two lines, broken at the phrase's hinge: "into connected experiences."
+     (13.04em) fits under the cap, "Turning complex products into" (14em)
+     doesn't */
+  max-width: 13.5em;
+  /* Same face as BRYCE on the chip and the home page headline */
+  font-family: var(--font-space-grotesk), sans-serif;
+  font-weight: 700;
+  font-size: clamp(20px, 2.2vw, 26px);
+  line-height: 1.15;
+  letter-spacing: -0.03em;
   color: #faf7f2;
 }
 /* EXPLORE and CONNECT move as one unit against the right edge */
@@ -1801,20 +1931,50 @@ h2.display-heading {
   margin-bottom: 2px;
 }
 .footer-link {
+  position: relative;
   font-family: var(--font-ibm-plex-mono), monospace;
   font-size: 14px;
   letter-spacing: -0.012em;
   color: #faf7f2;
   text-decoration: none;
   align-self: flex-start;
-  border-radius: 3px;
-  padding: 0 3px;
-  margin: 0 -3px;
-  transition: background-color 0.18s ease, color 0.18s ease;
 }
-.footer-link:hover {
-  background-color: #fcf7a4; /* yellow highlight wash, same as endorsement highlights */
-  color: #141510; /* flip the label dark so it stays legible inside the wash */
+/* On hover a trace draws in under the link in its own colour (--c, set
+   inline) and lands on a round pad, like the board below */
+.footer-link::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -4px;
+  height: 2px;
+  background-color: var(--c, #faf7f2);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 260ms cubic-bezier(0.65, 0, 0.35, 1);
+}
+.footer-link::before {
+  content: '';
+  position: absolute;
+  right: -9px;
+  bottom: -7px;
+  width: 8px;
+  height: 8px;
+  box-sizing: border-box;
+  border: 2px solid var(--c, #faf7f2);
+  border-radius: 50%;
+  background-color: #141510;
+  transform: scale(0);
+  transition: transform 160ms ease;
+}
+.footer-link:hover::after,
+.footer-link:focus-visible::after {
+  transform: scaleX(1);
+}
+.footer-link:hover::before,
+.footer-link:focus-visible::before {
+  transform: scale(1);
+  transition: transform 300ms cubic-bezier(0.34, 1.56, 0.64, 1) 200ms;
 }
 
 /* Bottom bar */
@@ -1831,6 +1991,42 @@ h2.display-heading {
   font-size: 11px;
   letter-spacing: 0.04em;
   color: #8a8778;
+}
+
+/* Pull past the end of the page (FooterOverscroll): the spacer grows with the
+   pull and the glow's stepped columns rise with it, --rise going 0 → 1 */
+.footer-overscroll {
+  position: relative;
+  height: 0;
+  --rise: 0;
+}
+.footer-overscroll-glow {
+  position: absolute;
+  bottom: 0;
+  /* wider than the band so the blur doesn't thin out at the sides */
+  left: -48px;
+  right: -48px;
+  height: 520px;
+  display: flex;
+  align-items: flex-end;
+  filter: blur(22px);
+  pointer-events: none;
+}
+.footer-overscroll-glow span {
+  flex: 1;
+  height: calc(var(--h) * 100%);
+  transform: scaleY(var(--rise));
+  transform-origin: bottom;
+  background: linear-gradient(
+    to top,
+    #12b4ff 0%,
+    #12b4ff 24%,
+    #31e300 36%,
+    #fff712 45%,
+    #ff9c12 60%,
+    #ff12f7 77%,
+    transparent 100%
+  );
 }
 
 /* 40px is the default at every width; mobile tightens to 24px */
@@ -3036,9 +3232,11 @@ body:has(.landing-main--framed) {
   gap: 20px;
 }
 /* Page links in Inter like the contact links, a weight heavier so they lead.
-   The current page is full ink over a blue rule; the others sit back until
-   hovered, when they pick up an ink rule in the same place. */
+   The others sit back until hovered; hovered or current, a trace draws in
+   under the link in its own colour (--c, set inline) and lands on a round
+   pad, the same as the footer's links. The current page's stays drawn. */
 .home-header-link {
+  position: relative;
   font-family: var(--font-inter), sans-serif;
   font-size: 13px;
   font-weight: 500;
@@ -3046,16 +3244,48 @@ body:has(.landing-main--framed) {
   text-decoration: none;
   color: rgba(20, 21, 16, 0.55);
   padding: 4px 0;
-  border-bottom: 2px solid transparent;
-  transition: color 160ms ease, border-color 160ms ease;
+  transition: color 160ms ease;
 }
-.home-header-link:hover {
-  color: #141510;
-  border-bottom-color: #141510;
+.home-header-link::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 2px;
+  background-color: var(--c, #141510);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 260ms cubic-bezier(0.65, 0, 0.35, 1);
 }
+.home-header-link::before {
+  content: '';
+  position: absolute;
+  right: -9px;
+  bottom: -3px;
+  width: 8px;
+  height: 8px;
+  box-sizing: border-box;
+  border: 2px solid var(--c, #141510);
+  border-radius: 50%;
+  background-color: #f9fafb;
+  transform: scale(0);
+  transition: transform 160ms ease;
+}
+.home-header-link:hover,
 .home-header-link[aria-current='page'] {
   color: #141510;
-  border-bottom-color: #12b4ff;
+}
+.home-header-link:hover::after,
+.home-header-link:focus-visible::after,
+.home-header-link[aria-current='page']::after {
+  transform: scaleX(1);
+}
+.home-header-link:hover::before,
+.home-header-link:focus-visible::before,
+.home-header-link[aria-current='page']::before {
+  transform: scale(1);
+  transition: transform 300ms cubic-bezier(0.34, 1.56, 0.64, 1) 200ms;
 }
 /* The ways to reach Bryce read as quiet body text with a matching icon each,
    after helenxli.com: Inter at 13px in the hero paragraph's grey, a 14px copy
@@ -3322,28 +3552,58 @@ body:has(.landing-main--framed) {
   align-items: center;
   justify-content: space-between;
 }
+/* On card hover a trace draws in under the CTA in the card's colour and
+   lands on a round pad past the arrow, like the nav and footer links */
 .work-cta {
+  position: relative;
   font-family: var(--font-inter), sans-serif;
   font-size: 15px;
   font-weight: 500;
   color: #141510;
-  text-decoration: underline;
-  text-decoration-color: transparent;
-  text-underline-offset: 4px;
-  text-decoration-thickness: 2px;
-  transition: text-decoration-color 180ms ease;
+}
+.work-cta::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -5px;
+  height: 2px;
+  background-color: var(--hover);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 260ms cubic-bezier(0.65, 0, 0.35, 1);
+}
+.work-cta::before {
+  content: '';
+  position: absolute;
+  /* clear of the arrow once it's nudged over */
+  right: -13px;
+  bottom: -8px;
+  width: 8px;
+  height: 8px;
+  box-sizing: border-box;
+  border: 2px solid var(--hover);
+  border-radius: 50%;
+  background-color: #f5f5f5;
+  transform: scale(0);
+  transition: transform 160ms ease;
 }
 .work-cta-arrow {
   display: inline-block;
   transition: translate 220ms cubic-bezier(0.34, 1.56, 0.64, 1);
 }
-.work-card.is-live:hover .work-cta { text-decoration-color: var(--hover); }
+.work-card.is-live:hover .work-cta::after { transform: scaleX(1); }
+.work-card.is-live:hover .work-cta::before {
+  transform: scale(1);
+  transition: transform 300ms cubic-bezier(0.34, 1.56, 0.64, 1) 200ms;
+}
 .work-card.is-live:hover .work-cta-arrow { translate: 4px 0; }
 /* Phones keep :hover stuck on whatever was last tapped, so a card scrolled
    past stayed lifted and outlined; touch gets no hover state */
 @media (hover: none) and (pointer: coarse) {
   .work-card.is-live:hover { border-color: rgba(20, 21, 16, 0.14); box-shadow: none; translate: none; }
-  .work-card.is-live:hover .work-cta { text-decoration-color: transparent; }
+  .work-card.is-live:hover .work-cta::after,
+  .work-card.is-live:hover .work-cta::before { visibility: hidden; }
   .work-card.is-live:hover .work-cta-arrow { translate: none; }
 }
 .work-quick {

@@ -1,0 +1,192 @@
+/* Snapshot of the caterpillar footer styles (from globals.css), renamed so the
+   live footer can change without touching this. Import alongside
+   CaterpillarPlayground.tsx when it becomes a playground experience. */
+
+.caterpillar-playground {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  /* deep-ink band closing the cream page — the scene's bark and keyline
+     colours are set to match in CaterpillarFooter.tsx */
+  background-color: #141510;
+  /* the gap above comes from .landing-main's bottom padding; the scene's own
+     padding-top is now purely the butterflies' airspace between the links and
+     the branches */
+  margin-top: 0;
+}
+
+.caterpillar-scene {
+  position: relative;
+  width: 100%;
+  overflow: clip;
+  /* The canvas already leaves 62px under the lower branch. The air above the
+     scene — last link down to the upper branch — measures 178px, so add the
+     116px difference to sit the branches in equal space top and bottom. */
+  padding-bottom: 116px;
+}
+.caterpillar-scene canvas {
+  display: block;
+  width: 100%;
+  height: 168px;
+  image-rendering: pixelated;
+}
+
+.caterpillar-hint {
+  position: absolute;
+  left: 50%;
+  /* 24px of air between the pill and the dashed divider below the scene */
+  bottom: 24px;
+  transform: translateX(-50%);
+  font-family: var(--font-ibm-plex-mono), monospace;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  color: #9a9686;
+  white-space: nowrap;
+  pointer-events: none;
+  user-select: none;
+  /* pill: a hairline capsule so the prompt reads as an affordance, not a caption */
+  padding: 5px 12px;
+  border: 1px solid rgba(250, 247, 242, 0.22);
+  border-radius: 9999px;
+  background-color: rgba(250, 247, 242, 0.05);
+}
+.caterpillar-hint-done {
+  color: #141510;
+  background-color: #fcf7a4; /* #FFF712 at 0.35 on cream */
+  border-color: #fcf7a4;
+}
+
+/* Hatched BR flies — real hero SVGs flying over the scene.
+   The wrapper's translate/bank transform is driven from the rAF loop (JS);
+   CSS handles the pop-in and the continuous wingbeat. */
+.caterpillar-br-fly {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 45px;
+  height: 42px;
+  will-change: transform;
+  /* The scene box does the hit-testing and carries the net cursor — a sprite
+     that banks and drifts is the wrong thing to hang :hover off. */
+  pointer-events: none;
+}
+.caterpillar-br-fly > svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  animation:
+    caterpillar-fly-pop 0.45s cubic-bezier(0.34, 1.56, 0.64, 1) both,
+    caterpillar-fly-flap 0.4s ease-in-out 0.45s infinite;
+}
+@keyframes caterpillar-fly-pop {
+  from { transform: scale(0) rotate(-30deg); }
+  to   { transform: scale(1) rotate(0deg); }
+}
+/* paper-butterfly wingbeat: fold about the vertical body axis */
+@keyframes caterpillar-fly-flap {
+  0%   { transform: perspective(220px) rotateY(0deg)  scale(1); }
+  25%  { transform: perspective(220px) rotateY(-38deg) scale(0.96); }
+  50%  { transform: perspective(220px) rotateY(0deg)  scale(1); }
+  75%  { transform: perspective(220px) rotateY(34deg) scale(0.97); }
+  100% { transform: perspective(220px) rotateY(0deg)  scale(1); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .caterpillar-br-fly > svg {
+    animation: none;
+  }
+}
+
+/* Info block */
+.caterpillar-content {
+  /* full-bleed: the link columns stay pinned 40px off the right edge at every
+     width above the mobile breakpoint, rather than centring in a 1200px well */
+  margin: 0;
+  padding: 40px 40px 32px;
+  display: flex;
+  /* tagline left, link columns right, both on the same 40px gutter */
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 48px;
+  flex-wrap: wrap;
+}
+/* Left-hand statement, set on the same top line as the EXPLORE/CONNECT labels.
+   Same mono as the rest of the footer, sized up so it reads as a statement
+   rather than a fourth nav column. */
+.caterpillar-tagline {
+  margin: 0;
+  /* Two lines: the cap clears "Transforming products" (21ch) but not the following
+     "one" (25ch), so the phrase breaks at its own hinge rather than stranding
+     "at a time" on the second line, which is where 31ch put it. */
+  max-width: 22ch;
+  font-family: var(--font-ibm-plex-mono), monospace;
+  font-weight: 400;
+  font-size: 20px;
+  line-height: 1.35;
+  letter-spacing: -0.02em;
+  color: #faf7f2;
+}
+/* EXPLORE and CONNECT move as one unit against the right edge */
+.caterpillar-links {
+  display: flex;
+  gap: 64px;
+}
+.caterpillar-col {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.caterpillar-col-label {
+  font-family: var(--font-ibm-plex-mono), monospace;
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  color: #9a9686;
+  margin-bottom: 2px;
+}
+.caterpillar-link {
+  font-family: var(--font-ibm-plex-mono), monospace;
+  font-size: 14px;
+  letter-spacing: -0.012em;
+  color: #faf7f2;
+  text-decoration: none;
+  align-self: flex-start;
+  border-radius: 3px;
+  padding: 0 3px;
+  margin: 0 -3px;
+  transition: background-color 0.18s ease, color 0.18s ease;
+}
+.caterpillar-link:hover {
+  background-color: #fcf7a4; /* yellow highlight wash, same as endorsement highlights */
+  color: #141510; /* flip the label dark so it stays legible inside the wash */
+}
+
+/* Bottom bar */
+.caterpillar-bottom {
+  margin: 0;
+  padding: 40px;
+  border-top: 1px dashed rgba(250, 247, 242, 0.28);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  font-family: var(--font-ibm-plex-mono), monospace;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  color: #8a8778;
+}
+
+/* 40px is the default at every width; mobile tightens to 24px */
+@media (max-width: 799px) {
+  .caterpillar-content,
+  .caterpillar-bottom {
+    padding-left: 24px;
+    padding-right: 24px;
+  }
+  .caterpillar-content {
+    flex-direction: column;
+    gap: 32px;
+  }
+  .caterpillar-links {
+    gap: 40px;
+  }
+}

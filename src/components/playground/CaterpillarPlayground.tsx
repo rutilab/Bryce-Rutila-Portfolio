@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import Link from 'next/link';
+import './caterpillar-playground.css';
 
 /**
  * Pixel-art footer scene: caterpillars crawl along ink branches; click one to
@@ -705,7 +706,7 @@ function hitTest(scene: Scene, bug: Bug, ax: number, ay: number): boolean {
 
 // ── Component ────────────────────────────────────────────────────────────────
 
-export default function CaterpillarFooter() {
+export default function CaterpillarPlayground() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const sceneRef = useRef<Scene | null>(null);
   const flyPhysRef = useRef<Map<number, FlyPhys>>(new Map());
@@ -1000,27 +1001,27 @@ export default function CaterpillarFooter() {
   const hintText = hint === 'crawl' ? `${verb} on a caterpillar` : 'Metamorphosis complete';
 
   return (
-    <footer className="landing-footer">
+    <footer className="caterpillar-playground">
       {/* ── Footer info ── */}
-      <div className="footer-content">
-        <p className="footer-tagline">
+      <div className="caterpillar-content">
+        <p className="caterpillar-tagline">
           Transforming products one idea at a time.
         </p>
 
         {/* the two link columns travel together as one right-hand group, so
             EXPLORE can't drift into the middle as the viewport widens */}
-        <div className="footer-links">
-          <nav className="footer-col" aria-label="Footer navigation">
-            <span className="footer-col-label">EXPLORE</span>
-            <Link href="/" className="footer-link">HOME</Link>
-            <Link href="/#work" className="footer-link">WORK</Link>
-            <Link href="/about" className="footer-link">ABOUT ME</Link>
+        <div className="caterpillar-links">
+          <nav className="caterpillar-col" aria-label="Footer navigation">
+            <span className="caterpillar-col-label">EXPLORE</span>
+            <Link href="/" className="caterpillar-link">HOME</Link>
+            <Link href="/#work" className="caterpillar-link">WORK</Link>
+            <Link href="/about" className="caterpillar-link">ABOUT ME</Link>
           </nav>
 
-          <div className="footer-col">
-            <span className="footer-col-label">CONNECT</span>
-            <a href={`mailto:${EMAIL}`} className="footer-link">EMAIL</a>
-            <a href={LINKEDIN_URL} target="_blank" rel="noopener noreferrer" className="footer-link">
+          <div className="caterpillar-col">
+            <span className="caterpillar-col-label">CONNECT</span>
+            <a href={`mailto:${EMAIL}`} className="caterpillar-link">EMAIL</a>
+            <a href={LINKEDIN_URL} target="_blank" rel="noopener noreferrer" className="caterpillar-link">
               LINKEDIN
             </a>
           </div>
@@ -1032,7 +1033,7 @@ export default function CaterpillarFooter() {
           the butterflies fly in, and unlike the sprites it never moves, so the
           cursor it carries repaints reliably. */}
       <div
-        className="footer-scene"
+        className="caterpillar-scene"
         ref={sceneRef2}
         style={{ paddingTop: FLY_CEILING, cursor }}
         onMouseMove={handleMouseMove}
@@ -1053,7 +1054,7 @@ export default function CaterpillarFooter() {
         {flies.map((fly) => (
           <div
             key={fly.id}
-            className="footer-br-fly"
+            className="caterpillar-br-fly"
             ref={(el) => {
               const p = flyPhysRef.current.get(fly.id);
               if (p && el) {
@@ -1072,7 +1073,7 @@ export default function CaterpillarFooter() {
         {hint !== 'off' && (
           <span
             suppressHydrationWarning
-            className={`footer-hint${hint === 'hatched' ? ' footer-hint-done' : ''}`}
+            className={`caterpillar-hint${hint === 'hatched' ? ' caterpillar-hint-done' : ''}`}
           >
             {hintText}
           </span>
@@ -1112,9 +1113,9 @@ export default function CaterpillarFooter() {
         )}
       </div>
 
-      <div className="footer-bottom">
+      <div className="caterpillar-bottom">
         <span>© 2026 BRYCE RUTILA</span>
-        <span className="footer-bottom-note">
+        <span className="caterpillar-bottom-note">
           No butterflies were harmed in the making of this site
         </span>
       </div>

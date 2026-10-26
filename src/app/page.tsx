@@ -9,7 +9,7 @@ import { WordChips } from '@/components/home/WordChip';
 import { WorkCard } from '@/components/home/WorkCard';
 import { HOME_PROJECTS } from '@/data/projects';
 import { IridescentEyebrow } from '@/components/IridescentEyebrow';
-import CaterpillarFooter from '@/components/CaterpillarFooter';
+import ChipFooter from '@/components/ChipFooter';
 import { registerBrFlyRefill } from '@/lib/brFlyRefill';
 
 const BR_FLY_SRCS = [
@@ -825,7 +825,7 @@ export default function Home() {
         </section>
       </main>
 
-      <CaterpillarFooter />
+      <ChipFooter />
     </>
   );
 }

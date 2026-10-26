@@ -1,5 +1,5 @@
 import CircuitBackground from '@/components/CircuitBackground';
-import CaterpillarFooter from '@/components/CaterpillarFooter';
+import ChipFooter from '@/components/ChipFooter';
 import { FitBox } from '@/components/about/FitBox';
 import { CdCard } from '@/components/about/CdCard';
 import { FoldedLetter } from '@/components/about/FoldedLetter';
@@ -62,7 +62,7 @@ export default function AboutPage() {
       <main className="about-main">
         {/* The home page's board, routed around the deck, the letter and the
             three keepsakes */}
-        <CircuitBackground solid="[data-board-solid], .letter-3d-stage" varied />
+        <CircuitBackground solid="[data-board-solid], .letter-3d-stage" grid />
         {/* ── The deck of prints ─────────────────────────────────────────── */}
         <div className="about-section">
           <div className="mx-auto w-[344px] max-w-full" data-board-solid>
@@ -148,7 +148,7 @@ export default function AboutPage() {
           say that the rest of it is a scroll away. */}
       <ScrollCue gateId={null} />
 
-      <CaterpillarFooter />
+      <ChipFooter />
     </>
   );
 }

@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import type { Viewport } from 'next';
 import '@/styles/case-study.css';
 import { CaseStudyRouteChrome } from './CaseStudyRouteChrome';
-import CaterpillarFooter from '@/components/CaterpillarFooter';
+import ChipFooter from '@/components/ChipFooter';
 import { BackToTopButton, ScrollCue } from '@/components/case-study';
 
 /** Light browser chrome + edge-to-edge on notched phones; pairs with CaseStudyRouteChrome. */
@@ -21,7 +21,7 @@ export default function CaseStudiesLayout({
   return (
     <CaseStudyRouteChrome>
       {children}
-      <CaterpillarFooter />
+      <ChipFooter />
       {/* Both show themselves only where there's a hero — see the components */}
       <ScrollCue />
       <BackToTopButton />

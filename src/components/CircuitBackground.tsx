@@ -52,6 +52,8 @@ type Circuit = {
   pulseDur: number;
   pulseDelay: number;
   hero?: boolean;
+  /** When it draws in, if not by its place in the list (dense boards would take seconds) */
+  drawDelay?: number;
 };
 type Star = { id: number; x: number; y: number; size: number; kind: 'burst' | 'spark'; color: string; dur: number; delay: number };
 
@@ -130,7 +132,7 @@ const SOLID =
 const CLEARANCE = 14;
 
 /** `starry`: bands of the page (top, bottom) that get extra stars */
-type Layout = { w: number; h: number; solid: Rect[]; text: Rect | null; heroBottom: number; starry: [number, number][]; varied?: boolean; touch?: boolean };
+type Layout = { w: number; h: number; solid: Rect[]; text: Rect | null; heroBottom: number; starry: [number, number][]; varied?: boolean; grid?: boolean; touch?: boolean };
 
 function measure(frame: HTMLElement, solidSelector: string): Omit<Layout, 'w' | 'h'> {
   const f = frame.getBoundingClientRect();
@@ -351,7 +353,185 @@ function heroBoard(w: number, T: Rect, startId: number): Circuit[] {
   return out;
 }
 
-function generate({ w, h, solid: measured, text, heroBottom, starry, varied, touch }: Layout) {
+/**
+ * The footer board's routing, for pages that want a denser, twistier board:
+ * every trace walks a 16px grid, only ever turning 90°, and never crosses
+ * another. Content blocks are wired like the footer's chip — traces leave
+ * their edges every few points and wander out — more come in off the page
+ * edges, and loose little circuits fill whatever's left.
+ */
+function gridCircuits(w: number, h: number, solid: Rect[], rand: () => number): Circuit[] {
+  const G = 16;
+  const pick = <T,>(arr: readonly T[]) => arr[Math.floor(rand() * arr.length)];
+  const between = (a: number, b: number) => a + rand() * (b - a);
+  const DX = [0, 1, 0, -1];
+  const DY = [-1, 0, 1, 0];
+  const cols = Math.floor(w / G);
+  const rows = Math.floor(h / G);
+  const ox = (w - cols * G) / 2;
+  const P = ([c, r]: Pt): Pt => [ox + c * G, r * G];
+  const inGrid = (c: number, r: number) => c >= 0 && r >= 0 && c <= cols && r <= rows;
+  const used = new Uint8Array((cols + 1) * (rows + 1));
+  const at = (c: number, r: number) => r * (cols + 1) + c;
+  const mark = (c: number, r: number) => inGrid(c, r) && (used[at(c, r)] = 1);
+  const free = (c: number, r: number) => inGrid(c, r) && !used[at(c, r)];
+
+  // Content (already padded by CLEARANCE) is off limits, to the nearest point outside it
+  const cells = solid.map((r) => ({
+    c0: Math.floor((r.x0 - ox) / G),
+    c1: Math.ceil((r.x1 - ox) / G),
+    r0: Math.floor(r.y0 / G),
+    r1: Math.ceil(r.y1 / G),
+  }));
+  for (const b of cells) for (let c = b.c0; c <= b.c1; c++) for (let r = b.r0; r <= b.r1; r++) mark(c, r);
+
+  const walk = (start: Pt, dir: number, forbid: number, maxLen: number, firstRun: number) => {
+    let [c, r] = start;
+    let d = dir;
+    let runLeft = firstRun;
+    let steps = 0;
+    let stuck = 0;
+    let exited = false;
+    const corners: Pt[] = [[c, r]];
+    const path: Pt[] = [];
+    const canStep = (t: number) => !inGrid(c + DX[t], r + DY[t]) || free(c + DX[t], r + DY[t]);
+    while (steps < maxLen) {
+      if (runLeft <= 0) {
+        const turns = (rand() < 0.5 ? [1, 3] : [3, 1]).map((k) => (d + k) % 4).filter((t) => t !== forbid);
+        if (rand() < 0.2) turns.unshift(d);
+        const t = turns.find((t) => t !== (d + 2) % 4 && canStep(t));
+        if (t === undefined) break;
+        if (t !== d) corners.push([c, r]);
+        d = t;
+        runLeft = 2 + Math.floor(rand() * 6);
+      }
+      const nc = c + DX[d];
+      const nr = r + DY[d];
+      // Off the page: the trace stops at the border, as if it carries on beyond
+      if (!inGrid(nc, nr)) {
+        exited = true;
+        break;
+      }
+      if (used[at(nc, nr)]) {
+        if (stuck++ > 0) break;
+        runLeft = 0;
+        continue;
+      }
+      stuck = 0;
+      c = nc;
+      r = nr;
+      mark(c, r);
+      path.push([c, r]);
+      steps++;
+      runLeft--;
+    }
+    corners.push([c, r]);
+    const pts = corners.filter((p, i) => !i || p[0] !== corners[i - 1][0] || p[1] !== corners[i - 1][1]);
+    return { pts, path, steps, exited, dir: d };
+  };
+
+  const endNode = ([x, y]: Pt, d: number): CNode => {
+    const kind = pick(['ring', 'ring', 'via', 'hex', 'dot', 'dot', 'square', 'arrow'] as const);
+    const r = { ring: 5, via: 5, hex: 6, dot: 3.5, square: 4, arrow: 6 }[kind];
+    return { x, y, kind, r, angle: [-Math.PI / 2, 0, Math.PI / 2, Math.PI][d] };
+  };
+  const resistorOn = (pts: Pt[]): Part[] => {
+    if (rand() > 0.35) return [];
+    for (let i = 1; i < pts.length; i++) {
+      const [a, b] = [pts[i - 1], pts[i]];
+      const L = Math.abs(b[0] - a[0]) + Math.abs(b[1] - a[1]);
+      if (L >= 4) {
+        const k = Math.floor(L / 2);
+        const sx = Math.sign(b[0] - a[0]);
+        const sy = Math.sign(b[1] - a[1]);
+        const [x, y] = P([a[0] + sx * k, a[1] + sy * k]);
+        return [{ x, y, vertical: sx === 0 }];
+      }
+    }
+    return [];
+  };
+
+  // Where traces start: off each content block's edges, like pins, and in off
+  // the page's own borders
+  type Seed = { start: Pt; dir: number; forbid: number; max: number; pad: boolean };
+  const seeds: Seed[] = [];
+  const pin = (start: Pt, dir: number) =>
+    free(...start) && rand() < 0.55 && seeds.push({ start, dir, forbid: (dir + 2) % 4, max: Math.floor(between(10, 36)), pad: true });
+  for (const b of cells) {
+    for (let c = b.c0 + 1; c < b.c1; c += 3) {
+      pin([c, b.r0 - 1], 0);
+      pin([c, b.r1 + 1], 2);
+    }
+    for (let r = b.r0 + 1; r < b.r1; r += 3) {
+      pin([b.c0 - 1, r], 3);
+      pin([b.c1 + 1, r], 1);
+    }
+  }
+  for (let r = 2; r < rows - 2; r += 5 + Math.floor(rand() * 4)) {
+    if (rand() < 0.55 && free(0, r)) seeds.push({ start: [0, r], dir: 1, forbid: 3, max: Math.floor(between(10, 40)), pad: false });
+    if (rand() < 0.55 && free(cols, r)) seeds.push({ start: [cols, r], dir: 3, forbid: 1, max: Math.floor(between(10, 40)), pad: false });
+  }
+  seeds.forEach((sd) => mark(...sd.start));
+  for (let i = seeds.length - 1; i > 0; i--) {
+    const j = Math.floor(rand() * (i + 1));
+    [seeds[i], seeds[j]] = [seeds[j], seeds[i]];
+  }
+
+  const circuits: Circuit[] = [];
+  // Only about one trace in five carries a travelling signal, to keep the
+  // number of running animations down on a board this size
+  const add = (c: Omit<Circuit, 'id' | 'color'>) =>
+    circuits.push({
+      ...c,
+      pulsePts: rand() < 0.2 ? c.pulsePts : [],
+      id: circuits.length,
+      color: BRAND[circuits.length % BRAND.length],
+      drawDelay: between(0.15, 1.2),
+    });
+
+  for (const sd of seeds) {
+    const m = walk(sd.start, sd.dir, sd.forbid, sd.max, 1 + Math.floor(rand() * 5));
+    if (m.steps < 2) continue;
+    const pts = m.pts.map(P);
+    const traces: Circuit['traces'] = [{ d: toPath(pts) }];
+    const segs = toSegs(pts);
+    const nodes: CNode[] = [];
+    if (sd.pad) nodes.push({ x: pts[0][0], y: pts[0][1], kind: 'pad', r: 2.5 });
+    if (!m.exited) nodes.push(endNode(pts[pts.length - 1], m.dir));
+
+    // A side branch off a longer trace, tapped with a junction dot
+    if (m.path.length >= 6 && rand() < 0.4) {
+      const from = m.path[2 + Math.floor(rand() * (m.path.length - 4))];
+      const side = (sd.dir + (rand() < 0.5 ? 1 : 3)) % 4;
+      const b = walk(from, side, sd.forbid, Math.floor(between(2, 8)), 2 + Math.floor(rand() * 3));
+      if (b.steps >= 2) {
+        const bp = b.pts.map(P);
+        traces.push({ d: toPath(bp), thin: true });
+        segs.push(...toSegs(bp));
+        nodes.push({ x: bp[0][0], y: bp[0][1], kind: 'dot', r: 2.5 });
+        if (!b.exited) nodes.push({ ...endNode(bp[bp.length - 1], b.dir), r: 4.5 });
+      }
+    }
+    add({ traces, nodes, parts: resistorOn(m.pts), segs, pulsePts: pts, pulseDur: between(7, 13), pulseDelay: -between(0, 13) });
+  }
+
+  // Loose little circuits in whatever space is left
+  const tries = Math.floor(((cols + 1) * (rows + 1)) / 110);
+  for (let i = 0; i < tries; i++) {
+    const s: Pt = [Math.floor(rand() * (cols + 1)), Math.floor(rand() * (rows + 1))];
+    if (!free(...s) || [0, 1, 2, 3].some((k) => inGrid(s[0] + DX[k], s[1] + DY[k]) && !free(s[0] + DX[k], s[1] + DY[k]))) continue;
+    mark(...s);
+    const m = walk(s, Math.floor(rand() * 4), -1, Math.floor(between(3, 11)), 2 + Math.floor(rand() * 4));
+    if (m.steps < 3) continue;
+    const pts = m.pts.map(P);
+    const nodes: CNode[] = [{ x: pts[0][0], y: pts[0][1], kind: pick(['ring', 'dot', 'pad'] as const), r: 3.5 }];
+    if (!m.exited) nodes.push(endNode(pts[pts.length - 1], m.dir));
+    add({ traces: [{ d: toPath(pts) }], nodes, parts: resistorOn(m.pts), segs: toSegs(pts), pulsePts: pts, pulseDur: between(7, 13), pulseDelay: -between(0, 13) });
+  }
+  return circuits;
+}
+
+function generate({ w, h, solid: measured, text, heroBottom, starry, varied, grid, touch }: Layout) {
   const rand = rng(9000);
   const pick = <T,>(arr: readonly T[]) => arr[Math.floor(rand() * arr.length)];
   const between = (a: number, b: number) => a + rand() * (b - a);
@@ -487,174 +667,178 @@ function generate({ w, h, solid: measured, text, heroBottom, starry, varied, tou
     };
   };
 
-  let y = heroBottom + 20;
-  while (y < h - 40) {
-    // Take whichever border has room here, preferring the one used less recently
-    const order: (1 | -1)[] = lastY[1] <= lastY[-1] ? [1, -1] : [-1, 1];
-    const side = order.find((sd) => y - lastY[sd] > 150 && freeReach(sd, y - 30, y + 30) >= 70);
-    if (!side) {
-      y += 24;
-      continue;
-    }
-    lastY[side] = y;
-
-    const x0 = side === 1 ? 0 : w;
-    const X = (d: number) => x0 + side * d; // distance in from the border → x
-    const room = freeReach(side, y - 30, y + 30);
-    const reach = Math.min(reachMax, room) * between(0.8, 1);
-
-    // Pages with wide open margins (About, Playground) mix in other shapes so
-    // the board isn't all horizontal runs: a run that turns down the margin, a
-    // three-line bus, or a small part wired in from the edge
-    if (varied && room >= 150) {
-      const motif = pick(['elbow', 'elbow', 'bus', 'chip', 'trunk'] as const);
-      const made = motif === 'elbow' ? elbow(side, y, room) : motif === 'bus' ? bus(side, y, room) : motif === 'chip' ? miniChip(side, y, room) : null;
-      if (made) {
-        circuits.push({ ...made.circuit, id: circuits.length, color: BRAND[circuits.length % BRAND.length] });
-        lastY[side] = Math.max(lastY[side], made.bottom - 120);
-        y = Math.max(y + between(90, 150), made.bottom - 60);
+  // Grid pages get the footer's routing instead of the side runs and gutters
+  if (grid) circuits.push(...gridCircuits(w, h, solid, rand));
+  else {
+    let y = heroBottom + 20;
+    while (y < h - 40) {
+      // Take whichever border has room here, preferring the one used less recently
+      const order: (1 | -1)[] = lastY[1] <= lastY[-1] ? [1, -1] : [-1, 1];
+      const side = order.find((sd) => y - lastY[sd] > 150 && freeReach(sd, y - 30, y + 30) >= 70);
+      if (!side) {
+        y += 24;
         continue;
       }
-    }
+      lastY[side] = y;
 
-    // Trunk: run, chamfer, run, (chamfer, run). Short ones stay straight.
-    const pts: Pt[] = [[X(0), y]];
-    let d = between(Math.min(28, reach * 0.3), Math.min(80, reach * 0.4));
-    let cy = y;
-    pts.push([X(d), cy]);
-    const steps = reach < 110 ? 0 : rand() < 0.55 ? 2 : 1;
-    for (let s = 0; s < steps; s++) {
-      let step = between(12, 22) * (rand() < 0.5 ? -1 : 1);
-      if (Math.abs(cy + step - y) > 20) step = -step; // stay inside the band freeReach checked
-      d += Math.abs(step);
-      cy += step;
-      pts.push([X(d), cy]);
-      d = s === steps - 1 ? reach : d + between(30, Math.max(31, (reach - d) * 0.6));
-      pts.push([X(d), cy]);
-    }
-    if (steps === 0) {
-      d = reach;
-      pts.push([X(d), cy]);
-    }
+      const x0 = side === 1 ? 0 : w;
+      const X = (d: number) => x0 + side * d; // distance in from the border → x
+      const room = freeReach(side, y - 30, y + 30);
+      const reach = Math.min(reachMax, room) * between(0.8, 1);
 
-    const segs = toSegs(pts);
-    const end = pts[pts.length - 1];
-    const endKind = pick(['ring', 'ring', 'arrow', 'via'] as const);
-    const nodes: CNode[] = [{ x: end[0], y: end[1], kind: endKind, r: endKind === 'arrow' ? 6 : 5.5, angle: angleOf(pts[pts.length - 2], end) }];
-    const parts: Part[] = [];
-    const traces: Circuit['traces'] = [{ d: toPath(pts) }];
-
-    // A second line riding alongside, cut short, so most runs read as a bus
-    if (reach > 120) {
-      const twin = trimPolyline(offsetPolyline(pts, 7 * (rand() < 0.5 ? 1 : -1)), between(0.55, 0.8));
-      if (!blocked(twin.slice(1))) {
-        traces.push({ d: toPath(twin), thin: true });
-        segs.push(...toSegs(twin));
-        const t = twin[twin.length - 1];
-        nodes.push({ x: t[0], y: t[1], kind: 'dot', r: 2.5 });
+      // Pages with wide open margins (About, Playground) mix in other shapes so
+      // the board isn't all horizontal runs: a run that turns down the margin, a
+      // three-line bus, or a small part wired in from the edge
+      if (varied && room >= 150) {
+        const motif = pick(['elbow', 'elbow', 'bus', 'chip', 'trunk'] as const);
+        const made = motif === 'elbow' ? elbow(side, y, room) : motif === 'bus' ? bus(side, y, room) : motif === 'chip' ? miniChip(side, y, room) : null;
+        if (made) {
+          circuits.push({ ...made.circuit, id: circuits.length, color: BRAND[circuits.length % BRAND.length] });
+          lastY[side] = Math.max(lastY[side], made.bottom - 120);
+          y = Math.max(y + between(90, 150), made.bottom - 60);
+          continue;
+        }
       }
-    }
 
-    // Stubs off the horizontal runs, alternating above and below; any that
-    // would poke into content are dropped
-    const horizontal = toSegs(pts).filter(([a, b]) => a[1] === b[1] && Math.abs(b[0] - a[0]) > 40);
-    const nBranches = horizontal.length ? 2 + Math.floor(rand() * 2) : 0;
-    for (let b = 0; b < nBranches; b++) {
-      const [a, z] = pick(horizontal);
-      const t = between(0.25, 0.8);
-      const bx = a[0] + (z[0] - a[0]) * t;
-      const by = a[1];
-      const dir = b % 2 === 0 ? -1 : 1;
-      const len = between(20, 46);
-      const bp: Pt[] = [[bx, by], [bx, by + dir * len]];
-      if (rand() < 0.4) {
-        const k = between(10, 18);
-        bp.push([bx + side * k, by + dir * (len + k)]);
+      // Trunk: run, chamfer, run, (chamfer, run). Short ones stay straight.
+      const pts: Pt[] = [[X(0), y]];
+      let d = between(Math.min(28, reach * 0.3), Math.min(80, reach * 0.4));
+      let cy = y;
+      pts.push([X(d), cy]);
+      const steps = reach < 110 ? 0 : rand() < 0.55 ? 2 : 1;
+      for (let s = 0; s < steps; s++) {
+        let step = between(12, 22) * (rand() < 0.5 ? -1 : 1);
+        if (Math.abs(cy + step - y) > 20) step = -step; // stay inside the band freeReach checked
+        d += Math.abs(step);
+        cy += step;
+        pts.push([X(d), cy]);
+        d = s === steps - 1 ? reach : d + between(30, Math.max(31, (reach - d) * 0.6));
+        pts.push([X(d), cy]);
       }
-      if (blocked(bp.slice(1))) continue;
-      const e = bp[bp.length - 1];
-      traces.push({ d: toPath(bp), thin: true });
-      segs.push(...toSegs(bp));
-      const kind = pick(kinds);
-      nodes.push({ x: e[0], y: e[1], kind, r: kind === 'dot' ? 3.5 : kind === 'hex' ? 6 : 5 });
+      if (steps === 0) {
+        d = reach;
+        pts.push([X(d), cy]);
+      }
+
+      const segs = toSegs(pts);
+      const end = pts[pts.length - 1];
+      const endKind = pick(['ring', 'ring', 'arrow', 'via'] as const);
+      const nodes: CNode[] = [{ x: end[0], y: end[1], kind: endKind, r: endKind === 'arrow' ? 6 : 5.5, angle: angleOf(pts[pts.length - 2], end) }];
+      const parts: Part[] = [];
+      const traces: Circuit['traces'] = [{ d: toPath(pts) }];
+
+      // A second line riding alongside, cut short, so most runs read as a bus
+      if (reach > 120) {
+        const twin = trimPolyline(offsetPolyline(pts, 7 * (rand() < 0.5 ? 1 : -1)), between(0.55, 0.8));
+        if (!blocked(twin.slice(1))) {
+          traces.push({ d: toPath(twin), thin: true });
+          segs.push(...toSegs(twin));
+          const t = twin[twin.length - 1];
+          nodes.push({ x: t[0], y: t[1], kind: 'dot', r: 2.5 });
+        }
+      }
+
+      // Stubs off the horizontal runs, alternating above and below; any that
+      // would poke into content are dropped
+      const horizontal = toSegs(pts).filter(([a, b]) => a[1] === b[1] && Math.abs(b[0] - a[0]) > 40);
+      const nBranches = horizontal.length ? 2 + Math.floor(rand() * 2) : 0;
+      for (let b = 0; b < nBranches; b++) {
+        const [a, z] = pick(horizontal);
+        const t = between(0.25, 0.8);
+        const bx = a[0] + (z[0] - a[0]) * t;
+        const by = a[1];
+        const dir = b % 2 === 0 ? -1 : 1;
+        const len = between(20, 46);
+        const bp: Pt[] = [[bx, by], [bx, by + dir * len]];
+        if (rand() < 0.4) {
+          const k = between(10, 18);
+          bp.push([bx + side * k, by + dir * (len + k)]);
+        }
+        if (blocked(bp.slice(1))) continue;
+        const e = bp[bp.length - 1];
+        traces.push({ d: toPath(bp), thin: true });
+        segs.push(...toSegs(bp));
+        const kind = pick(kinds);
+        nodes.push({ x: e[0], y: e[1], kind, r: kind === 'dot' ? 3.5 : kind === 'hex' ? 6 : 5 });
+      }
+
+      // One banded resistor on the longest run
+      const longest = horizontal.reduce<[Pt, Pt] | null>(
+        (m, s) => (!m || Math.abs(s[1][0] - s[0][0]) > Math.abs(m[1][0] - m[0][0]) ? s : m),
+        null,
+      );
+      if (longest && Math.abs(longest[1][0] - longest[0][0]) > 60 && rand() < 0.75) {
+        const px = (longest[0][0] + longest[1][0]) / 2;
+        parts.push({ x: px, y: longest[0][1] });
+      }
+
+      circuits.push({
+        id: circuits.length,
+        color: BRAND[circuits.length % BRAND.length],
+        traces,
+        nodes,
+        parts,
+        segs,
+        pulsePts: pts,
+        pulseDur: between(7, 12),
+        pulseDelay: -between(0, 12),
+      });
+
+      y += between(90, 150);
     }
 
-    // One banded resistor on the longest run
-    const longest = horizontal.reduce<[Pt, Pt] | null>(
-      (m, s) => (!m || Math.abs(s[1][0] - s[0][0]) > Math.abs(m[1][0] - m[0][0]) ? s : m),
-      null,
-    );
-    if (longest && Math.abs(longest[1][0] - longest[0][0]) > 60 && rand() < 0.75) {
-      const px = (longest[0][0] + longest[1][0]) / 2;
-      parts.push({ x: px, y: longest[0][1] });
+    // Gutter runs: traces that duck in off the border and run down the side
+    // channel beside the content, tapping into the card they pass like a pin
+    const placed = () => circuits.flatMap((c) => c.segs);
+    for (let gy = heroBottom + 60, k = 0; gy < h - 160; gy += between(50, 110), k++) {
+      const side: 1 | -1 = k % 2 === 0 ? -1 : 1;
+      const len = between(110, 260);
+      // The 24px gutter beside the cards is enough for a pin row
+      if (freeReach(side, gy - 12, gy + len + 12) < 8) continue;
+      const x0 = side === 1 ? 0 : w;
+      const X = (d: number) => x0 + side * d;
+      const inset = between(9, 12);
+      const near = placed().some(([a, b]) =>
+        [a, b].some(([px, py]) => Math.abs(px - x0) < 60 && py > gy - 40 && py < gy + len + 40),
+      );
+      if (near) continue;
+
+      const pts: Pt[] = [[X(0), gy], [X(inset - 6), gy], [X(inset), gy + 6], [X(inset), gy + len]];
+      const segs = toSegs(pts);
+      const parts: Part[] = rand() < 0.6 ? [{ x: X(inset), y: gy + len * between(0.35, 0.6), vertical: true }] : [];
+      const nodes: CNode[] = [{ x: X(inset), y: gy + len, kind: pick(['ring', 'hex', 'via'] as const), r: 5.5 }];
+      const traces: Circuit['traces'] = [{ d: toPath(pts) }];
+      const clear = (ty: number) => !parts.some((p) => Math.abs(p.y - ty) < 20);
+
+      // One tap back to the border, one into the content beside it
+      const back = gy + len * between(0.15, 0.4);
+      if (clear(back)) {
+        const bp: Pt[] = [[X(inset), back], [X(2), back]];
+        traces.push({ d: toPath(bp), thin: true });
+        segs.push(...toSegs(bp));
+      }
+      const into = gy + len * between(0.6, 0.85);
+      const beside = solid.some((r) => into > r.y0 + CLEARANCE && into < r.y1 - CLEARANCE);
+      if (clear(into) && beside) {
+        const bp: Pt[] = [[X(inset), into], [X(20), into]];
+        traces.push({ d: toPath(bp), thin: true });
+        segs.push(...toSegs(bp));
+        nodes.push({ x: X(21), y: into, kind: 'pad', r: 2.5 });
+      }
+
+      circuits.push({
+        id: circuits.length,
+        color: BRAND[circuits.length % BRAND.length],
+        traces,
+        nodes,
+        parts,
+        segs,
+        pulsePts: pts,
+        pulseDur: between(6, 10),
+        pulseDelay: -between(0, 10),
+      });
+      gy += len;
     }
-
-    circuits.push({
-      id: circuits.length,
-      color: BRAND[circuits.length % BRAND.length],
-      traces,
-      nodes,
-      parts,
-      segs,
-      pulsePts: pts,
-      pulseDur: between(7, 12),
-      pulseDelay: -between(0, 12),
-    });
-
-    y += between(90, 150);
-  }
-
-  // Gutter runs: traces that duck in off the border and run down the side
-  // channel beside the content, tapping into the card they pass like a pin
-  const placed = () => circuits.flatMap((c) => c.segs);
-  for (let gy = heroBottom + 60, k = 0; gy < h - 160; gy += between(50, 110), k++) {
-    const side: 1 | -1 = k % 2 === 0 ? -1 : 1;
-    const len = between(110, 260);
-    // The 24px gutter beside the cards is enough for a pin row
-    if (freeReach(side, gy - 12, gy + len + 12) < 8) continue;
-    const x0 = side === 1 ? 0 : w;
-    const X = (d: number) => x0 + side * d;
-    const inset = between(9, 12);
-    const near = placed().some(([a, b]) =>
-      [a, b].some(([px, py]) => Math.abs(px - x0) < 60 && py > gy - 40 && py < gy + len + 40),
-    );
-    if (near) continue;
-
-    const pts: Pt[] = [[X(0), gy], [X(inset - 6), gy], [X(inset), gy + 6], [X(inset), gy + len]];
-    const segs = toSegs(pts);
-    const parts: Part[] = rand() < 0.6 ? [{ x: X(inset), y: gy + len * between(0.35, 0.6), vertical: true }] : [];
-    const nodes: CNode[] = [{ x: X(inset), y: gy + len, kind: pick(['ring', 'hex', 'via'] as const), r: 5.5 }];
-    const traces: Circuit['traces'] = [{ d: toPath(pts) }];
-    const clear = (ty: number) => !parts.some((p) => Math.abs(p.y - ty) < 20);
-
-    // One tap back to the border, one into the content beside it
-    const back = gy + len * between(0.15, 0.4);
-    if (clear(back)) {
-      const bp: Pt[] = [[X(inset), back], [X(2), back]];
-      traces.push({ d: toPath(bp), thin: true });
-      segs.push(...toSegs(bp));
-    }
-    const into = gy + len * between(0.6, 0.85);
-    const beside = solid.some((r) => into > r.y0 + CLEARANCE && into < r.y1 - CLEARANCE);
-    if (clear(into) && beside) {
-      const bp: Pt[] = [[X(inset), into], [X(20), into]];
-      traces.push({ d: toPath(bp), thin: true });
-      segs.push(...toSegs(bp));
-      nodes.push({ x: X(21), y: into, kind: 'pad', r: 2.5 });
-    }
-
-    circuits.push({
-      id: circuits.length,
-      color: BRAND[circuits.length % BRAND.length],
-      traces,
-      nodes,
-      parts,
-      segs,
-      pulsePts: pts,
-      pulseDur: between(6, 10),
-      pulseDelay: -between(0, 10),
-    });
-    gy += len;
   }
 
   // Stars wherever there's open paper, kept clear of content and traces: one
@@ -698,9 +882,11 @@ function generate({ w, h, solid: measured, text, heroBottom, starry, varied, tou
 
   // Every part lights up on its own every so often, each on a slow loop of
   // its own so they never fall into step
+  // (on a grid board, only about a quarter of them, so the page isn't running
+  // hundreds of glows at once)
   for (const c of circuits) {
     for (const x of [...c.nodes, ...c.parts]) {
-      if (x.twinkle) continue;
+      if (x.twinkle || (grid && rand() > 0.25)) continue;
       const dur = between(16, 34);
       x.twinkle = { dur, delay: -between(0, dur) };
     }
@@ -779,16 +965,19 @@ function Resistor({ p, b }: { p: Part; b: Blink }) {
 
 /**
  * `solid`: what to route around. `varied`: mix elbows, buses and small parts in
- * with the side runs, for pages with wide open margins.
+ * with the side runs, for pages with wide open margins. `grid`: route the
+ * whole board like the footer's instead, dense and twisting.
  */
 export default function CircuitBackground({
   ready = true,
   solid = SOLID,
   varied = false,
+  grid = false,
 }: {
   ready?: boolean;
   solid?: string;
   varied?: boolean;
+  grid?: boolean;
 }) {
   const svgRef = useRef<SVGSVGElement>(null);
   const [layout, setLayout] = useState<Layout | null>(null);
@@ -817,7 +1006,7 @@ export default function CircuitBackground({
       const h = Math.round(el.clientHeight / 40) * 40;
       const m = measure(el, solid);
       const touch = window.matchMedia('(hover: none) and (pointer: coarse)').matches;
-      setLayout((prev) => (prev && prev.w === w && prev.h === h && sameText(prev.text, m.text) ? prev : { w, h, varied, touch, ...m }));
+      setLayout((prev) => (prev && prev.w === w && prev.h === h && sameText(prev.text, m.text) ? prev : { w, h, varied, grid, touch, ...m }));
     };
     const ro = new ResizeObserver(update);
     ro.observe(el);
@@ -827,7 +1016,7 @@ export default function CircuitBackground({
       ro.disconnect();
       clearTimeout(retry);
     };
-  }, [solid, varied]);
+  }, [solid, varied, grid]);
 
   const board = useMemo(() => (layout ? generate(layout) : null), [layout]);
 
@@ -910,7 +1099,7 @@ export default function CircuitBackground({
         <g
           key={c.id}
           className={`cb-circuit${c.hero ? ' cb-circuit--hero' : ''}${activeCircuit === c.id || (chipActive && c.hero) ? ' is-active' : ''}`}
-          style={{ '--c': c.color, '--draw-delay': `${0.15 + idx * 0.08}s`, '--pulse-dur': `${c.pulseDur}s` } as React.CSSProperties}
+          style={{ '--c': c.color, '--draw-delay': `${c.drawDelay ?? 0.15 + idx * 0.08}s`, '--pulse-dur': `${c.pulseDur}s` } as React.CSSProperties}
         >
           {c.traces.map((t, k) => (
             <path key={k} className={`cb-trace${t.thin ? ' cb-trace--thin' : ''}`} d={t.d} pathLength={1} />

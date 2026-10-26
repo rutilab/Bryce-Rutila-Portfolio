@@ -9,11 +9,11 @@ import { Toast } from '@/components/Toast';
 const EMAIL = 'rutilab@gmail.com';
 const LINKEDIN_URL = 'https://www.linkedin.com/in/brycerutila/';
 
-/** Each link, and the pages it counts as current on */
+/** Each link, the pages it counts as current on, and the BRYCE colour its trace draws in (same as the footer's) */
 const LINKS = [
-  { href: '/#work', label: 'Work', current: (p: string) => p === '/' || p.startsWith('/case-studies') },
-  { href: '/about', label: 'About', current: (p: string) => p.startsWith('/about') },
-  { href: '/playground', label: 'Playground', current: (p: string) => p.startsWith('/playground') },
+  { href: '/#work', label: 'Work', color: '#12B4FF', current: (p: string) => p === '/' || p.startsWith('/case-studies') },
+  { href: '/about', label: 'About', color: '#FF12F7', current: (p: string) => p.startsWith('/about') },
+  { href: '/playground', label: 'Playground', color: '#31E300', current: (p: string) => p.startsWith('/playground') },
 ];
 
 /**
@@ -101,6 +101,7 @@ export function SiteHeader() {
                 key={l.href}
                 href={l.href}
                 className="home-header-link"
+                style={{ '--c': l.color } as React.CSSProperties}
                 aria-current={l.current(pathname) ? 'page' : undefined}
               >
                 {l.label}
