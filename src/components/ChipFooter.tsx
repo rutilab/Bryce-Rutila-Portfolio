@@ -5,7 +5,7 @@ import Link from 'next/link';
 import FooterOverscroll from '@/components/FooterOverscroll';
 
 /**
- * Footer scene after the Four Tet stage show: one big BRYCE chip that pumps on
+ * Footer scene after the Four Tet stage show: one big BR1 chip that pumps on
  * the beat, wired out to the edges of the band by a board of traces.
  *
  * Same parts vocabulary as the home page board (CircuitBackground) — pins with
@@ -17,6 +17,10 @@ import FooterOverscroll from '@/components/FooterOverscroll';
  * traces out. All timing is SMIL on the svg's own clock, so the kick, the
  * rings and the signals never drift apart, and the whole board can be paused
  * in one call when it's offscreen.
+ *
+ * The chip lifts out of its socket: drag it away and the board loses power,
+ * the colour draining out from the socket to the edges and the beat stopping.
+ * Drop it back near the socket and it snaps in and the colour floods back.
  */
 
 const LINKEDIN_URL = 'https://www.linkedin.com/in/brycerutila/';
@@ -31,6 +35,9 @@ const BEAT = 0.5; // s — 120 BPM
 const BAR = BEAT * 4;
 const SPEED = 280; // px/s a signal runs
 const COMET = 44; // px, length of a signal's lit tail
+const UNPLUG_AT = 20; // px the chip has to leave its socket to cut the power
+const SNAP_WITHIN = 72; // px from the socket a dropped chip snaps back in
+const EDGE_FADE = 56; // px the board fades out over at top and bottom (.chip-board's mask)
 
 type Pt = [number, number];
 type Dir = 0 | 1 | 2 | 3; // up, right, down, left
@@ -41,9 +48,10 @@ type EndKind = 'ring' | 'pad' | 'dot' | 'via' | 'square' | 'arrow';
 type End = { x: number; y: number; kind: EndKind; angle: number };
 type Res = { x: number; y: number; vertical: boolean };
 type Signal = { d: string; len: number; dur: number; begin: number; travel: number };
-type Trace = { color: string; d: string; ends: End[]; res: Res[]; juncs: Pt[]; signal?: Signal; delay: number };
+/** `k`: how far out from the chip it starts, 0–1, so power drains and returns outward */
+type Trace = { color: string; d: string; ends: End[]; res: Res[]; juncs: Pt[]; signal?: Signal; delay: number; k: number };
 type Pin = { x1: number; y1: number; x2: number; y2: number };
-type Star = { x: number; y: number; size: number; color: string; dur: number; delay: number };
+type Star = { x: number; y: number; size: number; color: string; dur: number; delay: number; k: number };
 type Chip = { x: number; y: number; w: number; h: number };
 type Board = { w: number; h: number; chip: Chip; pins: Pin[]; traces: Trace[]; stars: Star[] };
 
@@ -86,6 +94,8 @@ function buildBoard(w: number, h: number): Board {
   const r1 = r0 + ch;
   const [chipX, chipY] = P([c0, r0]);
   const chip = { x: chipX, y: chipY, w: cw * G, h: ch * G };
+  const reach = Math.hypot(w / 2, h / 2);
+  const kOf = ([x, y]: Pt) => Math.min(1, Math.hypot(x - (chip.x + chip.w / 2), y - (chip.y + chip.h / 2)) / reach);
   // The chip and the ring of points around it are off limits to routing
   for (let c = c0 - 1; c <= c1 + 1; c++) for (let rw = r0 - 1; rw <= r1 + 1; rw++) if (inGrid(c, rw)) used[at(c, rw)] = 1;
 
@@ -195,7 +205,7 @@ function buildBoard(w: number, h: number): Board {
       const [x, y] = px[px.length - 1];
       ends.push({ x, y, kind: endKind(), angle: angleOf(m.dir) });
     }
-    const t: Trace = { color, d: toPath(px), ends, res: resistorOn(m.pts), juncs: [], delay: between(0, 0.35) };
+    const t: Trace = { color, d: toPath(px), ends, res: resistorOn(m.pts), juncs: [], delay: between(0, 0.35), k: kOf(px[0]) };
 
     // The signal runs from the lid itself, out along the whole trace
     if (m.steps >= 3) {
@@ -222,6 +232,7 @@ function buildBoard(w: number, h: number): Board {
           res: [],
           juncs: [P(from)],
           delay: t.delay + 0.4,
+          k: kOf(P(from)),
         });
       }
     }
@@ -244,7 +255,7 @@ function buildBoard(w: number, h: number): Board {
       const [x, y] = px[px.length - 1];
       ends.push({ x, y, kind: endKind(), angle: angleOf(m.dir) });
     }
-    traces.push({ color: pick(BRAND), d: toPath(px), ends, res: resistorOn(m.pts), juncs: [], delay: between(0.5, 1) });
+    traces.push({ color: pick(BRAND), d: toPath(px), ends, res: resistorOn(m.pts), juncs: [], delay: between(0.5, 1), k: kOf(px[0]) });
   }
 
   // Sparks blinking in the gaps
@@ -255,7 +266,7 @@ function buildBoard(w: number, h: number): Board {
     if ([0, 1, 2, 3, -1].some((k) => (k < 0 ? used[at(s[0], s[1])] : used[at(s[0] + DX[k], s[1] + DY[k])]))) continue;
     const [x, y] = P(s);
     const dur = between(5, 11);
-    stars.push({ x: x + G / 2, y: y + G / 2, size: between(10, 18), color: r() < 0.5 ? '#faf7f2' : pick(BRAND), dur, delay: -between(0, dur) });
+    stars.push({ x: x + G / 2, y: y + G / 2, size: between(10, 18), color: r() < 0.5 ? '#faf7f2' : pick(BRAND), dur, delay: -between(0, dur), k: kOf([x, y]) });
     i++;
   }
 
@@ -329,6 +340,11 @@ export default function ChipFooter() {
   const [board, setBoard] = useState<Board | null>(null);
   const [live, setLive] = useState(false);
   const [wordSize, setWordSize] = useState(0);
+  const [plugged, setPlugged] = useState(true);
+  const [dragging, setDragging] = useState(false);
+  const liftRef = useRef<SVGGElement>(null);
+  const offset = useRef<Pt>([0, 0]);
+  const grab = useRef<{ px: number; py: number; ox: number; oy: number } | null>(null);
 
   // Rebuild the board to the band's real width, in page pixels
   useEffect(() => {
@@ -339,6 +355,9 @@ export default function ChipFooter() {
       const w = Math.round(el.clientWidth);
       if (!w || w === lastW) return;
       lastW = w;
+      // A new board puts the chip back in its socket
+      offset.current = [0, 0];
+      setPlugged(true);
       setBoard(buildBoard(w, w < 800 ? 360 : 480));
     };
     build();
@@ -373,24 +392,59 @@ export default function ChipFooter() {
     return () => io.disconnect();
   }, [board]);
 
-  // Fit BRYCE to the lid once the headline face has loaded
+  // Fit the label to the lid once the mono face has loaded
   useEffect(() => {
     if (!board) return;
     const fit = () => {
       const t = wordRef.current;
       if (!t) return;
-      // clear of the corner dot and the status light
-      const target = board.chip.w - 2 * 40;
+      const target = board.chip.w * 0.5;
       const probe = 100;
       const was = t.style.fontSize;
       t.style.fontSize = `${probe}px`;
       const len = t.getComputedTextLength();
       t.style.fontSize = was;
-      if (len) setWordSize(Math.min((probe * target) / len, board.chip.h * 0.72));
+      if (len) setWordSize(Math.min((probe * target) / len, board.chip.h * 0.55));
     };
     fit();
     document.fonts?.ready.then(fit);
   }, [board]);
+
+  /** Where the chip sits relative to its socket; `ease` springs it there */
+  const moveLift = (dx: number, dy: number, ease = false) => {
+    offset.current = [dx, dy];
+    const g = liftRef.current;
+    if (!g) return;
+    g.style.transition = ease ? 'transform 420ms cubic-bezier(0.34, 1.56, 0.64, 1)' : 'none';
+    g.style.transform = `translate(${dx}px, ${dy}px)`;
+  };
+  const onGrab = (e: React.PointerEvent<SVGGElement>) => {
+    if (!board) return;
+    e.preventDefault();
+    e.currentTarget.setPointerCapture(e.pointerId);
+    grab.current = { px: e.clientX, py: e.clientY, ox: offset.current[0], oy: offset.current[1] };
+    setDragging(true);
+  };
+  const onDrag = (e: React.PointerEvent<SVGGElement>) => {
+    const g0 = grab.current;
+    if (!g0 || !board) return;
+    const { chip: c, w, h } = board;
+    // Keep the lid on the board, pins and all, and out of the fade at its top and bottom edges
+    const edge = EDGE_FADE + G;
+    const dx = Math.max(G - c.x, Math.min(w - G - c.x - c.w, g0.ox + e.clientX - g0.px));
+    const dy = Math.max(edge - c.y, Math.min(h - edge - c.y - c.h, g0.oy + e.clientY - g0.py));
+    moveLift(dx, dy);
+    if (Math.hypot(dx, dy) > UNPLUG_AT) setPlugged(false);
+  };
+  const onDrop = () => {
+    if (!grab.current) return;
+    grab.current = null;
+    setDragging(false);
+    if (Math.hypot(...offset.current) < SNAP_WITHIN) {
+      moveLift(0, 0, true);
+      setPlugged(true);
+    }
+  };
 
   const chip = board?.chip;
   const cx = chip ? chip.x + chip.w / 2 : 0;
@@ -402,7 +456,7 @@ export default function ChipFooter() {
     <footer className="landing-footer">
       {/* ── Footer info ── */}
       <div className="footer-content">
-        <p className="footer-tagline">Transforming products one idea at a time.</p>
+        <p className="footer-tagline">Powered by curiosity.</p>
         {/* the two link columns travel together as one right-hand group, so
             EXPLORE can't drift into the middle as the viewport widens */}
         <div className="footer-links">
@@ -422,18 +476,22 @@ export default function ChipFooter() {
         </div>
       </div>
 
-      {/* ── The BRYCE chip ── */}
+      {/* ── The BR1 chip ── */}
       <div className="chip-scene" ref={sceneRef}>
         <svg
           ref={svgRef}
-          className={`chip-board${live ? ' is-live' : ''}`}
+          className={`chip-board${live ? ' is-live' : ''}${plugged ? '' : ' is-unplugged'}`}
           width={board?.w}
           height={board?.h}
           viewBox={board ? `0 0 ${board.w} ${board.h}` : undefined}
           aria-hidden="true"
         >
           {board?.traces.map((t, i) => (
-            <g key={i} className="chip-circuit" style={{ '--c': t.color, '--d': `${t.delay.toFixed(2)}s` } as React.CSSProperties}>
+            <g
+              key={i}
+              className="chip-circuit"
+              style={{ '--c': t.color, '--d': `${t.delay.toFixed(2)}s`, '--k': t.k.toFixed(3) } as React.CSSProperties}
+            >
               <path className="chip-trace" d={t.d} pathLength={1} />
               {t.res.map((p, k) => (
                 <Resistor key={k} p={p} />
@@ -467,7 +525,7 @@ export default function ChipFooter() {
 
           {board?.stars.map((s, i) => (
             <g key={i} transform={`translate(${s.x.toFixed(1)} ${s.y.toFixed(1)})`}>
-              <g className="chip-star" style={{ '--c': s.color, animationDuration: `${s.dur}s`, animationDelay: `${s.delay}s` } as React.CSSProperties}>
+              <g className="chip-star" style={{ '--c': s.color, '--k': s.k.toFixed(3), animationDuration: `${s.dur}s`, animationDelay: `${s.delay}s` } as React.CSSProperties}>
                 <g transform={`scale(${(s.size / 16).toFixed(3)}) translate(-8 -8)`}>
                   <path className="chip-star-outer" d={SPARK_OUTER} />
                   <path className="chip-star-inner" d={SPARK_INNER} />
@@ -478,66 +536,88 @@ export default function ChipFooter() {
 
           {chip && pump && (
             <g className="chip-lid">
-              <path className="chip-pins" d={board.pins.map((p) => `M${p.x1} ${p.y1}L${p.x2} ${p.y2}`).join('')} />
+              {/* The socket stays on the board: its solder pads, and an outline
+                  of the lid that only shows once the chip is out */}
+              <rect className="chip-socket" x={chip.x} y={chip.y} width={chip.w} height={chip.h} rx={14} />
               {board.pins.map((p, k) => (
                 <rect key={k} className="chip-foot" x={p.x2 - 3} y={p.y2 - 3} width={6} height={6} />
               ))}
 
-              {/* A ring swells off the lid on every beat, a colour per beat */}
-              {ringColors.map((color, k) => (
-                <rect key={k} className="chip-ring-fx" stroke={color} x={chip.x} y={chip.y} width={chip.w} height={chip.h} rx={14} opacity={0}>
-                  <animate attributeName="opacity" values="0.95;0;0" keyTimes="0;0.2;1" dur={`${BAR}s`} begin={`${k * BEAT}s`} repeatCount="indefinite" />
-                  <animate attributeName="x" values={`${chip.x};${chip.x - 22};${chip.x - 22}`} keyTimes="0;0.2;1" dur={`${BAR}s`} begin={`${k * BEAT}s`} repeatCount="indefinite" />
-                  <animate attributeName="y" values={`${chip.y};${chip.y - 22};${chip.y - 22}`} keyTimes="0;0.2;1" dur={`${BAR}s`} begin={`${k * BEAT}s`} repeatCount="indefinite" />
-                  <animate attributeName="width" values={`${chip.w};${chip.w + 44};${chip.w + 44}`} keyTimes="0;0.2;1" dur={`${BAR}s`} begin={`${k * BEAT}s`} repeatCount="indefinite" />
-                  <animate attributeName="height" values={`${chip.h};${chip.h + 44};${chip.h + 44}`} keyTimes="0;0.2;1" dur={`${BAR}s`} begin={`${k * BEAT}s`} repeatCount="indefinite" />
-                </rect>
-              ))}
+              {/* Everything that lifts out with the chip */}
+              <g
+                ref={liftRef}
+                className={`chip-lift${dragging ? ' is-dragging' : ''}`}
+                onPointerDown={onGrab}
+                onPointerMove={onDrag}
+                onPointerUp={onDrop}
+                onPointerCancel={onDrop}
+              >
+                <path className="chip-pins" d={board.pins.map((p) => `M${p.x1} ${p.y1}L${p.x2} ${p.y2}`).join('')} />
 
-              {/* The lid kicks about its centre; the pins stay put */}
-              <g transform={`translate(${cx} ${cy})`}>
-                <g>
-                  <animateTransform
-                    attributeName="transform"
-                    type="scale"
-                    values={pump.values}
-                    keyTimes={pump.keyTimes}
-                    keySplines={pump.keySplines}
-                    calcMode="spline"
-                    dur={`${BAR}s`}
-                    repeatCount="indefinite"
-                  />
-                  <g transform={`translate(${-cx} ${-cy})`}>
-                    <rect className="chip-slab" x={chip.x} y={chip.y + 12} width={chip.w} height={chip.h} rx={14} />
-                    <rect className="chip-body" x={chip.x} y={chip.y} width={chip.w} height={chip.h} rx={14} />
-                    <rect className="chip-flush" x={chip.x} y={chip.y} width={chip.w} height={chip.h} rx={14} opacity={0}>
-                      <animate attributeName="opacity" values="0.45;0;0" keyTimes="0;0.12;1" dur={`${BAR}s`} repeatCount="indefinite" />
-                    </rect>
-                    <rect className="chip-die" x={chip.x + 10} y={chip.y + 10} width={chip.w - 20} height={chip.h - 20} rx={6} />
-                    <circle className="chip-dot" cx={chip.x + 22} cy={chip.y + 22} r={5} />
-                    <circle className="chip-led" cx={chip.x + chip.w - 22} cy={chip.y + 22} r={4.5} />
-                    {ringColors.map((color, k) => (
-                      <circle key={k} className="chip-led-fx" style={{ fill: color }} cx={chip.x + chip.w - 22} cy={chip.y + 22} r={4.5} opacity={0}>
-                        <animate attributeName="opacity" values="1;1;0;0" keyTimes="0;0.08;0.14;1" dur={`${BAR}s`} begin={`${k * BEAT}s`} repeatCount="indefinite" />
-                      </circle>
-                    ))}
-                    <text
-                      ref={wordRef}
-                      className="chip-word"
-                      x={cx}
-                      y={cy}
-                      textAnchor="middle"
-                      dominantBaseline="central"
-                      style={wordSize ? { fontSize: `${wordSize}px` } : undefined}
-                    >
-                      BRYCE
-                    </text>
+                {/* A ring swells off the lid on every beat, a colour per beat */}
+                {ringColors.map((color, k) => (
+                  <rect key={k} className="chip-ring-fx" stroke={color} x={chip.x} y={chip.y} width={chip.w} height={chip.h} rx={14} opacity={0}>
+                    <animate attributeName="opacity" values="0.95;0;0" keyTimes="0;0.2;1" dur={`${BAR}s`} begin={`${k * BEAT}s`} repeatCount="indefinite" />
+                    <animate attributeName="x" values={`${chip.x};${chip.x - 22};${chip.x - 22}`} keyTimes="0;0.2;1" dur={`${BAR}s`} begin={`${k * BEAT}s`} repeatCount="indefinite" />
+                    <animate attributeName="y" values={`${chip.y};${chip.y - 22};${chip.y - 22}`} keyTimes="0;0.2;1" dur={`${BAR}s`} begin={`${k * BEAT}s`} repeatCount="indefinite" />
+                    <animate attributeName="width" values={`${chip.w};${chip.w + 44};${chip.w + 44}`} keyTimes="0;0.2;1" dur={`${BAR}s`} begin={`${k * BEAT}s`} repeatCount="indefinite" />
+                    <animate attributeName="height" values={`${chip.h};${chip.h + 44};${chip.h + 44}`} keyTimes="0;0.2;1" dur={`${BAR}s`} begin={`${k * BEAT}s`} repeatCount="indefinite" />
+                  </rect>
+                ))}
+
+                {/* The lid kicks about its centre; the pins stay put */}
+                <g transform={`translate(${cx} ${cy})`}>
+                  <g>
+                    {/* No power, no beat; put back, it picks the beat up in step */}
+                    {plugged && (
+                      <animateTransform
+                        attributeName="transform"
+                        type="scale"
+                        values={pump.values}
+                        keyTimes={pump.keyTimes}
+                        keySplines={pump.keySplines}
+                        calcMode="spline"
+                        dur={`${BAR}s`}
+                        repeatCount="indefinite"
+                      />
+                    )}
+                    <g transform={`translate(${-cx} ${-cy})`}>
+                      <rect className="chip-slab" x={chip.x} y={chip.y + 12} width={chip.w} height={chip.h} rx={14} />
+                      <rect className="chip-body" x={chip.x} y={chip.y} width={chip.w} height={chip.h} rx={14} />
+                      <rect className="chip-flush" x={chip.x} y={chip.y} width={chip.w} height={chip.h} rx={14} opacity={0}>
+                        <animate attributeName="opacity" values="0.45;0;0" keyTimes="0;0.12;1" dur={`${BAR}s`} repeatCount="indefinite" />
+                      </rect>
+                      <rect className="chip-die" x={chip.x + 10} y={chip.y + 10} width={chip.w - 20} height={chip.h - 20} rx={6} />
+                      <circle className="chip-dot" cx={chip.x + 22} cy={chip.y + 22} r={5} />
+                      <circle className="chip-led" cx={chip.x + chip.w - 22} cy={chip.y + 22} r={4.5} />
+                      {ringColors.map((color, k) => (
+                        <circle key={k} className="chip-led-fx" style={{ fill: color }} cx={chip.x + chip.w - 22} cy={chip.y + 22} r={4.5} opacity={0}>
+                          <animate attributeName="opacity" values="1;1;0;0" keyTimes="0;0.08;0.14;1" dur={`${BAR}s`} begin={`${k * BEAT}s`} repeatCount="indefinite" />
+                        </circle>
+                      ))}
+                      <text
+                        ref={wordRef}
+                        className="chip-word"
+                        x={cx}
+                        y={cy}
+                        textAnchor="middle"
+                        dominantBaseline="central"
+                        style={wordSize ? { fontSize: `${wordSize}px` } : undefined}
+                      >
+                        BR1
+                      </text>
+                    </g>
                   </g>
                 </g>
               </g>
             </g>
           )}
         </svg>
+        {board && (
+          <span className="chip-hint" aria-hidden="true">
+            {plugged ? 'Drag BR1 to unplug it' : 'Plug BR1 back in'}
+          </span>
+        )}
       </div>
 
       <div className="footer-bottom">

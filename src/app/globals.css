@@ -1678,8 +1678,6 @@ h2.display-heading {
   width: 100%;
   height: 480px;
   overflow: clip;
-  /* traces that run off the band fade out rather than stopping at a hard line */
-  mask-image: linear-gradient(to bottom, transparent, #000 56px, #000 calc(100% - 56px), transparent);
 }
 @media (max-width: 799px) {
   .chip-scene { height: 360px; }
@@ -1687,13 +1685,30 @@ h2.display-heading {
 .chip-board {
   display: block;
   overflow: hidden;
+  /* traces that run off the band fade out rather than stopping at a hard line */
+  mask-image: linear-gradient(to bottom, transparent, #000 56px, #000 calc(100% - 56px), transparent);
 }
-.chip-circuit {
+.chip-circuit,
+.chip-star {
   --p: color-mix(in srgb, var(--c) 62%, #faf7f2);
+  /* power leaves and comes back from the socket outward */
+  --drain: calc(var(--k, 0) * 700ms);
+}
+/* Chip pulled: the board goes dead grey and the signals stop */
+.chip-board.is-unplugged .chip-circuit,
+.chip-board.is-unplugged .chip-star {
+  --p: #3a3b34;
+}
+.chip-board.is-live.is-unplugged .chip-signal,
+.chip-board.is-unplugged .chip-ring-fx,
+.chip-board.is-unplugged .chip-led-fx,
+.chip-board.is-unplugged .chip-flush {
+  visibility: hidden;
 }
 .chip-trace {
   fill: none;
   stroke: var(--p);
+  transition: stroke 450ms ease var(--drain);
   stroke-width: 2.25;
   stroke-linejoin: round;
   stroke-linecap: round;
@@ -1702,6 +1717,7 @@ h2.display-heading {
 }
 .chip-part {
   fill: var(--p);
+  transition: fill 450ms ease var(--drain);
   transform-box: fill-box;
   transform-origin: center;
   scale: 0;
@@ -1709,6 +1725,7 @@ h2.display-heading {
 .chip-ring {
   fill: #141510;
   stroke: var(--p);
+  transition: stroke 450ms ease var(--drain);
   stroke-width: 2;
   transform-box: fill-box;
   transform-origin: center;
@@ -1744,7 +1761,8 @@ h2.display-heading {
   animation: cb-wait 1.6s step-end;
 }
 
-/* The chip: orange lid on a blue slab, ink keylines, pins in paper */
+/* The chip: BR1 from the home page board, paper lid and ink type, sat on a
+   grey slab; pins in paper */
 .chip-lid {
   opacity: 0;
   transition: opacity 500ms ease 0.15s;
@@ -1760,14 +1778,54 @@ h2.display-heading {
 }
 .chip-foot {
   fill: #faf7f2;
+  transition: fill 450ms ease;
+}
+.chip-board.is-unplugged .chip-foot {
+  fill: #3a3b34;
+}
+/* The empty socket, once the chip's out of it */
+.chip-socket {
+  fill: none;
+  stroke: #5c5d55;
+  stroke-width: 1.5;
+  stroke-dasharray: 6 6;
+  opacity: 0;
+  transition: opacity 300ms ease;
+}
+.chip-board.is-unplugged .chip-socket {
+  opacity: 1;
+}
+.chip-lift {
+  cursor: grab;
+  touch-action: none;
+}
+.chip-lift.is-dragging {
+  cursor: grabbing;
+}
+.chip-hint {
+  position: absolute;
+  left: 50%;
+  bottom: 20px;
+  transform: translateX(-50%);
+  font-family: var(--font-ibm-plex-mono), monospace;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  color: #9a9686;
+  white-space: nowrap;
+  pointer-events: none;
+  user-select: none;
+  padding: 5px 12px;
+  border: 1px solid rgba(250, 247, 242, 0.22);
+  border-radius: 9999px;
+  background-color: #141510;
 }
 .chip-slab {
-  fill: #12b4ff;
+  fill: #5c5d55;
   stroke: #141510;
   stroke-width: 3;
 }
 .chip-body {
-  fill: #ff9c12;
+  fill: #faf7f2;
   stroke: #141510;
   stroke-width: 3;
 }
@@ -1800,11 +1858,12 @@ h2.display-heading {
   pointer-events: none;
 }
 .chip-word {
-  font-family: var(--font-space-grotesk), sans-serif;
-  font-weight: 700;
-  font-size: 120px;
-  letter-spacing: -0.03em;
+  font-family: var(--font-ibm-plex-mono), monospace;
+  font-weight: 400;
+  font-size: 96px;
+  letter-spacing: 0.04em;
   fill: #141510;
+  user-select: none;
 }
 
 .chip-star {
@@ -1815,6 +1874,10 @@ h2.display-heading {
 }
 .chip-star-outer {
   fill: var(--c);
+  transition: fill 450ms ease var(--drain);
+}
+.chip-board.is-unplugged .chip-star-outer {
+  fill: var(--p);
 }
 .chip-star-inner {
   fill: #141510;
