@@ -19,7 +19,10 @@ export default function PlaygroundPage() {
         <section className="playground-intro" data-board-solid>
           <p className="page-eyebrow">✦ Playground</p>
           <h1 className="page-title">Side projects and experiments</h1>
-          <p className="page-lede">Things I build when bored and to try out what new tools can actually do...</p>
+          <p className="page-lede">
+            Things I build when bored and to try out what new tools can actually do. Everything here works right on
+            the page, so go ahead and play.
+          </p>
         </section>
         <div className="pg-list">
           <div data-board-solid>
