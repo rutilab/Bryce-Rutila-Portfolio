@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import FooterOverscroll from '@/components/FooterOverscroll';
+import { Toast } from '@/components/Toast';
 
 /**
  * Footer scene after the Four Tet stage show: one big BRYCE chip that pumps on
@@ -344,6 +345,7 @@ export default function ChipFooter() {
   const [wordSize, setWordSize] = useState(0);
   const [plugged, setPlugged] = useState(true);
   const [dragging, setDragging] = useState(false);
+  const [copied, setCopied] = useState(false);
   const liftRef = useRef<SVGGElement>(null);
   const offset = useRef<Pt>([0, 0]);
   const grab = useRef<{ px: number; py: number; ox: number; oy: number } | null>(null);
@@ -413,6 +415,17 @@ export default function ChipFooter() {
     document.fonts?.ready.then(fit);
   }, [board]);
 
+  // Email copies, like the header's, and falls back to the mail app
+  const copyEmail = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    try {
+      await navigator.clipboard.writeText(EMAIL);
+      setCopied(true);
+    } catch {
+      window.location.href = `mailto:${EMAIL}`;
+    }
+  };
+
   /** Where the chip sits relative to its socket; `ease` springs it there */
   const moveLift = (dx: number, dy: number, ease = false) => {
     offset.current = [dx, dy];
@@ -470,7 +483,9 @@ export default function ChipFooter() {
           </nav>
           <div className="footer-col">
             <span className="footer-col-label">CONNECT</span>
-            <a href={`mailto:${EMAIL}`} className="footer-link" style={linkColor(3)}>EMAIL</a>
+            <a href={`mailto:${EMAIL}`} className="footer-link" style={linkColor(3)} onClick={copyEmail}>
+              EMAIL
+            </a>
             <a href={LINKEDIN_URL} target="_blank" rel="noopener noreferrer" className="footer-link" style={linkColor(4)}>
               LINKEDIN
             </a>
@@ -622,6 +637,7 @@ export default function ChipFooter() {
         <span className="footer-bottom-note">No chips were fried in the making of this site</span>
       </div>
       <FooterOverscroll />
+      <Toast message="Email copied 📋" open={copied} onDismiss={() => setCopied(false)} />
     </footer>
   );
 }
