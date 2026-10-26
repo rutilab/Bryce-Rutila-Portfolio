@@ -272,6 +272,9 @@ function buildBoard(w: number, h: number): Board {
   return { w, h, chip, pins, traces, stars };
 }
 
+/** Each footer link traces in its own BRYCE colour on hover */
+const linkColor = (i: number) => ({ '--c': BRAND[i % BRAND.length] }) as React.CSSProperties;
+
 /** The lid's kick across one bar: a fixed swell in px on every side, harder on the downbeat */
 function pumpAnim(chip: Chip) {
   const kicks = [7, 3.5, 4.5, 3.5];
@@ -461,14 +464,14 @@ export default function ChipFooter() {
         <div className="footer-links">
           <nav className="footer-col" aria-label="Footer navigation">
             <span className="footer-col-label">EXPLORE</span>
-            <Link href="/" className="footer-link">HOME</Link>
-            <Link href="/#work" className="footer-link">WORK</Link>
-            <Link href="/about" className="footer-link">ABOUT ME</Link>
+            <Link href="/#work" className="footer-link" style={linkColor(0)}>WORK</Link>
+            <Link href="/about" className="footer-link" style={linkColor(1)}>ABOUT ME</Link>
+            <Link href="/playground" className="footer-link" style={linkColor(2)}>PLAYGROUND</Link>
           </nav>
           <div className="footer-col">
             <span className="footer-col-label">CONNECT</span>
-            <a href={`mailto:${EMAIL}`} className="footer-link">EMAIL</a>
-            <a href={LINKEDIN_URL} target="_blank" rel="noopener noreferrer" className="footer-link">
+            <a href={`mailto:${EMAIL}`} className="footer-link" style={linkColor(3)}>EMAIL</a>
+            <a href={LINKEDIN_URL} target="_blank" rel="noopener noreferrer" className="footer-link" style={linkColor(4)}>
               LINKEDIN
             </a>
           </div>

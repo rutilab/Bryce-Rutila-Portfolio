@@ -1931,20 +1931,50 @@ h2.display-heading {
   margin-bottom: 2px;
 }
 .footer-link {
+  position: relative;
   font-family: var(--font-ibm-plex-mono), monospace;
   font-size: 14px;
   letter-spacing: -0.012em;
   color: #faf7f2;
   text-decoration: none;
   align-self: flex-start;
-  border-radius: 3px;
-  padding: 0 3px;
-  margin: 0 -3px;
-  transition: background-color 0.18s ease, color 0.18s ease;
 }
-.footer-link:hover {
-  background-color: #fcf7a4; /* yellow highlight wash, same as endorsement highlights */
-  color: #141510; /* flip the label dark so it stays legible inside the wash */
+/* On hover a trace draws in under the link in its own colour (--c, set
+   inline) and lands on a round pad, like the board below */
+.footer-link::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -4px;
+  height: 2px;
+  background-color: var(--c, #faf7f2);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 260ms cubic-bezier(0.65, 0, 0.35, 1);
+}
+.footer-link::before {
+  content: '';
+  position: absolute;
+  right: -9px;
+  bottom: -7px;
+  width: 8px;
+  height: 8px;
+  box-sizing: border-box;
+  border: 2px solid var(--c, #faf7f2);
+  border-radius: 50%;
+  background-color: #141510;
+  transform: scale(0);
+  transition: transform 160ms ease;
+}
+.footer-link:hover::after,
+.footer-link:focus-visible::after {
+  transform: scaleX(1);
+}
+.footer-link:hover::before,
+.footer-link:focus-visible::before {
+  transform: scale(1);
+  transition: transform 300ms cubic-bezier(0.34, 1.56, 0.64, 1) 200ms;
 }
 
 /* Bottom bar */
