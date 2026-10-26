@@ -3328,18 +3328,18 @@ body:has(.landing-main--framed) {
   .home-header-inner { padding: 0 16px; height: 56px; }
   .home-header-left { gap: 16px; }
   .home-header-links { gap: 14px; }
-  .home-header-email-text { display: none; }
-  .home-header-ext { display: none; }
 }
 @media (max-width: 420px) {
   .home-wordmark { font-size: 16px; }
   .home-header-links { gap: 10px; }
 }
-/* Phones: just the wordmark and a menu button; everything else drops down
-   under the bar when it's opened */
+/* Under 800px: just the wordmark and a menu button; everything else drops
+   down under the bar when it's opened. This is also where the contact links
+   stop fitting in the bar, so they move into the menu rather than leaving a
+   lone copy icon behind. */
 .home-header-menu-btn,
 .home-header-menu { display: none; }
-@media (max-width: 639px) {
+@media (max-width: 799px) {
   .home-header-links,
   .home-header-right { display: none; }
   .home-header-menu-btn {
@@ -3405,7 +3405,6 @@ body:has(.landing-main--framed) {
   }
   .home-header-menu-contact .home-header-email,
   .home-header-menu-contact .home-header-ext { font-size: 15px; }
-  /* (the bar's own LinkedIn link is hidden under 800px; this one isn't) */
   .home-header-menu-contact .home-header-ext { display: inline-flex; }
 }
 @keyframes home-menu-in {
