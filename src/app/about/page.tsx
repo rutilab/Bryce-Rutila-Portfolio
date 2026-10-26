@@ -62,7 +62,7 @@ export default function AboutPage() {
       <main className="about-main">
         {/* The home page's board, routed around the deck, the letter and the
             three keepsakes */}
-        <CircuitBackground solid="[data-board-solid], .letter-3d-stage" varied />
+        <CircuitBackground solid="[data-board-solid], .letter-3d-stage" grid />
         {/* ── The deck of prints ─────────────────────────────────────────── */}
         <div className="about-section">
           <div className="mx-auto w-[344px] max-w-full" data-board-solid>
