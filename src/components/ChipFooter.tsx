@@ -455,7 +455,7 @@ export default function ChipFooter() {
     <footer className="landing-footer">
       {/* ── Footer info ── */}
       <div className="footer-content">
-        <p className="footer-tagline">Good design connects the whole product.</p>
+        <p className="footer-tagline">Turning complex products into connected experiences.</p>
         {/* the two link columns travel together as one right-hand group, so
             EXPLORE can't drift into the middle as the viewport widens */}
         <div className="footer-links">

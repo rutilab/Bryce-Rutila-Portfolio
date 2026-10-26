@@ -1901,14 +1901,15 @@ h2.display-heading {
    rather than a fourth nav column. */
 .footer-tagline {
   margin: 0;
-  /* Two lines, broken at the phrase's hinge: "Good design connects" clears
-     the cap (about 11em), "…connects the" doesn't */
-  max-width: 12em;
+  /* Two lines, broken at the phrase's hinge: "into connected experiences."
+     (13.04em) fits under the cap, "Turning complex products into" (14em)
+     doesn't */
+  max-width: 13.5em;
   /* Same face as BRYCE on the chip and the home page headline */
   font-family: var(--font-space-grotesk), sans-serif;
   font-weight: 700;
-  font-size: clamp(26px, 3.2vw, 36px);
-  line-height: 1.1;
+  font-size: clamp(20px, 2.2vw, 26px);
+  line-height: 1.15;
   letter-spacing: -0.03em;
   color: #faf7f2;
 }
