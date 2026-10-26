@@ -1680,7 +1680,7 @@ h2.display-heading {
   overflow: clip;
 }
 @media (max-width: 799px) {
-  .chip-scene { height: 360px; }
+  .chip-scene { height: 300px; }
 }
 .chip-board {
   display: block;
@@ -2036,9 +2036,17 @@ h2.display-heading {
     padding-left: 24px;
     padding-right: 24px;
   }
+  /* Tighter top to bottom too: the whole footer has to fit under the sticky
+     header once the page bottoms out, or the tagline ends up behind it */
   .footer-content {
     flex-direction: column;
-    gap: 32px;
+    gap: 28px;
+    padding-top: 40px;
+    padding-bottom: 24px;
+  }
+  .footer-bottom {
+    padding-top: 32px;
+    padding-bottom: 32px;
   }
   .footer-links {
     gap: 40px;
@@ -3555,6 +3563,9 @@ body:has(.landing-main--framed) {
    lands on a round pad past the arrow, like the nav and footer links */
 .work-cta {
   position: relative;
+  /* Positioned, so it paints over the stretched title link — let taps fall
+     through to the link instead of dying on the label */
+  pointer-events: none;
   font-family: var(--font-inter), sans-serif;
   font-size: 15px;
   font-weight: 500;
@@ -4913,6 +4924,10 @@ body:has(.page-framed) {
   font-size: clamp(36px, 5.5vw, 56px);
   line-height: 1.1;
   letter-spacing: -0.03em;
+}
+/* Same heading-to-intro gap as .page-title above .page-lede */
+.about-main .display-heading-wrap {
+  margin-bottom: 24px;
 }
 .page-framed {
   position: relative;
