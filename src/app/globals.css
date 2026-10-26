@@ -4955,6 +4955,49 @@ body:has(.page-framed) {
   letter-spacing: 0.02em;
   color: #8a8778;
 }
+/* A sticky note after the last card: more is on the way */
+.pg-sticky {
+  position: relative;
+  align-self: flex-start;
+  width: 240px;
+  min-height: 180px;
+  box-sizing: border-box;
+  padding: 32px 22px 22px;
+  background-color: #fcf7a4;
+  rotate: -2.5deg;
+  box-shadow: 0 1px 0 rgba(20, 21, 16, 0.08), 0 10px 18px -12px rgba(20, 21, 16, 0.35);
+  transition: rotate 300ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.pg-sticky:hover {
+  rotate: 0deg;
+}
+.pg-sticky-tape {
+  position: absolute;
+  top: -10px;
+  left: 50%;
+  width: 72px;
+  height: 22px;
+  translate: -50% 0;
+  rotate: 3deg;
+  background-color: rgba(250, 247, 242, 0.7);
+  border: 1px solid rgba(20, 21, 16, 0.08);
+}
+.pg-sticky-title {
+  margin: 0 0 10px;
+  font-family: var(--font-space-grotesk), sans-serif;
+  font-weight: 700;
+  font-size: 22px;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  color: #141510;
+}
+.pg-sticky-note {
+  margin: 0;
+  font-family: var(--font-ibm-plex-mono), monospace;
+  font-size: 12px;
+  line-height: 1.5;
+  color: #5c5a54;
+}
 .page-eyebrow {
   font-family: var(--font-ibm-plex-mono), monospace;
   font-size: 14px;
