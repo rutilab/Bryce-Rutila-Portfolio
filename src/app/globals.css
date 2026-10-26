@@ -1761,8 +1761,8 @@ h2.display-heading {
   animation: cb-wait 1.6s step-end;
 }
 
-/* The chip: BR1 from the home page board, paper lid and ink type, sat on a
-   grey slab; pins in paper */
+/* The chip: paper lid and ink type like the home page's BR1, sat on a blue
+   slab; pins in paper */
 .chip-lid {
   opacity: 0;
   transition: opacity 500ms ease 0.15s;
@@ -1820,7 +1820,7 @@ h2.display-heading {
   background-color: #141510;
 }
 .chip-slab {
-  fill: #5c5d55;
+  fill: #12b4ff;
   stroke: #141510;
   stroke-width: 3;
 }
@@ -1858,10 +1858,10 @@ h2.display-heading {
   pointer-events: none;
 }
 .chip-word {
-  font-family: var(--font-ibm-plex-mono), monospace;
-  font-weight: 400;
-  font-size: 96px;
-  letter-spacing: 0.04em;
+  font-family: var(--font-space-grotesk), sans-serif;
+  font-weight: 700;
+  font-size: 120px;
+  letter-spacing: -0.03em;
   fill: #141510;
   user-select: none;
 }

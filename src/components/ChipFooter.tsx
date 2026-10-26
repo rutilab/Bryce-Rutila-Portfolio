@@ -5,7 +5,7 @@ import Link from 'next/link';
 import FooterOverscroll from '@/components/FooterOverscroll';
 
 /**
- * Footer scene after the Four Tet stage show: one big BR1 chip that pumps on
+ * Footer scene after the Four Tet stage show: one big BRYCE chip that pumps on
  * the beat, wired out to the edges of the band by a board of traces.
  *
  * Same parts vocabulary as the home page board (CircuitBackground) — pins with
@@ -392,19 +392,20 @@ export default function ChipFooter() {
     return () => io.disconnect();
   }, [board]);
 
-  // Fit the label to the lid once the mono face has loaded
+  // Fit BRYCE to the lid once the headline face has loaded
   useEffect(() => {
     if (!board) return;
     const fit = () => {
       const t = wordRef.current;
       if (!t) return;
-      const target = board.chip.w * 0.5;
+      // clear of the corner dot and the status light
+      const target = board.chip.w - 2 * 40;
       const probe = 100;
       const was = t.style.fontSize;
       t.style.fontSize = `${probe}px`;
       const len = t.getComputedTextLength();
       t.style.fontSize = was;
-      if (len) setWordSize(Math.min((probe * target) / len, board.chip.h * 0.55));
+      if (len) setWordSize(Math.min((probe * target) / len, board.chip.h * 0.72));
     };
     fit();
     document.fonts?.ready.then(fit);
@@ -476,7 +477,7 @@ export default function ChipFooter() {
         </div>
       </div>
 
-      {/* ── The BR1 chip ── */}
+      {/* ── The BRYCE chip ── */}
       <div className="chip-scene" ref={sceneRef}>
         <svg
           ref={svgRef}
@@ -604,7 +605,7 @@ export default function ChipFooter() {
                         dominantBaseline="central"
                         style={wordSize ? { fontSize: `${wordSize}px` } : undefined}
                       >
-                        BR1
+                        BRYCE
                       </text>
                     </g>
                   </g>
@@ -615,7 +616,7 @@ export default function ChipFooter() {
         </svg>
         {board && (
           <span className="chip-hint" aria-hidden="true">
-            {plugged ? 'Drag BR1 to unplug it' : 'Plug BR1 back in'}
+            {plugged ? 'Drag the chip to unplug it' : 'Plug the chip back in'}
           </span>
         )}
       </div>
