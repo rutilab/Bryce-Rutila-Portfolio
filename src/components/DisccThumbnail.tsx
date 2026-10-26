@@ -58,7 +58,7 @@ export function DisccThumbnail() {
         borderRadius: '10px',
         overflow: 'hidden',
         // Leather stage
-        backgroundImage: 'url(/case-studies/discc/case-background.png)',
+        backgroundImage: 'url(/case-studies/discc/case-background.webp)',
         backgroundSize: 'cover',
         backgroundPosition: 'center',
         display: 'flex',

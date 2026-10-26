@@ -115,7 +115,7 @@ const COURSE_ONBOARDING_THUMBNAIL = (
 );
 
 const LANDING_PAGE_THUMBNAIL = (
-  <img src="/case-studies/landing-page/header-and-hero.png" alt="" style={{
+  <img src="/case-studies/landing-page/header-and-hero.webp" alt="" style={{
     position: 'absolute', inset: '8px',
     width: 'calc(100% - 16px)', height: 'calc(100% - 16px)',
     objectFit: 'cover', objectPosition: 'top center',
