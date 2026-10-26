@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import CircuitBackground from '@/components/CircuitBackground';
-import CaterpillarFooter from '@/components/CaterpillarFooter';
+import ChipFooter from '@/components/ChipFooter';
 
 export const metadata: Metadata = {
   title: 'Playground · Bryce Rutila',
@@ -28,7 +28,7 @@ export default function PlaygroundPage() {
           </Link>
         </section>
       </main>
-      <CaterpillarFooter />
+      <ChipFooter />
     </>
   );
 }

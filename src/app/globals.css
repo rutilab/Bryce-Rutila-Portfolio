@@ -1659,99 +1659,182 @@ h2.display-heading {
   background: rgba(255, 255, 255, 0.3);
 }
 
-/* ── Landing footer — pixel caterpillar scene + site info ─────────────────── */
+/* ── Landing footer — BRYCE chip scene + site info ─────────────────────────── */
 .landing-footer {
   position: relative;
   z-index: 1;
   width: 100%;
-  /* deep-ink band closing the cream page — the scene's bark and keyline
-     colours are set to match in CaterpillarFooter.tsx */
+  /* deep-ink band closing the cream page — the chip scene's holes, bands
+     and keylines are set to match below */
   background-color: #141510;
-  /* the gap above comes from .landing-main's bottom padding; the scene's own
-     padding-top is now purely the butterflies' airspace between the links and
-     the branches */
+  /* the gap above comes from .landing-main's bottom padding */
   margin-top: 0;
 }
 
-.footer-scene {
+/* The BRYCE chip scene (ChipFooter). Same parts as the home page board, inverted
+   for the ink band: traces in pastel BRYCE colours, signals in the full neon. */
+.chip-scene {
   position: relative;
   width: 100%;
+  height: 480px;
   overflow: clip;
-  /* The canvas already leaves 62px under the lower branch. The air above the
-     scene — last link down to the upper branch — measures 178px, so add the
-     116px difference to sit the branches in equal space top and bottom. */
-  padding-bottom: 116px;
+  /* traces that run off the band fade out rather than stopping at a hard line */
+  mask-image: linear-gradient(to bottom, transparent, #000 56px, #000 calc(100% - 56px), transparent);
 }
-.footer-scene canvas {
+@media (max-width: 799px) {
+  .chip-scene { height: 360px; }
+}
+.chip-board {
   display: block;
-  width: 100%;
-  height: 168px;
-  image-rendering: pixelated;
+  overflow: hidden;
+}
+.chip-circuit {
+  --p: color-mix(in srgb, var(--c) 62%, #faf7f2);
+}
+.chip-trace {
+  fill: none;
+  stroke: var(--p);
+  stroke-width: 2.25;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+}
+.chip-part {
+  fill: var(--p);
+  transform-box: fill-box;
+  transform-origin: center;
+  scale: 0;
+}
+.chip-ring {
+  fill: #141510;
+  stroke: var(--p);
+  stroke-width: 2;
+  transform-box: fill-box;
+  transform-origin: center;
+  scale: 0;
+}
+.chip-hole {
+  fill: #141510;
+}
+.chip-band {
+  fill: none;
+  stroke: #141510;
+  stroke-width: 1.4;
+}
+/* Board draws in the first time the band comes into view */
+.chip-board.is-live .chip-trace {
+  animation: cb-draw 1s cubic-bezier(0.65, 0, 0.35, 1) var(--d, 0s) forwards;
+}
+.chip-board.is-live .chip-part,
+.chip-board.is-live .chip-ring {
+  animation: cb-pop 360ms cubic-bezier(0.34, 1.56, 0.64, 1) calc(var(--d, 0s) + 0.7s) both;
+}
+.chip-signal {
+  fill: none;
+  stroke: var(--c);
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  filter: drop-shadow(0 0 4px var(--c));
+  visibility: hidden;
+}
+.chip-board.is-live .chip-signal {
+  visibility: visible;
+  animation: cb-wait 1.6s step-end;
 }
 
-.footer-hint {
-  position: absolute;
-  left: 50%;
-  /* 24px of air between the pill and the dashed divider below the scene */
-  bottom: 24px;
-  transform: translateX(-50%);
-  font-family: var(--font-ibm-plex-mono), monospace;
-  font-size: 11px;
-  letter-spacing: 0.06em;
-  color: #9a9686;
-  white-space: nowrap;
-  pointer-events: none;
-  user-select: none;
-  /* pill: a hairline capsule so the prompt reads as an affordance, not a caption */
-  padding: 5px 12px;
-  border: 1px solid rgba(250, 247, 242, 0.22);
-  border-radius: 9999px;
-  background-color: rgba(250, 247, 242, 0.05);
+/* The chip: orange lid on a pink slab, ink keylines, pins in paper */
+.chip-lid {
+  opacity: 0;
+  transition: opacity 500ms ease 0.15s;
 }
-.footer-hint-done {
-  color: #141510;
-  background-color: #fcf7a4; /* #FFF712 at 0.35 on cream */
-  border-color: #fcf7a4;
+.chip-board.is-live .chip-lid {
+  opacity: 1;
+}
+.chip-pins {
+  fill: none;
+  stroke: #faf7f2;
+  stroke-width: 3;
+  stroke-linecap: square;
+}
+.chip-foot {
+  fill: #faf7f2;
+}
+.chip-slab {
+  fill: color-mix(in srgb, #ff12f7 38%, #faf7f2);
+  stroke: #141510;
+  stroke-width: 3;
+}
+.chip-body {
+  fill: #ff9c12;
+  stroke: #141510;
+  stroke-width: 3;
+}
+.chip-flush {
+  fill: #fff712;
+  pointer-events: none;
+}
+.chip-die {
+  fill: none;
+  stroke: #141510;
+  stroke-width: 1.25;
+  stroke-opacity: 0.35;
+  stroke-dasharray: 4 4;
+}
+.chip-dot {
+  fill: #141510;
+}
+.chip-led {
+  fill: #faf7f2;
+  stroke: #141510;
+  stroke-width: 2;
+}
+.chip-led-fx {
+  stroke: #141510;
+  stroke-width: 2;
+}
+.chip-ring-fx {
+  fill: none;
+  stroke-width: 2.5;
+  pointer-events: none;
+}
+.chip-word {
+  font-family: var(--font-space-grotesk), sans-serif;
+  font-weight: 700;
+  font-size: 120px;
+  letter-spacing: -0.03em;
+  fill: #141510;
 }
 
-/* Hatched BR flies — real hero SVGs flying over the scene.
-   The wrapper's translate/bank transform is driven from the rAF loop (JS);
-   CSS handles the pop-in and the continuous wingbeat. */
-.footer-br-fly {
-  position: absolute;
-  left: 0;
-  top: 0;
-  width: 45px;
-  height: 42px;
-  will-change: transform;
-  /* The scene box does the hit-testing and carries the net cursor — a sprite
-     that banks and drifts is the wrong thing to hang :hover off. */
-  pointer-events: none;
+.chip-star {
+  opacity: 0;
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: chip-twinkle 8s ease-in-out infinite;
 }
-.footer-br-fly > svg {
-  display: block;
-  width: 100%;
-  height: 100%;
-  animation:
-    footer-fly-pop 0.45s cubic-bezier(0.34, 1.56, 0.64, 1) both,
-    footer-fly-flap 0.4s ease-in-out 0.45s infinite;
+.chip-star-outer {
+  fill: var(--c);
 }
-@keyframes footer-fly-pop {
-  from { transform: scale(0) rotate(-30deg); }
-  to   { transform: scale(1) rotate(0deg); }
+.chip-star-inner {
+  fill: #141510;
 }
-/* paper-butterfly wingbeat: fold about the vertical body axis */
-@keyframes footer-fly-flap {
-  0%   { transform: perspective(220px) rotateY(0deg)  scale(1); }
-  25%  { transform: perspective(220px) rotateY(-38deg) scale(0.96); }
-  50%  { transform: perspective(220px) rotateY(0deg)  scale(1); }
-  75%  { transform: perspective(220px) rotateY(34deg) scale(0.97); }
-  100% { transform: perspective(220px) rotateY(0deg)  scale(1); }
+@keyframes chip-twinkle {
+  0%, 52%, 100% { opacity: 0;   scale: 0.2; rotate: -45deg; }
+  60%           { opacity: 0.9; scale: 1;   rotate: 0deg; }
+  84%           { opacity: 0.9; scale: 1;   rotate: 0deg; }
+  92%           { opacity: 0;   scale: 0.4; rotate: 30deg; }
 }
+
 @media (prefers-reduced-motion: reduce) {
-  .footer-br-fly > svg {
-    animation: none;
-  }
+  .chip-board .chip-trace { animation: none; stroke-dashoffset: 0; }
+  .chip-board .chip-part,
+  .chip-board .chip-ring { animation: none; scale: 1; }
+  .chip-signal,
+  .chip-ring-fx,
+  .chip-led-fx,
+  .chip-flush { display: none; }
+  .chip-star { animation: none; opacity: 0.5; }
 }
 
 /* Info block */

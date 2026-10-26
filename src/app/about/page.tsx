@@ -1,5 +1,5 @@
 import CircuitBackground from '@/components/CircuitBackground';
-import CaterpillarFooter from '@/components/CaterpillarFooter';
+import ChipFooter from '@/components/ChipFooter';
 import { FitBox } from '@/components/about/FitBox';
 import { CdCard } from '@/components/about/CdCard';
 import { FoldedLetter } from '@/components/about/FoldedLetter';
@@ -148,7 +148,7 @@ export default function AboutPage() {
           say that the rest of it is a scroll away. */}
       <ScrollCue gateId={null} />
 
-      <CaterpillarFooter />
+      <ChipFooter />
     </>
   );
 }
