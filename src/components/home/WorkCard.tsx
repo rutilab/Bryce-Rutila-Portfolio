@@ -5,8 +5,8 @@ import Link from 'next/link';
 import type { Project } from '@/components/ProjectCard';
 import { QuickView } from '@/components/home/QuickView';
 
-/** Same rotation as the old cards, so a hover still lands on a BRYCE colour */
-const HOVER_COLORS = ['#FF9C12', '#12B4FF', '#FFF712', '#FF12F7', '#31E300'] as const;
+/** The old cards' rotation, minus yellow, which is too faint for the CTA's trace on the grey card */
+const HOVER_COLORS = ['#FF9C12', '#12B4FF', '#FF12F7', '#31E300'] as const;
 let lastHoverIdx = -1;
 const nextHoverColor = () => HOVER_COLORS[(lastHoverIdx = (lastHoverIdx + 1) % HOVER_COLORS.length)];
 
