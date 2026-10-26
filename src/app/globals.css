@@ -1744,7 +1744,7 @@ h2.display-heading {
   animation: cb-wait 1.6s step-end;
 }
 
-/* The chip: orange lid on a pink slab, ink keylines, pins in paper */
+/* The chip: orange lid on a blue slab, ink keylines, pins in paper */
 .chip-lid {
   opacity: 0;
   transition: opacity 500ms ease 0.15s;
@@ -1762,7 +1762,7 @@ h2.display-heading {
   fill: #faf7f2;
 }
 .chip-slab {
-  fill: color-mix(in srgb, #ff12f7 38%, #faf7f2);
+  fill: #12b4ff;
   stroke: #141510;
   stroke-width: 3;
 }
