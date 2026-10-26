@@ -15,7 +15,7 @@ const MOBILE_ASSET = '/case-studies/focus-coach-achievements';
 
 function mobileSrc(name: string, mode: ThemeMode, cacheKey = '1') {
   const prefix = mode === 'light' ? 'lm' : 'dm';
-  return `${MOBILE_ASSET}/mobile-${prefix}-${name}.png?v=${cacheKey}`;
+  return `${MOBILE_ASSET}/mobile-${prefix}-${name}.webp?v=${cacheKey}`;
 }
 
 /** Section eyebrows */

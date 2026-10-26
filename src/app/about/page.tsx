@@ -129,7 +129,7 @@ export default function AboutPage() {
               <FitBox designWidth={427} designHeight={344} className="w-full max-w-[427px]">
                 <div className="flex h-[344px] w-[427px] items-center justify-center">
                   <CaseStudyMedia
-                    src="/about/digital-art.png"
+                    src="/about/digital-art.webp"
                     // The card is the piece hung on a wall; full screen is the
                     // painting itself, so the frame doesn't eat the viewport.
                     lightboxSrc="/about/digital-art-full.jpg"

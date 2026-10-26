@@ -241,9 +241,9 @@ const assets = {
   ideationEmptyTilesComparison: '/case-studies/finding-focus-ai-assistant/ideation-empty-tiles-comparison.png',
   ideationEmptyProactiveWireframe: '/case-studies/finding-focus-ai-assistant/ideation-empty-proactive-wireframe.png',
   ideationEmptyProactiveComparison: '/case-studies/finding-focus-ai-assistant/ideation-empty-proactive-comparison.png',
-  emptyStateDesign: '/case-studies/finding-focus-ai-assistant/empty-state-design.png',
-  iPhoneMockup: '/case-studies/finding-focus-ai-assistant/iphone-mockup.png',
-  iMacMockup: '/case-studies/finding-focus-ai-assistant/imac-mockup.png',
+  emptyStateDesign: '/case-studies/finding-focus-ai-assistant/empty-state-design.webp',
+  iPhoneMockup: '/case-studies/finding-focus-ai-assistant/iphone-mockup.webp',
+  iMacMockup: '/case-studies/finding-focus-ai-assistant/imac-mockup.webp',
   errorUnableToRespond: '/case-studies/finding-focus-ai-assistant/error-unable-to-respond.png?v=4',
   errorApiConnection: '/case-studies/finding-focus-ai-assistant/error-api-connection.png?v=4',
   errorNetwork: '/case-studies/finding-focus-ai-assistant/error-network.png?v=3',
@@ -2273,7 +2273,7 @@ export default function FindingFocusAiAssistantCaseStudy() {
           <VisualCard caption="The Classroom Dashboard within the teacher interface">
             <div className="flex items-center justify-center p-4 sm:p-8">
               <ExpandableImage
-                src="/case-studies/finding-focus-ai-assistant/focus-tab-bezel.png"
+                src="/case-studies/finding-focus-ai-assistant/focus-tab-bezel.webp"
                 alt="The Classroom Dashboard within the Finding Focus teacher interface"
                 className="w-full max-w-[720px] h-auto block"
               />

@@ -64,7 +64,7 @@ const LP = '/case-studies/landing-page';
 /** Phone exports, all at 1258 × 2550 (and the same shape at smaller sizes) */
 const PHONE = 1258 / 2550;
 const fcPhone = (name: string, alt: string, caption?: string): QuickScreen => ({
-  src: `${FC}/mobile-${name}.png`,
+  src: `${FC}/mobile-${name}.webp`,
   alt,
   ratio: PHONE,
   caption,
@@ -284,8 +284,8 @@ export const AI_ASSISTANT_DECK: QuickSlide[] = [
         {
           label: 'Desktop & mobile',
           screens: [
-            { src: `${AI}/imac-mockup.png`, alt: 'The assistant on desktop', ratio: 4760 / 4040 },
-            { src: `${AI}/iphone-mockup.png`, alt: 'The assistant on mobile', ratio: PHONE },
+            { src: `${AI}/imac-mockup.webp`, alt: 'The assistant on desktop', ratio: 4760 / 4040 },
+            { src: `${AI}/iphone-mockup.webp`, alt: 'The assistant on mobile', ratio: PHONE },
           ],
         },
         {
@@ -331,7 +331,7 @@ export const LANDING_PAGE_DECK: QuickSlide[] = [
       pages: [
         {
           label: 'Original page',
-          src: `${LP}/old-full-page.png`,
+          src: `${LP}/old-full-page.webp`,
           alt: 'The original, student-first landing page',
           width: 1755,
           height: 5904,
@@ -361,13 +361,13 @@ export const LANDING_PAGE_DECK: QuickSlide[] = [
     label: 'Key decisions',
     headline: 'Lead with what teachers care about.',
     body: 'The hero frames Finding Focus around teacher outcomes, hints at its credibility, and puts sign-up front and center.',
-    media: { kind: 'image', src: `${LP}/header-and-hero.png`, alt: 'The new hero section' },
+    media: { kind: 'image', src: `${LP}/header-and-hero.webp`, alt: 'The new hero section' },
   },
   {
     label: 'Key decisions',
     headline: 'Trust before they go looking.',
     body: 'Right under the hero, a credibility strip calls out university backing, educator involvement, and US Department of Education funding, with custom icons.',
-    media: { kind: 'image', src: `${LP}/social-proof-strip.png`, alt: 'The credibility strip' },
+    media: { kind: 'image', src: `${LP}/social-proof-strip.webp`, alt: 'The credibility strip' },
   },
   {
     label: 'Key decisions',
@@ -395,8 +395,8 @@ export const LANDING_PAGE_DECK: QuickSlide[] = [
       sets: [
         {
           screens: [
-            { src: `${LP}/research-section.png`, alt: 'Research outcomes section', ratio: 2560 / 1308, caption: 'Research' },
-            { src: `${LP}/testimonial-section.png`, alt: 'Testimonials section', ratio: 2152 / 2366, caption: 'Testimonials' },
+            { src: `${LP}/research-section.webp`, alt: 'Research outcomes section', ratio: 2560 / 1308, caption: 'Research' },
+            { src: `${LP}/testimonial-section.webp`, alt: 'Testimonials section', ratio: 2152 / 2366, caption: 'Testimonials' },
           ],
         },
       ],
@@ -408,8 +408,8 @@ export const LANDING_PAGE_DECK: QuickSlide[] = [
     media: {
       kind: 'pages',
       pages: [
-        { label: 'Before', src: `${LP}/old-full-page.png`, alt: 'The original landing page', width: 1755, height: 5904 },
-        { label: 'After', src: `${LP}/new-full-page.png`, alt: 'The redesigned landing page', width: 2560, height: 15680 },
+        { label: 'Before', src: `${LP}/old-full-page.webp`, alt: 'The original landing page', width: 1755, height: 5904 },
+        { label: 'After', src: `${LP}/new-full-page.webp`, alt: 'The redesigned landing page', width: 2560, height: 15680 },
       ],
     },
     caption: 'Scroll each page',
@@ -418,6 +418,6 @@ export const LANDING_PAGE_DECK: QuickSlide[] = [
     label: 'Outcomes',
     headline: 'Live at findingfocus.app.',
     body: "The page now speaks to teachers, looks like the mature product it is, and puts proof up front. As the team's only designer, it also pushed me into brand and marketing work.",
-    media: { kind: 'image', src: `${LP}/mobile-mockup.png`, alt: 'The new landing page on mobile' },
+    media: { kind: 'image', src: `${LP}/mobile-mockup.webp`, alt: 'The new landing page on mobile' },
   },
 ];

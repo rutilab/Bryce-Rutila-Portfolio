@@ -84,7 +84,7 @@ export default function Loader({ heroRef, onComplete }: LoaderProps) {
   // Prefetch case study pages and key assets while the animation plays
   useEffect(() => {
     const assets = [
-      '/case-studies/landing-page/header-and-hero.png',
+      '/case-studies/landing-page/header-and-hero.webp',
       '/butterflies/updated-br-fly-1.svg',
       '/butterflies/updated-br-fly-2.svg',
       '/butterflies/updated-br-fly-3.svg',
