@@ -18,6 +18,9 @@ const MAX = 260; // px the page can be pulled past its end
 const GIVE = 0.55; // how soon the pull stiffens
 const RETURN_MS = 650;
 const IDLE_MS = 140; // no wheel input for this long counts as letting go
+// A gap this long between wheel events starts a new gesture; momentum events
+// arrive far closer together, so a flick and its glide count as one
+const GESTURE_GAP_MS = 220;
 // Column heights, outside in, as a share of the tallest
 const STEPS = [0.42, 0.55, 0.68, 0.84, 1, 0.84, 0.68, 0.55, 0.42];
 
@@ -38,6 +41,10 @@ export default function FooterOverscroll() {
     let idle = 0;
     let tween = 0;
     let touchBase: number | null = null;
+    // Only a gesture that starts with the page already at its end may pull,
+    // so a hard scroll that lands on the bottom just stops there
+    let armed = false;
+    let lastWheel = 0;
 
     const atBottom = () => window.scrollY + window.innerHeight >= doc.scrollHeight - 2;
     const apply = (p: number) => {
@@ -67,9 +74,17 @@ export default function FooterOverscroll() {
     const onWheel = (e: WheelEvent) => {
       if (e.ctrlKey) return;
       const dy = e.deltaMode === 1 ? e.deltaY * 16 : e.deltaY;
+      const now = performance.now();
+      if (now - lastWheel > GESTURE_GAP_MS) armed = atBottom() || pull > 0;
+      lastWheel = now;
       // Pulling past the end, or easing back out of a pull, is ours; anything
       // else is ordinary scrolling
-      if ((dy > 0 && atBottom()) || (dy < 0 && pull > 0)) {
+      // A glide that lands on the end stops dead, without the browser's own bounce
+      if (dy > 0 && !armed && atBottom()) {
+        e.preventDefault();
+        return;
+      }
+      if ((dy > 0 && armed && atBottom()) || (dy < 0 && pull > 0)) {
         e.preventDefault();
         cancelReturn();
         stretch = Math.max(0, stretch + dy);
@@ -79,12 +94,13 @@ export default function FooterOverscroll() {
       }
     };
 
+    const onTouchStart = () => {
+      armed = atBottom() || pull > 0;
+    };
     const onTouchMove = (e: TouchEvent) => {
+      if (!armed) return;
       const y = e.touches[0].clientY;
-      if (touchBase === null) {
-        if (!atBottom()) return;
-        touchBase = y;
-      }
+      if (touchBase === null) touchBase = y;
       const dy = touchBase - y;
       if (dy <= 0 && pull === 0) {
         touchBase = null;
@@ -101,11 +117,13 @@ export default function FooterOverscroll() {
     };
 
     window.addEventListener('wheel', onWheel, { passive: false });
+    window.addEventListener('touchstart', onTouchStart, { passive: true });
     window.addEventListener('touchmove', onTouchMove, { passive: false });
     window.addEventListener('touchend', onTouchEnd);
     window.addEventListener('touchcancel', onTouchEnd);
     return () => {
       window.removeEventListener('wheel', onWheel);
+      window.removeEventListener('touchstart', onTouchStart);
       window.removeEventListener('touchmove', onTouchMove);
       window.removeEventListener('touchend', onTouchEnd);
       window.removeEventListener('touchcancel', onTouchEnd);
