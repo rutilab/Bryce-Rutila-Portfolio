@@ -376,8 +376,10 @@ export function ReflectionScreen({
           stroke-width: 8;
           stroke-linecap: round;
           stroke-linejoin: round;
-          stroke-dasharray: 100;
-          stroke-dashoffset: 100;
+          /* A gap longer than the path, and an offset past it, so no zero-length
+             dash sits at either end: Safari paints its round cap as a stray dot. */
+          stroke-dasharray: 100 200;
+          stroke-dashoffset: 101;
           transition: stroke-dashoffset 0.56s cubic-bezier(0.4, 0, 0.2, 1);
         }
         .refl-check-path.drawn {
