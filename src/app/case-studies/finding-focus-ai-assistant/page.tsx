@@ -951,7 +951,7 @@ function ToggleMedia({
 function HeroIllustration() {
   return (
     // Outer container — frosted tint so page background bleeds through
-    <div className="w-full rounded-[24px] flex items-center justify-center py-11 px-8" style={{ background: 'rgba(220,232,248,0.45)', backdropFilter: 'blur(2px)', pointerEvents: 'none', userSelect: 'none', cursor: 'default' }}>
+    <div className="w-full rounded-[24px] flex items-center justify-center py-4 px-3 sm:py-11 sm:px-8" style={{ background: 'rgba(220,232,248,0.45)', backdropFilter: 'blur(2px)', pointerEvents: 'none', userSelect: 'none', cursor: 'default' }}>
       {/* Modal — max 725px, white bg + shadow applied via CSS override */}
       <div className="w-full max-w-[725px]">
         {/* eslint-disable-next-line react/no-danger */}

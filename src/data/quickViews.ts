@@ -93,10 +93,10 @@ export const FOCUS_COACH_DECK: QuickSlide[] = [
   {
     label: 'Research',
     headline: 'Students asked for badges. We decided against them.',
-    body: 'A survey and an audit of six timer apps both pointed toward gamification. But Finding Focus exists to build real focus, and once a badge becomes the reason to start a session, the tool has failed at its job.',
+    body: 'We surveyed students, and separately I ran a competitive audit of six top timer apps. Both pointed toward gamification. But Finding Focus exists to build real focus, and once a badge becomes the reason to start a session, the tool has failed at its job.',
     stats: [
-      { value: '84%', label: 'of 89 students said yes or maybe to earning badges and levels' },
-      { value: '100s', label: "of one-minute sessions logged by one student to win a teacher's prize" },
+      { value: '84%', label: 'of the 89 students we surveyed said yes or maybe to earning badges and levels' },
+      { value: '100+', label: "one-minute sessions logged by one student to win a teacher's prize" },
     ],
   },
   {

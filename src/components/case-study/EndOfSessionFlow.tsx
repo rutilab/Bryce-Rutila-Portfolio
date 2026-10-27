@@ -7,8 +7,8 @@ import { ReflectionScreen } from './ReflectionScreen';
 
 /** Design width for the end-of-session stage — scales as a unit below this. */
 const EOS_DESIGN_W = 408;
+/** One height on every screen: shorter cut off the reflection screen's 2×2 answers on phones. */
 const EOS_STAGE_H = 680;
-const EOS_STAGE_H_COMPACT = 560;
 
 type Phase = 'session' | 'reflection' | 'milestone' | 'completion';
 type ExitStyle = 'none' | 'crossfade' | 'exit-up' | 'exit-continue';
@@ -341,17 +341,8 @@ export function EndOfSessionFlow() {
 
   const live = layers.find((l) => !l.exiting);
   const bgDark = live?.phase === 'session';
-  const [compact, setCompact] = useState(false);
   const stageOuterRef = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(1);
-
-  useEffect(() => {
-    const mq = window.matchMedia('(max-width: 639px)');
-    const update = () => setCompact(mq.matches);
-    update();
-    mq.addEventListener('change', update);
-    return () => mq.removeEventListener('change', update);
-  }, []);
 
   useEffect(() => {
     const outer = stageOuterRef.current;
@@ -367,7 +358,7 @@ export function EndOfSessionFlow() {
     return () => ro.disconnect();
   }, []);
 
-  const designH = compact ? EOS_STAGE_H_COMPACT : EOS_STAGE_H;
+  const designH = EOS_STAGE_H;
 
   return (
     <div ref={ref} className="w-full">
