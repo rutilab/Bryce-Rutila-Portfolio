@@ -10,13 +10,16 @@ import { AI_ASSISTANT_CSS, AI_ASSISTANT_HTML } from '@/app/case-studies/finding-
 // The modal uses flex-direction:column with flex-grow:1 on the body and
 // margin-top:auto on the footer, so stretching the container height just
 // pushes the input + disclaimer to the bottom — nothing breaks.
-// A box too short for the modal's content (Quick view's wide frame) scales by
-// height instead and centres it, so the top is never cut off.
+// A box a little too short for the modal at full width (the home card on a
+// phone) first tightens the modal's empty space so it can still fill the width.
+// One still too short (Quick view's wide frame) scales by height instead and
+// centres it, so the top is never cut off.
 export function AIAssistantThumbnail() {
   const wrapRef = useRef<HTMLDivElement>(null);
   const [scale,       setScale]       = useState(0.44);
   const [modalHeight, setModalHeight] = useState(520);
   const [offsetX,     setOffsetX]     = useState(0);
+  const [tight,       setTight]       = useState(false);
 
   useEffect(() => {
     const wrap = wrapRef.current;
@@ -28,14 +31,25 @@ export function AIAssistantThumbnail() {
       if (w <= 0) return;
       // The modal's own content height, unforced (inline !important outranks the override)
       const modal = wrap.querySelector<HTMLElement>('.chat-container');
-      let natural = 0;
-      if (modal) {
+      const naturalHeight = (isTight: boolean) => {
+        if (!modal) return 0;
+        wrap.classList.toggle('ai-thumb-tight', isTight);
         modal.style.setProperty('height', 'auto', 'important');
         modal.style.setProperty('min-height', '0', 'important');
-        natural = modal.offsetHeight;
+        const n = modal.offsetHeight;
         modal.style.removeProperty('height');
         modal.style.removeProperty('min-height');
+        return n;
+      };
+      const fits = (n: number) => h <= 0 || n <= h / (w / 725);
+      let natural = naturalHeight(false);
+      let useTight = false;
+      if (!fits(natural)) {
+        const tightNatural = naturalHeight(true);
+        useTight = fits(tightNatural);
+        natural = useTight ? tightNatural : naturalHeight(false);
       }
+      setTight(useTight);
       const s = h > 0 && natural > 0 ? Math.min(w / 725, h / natural) : w / 725;
       setScale(s);
       setOffsetX(Math.max(0, (w - 725 * s) / 2));
@@ -53,11 +67,14 @@ export function AIAssistantThumbnail() {
   const heightCSS = `.chat-container.css-1fysqw3 {
     min-height: ${modalHeight}px !important;
     height:     ${modalHeight}px !important;
-  }`;
+  }
+  .ai-thumb-tight .css-exoci9 { padding-top: 16px; padding-bottom: 16px; }
+  .ai-thumb-tight .css-jrq3u7 { margin-top: 24px; }`;
 
   return (
     <div
       ref={wrapRef}
+      className={tight ? 'ai-thumb-tight' : undefined}
       style={{
         position: 'absolute',
         inset: 0,
