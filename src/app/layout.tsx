@@ -45,9 +45,9 @@ const ibmPlexMono = IBM_Plex_Mono({
   display: 'block',
 });
 
-/** Default Safari / mobile browser UI tint; case-studies layout overrides to white. */
+/** Phone status bar tint: the pages' off-white, so the bar reads as part of the page. Case studies override it. */
 export const viewport: Viewport = {
-  themeColor: '#0a0a0a',
+  themeColor: '#f9fafb',
 };
 
 /** Empty string is a common .env mistake and breaks `new URL('')` → 500 on every route. */
