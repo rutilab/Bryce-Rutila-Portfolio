@@ -385,6 +385,7 @@ export function ReflectionScreen({
         }
         .refl-session-title {
           margin: 0;
+          font-family: var(--font-inter), sans-serif;
           font-size: 40px;
           font-weight: 700;
           color: #0d0d0d;

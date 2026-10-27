@@ -33,3 +33,7 @@ windows onto them. `main` is always the real portfolio.
   `case-study-reference/`) are gitignored on purpose — read them, don't commit them.
 - `chrome/` is a tooling download, gitignored, never commit it.
 - Case study copy is Bryce's own voice — edit for register, not personality.
+- Case study pages inherit the site type from `CaseStudyRouteChrome` (Inter body,
+  Chakra Petch `h1`/`h2`). Use `.cs-label` for small uppercase labels and
+  `#f9fafb` (the homepage background) for page backgrounds and the hero
+  gradient's end color.

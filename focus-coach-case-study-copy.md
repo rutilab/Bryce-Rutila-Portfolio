@@ -220,7 +220,7 @@ _The flow adapts to each session — the achievement screen only appears when on
 
 ### Personal Reflection *(eyebrow)*
 
-## With the flow defined, I started re-designing the personal reflection screen.
+## With the flow defined, I started redesigning the personal reflection screen.
 
 The redesign does three jobs: acknowledge the session has ended, provide context on what was accomplished, and allow users to quickly reflect.
 

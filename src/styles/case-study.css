@@ -348,3 +348,24 @@
     opacity: 1;
   }
 }
+
+/* Site type on every case study page (applied in CaseStudyRouteChrome): Inter body, Chakra Petch page and section
+   headings, IBM Plex Mono small-caps labels (matches .work-eyebrow). Smaller
+   headings stay Inter — Chakra Petch only reads well large. */
+.cs-site-type {
+  font-family: var(--font-inter), sans-serif;
+}
+
+/* Zero specificity so any heading with its own font (a product mockup's) keeps it. */
+:where(.cs-site-type) :where(h1, h2) {
+  font-family: var(--font-heading), sans-serif;
+  font-weight: 700;
+}
+
+.cs-label {
+  font-family: var(--font-ibm-plex-mono), monospace;
+  font-size: 12px;
+  font-weight: 400;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}

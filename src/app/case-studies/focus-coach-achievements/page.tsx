@@ -65,7 +65,7 @@ function Em({ children }: { children: ReactNode }) {
 
 function Eyebrow({ label, color = EYEBROW_ICON_COLOR }: { label: string; color?: string }) {
   return (
-    <p className="text-[11px] font-medium tracking-[1.5px] uppercase" style={{ color }}>
+    <p className="cs-label" style={{ color }}>
       {label}
     </p>
   );
@@ -699,7 +699,7 @@ function Callout({
     >
       <div style={{ width: 2, borderRadius: 2, background: bar, flexShrink: 0 }} />
       <div className="flex flex-col gap-1.5">
-        <p className="text-[11px] font-medium tracking-[1.5px] uppercase" style={{ color: bar }}>{eyebrow}</p>
+        <p className="cs-label" style={{ color: bar }}>{eyebrow}</p>
         <p className="text-[19px] font-semibold text-[#1a1a1a] leading-[135%]">{heading}</p>
         <p className="text-[15px] font-normal leading-[170%] text-[#555]">{body}</p>
       </div>
@@ -1143,7 +1143,7 @@ function StudentSurveyChart() {
     >
       <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-2">
         <div>
-          <p className="text-[11px] font-medium tracking-[1.5px] uppercase" style={{ color: EYEBROW_ICON_COLOR }}>
+          <p className="cs-label" style={{ color: EYEBROW_ICON_COLOR }}>
             Survey responses
           </p>
           <p className="text-[16px] font-semibold text-[#1a1a1a] mt-1.5">
@@ -1768,7 +1768,7 @@ function Divider({ label, id }: { label?: string; id?: string }) {
       <div className="flex-1 h-px bg-[#e8e8e8]" />
       {label && (
         <>
-          <span className="mx-5 text-[15px] text-[#1a1a1a] font-semibold">{label}</span>
+          <span className="cs-label mx-5 text-[#1a1a1a]">{label}</span>
           <div className="flex-1 h-px bg-[#e8e8e8]" />
         </>
       )}
@@ -2016,18 +2016,18 @@ const SECTION = 'max-w-[1200px] mx-auto px-5 sm:px-10 md:px-20 pb-14 md:pb-28';
 // ── Page ──────────────────────────────────────────────────────────────────────
 export default function FocusCoachAchievementsCaseStudy() {
   return (
-    <div className="min-h-screen bg-[#fcfcfc] text-[#444444] min-[600px]:pr-[100px]">
+    <div className="min-h-screen bg-[#f9fafb] text-[#444444] min-[600px]:pr-[100px]">
 
       <SectionNav />
 
       {/* ── HERO ── */}
-      <header id="section-intro" className="relative bg-gradient-to-b from-[rgba(0,110,254,0.12)] to-[#fcfcfc] to-[87%] min-[600px]:-mr-[100px]">
+      <header id="section-intro" className="relative bg-gradient-to-b from-[rgba(0,110,254,0.12)] to-[#f9fafb] to-[87%] min-[600px]:-mr-[100px]">
         <div className="max-w-[1200px] mx-auto px-5 sm:px-6 pt-[80px] pb-0">
 
           <div className="flex flex-wrap items-center gap-2.5 mb-6" style={{ opacity: 0.65 }}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src="/case-studies/finding-focus-ai-assistant/finding-focus-logo.svg" alt="Finding Focus logo" className="h-7 w-auto shrink-0" style={{ filter: 'brightness(0)' }} />
-            <span className="text-[14px] sm:text-[15px] font-semibold text-[#000] tracking-[-0.1px]">Finding Focus • Edtech • Product Design</span>
+            <span className="cs-label text-[#000]">Finding Focus • Edtech • Product Design</span>
           </div>
 
           <h1 className="text-[26px] sm:text-[30px] md:text-[36px] font-semibold leading-[110%] tracking-[-1px] text-[#1a1a1a] mb-4 max-w-[680px]">
@@ -2048,18 +2048,18 @@ export default function FocusCoachAchievementsCaseStudy() {
           {/* Meta row */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 sm:gap-10 mt-10 text-center">
             <div>
-              <p className="text-[17px] md:text-[20px] font-semibold text-[#1a1a1a] mb-2">Team</p>
+              <p className="cs-label text-[#1a1a1a] mb-2">Team</p>
               <p className="text-[15px] md:text-[17px] font-normal leading-[175%] text-[#555]">
                 Mike Mrazek, Co-founder<br />
                 Thomas Kennedy, SWE
               </p>
             </div>
             <div>
-              <p className="text-[17px] md:text-[20px] font-semibold text-[#1a1a1a] mb-2">Timeline</p>
+              <p className="cs-label text-[#1a1a1a] mb-2">Timeline</p>
               <p className="text-[15px] md:text-[17px] font-normal leading-[175%] text-[#555]">Jan – Jul 2026</p>
             </div>
             <div>
-              <p className="text-[17px] md:text-[20px] font-semibold text-[#1a1a1a] mb-2">My Role</p>
+              <p className="cs-label text-[#1a1a1a] mb-2">My Role</p>
               <p className="text-[15px] md:text-[17px] font-normal leading-[175%] text-[#555]">Sole Product Designer</p>
             </div>
           </div>
@@ -2165,7 +2165,7 @@ export default function FocusCoachAchievementsCaseStudy() {
             style={{ border: `1px solid ${BORDER}` }}
           >
             <NorthStarAnimatedIcon className="block size-14 shrink-0" />
-            <p className="text-[11px] font-medium tracking-[1.5px] uppercase" style={{ color: EYEBROW_ICON_COLOR }}>North Star</p>
+            <p className="cs-label" style={{ color: EYEBROW_ICON_COLOR }}>North Star</p>
             <p className="text-[24px] font-semibold leading-[145%] tracking-[-0.3px] text-[#1a1a1a] max-w-[680px]">
               Turn the end of every session into an opportunity to delight and engage users
             </p>
@@ -2350,7 +2350,7 @@ export default function FocusCoachAchievementsCaseStudy() {
 
           <Section
             eyebrow="Personal Reflection"
-            heading="With the flow defined, I started re-designing the personal reflection screen."
+            heading="With the flow defined, I started redesigning the personal reflection screen."
             body="The redesign does three jobs: acknowledge the session has ended, provide context on what was accomplished, and allow users to quickly reflect."
           >
             <div className="flex flex-col gap-10">
