@@ -61,6 +61,11 @@ function resolveSiteUrl(): string {
       /* fall through */
     }
   }
+  // Production uses the project's own domain. VERCEL_URL is the per-deployment
+  // address, which sits behind Vercel's login, so link previews pointing there
+  // can't load the og:image and fall back to whatever picture is on the page.
+  const production = process.env.VERCEL_PROJECT_PRODUCTION_URL;
+  if (process.env.VERCEL_ENV === 'production' && production) return `https://${production}`.replace(/\/$/, '');
   if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL}`.replace(/\/$/, '');
   return 'http://localhost:3000';
 }
