@@ -5,12 +5,9 @@ import { CaseStudyRouteChrome } from './CaseStudyRouteChrome';
 import ChipFooter from '@/components/ChipFooter';
 import { BackToTopButton, ScrollCue } from '@/components/case-study';
 
-/**
- * Phone status bar tint + edge-to-edge on notched phones; pairs with CaseStudyRouteChrome.
- * #f1f5fb is the top bar's frosted white over the hero's blue gradient, so the two read as one.
- */
+/** Phone status bar in the site's off-white + edge-to-edge on notched phones; pairs with CaseStudyRouteChrome. */
 export const viewport: Viewport = {
-  themeColor: '#f1f5fb',
+  themeColor: '#f9fafb',
   viewportFit: 'cover',
 };
 
