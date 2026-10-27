@@ -261,7 +261,7 @@ const assets = {
 
 function Eyebrow({ label, color = EYEBROW_ICON_COLOR }: { label: string; color?: string }) {
   return (
-    <p className="text-[11px] font-medium tracking-[1.5px] uppercase" style={{ color }}>
+    <p className="cs-label" style={{ color }}>
       {label}
     </p>
   );
@@ -412,7 +412,7 @@ function Callout({
         </div>
       )}
       <div className="flex min-w-0 flex-1 flex-col gap-2">
-        <p className="text-[11px] font-medium tracking-[1.5px] uppercase" style={{ color: bar }}>
+        <p className="cs-label" style={{ color: bar }}>
           {label}
         </p>
         <p className="text-[19px] font-semibold leading-[135%] text-[#1a1a1a]">{heading}</p>
@@ -433,7 +433,7 @@ function WinningChoiceCallout({ heading, body }: { heading: string; body: string
     >
       <WinningChoiceScrollStars className="block size-[72px] shrink-0 md:size-20" />
       <div className="flex min-w-0 flex-1 flex-col gap-1.5">
-        <p className="text-[11px] font-medium tracking-[1.5px] uppercase text-[#999]">
+        <p className="cs-label text-[#999]">
           The Winning Choice
         </p>
         <p className="text-[19px] font-semibold leading-[135%] text-[#1a1a1a]">{heading}</p>
@@ -2137,7 +2137,7 @@ function Divider({ label, id }: { label?: string; id?: string }) {
       <div className="flex-1 h-px bg-[#e8e8e8]" />
       {label && (
         <>
-          <span className="mx-5 text-[15px] text-[#1a1a1a] font-semibold">{label}</span>
+          <span className="cs-label mx-5 text-[#1a1a1a]">{label}</span>
           <div className="flex-1 h-px bg-[#e8e8e8]" />
         </>
       )}
@@ -2166,25 +2166,25 @@ export default function FindingFocusAiAssistantCaseStudy() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-[#fcfcfc] text-[#444444] min-[600px]:pr-[100px]">
+    <div className="min-h-screen bg-[#f9fafb] text-[#444444] min-[600px]:pr-[100px]">
 
       {/* Fixed white bar — DOM-controlled (no React state) to stay in sync with scroll */}
       <div ref={ideationMaskRef} style={{
         display: 'none', position: 'fixed', top: 0, left: 0, right: 0, height: 48,
-        background: '#fcfcfc', zIndex: 50, pointerEvents: 'none',
+        background: '#f9fafb', zIndex: 50, pointerEvents: 'none',
       }} />
 
       <SectionNav />
 
       {/* ── HERO ── */}
-      <header id="section-intro" className="relative bg-gradient-to-b from-[rgba(0,110,254,0.12)] to-[#fcfcfc] to-[87%] min-[600px]:-mr-[100px]">
+      <header id="section-intro" className="relative bg-gradient-to-b from-[rgba(0,110,254,0.12)] to-[#f9fafb] to-[87%] min-[600px]:-mr-[100px]">
         <div className="max-w-[1200px] mx-auto px-6 pt-[80px] pb-0">
 
           {/* Company branding */}
           <div className="flex items-center gap-2.5 mb-6" style={{ opacity: 0.65 }}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src="/case-studies/finding-focus-ai-assistant/finding-focus-logo.svg" alt="Finding Focus logo" className="h-7 w-auto" style={{ filter: 'brightness(0)' }} />
-            <span className="text-[15px] font-semibold text-[#000] tracking-[-0.1px]">Finding Focus • Edtech • UX Design</span>
+            <span className="cs-label text-[#000]">Finding Focus • Edtech • UX Design</span>
           </div>
 
           {/* Title */}
@@ -2203,19 +2203,19 @@ export default function FindingFocusAiAssistantCaseStudy() {
           {/* Team / Timeline / My Role */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 sm:gap-10 mt-10 text-center">
             <div>
-              <p className="text-[17px] md:text-[20px] font-semibold text-[#1a1a1a] mb-2">Team</p>
+              <p className="cs-label text-[#1a1a1a] mb-2">Team</p>
               <p className="text-[15px] md:text-[17px] font-normal leading-[175%] text-[#555]">
                 Mike Mrazek, Co-founder<br />
                 Thomas Kennedy, SWE
               </p>
             </div>
             <div>
-              <p className="text-[17px] md:text-[20px] font-semibold text-[#1a1a1a] mb-2">Timeline</p>
+              <p className="cs-label text-[#1a1a1a] mb-2">Timeline</p>
               <p className="text-[15px] md:text-[17px] font-normal leading-[175%] text-[#555]">Aug – Nov 2024</p>
             </div>
             <div>
-              <p className="text-[17px] md:text-[20px] font-semibold text-[#1a1a1a] mb-2">My Role</p>
-              <p className="text-[15px] md:text-[17px] font-normal leading-[175%] text-[#555]">UX Lead</p>
+              <p className="cs-label text-[#1a1a1a] mb-2">My Role</p>
+              <p className="text-[15px] md:text-[17px] font-normal leading-[175%] text-[#555]">Lead Product Designer</p>
             </div>
           </div>
 
@@ -2228,7 +2228,7 @@ export default function FindingFocusAiAssistantCaseStudy() {
               <Eyebrow label="TL;DR" />
               <p className="text-[16px] font-normal leading-[150%] text-[#333] max-w-[880px]">
                 Finding Focus&apos;s most successful teachers all had one thing in common — hands-on support from
-                our team. With fewer than 5% of sign-ups ever getting that, we designed an LLM-powered assistant to
+                our team. With fewer than 5% of sign ups ever getting that, we designed an LLM-powered assistant to
                 bring the same personalized help to every teacher, on demand. It shipped in 2024 and cut support
                 tickets by 12% year-over-year.
               </p>
@@ -2287,9 +2287,9 @@ export default function FindingFocusAiAssistantCaseStudy() {
         <Section
           eyebrow="The Problem"
           heading="Our most successful teachers all received hands-on support, but that support didn't scale."
-          body="One-on-one support was the difference-maker during implementation, but between our team's limited bandwidth and teachers not knowing how to reach us, fewer than 5% of sign-ups ever received it."
+          body="One-on-one support was the difference-maker during implementation, but between our team's limited bandwidth and teachers not knowing how to reach us, fewer than 5% of sign ups ever received it."
         >
-          <VisualCard caption="Less than 5% of all of Finding Focus's sign-ups received one-on-one support">
+          <VisualCard caption="Less than 5% of all of Finding Focus's sign ups received one-on-one support">
             <div className="flex items-center justify-center py-12 px-8">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src="/case-studies/finding-focus-ai-assistant/teacher%20reach%20diagram.png" alt="Teacher reach diagram" className="w-full max-w-[520px] h-auto block" />
@@ -2347,7 +2347,7 @@ export default function FindingFocusAiAssistantCaseStudy() {
             style={{ border: `1px solid ${BORDER}` }}
           >
             <NorthStarAnimatedIcon className="block size-14 shrink-0" />
-            <p className="text-[11px] font-medium tracking-[1.5px] uppercase" style={{ color: EYEBROW_ICON_COLOR }}>North Star</p>
+            <p className="cs-label" style={{ color: EYEBROW_ICON_COLOR }}>North Star</p>
             <p className="text-[24px] font-semibold leading-[145%] tracking-[-0.3px] text-[#1a1a1a] max-w-[680px]">
               Create a genuinely helpful assistant that provides relevant answers to any question about Finding Focus.
             </p>
@@ -2525,7 +2525,7 @@ export default function FindingFocusAiAssistantCaseStudy() {
         {/* Sticky "Ideation" eyebrow */}
         <div style={{
           position: 'sticky', top: 48, zIndex: 20, pointerEvents: 'none',
-          background: '#fcfcfc',
+          background: '#f9fafb',
         }}>
           <div className="max-w-[1200px] mx-auto px-5 sm:px-10 md:px-20" style={{ paddingTop: 0, paddingBottom: 16 }}>
             <Eyebrow label="UX Considerations" />
@@ -2818,7 +2818,7 @@ export default function FindingFocusAiAssistantCaseStudy() {
                   style={{ background: '#fceaea' }}
                 >
                   <p
-                    className="text-[11px] font-medium tracking-[1.5px] uppercase"
+                    className="cs-label"
                     style={{ color: '#fe0000' }}
                   >
                     Before Retrieval Tuning
@@ -2835,7 +2835,7 @@ export default function FindingFocusAiAssistantCaseStudy() {
                   style={{ background: '#eafaf1' }}
                 >
                   <p
-                    className="text-[11px] font-medium tracking-[1.5px] uppercase"
+                    className="cs-label"
                     style={{ color: '#2a8a50' }}
                   >
                     After Retrieval Tuning

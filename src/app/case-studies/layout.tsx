@@ -7,7 +7,7 @@ import { BackToTopButton, ScrollCue } from '@/components/case-study';
 
 /** Light browser chrome + edge-to-edge on notched phones; pairs with CaseStudyRouteChrome. */
 export const viewport: Viewport = {
-  themeColor: '#fcfcfc',
+  themeColor: '#f9fafb',
   viewportFit: 'cover',
 };
 

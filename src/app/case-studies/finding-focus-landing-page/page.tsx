@@ -57,7 +57,7 @@ const assets = {
 
 function Eyebrow({ label }: { label: string }) {
   return (
-    <p className="text-[11px] font-medium tracking-[1.5px] uppercase" style={{ color: EYEBROW_ICON_COLOR }}>
+    <p className="cs-label" style={{ color: EYEBROW_ICON_COLOR }}>
       {label}
     </p>
   );
@@ -137,7 +137,7 @@ function Callout({
         </div>
       )}
       <div className={`flex min-w-0 flex-1 flex-col gap-3 py-6 pr-6 ${hasIcon ? '' : 'pl-6'}`}>
-        <p className="text-[11px] font-medium tracking-[1.5px] uppercase" style={{ color: labelColor }}>
+        <p className="cs-label" style={{ color: labelColor }}>
           {label}
         </p>
         <p className="text-[20px] font-semibold leading-[135%] text-[#1a1a1a]">{heading}</p>
@@ -1065,7 +1065,7 @@ function Divider({ label, id }: { label?: string; id?: string }) {
       <div className="flex-1 h-px bg-[#e8e8e8]" />
       {label && (
         <>
-          <span className="mx-5 text-[15px] text-[#1a1a1a] font-semibold">{label}</span>
+          <span className="cs-label mx-5 text-[#1a1a1a]">{label}</span>
           <div className="flex-1 h-px bg-[#e8e8e8]" />
         </>
       )}
@@ -1449,12 +1449,12 @@ function FullPagePreview({ src, alt, caption }: { src: string; alt: string; capt
 // ── Page ──────────────────────────────────────────────────────────────────────
 export default function LandingPageCaseStudy() {
   return (
-    <div className="min-h-screen bg-[#fcfcfc] text-[#444444] min-[600px]:pr-[100px]">
+    <div className="min-h-screen bg-[#f9fafb] text-[#444444] min-[600px]:pr-[100px]">
 
       <SectionNav />
 
       {/* ── HERO ── */}
-      <header id="section-intro" className="relative bg-gradient-to-b from-[rgba(0,110,254,0.12)] to-[#fcfcfc] to-[87%] min-[600px]:-mr-[100px]">
+      <header id="section-intro" className="relative bg-gradient-to-b from-[rgba(0,110,254,0.12)] to-[#f9fafb] to-[87%] min-[600px]:-mr-[100px]">
         <div className="max-w-[1200px] mx-auto px-6 pt-[80px] pb-0">
 
           {/* Company branding */}
@@ -1466,7 +1466,7 @@ export default function LandingPageCaseStudy() {
               className="h-7 w-auto"
               style={{ filter: 'brightness(0)' }}
             />
-            <span className="text-[15px] font-semibold text-[#000] tracking-[-0.1px]">Finding Focus</span>
+            <span className="cs-label text-[#000]">Finding Focus</span>
           </div>
 
           {/* Title */}
@@ -1493,18 +1493,18 @@ export default function LandingPageCaseStudy() {
           {/* My Role / Team / Timeline */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 sm:gap-10 mt-10 pb-16 text-center sm:text-center">
             <div>
-              <p className="text-[17px] md:text-[20px] font-semibold text-[#1a1a1a] mb-2">My Role</p>
-              <p className="text-[15px] md:text-[17px] font-normal leading-[175%] text-[#555]">UX Designer</p>
+              <p className="cs-label text-[#1a1a1a] mb-2">My Role</p>
+              <p className="text-[15px] md:text-[17px] font-normal leading-[175%] text-[#555]">Lead Product Designer</p>
             </div>
             <div>
-              <p className="text-[17px] md:text-[20px] font-semibold text-[#1a1a1a] mb-2">Team</p>
+              <p className="cs-label text-[#1a1a1a] mb-2">Team</p>
               <p className="text-[15px] md:text-[17px] font-normal leading-[175%] text-[#555]">
                 Mike Mrazek, Co-founder<br />
                 Thomas Kennedy, SWE
               </p>
             </div>
             <div>
-              <p className="text-[17px] md:text-[20px] font-semibold text-[#1a1a1a] mb-2">Timeline</p>
+              <p className="cs-label text-[#1a1a1a] mb-2">Timeline</p>
               <p className="text-[15px] md:text-[17px] font-normal leading-[175%] text-[#555]">Sep – Nov 2025</p>
             </div>
           </div>
@@ -1585,7 +1585,7 @@ export default function LandingPageCaseStudy() {
               accentColor="#272727"
               variant="northStar"
               label="North Star"
-              heading="Convert skeptical teachers into sign-ups by making a great first impression and building confidence in the product."
+              heading="Convert skeptical teachers into sign ups by making a great first impression and building confidence in the product."
               icon={<NorthStarAnimatedIcon className="block size-16 shrink-0" />}
             />
           </div>
@@ -1618,7 +1618,7 @@ export default function LandingPageCaseStudy() {
           <Section
             eyebrow="Visual Identity"
             heading="We aligned on what Finding Focus should look and feel like."
-            body={`To kick off the re-design of this page, my team and I sat down and began to work on defining Finding Focus's visual identity – which was lacking. It's hard to create a compelling landing page without a sense for what the visual identity should be and what the page should visually communicate.
+            body={`To kick off the redesign of this page, my team and I sat down and began to work on defining Finding Focus's visual identity – which was lacking. It's hard to create a compelling landing page without a sense for what the visual identity should be and what the page should visually communicate.
 
 We knew we wanted our visual identity to convey: cool, modern, mature, and science-based – but we still needed to settle on a design style. One of the ways we as a team were able to tackle this was by sharing our existing assets and going over possible design styles we could lean into.`}
           >
@@ -1690,7 +1690,7 @@ One activity we did as a team to help answer these questions was to imagine ours
             <Section
               eyebrow="Hero"
               heading="The hero needed to make the value of Finding Focus clear right away."
-              body="I used the hero section as an opportunity to frame Finding Focus around outcomes teachers care about, highlight the product&apos;s credibility, and put a clear sign-up path front and center. That way, teachers could quickly understand the value of the platform without having to piece it together themselves."
+              body="I used the hero section as an opportunity to frame Finding Focus around outcomes teachers care about, highlight the product&apos;s credibility, and put a clear sign up path front and center. That way, teachers could quickly understand the value of the platform without having to piece it together themselves."
             />
             <VisualCard caption="A hero designed around teacher outcomes, credibility cues, and a clear path to sign up">
               <div className="p-4 sm:p-8">

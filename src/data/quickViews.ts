@@ -194,7 +194,7 @@ export const AI_ASSISTANT_DECK: QuickSlide[] = [
     label: 'Problem',
     headline: "Hands-on support worked. It just didn't scale.",
     body: "Our team's bandwidth was limited, and teachers didn't know how to reach us. The only self-serve option was a dense help center that busy teachers rarely searched.",
-    stats: [{ value: '<5%', label: 'of sign-ups ever received one-on-one support' }],
+    stats: [{ value: '<5%', label: 'of sign ups ever received one-on-one support' }],
     // The same diagram the case study uses
     media: { kind: 'image', fixed: true, src: `${AI}/teacher%20reach%20diagram.png`, alt: 'Diagram: of every teacher who signs up, only a few get one-on-one support' },
   },
@@ -360,7 +360,7 @@ export const LANDING_PAGE_DECK: QuickSlide[] = [
   {
     label: 'Key decisions',
     headline: 'Lead with what teachers care about.',
-    body: 'The hero frames Finding Focus around teacher outcomes, hints at its credibility, and puts sign-up front and center.',
+    body: 'The hero frames Finding Focus around teacher outcomes, hints at its credibility, and puts sign up front and center.',
     media: { kind: 'image', src: `${LP}/header-and-hero.webp`, alt: 'The new hero section' },
   },
   {

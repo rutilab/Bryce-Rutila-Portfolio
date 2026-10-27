@@ -39,7 +39,7 @@ export const PROJECTS: Project[] = [
     cardColor: '#ff9c12',
     folder: 'finding-focus',
     href: '/case-studies/finding-focus-ai-assistant',
-    role: 'UX Lead',
+    role: 'Lead Product Designer',
     team: ['Mike Mrazek, Co-founder', 'Thomas Kennedy, SWE'],
     timeline: 'Aug – Nov 2024',
     quickView: AI_ASSISTANT_DECK,
@@ -47,7 +47,7 @@ export const PROJECTS: Project[] = [
   },
   {
     title: 'Landing Page Redesign',
-    eyebrow: 'FINDING FOCUS • 2026',
+    eyebrow: 'FINDING FOCUS • 2025',
     description:
       "Redesigning the Finding Focus marketing site to improve conversion and communicate value across teacher and student personas",
     tags: ['UX DESIGN', 'VISUAL DESIGN', 'MARKETING'],
@@ -55,7 +55,7 @@ export const PROJECTS: Project[] = [
     cardColor: '#12b4ff',
     folder: 'finding-focus',
     href: '/case-studies/finding-focus-landing-page',
-    role: 'UX Designer',
+    role: 'Lead Product Designer',
     team: ['Mike Mrazek, Co-founder', 'Thomas Kennedy, SWE'],
     timeline: 'Sep – Nov 2025',
     quickView: LANDING_PAGE_DECK,

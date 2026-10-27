@@ -4,7 +4,7 @@ import { useEffect, useRef, type CSSProperties, type ReactNode } from 'react';
 
 /** Same dot grid as Finding Focus hub + case studies index */
 const DOT_BG: CSSProperties = {
-  background: '#fcfcfc',
+  background: '#f9fafb',
   backgroundImage: 'radial-gradient(circle, #F0F0F0 1px, transparent 1px)',
   backgroundSize: '8px 8px',
 };
@@ -83,7 +83,7 @@ export function CaseStudyRouteChrome({ children }: { children: ReactNode }) {
         className="pointer-events-none fixed inset-0 z-0"
         style={DOT_BG}
       />
-      <div ref={contentRef} className="case-study-content-layer relative z-10 min-h-screen min-h-[100dvh]">
+      <div ref={contentRef} className="case-study-content-layer cs-site-type relative z-10 min-h-screen min-h-[100dvh]">
         {children}
       </div>
     </>
